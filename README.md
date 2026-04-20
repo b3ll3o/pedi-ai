@@ -20,7 +20,7 @@ Aplicação de **Cardápio Digital** para restaurantes com foco em **mobile-firs
 - **Offline**: Service Worker (Workbox) + IndexedDB (Dexie)
 - **Estado**: Zustand + React Query
 - **Testes Unitários**: Vitest (338 testes, 80%+ cobertura)
-- **Testes E2E**: Playwright (12 specs)
+- **Testes E2E**: Playwright (13 specs)
 - **Pagamentos**: Mercado Pago (Pix) + Stripe (Cartão)
 
 ## Getting Started
@@ -36,7 +36,7 @@ pnpm install
 Copie o arquivo de exemplo e preencha com suas credenciais:
 
 ```bash
-cp apps/web/.env.local.example .env.local
+cp .env.local.example .env.local
 ```
 
 Edite `.env.local` com:
@@ -180,7 +180,7 @@ A aplicação é um **Progressive Web App** com:
 # Unit tests (338 testes)
 pnpm test
 
-# E2E tests (12 specs)
+# E2E tests (13 specs)
 cd tests/e2e && pnpm install && pnpm test
 ```
 
