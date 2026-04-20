@@ -18,7 +18,6 @@ function generateEmail(): string {
 }
 
 export async function createTestData(): Promise<SeedData> {
-  // Generate test user credentials
   const customer = {
     email: generateEmail(),
     password: 'TestPassword123!',
@@ -43,14 +42,12 @@ export async function createTestData(): Promise<SeedData> {
     code: `TABLE-${generateId().substring(0, 6).toUpperCase()}`,
   }
 
-  // Create test categories
   const categories = [
     { id: generateId(), name: 'Bebidas' },
     { id: generateId(), name: 'Pratos Principais' },
     { id: generateId(), name: 'Sobremesas' },
   ]
 
-  // Create test products
   const products = [
     { id: generateId(), name: 'Coca-Cola', price: 5.99 },
     { id: generateId(), name: 'Picanha', price: 45.99 },
@@ -60,20 +57,17 @@ export async function createTestData(): Promise<SeedData> {
   return { customer, admin, waiter, table, categories, products }
 }
 
-export async function cleanupTestData(data: SeedData): Promise<void> {
-  // Cleanup is handled by Supabase soft delete or TTL
-  // In production, implement proper cleanup
+export async function cleanupTestData(_data: SeedData): Promise<void> {
+  // Cleanup é tratado por soft delete do Supabase ou TTL
 }
 
 export async function seedMenuData(api: APIRequestContext, data: SeedData): Promise<void> {
-  // Seed categories
   for (const category of data.categories) {
     await api.post('/api/admin/categories', {
       data: { name: category.name, id: category.id },
     })
   }
 
-  // Seed products
   for (const product of data.products) {
     await api.post('/api/admin/products', {
       data: {
@@ -88,7 +82,7 @@ export async function seedMenuData(api: APIRequestContext, data: SeedData): Prom
 export async function createTestOrder(
   api: APIRequestContext,
   data: SeedData,
-  items: Array<{ productId: string; quantity: number }>
+  items: Array<{ productId: string; quantity: number }>,
 ): Promise<string> {
   const response = await api.post('/api/orders', {
     data: {
