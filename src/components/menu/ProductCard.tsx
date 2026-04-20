@@ -1,0 +1,136 @@
+'use client';
+
+import Image from 'next/image';
+import type { products } from '@/lib/supabase/types';
+import styles from './ProductCard.module.css';
+
+interface ProductCardProps {
+  product: products;
+  onClick?: (productId: string) => void;
+}
+
+// Map dietary labels to colors
+const DIETARY_LABELS: Record<string, { color: string; bg: string; label: string }> = {
+  vegan: { color: '#16a34a', bg: '#dcfce7', label: 'Vegano' },
+  vegetarian: { color: '#16a34a', bg: '#dcfce7', label: 'Vegetariano' },
+  'gluten-free': { color: '#d97706', bg: '#fef3c7', label: 'Sem Glúten' },
+  'lactose-free': { color: '#3b82f6', bg: '#dbeafe', label: 'Sem Lactose' },
+  'egg-free': { color: '#d97706', bg: '#fef3c7', label: 'Sem Ovo' },
+  'dairy-free': { color: '#3b82f6', bg: '#dbeafe', label: 'Sem Laticínios' },
+  'sugar-free': { color: '#8b5cf6', bg: '#ede9fe', label: 'Sem Açúcar' },
+  organic: { color: '#16a34a', bg: '#dcfce7', label: 'Orgânico' },
+  spicy: { color: '#dc2626', bg: '#fee2e2', label: 'Picante' },
+};
+
+function formatPrice(price: number): string {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(price);
+}
+
+function getGradientPlaceholder(name: string): string {
+  const gradients = [
+    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+    'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+    'linear-gradient(135deg, #d299c2 0%, #fef9d7 100%)',
+    'linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)',
+  ];
+  const index = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % gradients.length;
+  return gradients[index];
+}
+
+export function ProductCard({ product, onClick }: ProductCardProps) {
+  const handleClick = () => {
+    onClick?.(product.id);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClick?.(product.id);
+    }
+  };
+
+  const hasImage = Boolean(product.image_url);
+  const gradientBg = getGradientPlaceholder(product.name);
+
+  return (
+    <div className={styles.wrapper}>
+      <button
+        className={`${styles.card} ${!product.available ? styles.unavailable : ''}`}
+        onClick={handleClick}
+        onKeyDown={handleKeyDown}
+        aria-label={`Ver produto ${product.name}`}
+        aria-disabled={!product.available}
+        type="button"
+      >
+        <div className={styles.imageContainer}>
+          {hasImage ? (
+            <Image
+              src={product.image_url!}
+              alt={product.name}
+              fill
+              className={styles.image}
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            />
+          ) : (
+            <div
+              className={styles.placeholder}
+              style={{ background: gradientBg }}
+              aria-hidden="true"
+            >
+              <span className={styles.placeholderInitial}>
+                {product.name.charAt(0).toUpperCase()}
+              </span>
+            </div>
+          )}
+
+          {!product.available && (
+            <div className={styles.unavailableOverlay}>
+              <span className={styles.unavailableBadge}>Esgotado</span>
+            </div>
+          )}
+        </div>
+
+        <div className={styles.content}>
+          <h3 className={styles.name}>{product.name}</h3>
+
+          {product.description && (
+            <p className={styles.description}>{product.description}</p>
+          )}
+
+          <div className={styles.footer}>
+            <span className={styles.price}>{formatPrice(product.price)}</span>
+
+            {product.dietary_labels && product.dietary_labels.length > 0 && (
+              <div className={styles.badges}>
+                {product.dietary_labels.slice(0, 3).map((label) => {
+                  const labelInfo = DIETARY_LABELS[label.toLowerCase()];
+                  return (
+                    <span
+                      key={label}
+                      className={styles.badge}
+                      style={
+                        labelInfo
+                          ? { color: labelInfo.color, backgroundColor: labelInfo.bg }
+                          : undefined
+                      }
+                      title={labelInfo?.label ?? label}
+                    >
+                      {labelInfo?.label ?? label}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </button>
+    </div>
+  );
+}

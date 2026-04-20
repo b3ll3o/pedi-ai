@@ -1,0 +1,116 @@
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary, #171717);
+  margin: 0;
+}
+
+.requiredBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  background-color: var(--error-bg, #fef2f2);
+  color: var(--error-color, #dc2626);
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.selectionHint {
+  font-size: 13px;
+  color: var(--text-muted, #999);
+  width: 100%;
+}
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px 16px;
+  background-color: var(--card-background, #fff);
+  border: 2px solid var(--border-color, #e5e5e5);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  text-align: left;
+  min-width: 120px;
+}
+
+.option:hover:not(.disabled) {
+  border-color: var(--primary-color, #2563eb);
+  background-color: var(--hover-bg, #f8fafc);
+}
+
+.option.selected {
+  border-color: var(--primary-color, #2563eb);
+  background-color: var(--selected-bg, #eff6ff);
+}
+
+.option.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.option:focus-visible {
+  outline: 2px solid var(--primary-color, #2563eb);
+  outline-offset: 2px;
+}
+
+.optionName {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary, #171717);
+}
+
+.priceAdjustment {
+  font-size: 13px;
+  color: var(--text-secondary, #666);
+}
+
+.error {
+  font-size: 13px;
+  color: var(--error-color, #dc2626);
+  margin: 0;
+  padding: 8px 12px;
+  background-color: var(--error-bg, #fef2f2);
+  border-radius: 8px;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .group {
+    --text-primary: #ededed;
+    --text-secondary: #999;
+    --text-muted: #666;
+    --card-background: #1a1a1a;
+    --border-color: #333;
+    --hover-bg: #1f1f1f;
+    --selected-bg: #1a2744;
+    --primary-color: #3b82f6;
+    --error-bg: #2a1a1a;
+    --error-color: #ef4444;
+  }
+}

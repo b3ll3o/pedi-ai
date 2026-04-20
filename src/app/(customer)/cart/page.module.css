@@ -1,0 +1,217 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.backButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #374151;
+  transition: background-color 0.15s ease;
+}
+
+.backButton:hover {
+  background-color: #f3f4f6;
+}
+
+.backButton:active {
+  background-color: #e5e7eb;
+}
+
+.backButton:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 1px;
+}
+
+.backButton svg {
+  width: 24px;
+  height: 24px;
+}
+
+.title {
+  flex: 1;
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.clearButton {
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #dc2626;
+  transition: background-color 0.15s ease;
+}
+
+.clearButton:hover {
+  background-color: #fee2e2;
+}
+
+.clearButton:active {
+  background-color: #fecaca;
+}
+
+.clearButton:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 1px;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 20px;
+  padding: 20px;
+  max-width: 600px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.itemsList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.summaryContainer {
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+/* Empty State */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.emptyIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  margin-bottom: 20px;
+  background-color: #f3f4f6;
+  border-radius: 50%;
+  color: #9ca3af;
+}
+
+.emptyIcon svg {
+  width: 40px;
+  height: 40px;
+}
+
+.emptyTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 8px 0;
+}
+
+.emptyText {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0 0 24px 0;
+}
+
+.emptyButton {
+  padding: 14px 28px;
+  background: #2563eb;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.emptyButton:hover {
+  background: #1d4ed8;
+}
+
+.emptyButton:active {
+  transform: scale(0.98);
+}
+
+.emptyButton:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .container {
+    background-color: #0f0f0f;
+  }
+
+  .header {
+    background: #1a1a1a;
+    border-bottom-color: #333;
+  }
+
+  .backButton {
+    color: #ededed;
+  }
+
+  .backButton:hover {
+    background-color: #2a2a2a;
+  }
+
+  .backButton:active {
+    background-color: #333;
+  }
+
+  .title {
+    color: #ededed;
+  }
+
+  .clearButton:hover {
+    background-color: rgba(220, 38, 38, 0.2);
+  }
+
+  .emptyIcon {
+    background-color: #1a1a1a;
+    color: #6b7280;
+  }
+
+  .emptyTitle {
+    color: #ededed;
+  }
+
+  .emptyText {
+    color: #9ca3af;
+  }
+}

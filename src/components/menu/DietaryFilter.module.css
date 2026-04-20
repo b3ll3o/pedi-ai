@@ -1,0 +1,113 @@
+.container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb, #ccc) var(--scrollbar-track, transparent);
+}
+
+.container::-webkit-scrollbar {
+  height: 4px;
+}
+
+.container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.container::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 4px;
+}
+
+.filterRow {
+  display: flex;
+  gap: 8px;
+  padding: 4px 0;
+  min-width: max-content;
+}
+
+@media (min-width: 640px) {
+  .container {
+    overflow-x: visible;
+  }
+
+  .filterRow {
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+}
+
+.chip {
+  --filter-color: #22c55e;
+  --filter-color-light: #22c55e33;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1.5px solid var(--filter-color);
+  border-radius: 20px;
+  background-color: transparent;
+  color: var(--filter-color);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.1s ease,
+    box-shadow 0.15s ease;
+  white-space: nowrap;
+}
+
+.chip:hover {
+  background-color: var(--filter-color-light);
+}
+
+.chip:active {
+  transform: scale(0.97);
+}
+
+.chip.active {
+  background-color: var(--filter-color);
+  color: #ffffff;
+}
+
+.chip.active:hover {
+  background-color: var(--filter-color);
+  opacity: 0.9;
+}
+
+.chip:focus-visible {
+  outline: 2px solid var(--filter-color);
+  outline-offset: 2px;
+}
+
+.label {
+  display: inline-block;
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .container::-webkit-scrollbar-thumb {
+    background-color: #555;
+  }
+
+  .chip {
+    background-color: transparent;
+  }
+
+  .chip:hover {
+    background-color: var(--filter-color-light);
+  }
+
+  .chip.active {
+    background-color: var(--filter-color);
+  }
+
+  .chip.active:hover {
+    opacity: 0.85;
+  }
+}

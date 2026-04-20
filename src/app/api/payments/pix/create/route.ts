@@ -1,0 +1,130 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { MercadoPagoConfig, Payment } from 'mercadopago'
+import { createClient } from '@/lib/supabase/server'
+import type { orders } from '@/lib/supabase/types'
+
+// Configure MercadoPago client
+const client = new MercadoPagoConfig({
+  accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN!,
+})
+
+// Create Payment instance
+const paymentClient = new Payment(client)
+
+interface CreatePixPaymentRequest {
+  order_id: string
+}
+
+interface PixPaymentResponse {
+  qr_code: string
+  qr_code_base64: string
+  expires_at: string
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body: CreatePixPaymentRequest = await request.json()
+
+    if (!body.order_id) {
+      return NextResponse.json(
+        { error: 'order_id is required' },
+        { status: 400 }
+      )
+    }
+
+    const supabase = await createClient()
+
+    // Fetch order
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('id', body.order_id)
+      .single()
+
+    if (orderError || !order) {
+      return NextResponse.json(
+        { error: 'Order not found' },
+        { status: 404 }
+      )
+    }
+
+    const dbOrder = order as orders
+
+    // Check if order is already paid
+    if (dbOrder.payment_status === 'paid') {
+      return NextResponse.json(
+        { error: 'Order is already paid' },
+        { status: 400 }
+      )
+    }
+
+    // Create Pix payment with Mercado Pago
+    const payment = await paymentClient.create({
+      body: {
+        transaction_amount: dbOrder.total,
+        description: `Pedido ${dbOrder.id}`,
+        payment_method_id: 'pix',
+        payer: {
+          email: 'customer@pedi.ai', // TODO: get from customer data
+        },
+        metadata: {
+          order_id: dbOrder.id,
+          restaurant_id: dbOrder.restaurant_id,
+        },
+      },
+    })
+
+    // Extract Pix data from the payment response
+    const pixData = payment.point_of_interaction?.transaction_data
+
+    if (!pixData?.qr_code) {
+      return NextResponse.json(
+        { error: 'Failed to generate Pix QR code' },
+        { status: 500 }
+      )
+    }
+
+    // Store payment intent in database (payment_intents table)
+    const expiresAt = new Date()
+    expiresAt.setMinutes(expiresAt.getMinutes() + 30) // Mercado Pago Pix expires in 30 minutes
+
+    const { error: intentError } = await supabase.from('payment_intents').insert({
+      id: payment.id?.toString(),
+      order_id: dbOrder.id,
+      restaurant_id: dbOrder.restaurant_id,
+      amount: dbOrder.total,
+      currency: 'BRL',
+      status: 'pending',
+      payment_method: 'pix',
+      Mercado_pago_payment_id: payment.id?.toString(),
+      qr_code: pixData.qr_code,
+      qr_code_base64: pixData.qr_code_base64 ?? null,
+      expires_at: expiresAt.toISOString(),
+    } as any)
+
+    if (intentError) {
+      console.error('Error storing payment intent:', intentError)
+      // Continue anyway - the payment was created successfully
+    }
+
+    // Update order with payment method
+    await supabase
+      .from('orders')
+      .update({ payment_method: 'pix' })
+      .eq('id', body.order_id)
+
+    const response: PixPaymentResponse = {
+      qr_code: pixData.qr_code,
+      qr_code_base64: pixData.qr_code_base64 ?? `data:image/png;base64,${Buffer.from(pixData.qr_code).toString('base64')}`,
+      expires_at: expiresAt.toISOString(),
+    }
+
+    return NextResponse.json(response)
+  } catch (error) {
+    console.error('Error creating Pix payment:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}

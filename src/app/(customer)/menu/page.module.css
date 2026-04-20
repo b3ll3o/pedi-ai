@@ -1,0 +1,152 @@
+.container {
+  min-height: 100vh;
+  background: var(--background, #f5f5f5);
+}
+
+/* Header */
+.header {
+  padding: 24px 16px 16px;
+  background: var(--card-background, #fff);
+  border-bottom: 1px solid var(--border-color, #ebebeb);
+  text-align: center;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  color: var(--text-primary, #1a1a1a);
+}
+
+.subtitle {
+  font-size: 16px;
+  color: var(--text-secondary, #666);
+  margin: 0;
+}
+
+/* Search Container */
+.searchContainer {
+  padding: 16px;
+  background: var(--card-background, #fff);
+  border-bottom: 1px solid var(--border-color, #ebebeb);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* Main */
+.main {
+  padding: 16px;
+}
+
+/* Section Title */
+.sectionTitle {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+  color: var(--text-primary, #1a1a1a);
+}
+
+/* Search Results Header */
+.searchResultsHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.resultCount {
+  font-size: 14px;
+  color: var(--text-secondary, #666);
+}
+
+/* No Results */
+.noResults {
+  text-align: center;
+  padding: 48px 24px;
+  background: var(--card-background, #fff);
+  border-radius: 12px;
+  border: 1px solid var(--border-color, #ebebeb);
+}
+
+.noResults p {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  color: var(--text-primary, #1a1a1a);
+}
+
+.noResultsHint {
+  font-size: 14px !important;
+  color: var(--text-secondary, #666) !important;
+}
+
+.clearLink {
+  color: var(--accent-color, #0066cc);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.clearLink:hover {
+  text-decoration: underline;
+}
+
+/* Error */
+.error {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--error, #dc2626);
+  background: var(--error-light, #fef2f2);
+  border-radius: 8px;
+  margin: 16px;
+}
+
+.error p {
+  margin: 0;
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .header {
+    background: var(--card-background-dark, #1f2937);
+    border-bottom-color: var(--border-color-dark, #374151);
+  }
+
+  .title {
+    color: var(--text-primary-dark, #f9fafb);
+  }
+
+  .subtitle {
+    color: var(--text-secondary-dark, #9ca3af);
+  }
+
+  .searchContainer {
+    background: var(--card-background-dark, #1f2937);
+    border-bottom-color: var(--border-color-dark, #374151);
+  }
+
+  .sectionTitle {
+    color: var(--text-primary-dark, #f9fafb);
+  }
+
+  .resultCount {
+    color: var(--text-secondary-dark, #9ca3af);
+  }
+
+  .noResults {
+    background: var(--card-background-dark, #1f2937);
+    border-color: var(--border-color-dark, #374151);
+  }
+
+  .noResults p {
+    color: var(--text-primary-dark, #f9fafb);
+  }
+
+  .noResultsHint {
+    color: var(--text-secondary-dark, #9ca3af) !important;
+  }
+
+  .error {
+    color: var(--error, #f87171);
+    background: var(--error-light, #2a1a1a);
+  }
+}

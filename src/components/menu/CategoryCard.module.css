@@ -1,0 +1,150 @@
+.wrapper {
+  width: 100%;
+}
+
+.card {
+  --card-bg: #ffffff;
+  --card-border: #ebebeb;
+  --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --card-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --card-radius: 16px;
+  --card-padding: 0;
+  --card-transition: 0.2s ease;
+
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background-color: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+  cursor: pointer;
+  transition:
+    transform var(--card-transition),
+    box-shadow var(--card-transition);
+  padding: var(--card-padding);
+  font-family: inherit;
+  text-align: left;
+  color: inherit;
+}
+
+.card:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: var(--card-shadow-hover);
+}
+
+.card:active {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: var(--card-shadow);
+}
+
+.card:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+.imageContainer {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background-color: #f5f5f5;
+}
+
+.image {
+  object-fit: cover;
+  transition: transform var(--card-transition);
+}
+
+.card:hover .image {
+  transform: scale(1.05);
+}
+
+.placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placeholderInitial {
+  font-size: 48px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+}
+
+.name {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #171717;
+  margin: 0;
+}
+
+.description {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #666;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Mobile-first: full width on small screens */
+@media (max-width: 768px) {
+  .card {
+    flex-direction: column;
+  }
+
+  .imageContainer {
+    aspect-ratio: 16 / 9;
+  }
+}
+
+/* Larger screens: fixed max-width */
+@media (min-width: 768px) {
+  .wrapper {
+    width: 280px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .wrapper {
+    width: 320px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .card {
+    --card-bg: #1a1a1a;
+    --card-border: #333;
+    --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --card-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.4);
+  }
+
+  .imageContainer {
+    background-color: #2a2a2a;
+  }
+
+  .name {
+    color: #ededed;
+  }
+
+  .description {
+    color: #999;
+  }
+}

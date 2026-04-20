@@ -1,0 +1,124 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+
+// GET /api/admin/users - List users for a restaurant
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const restaurantId = searchParams.get('restaurant_id')
+
+    if (!restaurantId) {
+      return NextResponse.json(
+        { error: 'restaurant_id is required' },
+        { status: 400 }
+      )
+    }
+
+    const supabase = await createClient()
+
+    const { data: users, error } = await supabase
+      .from('users_profiles')
+      .select('*')
+      .eq('restaurant_id', restaurantId)
+      .order('created_at', { ascending: true })
+
+    if (error) {
+      console.error('Error fetching users:', error)
+      return NextResponse.json(
+        { error: 'Failed to fetch users' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ users })
+  } catch (error) {
+    console.error('Unexpected error in /api/admin/users:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+// POST /api/admin/users - Invite a new staff member
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { restaurant_id, email, name, role } = body
+
+    if (!restaurant_id || !email || !name || !role) {
+      return NextResponse.json(
+        { error: 'restaurant_id, email, name, and role are required' },
+        { status: 400 }
+      )
+    }
+
+    // Validate role
+    const validRoles = ['owner', 'manager', 'staff']
+    if (!validRoles.includes(role)) {
+      return NextResponse.json(
+        { error: `role must be one of: ${validRoles.join(', ')}` },
+        { status: 400 }
+      )
+    }
+
+    const supabase = await createClient()
+
+    // Check if user with this email already exists in the restaurant
+    const { data: existingUser, error: checkError } = await supabase
+      .from('users_profiles')
+      .select('id, email')
+      .eq('restaurant_id', restaurant_id)
+      .eq('email', email.toLowerCase())
+      .single()
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('Error checking existing user:', checkError)
+      return NextResponse.json(
+        { error: 'Failed to check existing user' },
+        { status: 500 }
+      )
+    }
+
+    if (existingUser) {
+      return NextResponse.json(
+        { error: 'A user with this email already exists in this restaurant' },
+        { status: 409 }
+      )
+    }
+
+    // Create invitation record and send email via Supabase Auth
+    // Note: In a real app, you'd use Supabase Auth's inviteByEmail function
+    // For now, we'll create a pending invitation record
+    const { data: invitation, error: inviteError } = await supabase
+      .from('invitations')
+      .insert({
+        restaurant_id,
+        email: email.toLowerCase(),
+        name,
+        role,
+        status: 'pending',
+      })
+      .select()
+      .single()
+
+    if (inviteError) {
+      console.error('Error creating invitation:', inviteError)
+      return NextResponse.json(
+        { error: 'Failed to create invitation' },
+        { status: 500 }
+      )
+    }
+
+    // In production, you would trigger the email here:
+    // await supabase.auth.inviteUser(email)
+
+    return NextResponse.json({ invitation }, { status: 201 })
+  } catch (error) {
+    console.error('Unexpected error in /api/admin/users:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
