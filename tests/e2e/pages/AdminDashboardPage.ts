@@ -48,11 +48,11 @@ export class AdminDashboardPage {
   }
 
   async getOrdersCount(): Promise<string> {
-    return this.ordersCount.textContent() ?? '0'
+    return (await this.ordersCount.textContent()) ?? ''
   }
 
   async getRevenueTotal(): Promise<string> {
-    return this.revenueTotal.textContent() ?? 'R$ 0,00'
+    return (await this.revenueTotal.textContent()) ?? ''
   }
 
   async getActiveOrdersCount(): Promise<number> {

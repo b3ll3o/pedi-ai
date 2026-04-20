@@ -93,7 +93,7 @@ export function CheckoutForm({
                 <span className={styles.orderItemQuantity}>{item.quantity}x</span>
                 <span className={styles.orderItemName}>{item.name}</span>
               </div>
-              <span className={styles.orderItemPrice}>{formatPrice(item.total_price)}</span>
+              <span className={styles.orderItemPrice}>{formatPrice(item.unitPrice * item.quantity)}</span>
             </div>
           ))}
         </div>

@@ -29,8 +29,9 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = await createClient()
+    const eventType = event.type as string
 
-    switch (event.type) {
+    switch (eventType) {
       case 'payment_intent.succeeded': {
         const paymentIntent = event.data.object as Stripe.PaymentIntent
         const orderId = paymentIntent.metadata?.order_id

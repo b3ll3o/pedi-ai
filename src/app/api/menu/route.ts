@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient()
 
     // Fetch categories (active only, sorted by sort_order)
-    const { data: categories, error: categoriesError } = await supabase
+    const { data: categoriesData, error: categoriesError } = await supabase
       .from('categories')
       .select('*')
       .eq('restaurant_id', restaurantId)
@@ -45,9 +45,10 @@ export async function GET(request: NextRequest) {
         { status: 500 }
       )
     }
+    const categories = categoriesData as Category[]
 
     // Fetch products (available only)
-    const { data: products, error: productsError } = await supabase
+    const { data: productsData, error: productsError } = await supabase
       .from('products')
       .select('*')
       .eq('available', true)
@@ -60,13 +61,14 @@ export async function GET(request: NextRequest) {
         { status: 500 }
       )
     }
+    const products = productsData as Product[]
 
     // Filter products by restaurant_id via category join
     const categoryIds = categories.map(c => c.id)
     const filteredProducts = products.filter(p => categoryIds.includes(p.category_id))
 
     // Fetch modifier groups for this restaurant
-    const { data: modifierGroups, error: modifierGroupsError } = await supabase
+    const { data: modifierGroupsData, error: modifierGroupsError } = await supabase
       .from('modifier_groups')
       .select('*')
       .eq('restaurant_id', restaurantId)
@@ -78,16 +80,18 @@ export async function GET(request: NextRequest) {
         { status: 500 }
       )
     }
+    const modifierGroups = modifierGroupsData as (Omit<modifier_groups, 'created_at'>)[]
 
     // Fetch modifier values for these groups
     const modifierGroupIds = modifierGroups.map(mg => mg.id)
-    const { data: modifierValues, error: modifierValuesError } = modifierGroupIds.length > 0
+    const { data: modifierValuesData, error: modifierValuesError } = modifierGroupIds.length > 0
       ? await supabase
           .from('modifier_values')
           .select('*')
           .in('modifier_group_id', modifierGroupIds)
           .eq('available', true)
       : { data: [], error: null }
+    const modifierValues = modifierValuesData as Omit<modifier_values, 'created_at'>[]
 
     if (modifierValuesError) {
       console.error('Error fetching modifier values:', modifierValuesError)
@@ -98,18 +102,32 @@ export async function GET(request: NextRequest) {
     }
 
     // Nest modifier values within groups
-    const modifierGroupsWithValues: ModifierGroup[] = modifierGroups.map(mg => ({
-      ...mg,
-      modifier_values: modifierValues
+    type ModifierValueForGroup = Omit<modifier_values, 'modifier_group_id' | 'created_at'>;
+    const modifierGroupsWithValues: ModifierGroup[] = modifierGroups.map((mg) => {
+      const group: Omit<modifier_groups, 'created_at'> = {
+        id: mg.id as string,
+        restaurant_id: mg.restaurant_id as string,
+        name: mg.name as string,
+        required: mg.required as boolean,
+        min_selections: mg.min_selections as number,
+        max_selections: mg.max_selections as number,
+      }
+      const values: ModifierValueForGroup[] = modifierValues
         .filter(mv => mv.modifier_group_id === mg.id)
-        .map(mv => {
-          const { modifier_group_id, created_at, ...rest } = mv
-          return rest
-        })
-    }))
+        .map(mv => ({
+          id: mv.id as string,
+          name: mv.name as string,
+          price_adjustment: mv.price_adjustment as number,
+          available: mv.available as boolean,
+        }))
+      return {
+        ...group,
+        modifier_values: values,
+      }
+    })
 
     // Fetch combos (available only)
-    const { data: combos, error: combosError } = await supabase
+    const { data: combosData, error: combosError } = await supabase
       .from('combos')
       .select('*')
       .eq('restaurant_id', restaurantId)
@@ -122,6 +140,7 @@ export async function GET(request: NextRequest) {
         { status: 500 }
       )
     }
+    const combos = combosData as Combo[]
 
     const response: MenuResponse = {
       categories,

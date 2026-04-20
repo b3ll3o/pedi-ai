@@ -171,7 +171,7 @@ export function CartItem({ item, onUpdateQuantity, onRemove }: CartItemProps) {
           </div>
 
           <div className={styles.totalPrice}>
-            {formatPrice(item.total_price)}
+            {formatPrice(item.unitPrice * item.quantity)}
           </div>
         </div>
       </div>

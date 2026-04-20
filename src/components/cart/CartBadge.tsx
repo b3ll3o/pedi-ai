@@ -5,8 +5,8 @@ import { useCartStore } from '@/stores/cartStore';
 import styles from './CartBadge.module.css';
 
 export function CartBadge() {
-  const totalItems = useCartStore((state) => state.getTotalItems());
-  const setIsOpen = useCartStore((state) => state.setIsOpen);
+  const totalItems = useCartStore((state) => state.items.reduce((sum, item) => sum + item.quantity, 0));
+  const openCart = useCartStore((state) => state.openCart);
   const [isPulsing, setIsPulsing] = useState(false);
   const prevCountRef = useRef(totalItems);
 
@@ -25,7 +25,7 @@ export function CartBadge() {
   }
 
   const handleClick = () => {
-    setIsOpen(true);
+    openCart();
   };
 
   return (

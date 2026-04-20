@@ -72,7 +72,7 @@ import { db } from '@/lib/offline/db';
 describe('IndexedDB Operations', () => {
   beforeEach(() => {
     // Reset all tables before each test
-    db._reset();
+    (db as any)._reset();
   });
 
   describe('Dexie Database - Cart Table', () => {
@@ -199,6 +199,8 @@ describe('IndexedDB Operations', () => {
       const pending: PendingSync = {
         orderData: { orderId: 'order-123', items: [] },
         retryCount: 0,
+        maxRetries: 3,
+        status: 'pending',
         createdAt: new Date(),
       };
 
@@ -211,8 +213,8 @@ describe('IndexedDB Operations', () => {
 
     it('should get all pending orders', async () => {
       const orders: PendingSync[] = [
-        { orderData: { id: 1 }, retryCount: 0, createdAt: new Date() },
-        { orderData: { id: 2 }, retryCount: 1, createdAt: new Date() },
+        { orderData: { id: 1 }, retryCount: 0, maxRetries: 3, status: 'pending', createdAt: new Date() },
+        { orderData: { id: 2 }, retryCount: 1, maxRetries: 3, status: 'pending', createdAt: new Date() },
       ];
 
       await db.pending_sync.add(orders[0]);
@@ -226,6 +228,8 @@ describe('IndexedDB Operations', () => {
       const pending: PendingSync = {
         orderData: { orderId: 'order-456' },
         retryCount: 0,
+        maxRetries: 3,
+        status: 'pending',
         createdAt: new Date(),
       };
 
@@ -240,6 +244,8 @@ describe('IndexedDB Operations', () => {
       const pending: PendingSync = {
         orderData: { orderId: 'order-789' },
         retryCount: 0,
+        maxRetries: 3,
+        status: 'pending',
         createdAt: new Date(),
       };
 
@@ -364,11 +370,15 @@ describe('IndexedDB Operations', () => {
       const order1: PendingSync = {
         orderData: { orderId: 'ord-1', total: 100 },
         retryCount: 0,
+        maxRetries: 3,
+        status: 'pending',
         createdAt: new Date(),
       };
       const order2: PendingSync = {
         orderData: { orderId: 'ord-2', total: 200 },
         retryCount: 0,
+        maxRetries: 3,
+        status: 'pending',
         createdAt: new Date(),
       };
 
@@ -383,6 +393,8 @@ describe('IndexedDB Operations', () => {
       const order: PendingSync = {
         orderData: { orderId: 'ord-count' },
         retryCount: 0,
+        maxRetries: 3,
+        status: 'pending',
         createdAt: new Date(),
       };
 
@@ -396,6 +408,8 @@ describe('IndexedDB Operations', () => {
       const order: PendingSync = {
         orderData: { orderId: 'ord-retry' },
         retryCount: 0,
+        maxRetries: 3,
+        status: 'pending',
         createdAt: new Date(),
       };
 

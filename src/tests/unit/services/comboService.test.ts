@@ -82,6 +82,7 @@ const comboService: ComboService = {
       created_at: now,
       updated_at: now,
     } as combos;
+    // @ts-expect-error - Test mock extends db with combos table not in PediDatabase
     await db.combos.add(newCombo as any);
 
     // Create combo items
@@ -94,6 +95,7 @@ const comboService: ComboService = {
         quantity: item.quantity || 1,
         created_at: now,
       } as combo_items;
+      // @ts-expect-error - Test mock extends db with combo_items table not in PediDatabase
       await db.combo_items.add(newItem as any);
     }
 
@@ -101,26 +103,31 @@ const comboService: ComboService = {
   },
 
   async getComboById(id) {
+    // @ts-expect-error - Test mock extends db with combos table not in PediDatabase
     const combo = await db.combos.get(id) as combos | undefined;
     if (!combo) return undefined;
 
     // Manually filter combo_items by combo_id (avoiding mock where chain complexity)
+    // @ts-expect-error - Test mock extends db with combo_items table not in PediDatabase
     const allItems = await db.combo_items.toArray();
-    const items = allItems.filter(item => (item as any).combo_id === id);
+    const items = allItems.filter((item: any) => (item as any).combo_id === id);
     return { ...combo, combo_items: items };
   },
 
   async getCombosByRestaurant(restaurantId) {
+    // @ts-expect-error - Test mock extends db with combos table not in PediDatabase
     const all = await db.combos.toArray();
-    return all.filter(c => (c as any).restaurant_id === restaurantId) as combos[];
+    return all.filter((c: any) => (c as any).restaurant_id === restaurantId) as combos[];
   },
 
   async getAvailableCombosByRestaurant(restaurantId) {
+    // @ts-expect-error - Test mock extends db with combos table not in PediDatabase
     const all = await db.combos.toArray();
-    return all.filter(c => (c as any).restaurant_id === restaurantId && c.available === true) as combos[];
+    return all.filter((c: any) => (c as any).restaurant_id === restaurantId && c.available === true) as combos[];
   },
 
   async updateCombo(id, updates, comboItems) {
+    // @ts-expect-error - Test mock extends db with combos table not in PediDatabase
     const existing = await db.combos.get(id) as combos | undefined;
     if (!existing) throw new Error('Combo not found');
 
@@ -129,14 +136,17 @@ const comboService: ComboService = {
       ...updates,
       updated_at: new Date().toISOString(),
     };
+    // @ts-expect-error - Test mock extends db with combos table not in PediDatabase
     await db.combos.put(updated as any);
 
     // Update combo items if provided
     if (comboItems !== undefined) {
       // Delete existing combo items
+      // @ts-expect-error - Test mock extends db with combo_items table not in PediDatabase
       const allItems = await db.combo_items.toArray();
       for (const item of allItems) {
         if ((item as any).combo_id === id) {
+          // @ts-expect-error - Test mock extends db with combo_items table not in PediDatabase
           await db.combo_items.delete((item as any).id);
         }
       }
@@ -151,6 +161,7 @@ const comboService: ComboService = {
           quantity: item.quantity || 1,
           created_at: new Date().toISOString(),
         } as combo_items;
+        // @ts-expect-error - Test mock extends db with combo_items table not in PediDatabase
         await db.combo_items.add(newItem as any);
       }
     }
@@ -159,24 +170,29 @@ const comboService: ComboService = {
   },
 
   async deleteCombo(id) {
+    // @ts-expect-error - Test mock extends db with combos table not in PediDatabase
     const existing = await db.combos.get(id) as combos | undefined;
     if (!existing) throw new Error('Combo not found');
 
     // Delete combo items first
+    // @ts-expect-error - Test mock extends db with combo_items table not in PediDatabase
     const allItems = await db.combo_items.toArray();
     for (const item of allItems) {
       if ((item as any).combo_id === id) {
+        // @ts-expect-error - Test mock extends db with combo_items table not in PediDatabase
         await db.combo_items.delete((item as any).id);
       }
     }
 
     // Delete combo
+    // @ts-expect-error - Test mock extends db with combos table not in PediDatabase
     await db.combos.delete(id);
   },
 };
 
 describe('comboService', () => {
   beforeEach(() => {
+    // @ts-expect-error - Test mock extends db with _reset method not in PediDatabase
     db._reset();
   });
 
@@ -195,7 +211,7 @@ describe('comboService', () => {
         { product_id: 'prod-3', quantity: 1 },
       ];
 
-      const result = await comboService.createCombo(comboData, items);
+      const result = await comboService.createCombo(comboData as any, items);
 
       expect(result.id).toBeDefined();
       expect(typeof result.id).toBe('string');
@@ -218,7 +234,7 @@ describe('comboService', () => {
       };
       const items = [{ product_id: 'prod-1', quantity: 1 }];
 
-      const result = await comboService.createCombo(comboData, items);
+      const result = await comboService.createCombo(comboData as any, items);
       const retrieved = await comboService.getComboById(result.id);
 
       expect(retrieved?.description).toBeNull();
@@ -233,7 +249,7 @@ describe('comboService', () => {
       };
       const items = [{ product_id: 'prod-1', quantity: 1 }];
 
-      const result = await comboService.createCombo(comboData, items);
+      const result = await comboService.createCombo(comboData as any, items);
       const retrieved = await comboService.getComboById(result.id);
 
       // image_url is not set, so it should be undefined (not explicitly null)
@@ -242,11 +258,11 @@ describe('comboService', () => {
 
     it('generates unique ids for multiple combos', async () => {
       const combo1 = await comboService.createCombo(
-        { restaurant_id: 'rest-123', name: 'Combo 1', bundle_price: 10, available: true },
+        { restaurant_id: 'rest-123', name: 'Combo 1', bundle_price: 10, available: true } as any,
         [{ product_id: 'prod-1', quantity: 1 }]
       );
       const combo2 = await comboService.createCombo(
-        { restaurant_id: 'rest-123', name: 'Combo 2', bundle_price: 20, available: true },
+        { restaurant_id: 'rest-123', name: 'Combo 2', bundle_price: 20, available: true } as any,
         [{ product_id: 'prod-2', quantity: 1 }]
       );
 
@@ -255,7 +271,7 @@ describe('comboService', () => {
 
     it('sets created_at and updated_at timestamps', async () => {
       const result = await comboService.createCombo(
-        { restaurant_id: 'rest-123', name: 'Test Combo', bundle_price: 15, available: true },
+        { restaurant_id: 'rest-123', name: 'Test Combo', bundle_price: 15, available: true } as any,
         [{ product_id: 'prod-1', quantity: 1 }]
       );
 
@@ -272,7 +288,7 @@ describe('comboService', () => {
       ];
 
       const result = await comboService.createCombo(
-        { restaurant_id: 'rest-123', name: 'Full Combo', bundle_price: 35, available: true },
+        { restaurant_id: 'rest-123', name: 'Full Combo', bundle_price: 35, available: true } as any,
         items
       );
 
@@ -284,10 +300,10 @@ describe('comboService', () => {
       const items = [
         { product_id: 'prod-1' },
         { product_id: 'prod-2', quantity: 3 },
-      ];
+      ] as any;
 
       const result = await comboService.createCombo(
-        { restaurant_id: 'rest-123', name: 'Combo', bundle_price: 20, available: true },
+        { restaurant_id: 'rest-123', name: 'Combo', bundle_price: 20, available: true } as any,
         items
       );
 
@@ -304,7 +320,7 @@ describe('comboService', () => {
   describe('getComboById', () => {
     it('returns combo when it exists', async () => {
       const created = await comboService.createCombo(
-        { restaurant_id: 'rest-123', name: 'Test Combo', bundle_price: 25, available: true },
+        { restaurant_id: 'rest-123', name: 'Test Combo', bundle_price: 25, available: true } as any,
         [{ product_id: 'prod-1', quantity: 1 }]
       );
 
@@ -328,7 +344,7 @@ describe('comboService', () => {
       ];
 
       const created = await comboService.createCombo(
-        { restaurant_id: 'rest-123', name: 'Combo com Items', bundle_price: 30, available: true },
+        { restaurant_id: 'rest-123', name: 'Combo com Items', bundle_price: 30, available: true } as any,
         items
       );
 
@@ -342,15 +358,15 @@ describe('comboService', () => {
   describe('getCombosByRestaurant', () => {
     it('returns all combos for a restaurant', async () => {
       await comboService.createCombo(
-        { restaurant_id: 'rest-123', name: 'Combo A', bundle_price: 20, available: true },
+        { restaurant_id: 'rest-123', name: 'Combo A', bundle_price: 20, available: true } as any,
         [{ product_id: 'prod-1', quantity: 1 }]
       );
       await comboService.createCombo(
-        { restaurant_id: 'rest-123', name: 'Combo B', bundle_price: 30, available: true },
+        { restaurant_id: 'rest-123', name: 'Combo B', bundle_price: 30, available: true } as any,
         [{ product_id: 'prod-2', quantity: 1 }]
       );
       await comboService.createCombo(
-        { restaurant_id: 'rest-456', name: 'Combo C', bundle_price: 40, available: true },
+        { restaurant_id: 'rest-456', name: 'Combo C', bundle_price: 40, available: true } as any,
         [{ product_id: 'prod-3', quantity: 1 }]
       );
 
@@ -368,11 +384,11 @@ describe('comboService', () => {
 
     it('returns both available and unavailable combos', async () => {
       await comboService.createCombo(
-        { restaurant_id: 'rest-123', name: 'Available Combo', bundle_price: 20, available: true },
+        { restaurant_id: 'rest-123', name: 'Available Combo', bundle_price: 20, available: true } as any,
         [{ product_id: 'prod-1', quantity: 1 }]
       );
       await comboService.createCombo(
-        { restaurant_id: 'rest-123', name: 'Unavailable Combo', bundle_price: 20, available: false },
+        { restaurant_id: 'rest-123', name: 'Unavailable Combo', bundle_price: 20, available: false } as any,
         [{ product_id: 'prod-2', quantity: 1 }]
       );
 
@@ -385,11 +401,11 @@ describe('comboService', () => {
   describe('getAvailableCombosByRestaurant', () => {
     it('returns only available combos', async () => {
       await comboService.createCombo(
-        { restaurant_id: 'rest-123', name: 'Available Combo', bundle_price: 20, available: true },
+        { restaurant_id: 'rest-123', name: 'Available Combo', bundle_price: 20, available: true } as any,
         [{ product_id: 'prod-1', quantity: 1 }]
       );
       await comboService.createCombo(
-        { restaurant_id: 'rest-123', name: 'Unavailable Combo', bundle_price: 20, available: false },
+        { restaurant_id: 'rest-123', name: 'Unavailable Combo', bundle_price: 20, available: false } as any,
         [{ product_id: 'prod-2', quantity: 1 }]
       );
 
@@ -402,7 +418,7 @@ describe('comboService', () => {
 
     it('returns empty array when all combos are unavailable', async () => {
       await comboService.createCombo(
-        { restaurant_id: 'rest-123', name: 'Unavailable Combo', bundle_price: 20, available: false },
+        { restaurant_id: 'rest-123', name: 'Unavailable Combo', bundle_price: 20, available: false } as any,
         [{ product_id: 'prod-1', quantity: 1 }]
       );
 
@@ -415,7 +431,7 @@ describe('comboService', () => {
   describe('updateCombo', () => {
     it('updates combo name', async () => {
       const created = await comboService.createCombo(
-        { restaurant_id: 'rest-123', name: 'Old Name', bundle_price: 20, available: true },
+        { restaurant_id: 'rest-123', name: 'Old Name', bundle_price: 20, available: true } as any,
         [{ product_id: 'prod-1', quantity: 1 }]
       );
 
@@ -427,7 +443,7 @@ describe('comboService', () => {
 
     it('updates combo bundle_price', async () => {
       const created = await comboService.createCombo(
-        { restaurant_id: 'rest-123', name: 'Combo', bundle_price: 20, available: true },
+        { restaurant_id: 'rest-123', name: 'Combo', bundle_price: 20, available: true } as any,
         [{ product_id: 'prod-1', quantity: 1 }]
       );
 
@@ -438,7 +454,7 @@ describe('comboService', () => {
 
     it('updates combo description', async () => {
       const created = await comboService.createCombo(
-        { restaurant_id: 'rest-123', name: 'Combo', bundle_price: 20, available: true, description: 'Old desc' },
+        { restaurant_id: 'rest-123', name: 'Combo', bundle_price: 20, available: true, description: 'Old desc' } as any,
         [{ product_id: 'prod-1', quantity: 1 }]
       );
 
@@ -449,7 +465,7 @@ describe('comboService', () => {
 
     it('updates available status', async () => {
       const created = await comboService.createCombo(
-        { restaurant_id: 'rest-123', name: 'Combo', bundle_price: 20, available: true },
+        { restaurant_id: 'rest-123', name: 'Combo', bundle_price: 20, available: true } as any,
         [{ product_id: 'prod-1', quantity: 1 }]
       );
 
@@ -460,7 +476,7 @@ describe('comboService', () => {
 
     it('updates multiple fields at once', async () => {
       const created = await comboService.createCombo(
-        { restaurant_id: 'rest-123', name: 'Original', bundle_price: 20, available: true },
+        { restaurant_id: 'rest-123', name: 'Original', bundle_price: 20, available: true } as any,
         [{ product_id: 'prod-1', quantity: 1 }]
       );
 
@@ -479,7 +495,7 @@ describe('comboService', () => {
 
     it('preserves unchanged fields when updating', async () => {
       const created = await comboService.createCombo(
-        { restaurant_id: 'rest-123', name: 'Original', bundle_price: 20, available: true, description: 'Original desc' },
+        { restaurant_id: 'rest-123', name: 'Original', bundle_price: 20, available: true, description: 'Original desc' } as any,
         [{ product_id: 'prod-1', quantity: 1 }]
       );
 
@@ -499,7 +515,7 @@ describe('comboService', () => {
 
     it('replaces combo items when comboItems parameter is provided', async () => {
       const created = await comboService.createCombo(
-        { restaurant_id: 'rest-123', name: 'Combo', bundle_price: 20, available: true },
+        { restaurant_id: 'rest-123', name: 'Combo', bundle_price: 20, available: true } as any,
         [{ product_id: 'prod-old-1', quantity: 1 }]
       );
 
@@ -517,7 +533,7 @@ describe('comboService', () => {
   describe('deleteCombo', () => {
     it('removes combo from database', async () => {
       const created = await comboService.createCombo(
-        { restaurant_id: 'rest-123', name: 'Combo to Delete', bundle_price: 20, available: true },
+        { restaurant_id: 'rest-123', name: 'Combo to Delete', bundle_price: 20, available: true } as any,
         [{ product_id: 'prod-1', quantity: 1 }]
       );
 
@@ -535,12 +551,13 @@ describe('comboService', () => {
 
     it('also deletes associated combo_items', async () => {
       const created = await comboService.createCombo(
-        { restaurant_id: 'rest-123', name: 'Combo with Items', bundle_price: 20, available: true },
+        { restaurant_id: 'rest-123', name: 'Combo with Items', bundle_price: 20, available: true } as any,
         [{ product_id: 'prod-1', quantity: 1 }, { product_id: 'prod-2', quantity: 2 }]
       );
 
       await comboService.deleteCombo(created.id);
 
+      // @ts-expect-error - Test mock extends db with combo_items table not in PediDatabase
       const allItems = await db.combo_items.toArray();
       const deletedComboItems = allItems.filter((item: any) => item.combo_id === created.id);
       expect(deletedComboItems).toHaveLength(0);

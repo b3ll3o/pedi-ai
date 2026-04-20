@@ -76,6 +76,7 @@ function generateIdempotencyKey(cart: CartItem[], restaurantId: string, tableId:
 
 describe('orderService', () => {
   beforeEach(() => {
+    // @ts-expect-error - _reset is injected by the mock
     db._reset();
   });
 
@@ -134,11 +135,13 @@ describe('orderService', () => {
         createdAt: new Date(),
       };
 
+      // @ts-expect-error - orders is injected by the mock
       const id = await db.orders.add(orderData as any);
 
       expect(id).toBeDefined();
       expect(typeof id).toBe('number');
 
+      // @ts-expect-error - orders is injected by the mock
       const retrieved = await db.orders.get(id) as any;
       expect(retrieved?.orderId).toBe(orderId);
       expect(retrieved?.restaurantId).toBe(restaurantId);
@@ -158,6 +161,7 @@ describe('orderService', () => {
       const idempotencyKey = generateIdempotencyKey(cart, restaurantId, tableId);
 
       // Simulate checking for existing order with same idempotency key
+      // @ts-expect-error - orders is injected by the mock
       const existingOrders = await db.orders.toArray();
       const duplicate = existingOrders.find(
         (order: any) => order.idempotencyKey === idempotencyKey
@@ -168,6 +172,7 @@ describe('orderService', () => {
 
       // Create first order
       const orderId = `order-${Date.now()}`;
+      // @ts-expect-error - orders is injected by the mock
       await db.orders.add({
         orderId,
         restaurantId,
@@ -179,6 +184,7 @@ describe('orderService', () => {
       } as any);
 
       // Second attempt - should find duplicate
+      // @ts-expect-error - orders is injected by the mock
       const existingOrdersAfter = await db.orders.toArray();
       const duplicateAfter = existingOrdersAfter.find(
         (order: any) => order.idempotencyKey === idempotencyKey

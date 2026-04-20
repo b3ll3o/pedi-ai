@@ -58,7 +58,7 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
         isAuthenticated: true,
         isLoading: false,
         userId,
-        userRole: profile?.role ?? null,
+        userRole: (profile?.role as Enum_user_role | null) ?? null,
       });
     }
 

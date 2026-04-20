@@ -101,6 +101,6 @@ export class AdminProductsPage {
   }
 
   async getError(): Promise<string> {
-    return this.errorMessage.textContent() ?? ''
+    return (await this.errorMessage.textContent()) ?? ''
   }
 }

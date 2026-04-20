@@ -71,7 +71,6 @@ interface CategoryService {
   softDeleteCategory: (id: string) => Promise<void>;
 }
 
-// Simulated category service for testing
 const categoryService: CategoryService = {
   async createCategory(category) {
     const id = crypto.randomUUID();
@@ -82,20 +81,24 @@ const categoryService: CategoryService = {
       created_at: now,
       updated_at: now,
     } as categories;
+    // @ts-expect-error - Test mock extends db with categories table not in PediDatabase
     await db.categories.add(newCategory as any);
     return { id };
   },
 
   async getCategoryById(id) {
+    // @ts-expect-error - Test mock extends db with categories table not in PediDatabase
     return (await db.categories.get(id)) as categories | undefined;
   },
 
   async getCategoriesByRestaurant(restaurantId) {
+    // @ts-expect-error - Test mock extends db with categories table not in PediDatabase
     const all = await db.categories.toArray();
-    return all.filter(c => (c as any).restaurant_id === restaurantId) as categories[];
+    return all.filter((c: any) => (c as any).restaurant_id === restaurantId) as categories[];
   },
 
   async updateCategory(id, updates) {
+    // @ts-expect-error - Test mock extends db with categories table not in PediDatabase
     const existing = await db.categories.get(id) as categories | undefined;
     if (!existing) throw new Error('Category not found');
     const updated = {
@@ -103,13 +106,16 @@ const categoryService: CategoryService = {
       ...updates,
       updated_at: new Date().toISOString(),
     };
+    // @ts-expect-error - Test mock extends db with categories table not in PediDatabase
     await db.categories.put(updated as any);
     return updated;
   },
 
   async softDeleteCategory(id) {
+    // @ts-expect-error - Test mock extends db with categories table not in PediDatabase
     const existing = await db.categories.get(id) as categories | undefined;
     if (!existing) throw new Error('Category not found');
+    // @ts-expect-error - Test mock extends db with categories table not in PediDatabase
     await db.categories.put({
       ...existing,
       active: false,
@@ -120,6 +126,7 @@ const categoryService: CategoryService = {
 
 describe('categoryService', () => {
   beforeEach(() => {
+    // @ts-expect-error - Test mock extends db with categories table not in PediDatabase
     db._reset();
   });
 
@@ -166,12 +173,12 @@ describe('categoryService', () => {
         restaurant_id: 'rest-123',
         name: 'Entradas',
         active: true,
-      });
+      } as any);
       const cat2 = await categoryService.createCategory({
         restaurant_id: 'rest-123',
         name: 'Pratos Principais',
         active: true,
-      });
+      } as any);
 
       expect(cat1.id).not.toBe(cat2.id);
     });
@@ -183,7 +190,7 @@ describe('categoryService', () => {
         restaurant_id: 'rest-123',
         name: 'Bebidas',
         active: true,
-      });
+      } as any);
 
       const result = await categoryService.getCategoryById(created.id);
 
@@ -204,17 +211,17 @@ describe('categoryService', () => {
         restaurant_id: 'rest-123',
         name: 'Entradas',
         active: true,
-      });
+      } as any);
       await categoryService.createCategory({
         restaurant_id: 'rest-123',
         name: 'Pratos',
         active: true,
-      });
+      } as any);
       await categoryService.createCategory({
         restaurant_id: 'rest-456',
         name: 'Other Restaurant Category',
         active: true,
-      });
+      } as any);
 
       const result = await categoryService.getCategoriesByRestaurant('rest-123');
 
@@ -235,7 +242,7 @@ describe('categoryService', () => {
         restaurant_id: 'rest-123',
         name: 'Old Name',
         active: true,
-      });
+      } as any);
 
       const updated = await categoryService.updateCategory(created.id, { name: 'New Name' });
 
@@ -249,7 +256,7 @@ describe('categoryService', () => {
         name: 'Original',
         sort_order: 1,
         active: true,
-      });
+      } as any);
 
       const updated = await categoryService.updateCategory(created.id, {
         name: 'Updated',
@@ -268,7 +275,7 @@ describe('categoryService', () => {
         name: 'Category',
         description: 'Original description',
         active: true,
-      });
+      } as any);
 
       const updated = await categoryService.updateCategory(created.id, { name: 'New Name' });
 
@@ -290,7 +297,7 @@ describe('categoryService', () => {
         restaurant_id: 'rest-123',
         name: 'Category to Delete',
         active: true,
-      });
+      } as any);
 
       await categoryService.softDeleteCategory(created.id);
 
@@ -311,10 +318,11 @@ describe('categoryService', () => {
         restaurant_id: 'rest-123',
         name: 'Soft Deleted Category',
         active: true,
-      });
+      } as any);
 
       await categoryService.softDeleteCategory(created.id);
 
+      // @ts-expect-error - Test mock extends db with categories table
       const all = await db.categories.toArray();
       expect(all.length).toBe(1);
       expect(all[0].id).toBe(created.id);
@@ -325,12 +333,12 @@ describe('categoryService', () => {
         restaurant_id: 'rest-123',
         name: 'Active Category',
         active: true,
-      });
+      } as any);
       const softDeletedCat = await categoryService.createCategory({
         restaurant_id: 'rest-123',
         name: 'Will be Deleted',
         active: true,
-      });
+      } as any);
 
       await categoryService.softDeleteCategory(softDeletedCat.id);
 

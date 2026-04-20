@@ -1,40 +1,15 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { act } from 'react-dom/test-utils';
 
-// ── Local types (mirrors cartStore.ts) ────────────────────────────────────────
-
-interface CartItem {
-  id: string;
-  productId: string;
-  name: string;
-  quantity: number;
-  unitPrice: number;
-  modifiers: SelectedModifier[];
-  notes?: string;
-  comboId?: string;
-  bundlePrice?: number;
-  comboItems?: {
-    productId: string;
-    quantity: number;
-  }[];
-  createdAt: Date;
-}
-
-interface SelectedModifier {
-  group_id: string;
-  group_name: string;
-  modifier_id: string;
-  name: string;
-  price_adjustment: number;
-}
+import { CartItem, SelectedModifier, CartState } from '@/stores/cartStore';
 
 // ── Selectors (copied from cartStore.ts to test in isolation) ─────────────────
 
 export const getTotalItems = (state: CartState) =>
-  state.items.reduce((sum, item) => sum + item.quantity, 0);
+  state.items.reduce((sum: number, item: CartItem) => sum + item.quantity, 0);
 
 export const getTotalPrice = (state: CartState) =>
-  state.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
+  state.items.reduce((sum: number, item: CartItem) => sum + item.unitPrice * item.quantity, 0);
 
 // ── Test helpers ─────────────────────────────────────────────────────────────
 
@@ -80,8 +55,9 @@ function createCartStore(
 
   return {
     items,
+    isOpen: false,
 
-    addItem: (item) => {
+    addItem: (item: CartItemInput) => {
       const newItem: CartItem = {
         ...item,
         id: crypto.randomUUID(),
@@ -90,12 +66,12 @@ function createCartStore(
       items.push(newItem);
     },
 
-    removeItem: (id) => {
+    removeItem: (id: string) => {
       const idx = items.findIndex((i) => i.id === id);
       if (idx !== -1) items.splice(idx, 1);
     },
 
-    updateQuantity: (id, quantity) => {
+    updateQuantity: (id: string, quantity: number) => {
       if (quantity <= 0) {
         const idx = items.findIndex((i) => i.id === id);
         if (idx !== -1) items.splice(idx, 1);
@@ -297,8 +273,8 @@ describe('cartStore operations', () => {
     it('returns correct count', () => {
       const state = {
         items: [
-          { ...makeCartItem({ id: '1', quantity: 2 }), id: '1', createdAt: new Date() } as CartItem,
-          { ...makeCartItem({ id: '2', quantity: 3 }), id: '2', createdAt: new Date() } as CartItem,
+          { ...makeCartItem({ quantity: 2 }), id: '1', createdAt: new Date() } as CartItem,
+          { ...makeCartItem({ quantity: 3 }), id: '2', createdAt: new Date() } as CartItem,
         ],
         isOpen: false,
       };
@@ -309,9 +285,9 @@ describe('cartStore operations', () => {
     it('returns correct count with mixed quantities', () => {
       const state = {
         items: [
-          { ...makeCartItem({ id: '1', quantity: 1 }), id: '1', createdAt: new Date() } as CartItem,
-          { ...makeCartItem({ id: '2', quantity: 4 }), id: '2', createdAt: new Date() } as CartItem,
-          { ...makeCartItem({ id: '3', quantity: 2 }), id: '3', createdAt: new Date() } as CartItem,
+          { ...makeCartItem({ quantity: 1 }), id: '1', createdAt: new Date() } as CartItem,
+          { ...makeCartItem({ quantity: 4 }), id: '2', createdAt: new Date() } as CartItem,
+          { ...makeCartItem({ quantity: 2 }), id: '3', createdAt: new Date() } as CartItem,
         ],
         isOpen: false,
       };
@@ -332,7 +308,7 @@ describe('cartStore operations', () => {
       const state = {
         items: [
           {
-            ...makeCartItem({ id: '1', productId: 'prod-1', quantity: 2, unitPrice: 15 }),
+            ...makeCartItem({ productId: 'prod-1', quantity: 2, unitPrice: 15 }),
             id: '1',
             createdAt: new Date(),
             modifiers: [makeModifier({ price_adjustment: 3 })],
@@ -350,7 +326,6 @@ describe('cartStore operations', () => {
         items: [
           {
             ...makeCartItem({
-              id: '1',
               productId: 'combo-1',
               quantity: 1,
               unitPrice: 0,

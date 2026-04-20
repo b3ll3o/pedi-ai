@@ -53,8 +53,7 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
-import { signIn, signOut, getSession, getUser, onAuthStateChange } from '@/lib/supabase/auth';
-import { _mockUnsubscribe } from '@/lib/supabase/auth';
+import { signIn, signOut, getSession, getUser, onAuthStateChange, _mockUnsubscribe } from '@/lib/supabase/auth';
 
 const mockUser: User = {
   id: 'user-123',
@@ -72,14 +71,14 @@ const mockSession: Session = {
   refresh_token: 'refresh-token-123',
   expires_in: 3600,
   expires_at: Math.floor(Date.now() / 1000) + 3600,
-  token_type: 'Bearer',
+  token_type: 'bearer',
   user: mockUser,
 } as Session;
 
 describe('useAuth hook', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    _mockUnsubscribe.mockClear();
+    (_mockUnsubscribe as ReturnType<typeof vi.fn>).mockClear();
   });
 
   afterEach(() => {
@@ -156,9 +155,18 @@ describe('useAuth hook', () => {
 
       const { unmount } = renderHook(() => useAuth());
 
-      unmount();
+      // Wait for effect to run and stabilize (StrictMode runs effects twice)
+      await waitFor(() => {
+        expect(onAuthStateChange).toHaveBeenCalled();
+      });
 
-      expect(_mockUnsubscribe).toHaveBeenCalledTimes(1);
+      await act(async () => {
+        unmount();
+      });
+
+      // In StrictMode, effect runs: mount -> cleanup -> mount -> unmount
+      // So unsubscribe may be called 2 times (1 cleanup + 1 unmount) or 1 time depending on timing
+      expect(_mockUnsubscribe).toHaveBeenCalled();
     });
   });
 

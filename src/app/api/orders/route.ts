@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      restaurantId = table.restaurant_id
+      restaurantId = table.restaurant_id as string
     }
 
     // If no table_id, get first restaurant (for customer orders without table)
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      restaurantId = restaurants.id
+      restaurantId = restaurants.id as string
     }
 
     // Insert order
@@ -194,8 +194,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Insert order items
+    const orderId = order.id as string
     const orderItemsToInsert: Omit<order_items, 'id' | 'created_at'>[] = body.items.map(item => ({
-      order_id: order.id,
+      order_id: orderId,
       product_id: item.product_id,
       combo_id: null,
       quantity: item.quantity,
@@ -212,7 +213,7 @@ export async function POST(request: NextRequest) {
       if (itemsError) {
         console.error('Error inserting order items:', itemsError)
         // Rollback - delete the order
-        await supabase.from('orders').delete().eq('id', order.id)
+        await supabase.from('orders').delete().eq('id', orderId)
         return NextResponse.json(
           { error: 'Failed to create order items' },
           { status: 500 }

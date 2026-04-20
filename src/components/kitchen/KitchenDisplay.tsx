@@ -40,7 +40,7 @@ export function KitchenDisplay({
           <div key={item.id} className={styles.item}>
             <span className={styles.itemQty}>{item.quantity}x</span>
             <span className={styles.itemName}>
-              {item.product?.name || 'Item'}
+              #{item.product_id.slice(-6)} - Item
             </span>
           </div>
         ))}

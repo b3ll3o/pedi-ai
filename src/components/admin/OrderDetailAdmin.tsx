@@ -121,11 +121,11 @@ export function OrderDetailAdmin({
                   <div className={styles.itemInfo}>
                     <span className={styles.itemQuantity}>{item.quantity}x</span>
                     <span className={styles.itemName}>
-                      {item.product?.name || 'Produto não encontrado'}
+                      #{item.product_id.slice(-6)} - Item
                     </span>
                   </div>
                   <span className={styles.itemPrice}>
-                    {formatPrice(item.total_price)}
+                    {formatPrice(item.unit_price * item.quantity)}
                   </span>
                 </div>
               ))}

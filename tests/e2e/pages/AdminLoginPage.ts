@@ -28,7 +28,7 @@ export class AdminLoginPage {
   }
 
   async getError(): Promise<string> {
-    return this.errorMessage.textContent() ?? ''
+    return (await this.errorMessage.textContent()) ?? ''
   }
 
   async waitForDashboard(): Promise<void> {

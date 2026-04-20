@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import type { orders } from '@/lib/supabase/types'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -89,7 +90,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     // Validate status transition
-    const allowedTransitions = VALID_TRANSITIONS[currentOrder.status] || []
+    const currentStatus = currentOrder.status as orders['status']
+    const allowedTransitions = VALID_TRANSITIONS[currentStatus] || []
     if (!allowedTransitions.includes(status)) {
       return NextResponse.json(
         {

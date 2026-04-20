@@ -48,11 +48,11 @@ export class CartPage {
 
   async getItemPrice(productName: string): Promise<string> {
     const item = this.cartItems.filter({ hasText: productName })
-    return item.locator('[data-testid="item-price"]').textContent() ?? ''
+    return (await item.locator('[data-testid="item-price"]').textContent()) ?? ''
   }
 
   async getTotal(): Promise<string> {
-    return this.cartTotal.textContent() ?? ''
+    return (await this.cartTotal.textContent()) ?? ''
   }
 
   async proceedToCheckout(): Promise<void> {

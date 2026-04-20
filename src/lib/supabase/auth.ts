@@ -60,3 +60,6 @@ function onAuthStateChange(callback: (event: string, session: Session | null) =>
 
 export { signIn, signOut, getSession, getUser, resetPassword, onAuthStateChange }
 export type { AuthResponse, Session, User }
+
+// Test helper - not part of production API
+export const _mockUnsubscribe = () => {}

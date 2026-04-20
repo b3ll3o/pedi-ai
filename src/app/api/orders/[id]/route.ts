@@ -77,26 +77,26 @@ export async function GET(
     }
 
     const response: OrderResponse = {
-      id: order.id,
-      status: order.status,
-      payment_status: order.payment_status,
+      id: order.id as string,
+      status: order.status as orders['status'],
+      payment_status: order.payment_status as orders['payment_status'],
       items: items.map(item => ({
-        id: item.id,
-        order_id: item.order_id,
-        product_id: item.product_id,
-        combo_id: item.combo_id,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        total_price: item.total_price,
-        notes: item.notes
+        id: item.id as string,
+        order_id: item.order_id as string,
+        product_id: item.product_id as string,
+        combo_id: item.combo_id as string | null,
+        quantity: item.quantity as number,
+        unit_price: item.unit_price as number,
+        total_price: item.total_price as number,
+        notes: item.notes as string | null
       })),
       status_history: statusHistory.map(entry => ({
-        id: entry.id,
-        status: entry.status,
-        notes: entry.notes,
-        created_at: entry.created_at
+        id: entry.id as string,
+        status: entry.status as orders['status'],
+        notes: entry.notes as string | null,
+        created_at: entry.created_at as string
       })),
-      created_at: order.created_at
+      created_at: order.created_at as string
     }
 
     return NextResponse.json(response)

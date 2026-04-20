@@ -83,40 +83,40 @@ const productService: ProductService = {
       created_at: now,
       updated_at: now,
     } as products;
-    await db.products.add(newProduct as any);
+    await (db as any).products.add(newProduct as any);
     return { id };
   },
 
   async getProductById(id) {
-    return (await db.products.get(id)) as products | undefined;
+    return (await (db as any).products.get(id)) as products | undefined;
   },
 
   async getProductsByCategory(categoryId) {
-    const all = await db.products.toArray();
-    return all.filter(p => p.category_id === categoryId) as products[];
+    const all = await (db as any).products.toArray();
+    return all.filter((p: any) => p.category_id === categoryId) as products[];
   },
 
   async getAvailableProductsByCategory(categoryId) {
-    const all = await db.products.toArray();
-    return all.filter(p => p.category_id === categoryId && p.available === true) as products[];
+    const all = await (db as any).products.toArray();
+    return all.filter((p: any) => p.category_id === categoryId && p.available === true) as products[];
   },
 
   async updateProduct(id, updates) {
-    const existing = await db.products.get(id) as products | undefined;
+    const existing = await (db as any).products.get(id) as products | undefined;
     if (!existing) throw new Error('Product not found');
     const updated = {
       ...existing,
       ...updates,
       updated_at: new Date().toISOString(),
     };
-    await db.products.put(updated as any);
+    await (db as any).products.put(updated as any);
     return updated;
   },
 
   async softDeleteProduct(id) {
-    const existing = await db.products.get(id) as products | undefined;
+    const existing = await (db as any).products.get(id) as products | undefined;
     if (!existing) throw new Error('Product not found');
-    await db.products.put({
+    await (db as any).products.put({
       ...existing,
       available: false,
       updated_at: new Date().toISOString(),
@@ -126,7 +126,7 @@ const productService: ProductService = {
 
 describe('productService', () => {
   beforeEach(() => {
-    db._reset();
+    (db as any)._reset();
   });
 
   describe('createProduct', () => {
@@ -167,7 +167,7 @@ describe('productService', () => {
         sort_order: 2,
       };
 
-      const result = await productService.createProduct(productData);
+      const result = await productService.createProduct(productData as any);
       const retrieved = await productService.getProductById(result.id);
 
       expect(retrieved?.dietary_labels).toEqual(['vegetarian', 'gluten-free']);
@@ -179,13 +179,13 @@ describe('productService', () => {
         name: 'Product 1',
         price: 10,
         available: true,
-      });
+      } as any);
       const prod2 = await productService.createProduct({
         category_id: 'cat-123',
         name: 'Product 2',
         price: 20,
         available: true,
-      });
+      } as any);
 
       expect(prod1.id).not.toBe(prod2.id);
     });
@@ -196,7 +196,7 @@ describe('productService', () => {
         name: 'Test Product',
         price: 10,
         available: true,
-      });
+      } as any);
 
       const retrieved = await productService.getProductById(result.id);
       expect(retrieved?.created_at).toBeDefined();
@@ -211,7 +211,7 @@ describe('productService', () => {
         name: 'Test Product',
         price: 15.99,
         available: true,
-      });
+      } as any);
 
       const result = await productService.getProductById(created.id);
 
@@ -234,19 +234,19 @@ describe('productService', () => {
         name: 'Product A',
         price: 10,
         available: true,
-      });
+      } as any);
       await productService.createProduct({
         category_id: 'cat-123',
         name: 'Product B',
         price: 20,
         available: true,
-      });
+      } as any);
       await productService.createProduct({
         category_id: 'cat-456',
         name: 'Product C',
         price: 30,
         available: true,
-      });
+      } as any);
 
       const result = await productService.getProductsByCategory('cat-123');
 
@@ -266,13 +266,13 @@ describe('productService', () => {
         name: 'Available Product',
         price: 10,
         available: true,
-      });
+      } as any);
       await productService.createProduct({
         category_id: 'cat-123',
         name: 'Unavailable Product',
         price: 20,
         available: false,
-      });
+      } as any);
 
       const result = await productService.getProductsByCategory('cat-123');
 
@@ -287,13 +287,13 @@ describe('productService', () => {
         name: 'Available Product',
         price: 10,
         available: true,
-      });
+      } as any);
       await productService.createProduct({
         category_id: 'cat-123',
         name: 'Unavailable Product',
         price: 20,
         available: false,
-      });
+      } as any);
 
       const result = await productService.getAvailableProductsByCategory('cat-123');
 
@@ -308,7 +308,7 @@ describe('productService', () => {
         name: 'Unavailable Product',
         price: 10,
         available: false,
-      });
+      } as any);
 
       const result = await productService.getAvailableProductsByCategory('cat-123');
 
@@ -323,7 +323,7 @@ describe('productService', () => {
         name: 'Old Name',
         price: 10,
         available: true,
-      });
+      } as any);
 
       const updated = await productService.updateProduct(created.id, { name: 'New Name' });
 
@@ -337,7 +337,7 @@ describe('productService', () => {
         name: 'Product',
         price: 10,
         available: true,
-      });
+      } as any);
 
       const updated = await productService.updateProduct(created.id, { price: 15.99 });
 
@@ -351,7 +351,7 @@ describe('productService', () => {
         price: 10,
         available: true,
         sort_order: 1,
-      });
+      } as any);
 
       const updated = await productService.updateProduct(created.id, {
         name: 'Updated',
@@ -373,7 +373,7 @@ describe('productService', () => {
         description: 'Original description',
         price: 10,
         available: true,
-      });
+      } as any);
 
       const updated = await productService.updateProduct(created.id, { name: 'New Name' });
 
@@ -395,7 +395,7 @@ describe('productService', () => {
         name: 'Product',
         price: 10,
         available: true,
-      });
+      } as any);
 
       const updated = await productService.updateProduct(created.id, { available: false });
 
@@ -410,7 +410,7 @@ describe('productService', () => {
         name: 'Product to Delete',
         price: 10,
         available: true,
-      });
+      } as any);
 
       await productService.softDeleteProduct(created.id);
 
@@ -432,11 +432,11 @@ describe('productService', () => {
         name: 'Soft Deleted Product',
         price: 10,
         available: true,
-      });
+      } as any);
 
       await productService.softDeleteProduct(created.id);
 
-      const all = await db.products.toArray();
+      const all = await (db as any).products.toArray();
       expect(all.length).toBe(1);
       expect(all[0].id).toBe(created.id);
     });
@@ -447,13 +447,13 @@ describe('productService', () => {
         name: 'Active Product',
         price: 10,
         available: true,
-      });
+      } as any);
       const softDeletedProd = await productService.createProduct({
         category_id: 'cat-123',
         name: 'Will be Deleted',
         price: 20,
         available: true,
-      });
+      } as any);
 
       await productService.softDeleteProduct(softDeletedProd.id);
 
@@ -469,7 +469,7 @@ describe('productService', () => {
         name: 'Soft Deleted Product',
         price: 10,
         available: true,
-      });
+      } as any);
 
       await productService.softDeleteProduct(softDeletedProd.id);
 
@@ -485,7 +485,7 @@ describe('productService', () => {
         name: 'Product',
         price: 10,
         available: true,
-      });
+      } as any);
 
       const beforeDelete = (await productService.getProductById(created.id))?.updated_at;
 

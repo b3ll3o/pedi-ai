@@ -64,6 +64,7 @@ vi.mock('@/lib/offline/db', () => {
 
 // Import after mock
 import { db } from '@/lib/offline/db';
+const dbAny = db as any;
 import type { modifier_groups, modifier_values } from '@/lib/supabase/types';
 
 // Modifier Group service interface
@@ -95,34 +96,34 @@ const modifierGroupService: ModifierGroupService = {
       id,
       created_at: now,
     } as modifier_groups;
-    await db.modifier_groups.add(newGroup as any);
+    await dbAny.modifier_groups.add(newGroup as any);
     return { id };
   },
 
   async getModifierGroupById(id) {
-    return (await db.modifier_groups.get(id)) as modifier_groups | undefined;
+    return (await dbAny.modifier_groups.get(id)) as modifier_groups | undefined;
   },
 
   async getModifierGroupsByRestaurant(restaurantId) {
-    const all = await db.modifier_groups.toArray();
-    return all.filter(g => (g as any).restaurant_id === restaurantId) as modifier_groups[];
+    const all = await dbAny.modifier_groups.toArray();
+    return all.filter((g: any) => (g as any).restaurant_id === restaurantId) as modifier_groups[];
   },
 
   async updateModifierGroup(id, updates) {
-    const existing = await db.modifier_groups.get(id) as modifier_groups | undefined;
+    const existing = await dbAny.modifier_groups.get(id) as modifier_groups | undefined;
     if (!existing) throw new Error('Modifier group not found');
     const updated = {
       ...existing,
       ...updates,
     };
-    await db.modifier_groups.put(updated as any);
+    await dbAny.modifier_groups.put(updated as any);
     return updated;
   },
 
   async softDeleteModifierGroup(id) {
-    const existing = await db.modifier_groups.get(id) as modifier_groups | undefined;
+    const existing = await dbAny.modifier_groups.get(id) as modifier_groups | undefined;
     if (!existing) throw new Error('Modifier group not found');
-    await db.modifier_groups.put({
+    await dbAny.modifier_groups.put({
       ...existing,
       required: false,
     } as any);
@@ -139,39 +140,39 @@ const modifierValueService: ModifierValueService = {
       id,
       created_at: now,
     } as modifier_values;
-    await db.modifier_values.add(newValue as any);
+    await dbAny.modifier_values.add(newValue as any);
     return { id };
   },
 
   async getModifierValueById(id) {
-    return (await db.modifier_values.get(id)) as modifier_values | undefined;
+    return (await dbAny.modifier_values.get(id)) as modifier_values | undefined;
   },
 
   async getModifierValuesByGroup(groupId) {
-    const all = await db.modifier_values.toArray();
-    return all.filter(v => (v as any).modifier_group_id === groupId) as modifier_values[];
+    const all = await dbAny.modifier_values.toArray();
+    return all.filter((v: any) => (v as any).modifier_group_id === groupId) as modifier_values[];
   },
 
   async getAvailableModifierValuesByGroup(groupId) {
-    const all = await db.modifier_values.toArray();
-    return all.filter(v => (v as any).modifier_group_id === groupId && v.available === true) as modifier_values[];
+    const all = await dbAny.modifier_values.toArray();
+    return all.filter((v: any) => (v as any).modifier_group_id === groupId && v.available === true) as modifier_values[];
   },
 
   async updateModifierValue(id, updates) {
-    const existing = await db.modifier_values.get(id) as modifier_values | undefined;
+    const existing = await dbAny.modifier_values.get(id) as modifier_values | undefined;
     if (!existing) throw new Error('Modifier value not found');
     const updated = {
       ...existing,
       ...updates,
     };
-    await db.modifier_values.put(updated as any);
+    await dbAny.modifier_values.put(updated as any);
     return updated;
   },
 
   async softDeleteModifierValue(id) {
-    const existing = await db.modifier_values.get(id) as modifier_values | undefined;
+    const existing = await dbAny.modifier_values.get(id) as modifier_values | undefined;
     if (!existing) throw new Error('Modifier value not found');
-    await db.modifier_values.put({
+    await dbAny.modifier_values.put({
       ...existing,
       available: false,
     } as any);
@@ -180,7 +181,7 @@ const modifierValueService: ModifierValueService = {
 
 describe('modifierGroupService', () => {
   beforeEach(() => {
-    db._reset();
+    dbAny._reset();
   });
 
   describe('createModifierGroup', () => {
@@ -422,7 +423,7 @@ describe('modifierGroupService', () => {
 
       await modifierGroupService.softDeleteModifierGroup(created.id);
 
-      const all = await db.modifier_groups.toArray();
+      const all = await dbAny.modifier_groups.toArray();
       expect(all.length).toBe(1);
       expect(all[0].id).toBe(created.id);
     });
@@ -431,7 +432,7 @@ describe('modifierGroupService', () => {
 
 describe('modifierValueService', () => {
   beforeEach(() => {
-    db._reset();
+    dbAny._reset();
   });
 
   describe('createModifierValue', () => {
@@ -740,7 +741,7 @@ describe('modifierValueService', () => {
 
       await modifierValueService.softDeleteModifierValue(created.id);
 
-      const all = await db.modifier_values.toArray();
+      const all = await dbAny.modifier_values.toArray();
       expect(all.length).toBe(1);
       expect(all[0].id).toBe(created.id);
     });

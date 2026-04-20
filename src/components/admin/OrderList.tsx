@@ -187,7 +187,7 @@ export function OrderList({
                     {order.status === 'confirmed' && <option value="preparing">Iniciar preparo</option>}
                     {order.status === 'preparing' && <option value="ready">Marcar como pronto</option>}
                     {order.status === 'ready' && <option value="delivered">Marcar como entregue</option>}
-                    {order.status !== 'cancelled' && <option value="cancelled">Cancelar</option>}
+                    <option value="cancelled">Cancelar</option>
                   </select>
                 )}
               </div>

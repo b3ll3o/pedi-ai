@@ -171,7 +171,7 @@ export function CartDrawer() {
                         +
                       </button>
                     </div>
-                    <span className={styles.itemPrice}>{formatPrice(item.total_price)}</span>
+                    <span className={styles.itemPrice}>{formatPrice(item.unitPrice * item.quantity)}</span>
                   </div>
                 </li>
               ))}

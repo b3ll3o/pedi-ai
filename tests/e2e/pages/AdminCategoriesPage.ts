@@ -60,6 +60,6 @@ export class AdminCategoriesPage {
   }
 
   async getError(): Promise<string> {
-    return this.errorMessage.textContent() ?? ''
+    return (await this.errorMessage.textContent()) ?? ''
   }
 }

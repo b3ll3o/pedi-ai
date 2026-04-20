@@ -32,7 +32,7 @@ export function OrderStatus({ orderId }: OrderStatusProps) {
       .select("*")
       .eq("order_id", orderId)
       .order("created_at", { ascending: true })
-    if (data) setHistory(data)
+    if (data) setHistory(data as order_status_history[])
   }, [supabase, orderId])
 
   const loadCurrentStatus = useCallback(async () => {

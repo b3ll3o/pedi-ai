@@ -30,7 +30,7 @@ export class OrderPage {
   }
 
   async getOrderIdValue(): Promise<string> {
-    return this.orderId.textContent() ?? ''
+    return (await this.orderId.textContent()) ?? ''
   }
 
   async getStatus(): Promise<OrderStatus> {
@@ -52,7 +52,7 @@ export class OrderPage {
   }
 
   async getTotal(): Promise<string> {
-    return this.orderTotal.textContent() ?? ''
+    return (await this.orderTotal.textContent()) ?? ''
   }
 
   async isPaymentConfirmed(): Promise<boolean> {

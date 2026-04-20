@@ -70,9 +70,9 @@ export async function POST(request: NextRequest) {
 
     // Return table info
     const tableResponse: TableResponse = {
-      id: table.id,
-      name: table.name ?? `Mesa ${table.number}`,
-      number: table.number
+      id: table.id as string,
+      name: (table.name ?? `Mesa ${table.number}`) as string,
+      number: table.number as number
     }
 
     return NextResponse.json({ valid: true, table: tableResponse })

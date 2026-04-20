@@ -101,7 +101,7 @@ export interface SelectedModifier {
   price_adjustment: number;
 }
 
-interface CartState {
+export interface CartState {
   items: CartItem[];
   isOpen: boolean;
 }

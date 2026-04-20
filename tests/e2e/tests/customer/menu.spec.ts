@@ -42,7 +42,7 @@ test.describe('Menu', () => {
   test('should display product price correctly', async ({ guest }) => {
     const menu = new MenuPage(guest)
     const price = await menu.getProductPrice('Coca-Cola')
-    expect(price).toMatch(/R\$\s*[\d,]+/)
+    expect(await price.textContent()).toMatch(/R\$\s*[\d,]+/)
   })
 
   test('should navigate between categories', async ({ guest }) => {

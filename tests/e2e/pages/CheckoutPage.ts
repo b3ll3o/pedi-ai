@@ -56,7 +56,7 @@ export class CheckoutPage {
   }
 
   async getError(): Promise<string> {
-    return this.errorMessage.textContent() ?? ''
+    return (await this.errorMessage.textContent()) ?? ''
   }
 
   async waitForConfirmation(): Promise<void> {

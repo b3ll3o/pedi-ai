@@ -11,7 +11,7 @@ import type { OrderWithItems } from '@/services/adminOrderService'
 const POLLING_INTERVAL = 10000 // 10 seconds fallback
 
 export interface UseRealtimeOrdersOptions {
-  restaurantId: string
+  restaurantId?: string
   enabled?: boolean
   pollingInterval?: number
 }
@@ -38,10 +38,9 @@ export function useRealtimeOrders({
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['admin-orders', restaurantId],
     queryFn: async (): Promise<OrderWithItems[]> => {
-      const params = new URLSearchParams({
-        restaurant_id: restaurantId,
-        status: 'pending,confirmed,preparing,ready', // Active orders
-      })
+      const params = new URLSearchParams()
+      params.set('restaurant_id', restaurantId ?? '')
+      params.set('status', 'pending,confirmed,preparing,ready') // Active orders
 
       const response = await fetch(`/api/admin/orders?${params.toString()}`)
       if (!response.ok) {
