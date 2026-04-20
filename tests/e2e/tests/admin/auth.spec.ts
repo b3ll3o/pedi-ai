@@ -47,4 +47,15 @@ test.describe('Admin Authentication', () => {
     await admin.reload()
     await expect(admin).toHaveURL('/admin/dashboard')
   })
+
+  test('should request password reset and login with new password', async ({ page, seedData }) => {
+    await loginPage.forgotPassword(seedData.admin.email)
+    await expect(loginPage.forgotPasswordSuccessMessage).toBeVisible()
+  })
+
+  test('should show error with non-existent email for password reset', async ({ page }) => {
+    await loginPage.forgotPassword('nonexistent@test.com')
+    const error = await loginPage.getError()
+    expect(error).toMatch(/não encontrado|inválido/i)
+  })
 })

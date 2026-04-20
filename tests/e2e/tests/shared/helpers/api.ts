@@ -2,7 +2,7 @@ import { APIRequestContext } from '@playwright/test'
 
 export interface SeedData {
   customer: { email: string; password: string; id: string }
-  admin: { email: string; password: string; id: string }
+  admin: { email: string; password: string; id: string; resetToken: string }
   waiter: { email: string; password: string; id: string }
   table: { id: string; code: string }
   categories: Array<{ id: string; name: string }>
@@ -29,6 +29,7 @@ export async function createTestData(): Promise<SeedData> {
     email: generateEmail(),
     password: 'AdminPassword123!',
     id: generateId(),
+    resetToken: `reset-token-${generateId()}`,
   }
 
   const waiter = {

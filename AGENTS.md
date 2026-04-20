@@ -77,4 +77,41 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Verificar que não há conteúdo duplicado (usar canonical tags)
 - Adicionar `@nuxtjs/google-fonts` ou `next/font` para fontes otimizadas
 
+## Qualidade & Testes
+
+### Cobertura de Testes Unitários
+
+- **Cobertura mínima**: A cobertura de testes unitários DEVE ser de pelo menos **80%** para todas as métricas (statements, branches, functions, lines)
+- Verificar cobertura com `npm run test:coverage` ou comando equivalente
+- Métricas de cobertura devem ser monitoradas em CI/CD
+- Arquivos com cobertura abaixo do limiar devem ser tratados como dívida técnica
+
+### Testes de Integração e E2E
+
+- **Todos os fluxos principais DEVEM ser cobertos** por testes de integração e E2E
+- Fluxos obrigatórios incluem:
+  - Fluxo de pedido completo (montar carrinho → fechar pedido → pagamento)
+  - Fluxo de autenticação (login, logout, recuperação de senha)
+  - Fluxo offline (precisar executar online, sync ao reconectar)
+  - Fluxo de administração (CRUD de cardápio, mesas, pedidos)
+- Testes E2E usar Playwright (preferencial) ou Cypress
+- Testes de integração usar Vitest com mocks de APIs
+- Configurar pipelines de CI para rodar todos os testes automaticamente
+
+### Manutenção de Testes E2E
+
+- **Testes E2E DEVEM ser atualizados IMEDIATAMENTE** sempre que:
+  - Uma nova funcionalidade for adicionada
+  - Uma funcionalidade existente for modificada
+  - Um bug for corrigido
+  - Uma mudança de UI/UX for implementada
+- **Todos os fluxos da aplicação DEVEM ter teste E2E**, incluindo:
+  - Fluxos de usuário (cliente, admin, garçom)
+  - Fluxos de negócio (pedidos, pagamentos, autenticação)
+  - Fluxos de admin (CRUD de cardápio, mesas, pedidos, usuários)
+  - Fluxos de edge cases e tratamento de erros
+- **Antes de.merge de PR**: Todos os testes E2E DEVEM passar localmente
+- **CI/CD**: Pipeline E2E deve bloquear merge se testes falharem
+- **Cobertura de fluxos**: Manter inventário atualizado de fluxos cobertos em `tests/e2e/README.md`
+
 <!-- END:pedi-ai-rules -->

@@ -7,6 +7,14 @@ export class AdminLoginPage {
   readonly loginButton: Locator
   readonly errorMessage: Locator
   readonly rememberMeCheckbox: Locator
+  readonly forgotPasswordLink: Locator
+  readonly forgotPasswordEmailInput: Locator
+  readonly forgotPasswordSubmitButton: Locator
+  readonly forgotPasswordSuccessMessage: Locator
+  readonly newPasswordInput: Locator
+  readonly confirmPasswordInput: Locator
+  readonly resetPasswordButton: Locator
+  readonly resetSuccessMessage: Locator
 
   constructor(page: Page) {
     this.page = page
@@ -15,6 +23,14 @@ export class AdminLoginPage {
     this.loginButton = page.locator('[data-testid="login-button"]')
     this.errorMessage = page.locator('[data-testid="error-message"]')
     this.rememberMeCheckbox = page.locator('[data-testid="remember-me-checkbox"]')
+    this.forgotPasswordLink = page.locator('[data-testid="forgot-password-link"]')
+    this.forgotPasswordEmailInput = page.locator('[data-testid="forgot-password-email"]')
+    this.forgotPasswordSubmitButton = page.locator('[data-testid="forgot-password-submit"]')
+    this.forgotPasswordSuccessMessage = page.locator('[data-testid="forgot-password-success"]')
+    this.newPasswordInput = page.locator('[data-testid="new-password-input"]')
+    this.confirmPasswordInput = page.locator('[data-testid="confirm-password-input"]')
+    this.resetPasswordButton = page.locator('[data-testid="reset-password-button"]')
+    this.resetSuccessMessage = page.locator('[data-testid="reset-success-message"]')
   }
 
   async goto(): Promise<void> {
@@ -33,5 +49,21 @@ export class AdminLoginPage {
 
   async waitForDashboard(): Promise<void> {
     await this.page.waitForURL('/admin/dashboard', { timeout: 30_000 })
+  }
+
+  async gotoResetPassword(token: string): Promise<void> {
+    await this.page.goto('/admin/reset-password?token=' + token)
+  }
+
+  async forgotPassword(email: string): Promise<void> {
+    await this.forgotPasswordLink.click()
+    await this.forgotPasswordEmailInput.fill(email)
+    await this.forgotPasswordSubmitButton.click()
+  }
+
+  async submitNewPassword(newPassword: string): Promise<void> {
+    await this.newPasswordInput.fill(newPassword)
+    await this.confirmPasswordInput.fill(newPassword)
+    await this.resetPasswordButton.click()
   }
 }

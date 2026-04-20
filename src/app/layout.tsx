@@ -21,7 +21,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   title: {
-    default: 'PediAI - Cardápio Digital para Restaurantes | Funciona Offline',
+    default: 'PediAI - Cardápio Digital Restaurante | Offline',
     template: '%s | PediAI',
   },
   description: 'Cardápio digital que funciona offline para restaurantes. Pedidos em tempo real, QR Codes por mesa, Kitchen Display e muito mais. Teste grátis 14 dias.',
@@ -58,7 +58,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'PediAI - Cardápio Digital para Restaurantes | Funciona Offline',
+    title: 'PediAI - Cardápio Digital Restaurante | Offline',
     description: 'Cardápio digital que funciona offline para restaurantes. Pedidos em tempo real, QR Codes por mesa, Kitchen Display. Teste grátis 14 dias.',
     images: ['/og-image.png'],
     creator: '@pediai',
@@ -127,6 +127,17 @@ export default function RootLayout({
                     'https://twitter.com/pediai',
                     'https://instagram.com/pediai',
                   ],
+                },
+                {
+                  '@type': 'FoodEstablishment',
+                  '@id': `${BASE_URL}/#restaurant`,
+                  name: 'PediAI',
+                  url: BASE_URL,
+                  description: 'Cardápio digital que funciona offline para restaurantes',
+                  servesCuisine: 'Brasileira',
+                  priceRange: '$$',
+                  acceptsReservations: true,
+                  hasMenu: `${BASE_URL}/menu`,
                 },
                 {
                   '@type': 'FAQPage',

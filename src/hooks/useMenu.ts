@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import type { categories, products, restaurants } from '@/lib/supabase/types';
+import { getCachedMenu } from '@/lib/offline/cache';
+import { useMenuStore } from '@/stores/menuStore';
 
 export type MenuResponse = {
   restaurant: restaurants;
@@ -8,6 +10,7 @@ export type MenuResponse = {
 
 /**
  * Fetches the menu for a specific restaurant.
+ * Falls back to cached menu from IndexedDB if API fails (offline).
  *
  * @param restaurantId - The ID of the restaurant
  * @returns UseQueryResult<MenuResponse> with menu data
@@ -21,18 +24,37 @@ export function useMenu(restaurantId: string) {
   return useQuery<MenuResponse>({
     queryKey: ['menu', restaurantId],
     queryFn: async () => {
-      const response = await fetch(
-        `/api/menu?restaurant_id=${encodeURIComponent(restaurantId)}`
-      );
+      try {
+        const response = await fetch(
+          `/api/menu?restaurant_id=${encodeURIComponent(restaurantId)}`
+        );
 
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({ message: response.statusText }));
-        throw new Error(error.message ?? `Failed to fetch menu: ${response.status}`);
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({ message: response.statusText }));
+          throw new Error(error.message ?? `Falha ao buscar cardápio: ${response.status}`);
+        }
+
+        return response.json();
+      } catch {
+        // Offline ou erro → tentar usar cache do IndexedDB
+        const cached = await getCachedMenu();
+        if (cached) {
+          // Hydrate menuStore com dados do cache
+          useMenuStore.getState().setCategories(cached.categories as categories[]);
+          useMenuStore.getState().setProducts(cached.products as products[]);
+          useMenuStore.getState().setModifierGroups(cached.modifiers as never[]);
+
+          // Retornar estrutura compatível com MenuResponse
+          return {
+            restaurant: { id: restaurantId, name: '', created_at: '' } as restaurants,
+            categories: cached.categories as (categories & { products: products[] })[],
+          };
+        }
+        throw new Error('Sem conexão e cardápio não disponível em cache');
       }
-
-      return response.json();
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: true,
+    retry: 1,
   });
 }

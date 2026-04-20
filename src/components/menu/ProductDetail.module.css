@@ -294,8 +294,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   background-color: var(--button-bg, #f5f5f5);
   border: none;
   border-radius: 8px;

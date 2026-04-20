@@ -6,6 +6,7 @@
 import { useTableStore } from '@/stores/tableStore'
 import type { CartItem } from '@/stores/cartStore'
 import type { orders, order_items } from '@/lib/supabase/types'
+import { queueOrderForSync } from '@/lib/offline/sync'
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -170,20 +171,44 @@ export async function createOrderFromCart({
   )
 
   // Call the orders API
-  const response = await fetch('/api/orders', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Idempotency-Key': idempotencyKey,
-    },
-    body: JSON.stringify({ order: orderPayload, items: itemsPayload }),
-  })
+  try {
+    const response = await fetch('/api/orders', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Idempotency-Key': idempotencyKey,
+      },
+      body: JSON.stringify({ order: orderPayload, items: itemsPayload }),
+    })
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Unknown error' }))
-    throw new Error(error.error || 'Failed to create order')
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Erro desconhecido' }))
+      throw new Error(error.error || 'Falha ao criar pedido')
+    }
+
+    const createdOrder: Order = await response.json()
+    return createdOrder
+  } catch {
+    // Offline ou erro de rede → enfileirar para sincronização
+    await queueOrderForSync({ order: orderPayload, items: itemsPayload })
+
+    // Retornar pedido simulado com status pending para UI
+    // O status real será 'pending' quando for sincronizado
+    const offlineOrder: Order = {
+      id: `offline-${Date.now()}`,
+      restaurant_id: restId,
+      table_id: tableId,
+      customer_id: customerId || null,
+      status: 'pending',
+      subtotal,
+      tax,
+      total,
+      payment_method: mapPaymentMethod(paymentMethod),
+      payment_status: 'pending',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      items: itemsPayload as order_items[],
+    }
+    return offlineOrder
   }
-
-  const createdOrder: Order = await response.json()
-  return createdOrder
 }

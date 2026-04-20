@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { processQueue } from '@/lib/offline/sync';
 
 export function OfflineIndicator() {
   const [isOnline, setIsOnline] = useState(true);
@@ -13,6 +14,8 @@ export function OfflineIndicator() {
       setIsOnline(true);
       setShowRestored(true);
       setTimeout(() => setShowRestored(false), 3000);
+      // Sincronizar pedidos pendentes ao reconectar
+      processQueue();
     }
 
     function onOffline() {

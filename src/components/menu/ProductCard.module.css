@@ -177,7 +177,7 @@
 }
 
 /* Mobile-first: full width on small screens */
-@media (max-width: 768px) {
+@media (min-width: 769px) {
   .card {
     flex-direction: column;
   }

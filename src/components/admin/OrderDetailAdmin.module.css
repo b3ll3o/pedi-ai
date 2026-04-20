@@ -42,13 +42,13 @@
 
 .content {
   display: grid;
-  grid-template-columns: 1fr 360px;
+  grid-template-columns: 1fr;
   gap: 24px;
 }
 
-@media (max-width: 768px) {
+@media (min-width: 769px) {
   .content {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 360px;
   }
 }
 

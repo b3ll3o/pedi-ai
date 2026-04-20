@@ -109,7 +109,7 @@
   }
 }
 
-@media (max-width: 480px) {
+@media (min-width: 481px) {
   .form {
     gap: 16px;
   }

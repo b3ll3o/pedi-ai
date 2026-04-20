@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import styles from "./page.module.css";
 import {
   Smartphone,
@@ -25,6 +26,20 @@ import {
   AlertCircle,
 } from "lucide-react";
 
+export const metadata: Metadata = {
+  title: 'Cardápio Digital Restaurantes | Pedi-AI - Funciona Offline',
+  description: 'Cardápio digital que funciona offline para restaurantes. Pedidos em tempo real, QR Codes por mesa, Kitchen Display e muito mais. Teste grátis 14 dias.',
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    title: 'Cardápio Digital Restaurantes | Pedi-AI',
+    description: 'Cardápio digital que funciona offline para restaurantes. Teste grátis 14 dias.',
+    url: '/',
+    type: 'website',
+  },
+};
+
 export default function Home() {
   return (
     <div className={styles.page}>
@@ -39,7 +54,7 @@ export default function Home() {
             <a href="#features" className={styles.navLink}>Features</a>
             <a href="#pricing" className={styles.navLink}>Preços</a>
           </div>
-          <a href="/register" className={styles.navCta}>
+          <a href="/register" aria-label="Criar conta gratuita no Pedi-AI" className={styles.navCta}>
             Começar Agora
           </a>
         </div>
@@ -74,11 +89,11 @@ export default function Home() {
             </span>
           </div>
           <div className={styles.heroCtas}>
-            <a href="/register" className={styles.ctaPrimary}>
+            <a href="/register" aria-label="Criar conta gratuita no Pedi-AI" className={styles.ctaPrimary}>
               Começar Gratuitamente
               <ArrowRight size={18} />
             </a>
-            <a href="#how-it-works" className={styles.ctaSecondary}>
+            <a href="#how-it-works" aria-label="Ver como funciona o Pedi-AI" className={styles.ctaSecondary}>
               Ver Como Funciona
             </a>
           </div>
