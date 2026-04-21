@@ -3,14 +3,14 @@ import MenuPageClient from './MenuPageClient';
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: 'Cardápio | Pedi-AI',
-    description: 'Navegue pelo cardápio digital do restaurante. Explore categorias e produtos disponíveis.',
+    title: 'Cardápio Digital | Pedi-AI - Faça Seu Pedido Online',
+    description: 'Explore o cardápio digital do restaurante. Veja categorias, produtos e faça seu pedido online. Funciona offline e descubra promoções.',
     alternates: {
       canonical: '/menu',
     },
     openGraph: {
-      title: 'Cardápio | Pedi-AI',
-      description: 'Navegue pelo cardápio digital do restaurante.',
+      title: 'Cardápio Digital | Pedi-AI',
+      description: 'Explore o cardápio digital do restaurante e faça seu pedido online.',
       url: '/menu',
       type: 'website',
     },

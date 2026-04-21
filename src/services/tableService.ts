@@ -151,6 +151,10 @@ export async function validateTableQR(
     return false
   }
 
-  const result = await response.json()
-  return result.valid === true
+  try {
+    const result = await response.json()
+    return result.valid === true
+  } catch {
+    return false
+  }
 }

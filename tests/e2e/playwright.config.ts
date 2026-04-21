@@ -67,6 +67,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'pnpm dev',
+    cwd: process.cwd(),
     url: 'http://localhost:3000',
     reuseExistingServer: !isCI,
     timeout: 120_000,

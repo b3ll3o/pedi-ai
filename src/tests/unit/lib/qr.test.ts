@@ -75,6 +75,118 @@ describe('QR Validator', () => {
       expect(result).toEqual({ valid: true });
     });
 
+    it('rejects missing restaurant_id', () => {
+      const payload = {
+        restaurant_id: '',
+        table_id: 'f1e2d3c4-b5a6-9870-dcba-fedc09876543',
+        timestamp: Date.now(),
+        signature: 'some-sig',
+      };
+
+      const result = validateQRPayload(payload, 'secret');
+
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe('Missing required fields');
+    });
+
+    it('rejects missing table_id', () => {
+      const payload = {
+        restaurant_id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        table_id: '',
+        timestamp: Date.now(),
+        signature: 'some-sig',
+      };
+
+      const result = validateQRPayload(payload, 'secret');
+
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe('Missing required fields');
+    });
+
+    it('rejects undefined timestamp', () => {
+      const payload = {
+        restaurant_id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        table_id: 'f1e2d3c4-b5a6-9870-dcba-fedc09876543',
+        timestamp: undefined,
+        signature: 'some-sig',
+      };
+
+      const result = validateQRPayload(payload, 'secret');
+
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe('Missing required fields');
+    });
+
+    it('rejects missing signature', () => {
+      const payload = {
+        restaurant_id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        table_id: 'f1e2d3c4-b5a6-9870-dcba-fedc09876543',
+        timestamp: Date.now(),
+        signature: '',
+      };
+
+      const result = validateQRPayload(payload, 'secret');
+
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe('Missing required fields');
+    });
+
+    it('rejects invalid restaurant_id format (not UUID)', () => {
+      const payload = {
+        restaurant_id: 'not-a-uuid',
+        table_id: 'f1e2d3c4-b5a6-9870-dcba-fedc09876543',
+        timestamp: Date.now(),
+        signature: 'some-sig',
+      };
+
+      const result = validateQRPayload(payload, 'secret');
+
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe('Invalid restaurant_id format');
+    });
+
+    it('rejects invalid table_id format (not UUID)', () => {
+      const payload = {
+        restaurant_id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        table_id: 'not-a-uuid',
+        timestamp: Date.now(),
+        signature: 'some-sig',
+      };
+
+      const result = validateQRPayload(payload, 'secret');
+
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe('Invalid table_id format');
+    });
+
+    it('rejects negative timestamp', () => {
+      const payload = {
+        restaurant_id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        table_id: 'f1e2d3c4-b5a6-9870-dcba-fedc09876543',
+        timestamp: -1,
+        signature: 'some-sig',
+      };
+
+      const result = validateQRPayload(payload, 'secret');
+
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe('Timestamp expired or invalid');
+    });
+
+    it('rejects future timestamp', () => {
+      const payload = {
+        restaurant_id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        table_id: 'f1e2d3c4-b5a6-9870-dcba-fedc09876543',
+        timestamp: Date.now() + 1000000000, // far future
+        signature: 'some-sig',
+      };
+
+      const result = validateQRPayload(payload, 'secret');
+
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe('Timestamp expired or invalid');
+    });
+
     it('rejects tampered signature', () => {
       const secret = 'my-secret-key';
       const restaurantId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';

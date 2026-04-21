@@ -25,9 +25,10 @@ vi.mock('@/lib/supabase/auth', () => {
 });
 
 // Mock useRouter
+const mockPush = vi.fn();
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
-    push: vi.fn(),
+    push: mockPush,
     replace: vi.fn(),
     prefetch: vi.fn(),
     back: vi.fn(),
@@ -52,6 +53,8 @@ vi.mock('next/navigation', () => ({
   usePathname: () => '/',
   useSearchParams: () => new URLSearchParams(),
 }));
+
+export { mockPush };
 
 import { signIn, signOut, getSession, getUser, onAuthStateChange, _mockUnsubscribe } from '@/lib/supabase/auth';
 
@@ -237,6 +240,25 @@ describe('useAuth hook', () => {
       expect(result.current.isAuthenticated).toBe(false);
     });
 
+    it('signIn sets generic error when signIn throws non-Error exception', async () => {
+      (getSession as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+      (getUser as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+      // signIn throws a string instead of an Error object
+      (signIn as ReturnType<typeof vi.fn>).mockRejectedValue('Network failure');
+
+      const { result } = renderHook(() => useAuth());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      await act(async () => {
+        await result.current.signIn('admin@test.com', 'password123');
+      });
+
+      expect(result.current.error).toBe('Sign in failed');
+    });
+
     it('isLoading is true during signIn', async () => {
       (getSession as ReturnType<typeof vi.fn>).mockResolvedValue(null);
       (getUser as ReturnType<typeof vi.fn>).mockResolvedValue(null);
@@ -367,6 +389,121 @@ describe('useAuth hook', () => {
 
       // Should not throw even though the async operation continues
       expect(() => result.current.signOut()).not.toThrow();
+    });
+  });
+
+  describe('6. Auth state change events', () => {
+    it('handles TOKEN_REFRESHED event - updates session', async () => {
+      (getSession as ReturnType<typeof vi.fn>).mockResolvedValue(mockSession);
+      (getUser as ReturnType<typeof vi.fn>).mockResolvedValue(mockUser);
+
+      const { result } = renderHook(() => useAuth());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      // Get the callback passed to onAuthStateChange
+      const onAuthStateChangeCallback = (onAuthStateChange as ReturnType<typeof vi.fn>).mock.calls[0][0];
+
+      // Create a new session with different expiry
+      const refreshedSession: Session = {
+        ...mockSession,
+        access_token: 'new-access-token',
+        refresh_token: 'new-refresh-token',
+        expires_at: Math.floor(Date.now() / 1000) + 7200,
+      };
+
+      // Simulate TOKEN_REFRESHED event
+      await act(async () => {
+        onAuthStateChangeCallback('TOKEN_REFRESHED', refreshedSession);
+      });
+
+      await waitFor(() => {
+        expect(result.current.session).toEqual(refreshedSession);
+      });
+
+      // User should remain the same
+      expect(result.current.user).toEqual(mockUser);
+    });
+
+    it('handles SIGNED_IN event - updates user and session', async () => {
+      (getSession as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+      (getUser as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+
+      const { result } = renderHook(() => useAuth());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      // Get the callback passed to onAuthStateChange
+      const onAuthStateChangeCallback = (onAuthStateChange as ReturnType<typeof vi.fn>).mock.calls[0][0];
+
+      // Simulate SIGNED_IN event
+      await act(async () => {
+        onAuthStateChangeCallback('SIGNED_IN', mockSession);
+      });
+
+      await waitFor(() => {
+        expect(result.current.session).toEqual(mockSession);
+        expect(result.current.user).toEqual(mockUser);
+        expect(result.current.isAuthenticated).toBe(true);
+      });
+    });
+
+    it('handles SIGNED_OUT event - clears state and redirects', async () => {
+      (getSession as ReturnType<typeof vi.fn>).mockResolvedValue(mockSession);
+      (getUser as ReturnType<typeof vi.fn>).mockResolvedValue(mockUser);
+
+      const { result } = renderHook(() => useAuth());
+
+      await waitFor(() => {
+        expect(result.current.isAuthenticated).toBe(true);
+      });
+
+      // Clear previous calls
+      mockPush.mockClear();
+
+      // Get the callback passed to onAuthStateChange
+      const onAuthStateChangeCallback = (onAuthStateChange as ReturnType<typeof vi.fn>).mock.calls[0][0];
+
+      // Simulate SIGNED_OUT event
+      await act(async () => {
+        onAuthStateChangeCallback('SIGNED_OUT', null);
+      });
+
+      await waitFor(() => {
+        expect(result.current.session).toBeNull();
+        expect(result.current.user).toBeNull();
+        expect(result.current.isAuthenticated).toBe(false);
+      });
+
+      // Router.push should have been called to redirect to login
+      expect(mockPush).toHaveBeenCalledWith('/(admin)/(auth)/login');
+    });
+
+    it('handles SIGNED_OUT with null session (session expiry)', async () => {
+      (getSession as ReturnType<typeof vi.fn>).mockResolvedValue(mockSession);
+      (getUser as ReturnType<typeof vi.fn>).mockResolvedValue(mockUser);
+
+      const { result } = renderHook(() => useAuth());
+
+      await waitFor(() => {
+        expect(result.current.isAuthenticated).toBe(true);
+      });
+
+      // Get the callback passed to onAuthStateChange
+      const onAuthStateChangeCallback = (onAuthStateChange as ReturnType<typeof vi.fn>).mock.calls[0][0];
+
+      // Simulate session expiry (SIGNED_OUT with null session)
+      await act(async () => {
+        onAuthStateChangeCallback('SIGNED_OUT', null);
+      });
+
+      await waitFor(() => {
+        expect(result.current.isAuthenticated).toBe(false);
+      });
     });
   });
 });

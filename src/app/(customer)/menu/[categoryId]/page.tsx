@@ -7,14 +7,14 @@ interface PageProps {
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: 'Categoria | Pedi-AI',
-    description: 'Veja os produtos desta categoria do cardápio digital.',
+    title: 'Categoria do Cardápio | Pedi-AI - Produtos Selecionados',
+    description: 'Confira todos os produtos disponíveis nesta categoria do cardápio digital do restaurante. Adicione ao carrinho e faça seu pedido com segurança mesmo offline.',
     alternates: {
       canonical: '/menu',
     },
     openGraph: {
       title: 'Categoria | Pedi-AI',
-      description: 'Veja os produtos desta categoria.',
+      description: 'Produtos desta categoria do cardápio digital.',
       url: '/menu',
       type: 'website',
     },

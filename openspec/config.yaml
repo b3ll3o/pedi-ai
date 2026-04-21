@@ -2,7 +2,7 @@ schema: spec-driven
 
 context: |
   Tech stack: Next.js + TypeScript, Supabase (Backend as a Service), Service Workers, IndexedDB
-  Architecture: Monorepo with apps/ structure (Next.js PWA main app + separate E2E test app)
+  Architecture: Single Next.js PWA application with integrated E2E tests
   Testing: Vitest (unit), Playwright + Cucumber (E2E), 80%+ coverage threshold
   Style: TBD (no convention files detected in empty project)
 

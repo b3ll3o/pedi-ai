@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import type { categories, products, modifier_groups } from '@/lib/supabase/types';
+import { getCachedMenu } from '@/lib/offline/cache';
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -155,4 +156,40 @@ export function getProductsByCategory(
   categoryId: string
 ): products[] {
   return state.products.filter((p) => p.category_id === categoryId);
+}
+
+// ── Hydration helpers ─────────────────────────────────────────
+
+/**
+ * Hydrates the store with cached data from IndexedDB.
+ * Used by `useMenu` hook (see hooks/useMenu.ts) — it already calls this
+ * automatically when API fetch fails or on startup offline.
+ */
+export async function hydrateFromCache(): Promise<void> {
+  const cached = await getCachedMenu();
+  if (!cached) return;
+
+  useMenuStore.getState().setCategories(cached.categories as categories[]);
+  useMenuStore.getState().setProducts(cached.products as products[]);
+  useMenuStore.getState().setModifierGroups(cached.modifiers as modifier_groups[]);
+}
+
+/**
+ * Attempts to fetch menu from API; falls back to IndexedDB cache if offline.
+ * Returns { success, fromCache } to indicate data origin.
+ */
+export async function useHydratedMenu(): Promise<{ success: boolean; fromCache: boolean }> {
+  try {
+    // TODO: Replace with actual API call, e.g. menuService.fetchMenu()
+    // const data = await menuService.fetchMenu();
+    throw new Error('API not implemented');
+  } catch {
+    const cached = await getCachedMenu();
+    if (!cached) return { success: false, fromCache: false };
+
+    useMenuStore.getState().setCategories(cached.categories as categories[]);
+    useMenuStore.getState().setProducts(cached.products as products[]);
+    useMenuStore.getState().setModifierGroups(cached.modifiers as modifier_groups[]);
+    return { success: true, fromCache: true };
+  }
 }

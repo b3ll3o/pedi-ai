@@ -66,7 +66,7 @@ Based on implementation:
 npm run build
 
 # Check .next/static/chunks directory for chunk sizes
-ls -la apps/web/.next/static/chunks/
+ls -la .next/static/chunks/
 ```
 
 Target: Individual chunks should be <150kB (Next.js enforces this)

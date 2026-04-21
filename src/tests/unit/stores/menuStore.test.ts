@@ -1,76 +1,18 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import type { MenuState, MenuStore, DietaryLabel } from '@/stores/menuStore';
-import type { products } from '@/lib/supabase/types';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { useMenuStore, getFilteredProducts, getProductsByCategory, hydrateFromCache, useHydratedMenu } from '@/stores/menuStore';
+import type { categories, products, modifier_groups } from '@/lib/supabase/types';
 
-// ── Inline getFilteredProducts (mirrors store logic) ─────────────────────────
-// This is a copy of the selector logic from menuStore.ts so we can test it
-// without importing the store (which requires the `immer` package).
-function getFilteredProducts(state: MenuState): products[] {
-  let filtered = state.products;
+// ── Mock getCachedMenu ───────────────────────────────────────────────────────
+const mockGetCachedMenu = vi.fn();
 
-  if (state.selectedCategoryId !== null) {
-    filtered = filtered.filter((p) => p.category_id === state.selectedCategoryId);
-  }
+vi.mock('@/lib/offline/cache', () => ({
+  getCachedMenu: () => mockGetCachedMenu(),
+}));
 
-  if (state.dietaryFilters.length > 0) {
-    filtered = filtered.filter((p) => {
-      const productLabels = p.dietary_labels ?? [];
-      return state.dietaryFilters.every((label) => productLabels.includes(label));
-    });
-  }
-
-  if (state.searchQuery.trim() !== '') {
-    const query = state.searchQuery.toLowerCase().trim();
-    filtered = filtered.filter((p) => p.name.toLowerCase().includes(query));
-  }
-
-  return filtered;
-}
-
-// ── Mock store factory ───────────────────────────────────────────────────────
-function createMockStore(initialState: MenuState): MenuStore {
-  return {
-    ...initialState,
-    setCategories: vi.fn(),
-    setProducts: vi.fn((products: products[]) => {
-      initialState.products = products;
-    }),
-    setModifierGroups: vi.fn(),
-    setSelectedCategory: vi.fn((categoryId: string | null) => {
-      initialState.selectedCategoryId = categoryId;
-    }),
-    toggleDietaryFilter: vi.fn((label: DietaryLabel) => {
-      const index = initialState.dietaryFilters.indexOf(label);
-      if (index === -1) {
-        initialState.dietaryFilters.push(label);
-      } else {
-        initialState.dietaryFilters.splice(index, 1);
-      }
-    }),
-    setSearchQuery: vi.fn((query: string) => {
-      initialState.searchQuery = query;
-    }),
-    clearFilters: vi.fn(() => {
-      initialState.selectedCategoryId = null;
-      initialState.dietaryFilters = [];
-      initialState.searchQuery = '';
-    }),
-    reset: vi.fn(() => {
-      initialState.categories = [];
-      initialState.products = [];
-      initialState.modifierGroups = [];
-      initialState.selectedCategoryId = null;
-      initialState.dietaryFilters = [];
-      initialState.searchQuery = '';
-      initialState.isLoading = false;
-      initialState.error = null;
-    }),
-  };
-}
-
-// ── Test helpers ─────────────────────────────────────────────────────────────
+// ── Test helpers ────────────────────────────────────────────────────────────
 
 function makeProduct(overrides: Partial<products> = {}): products {
+  const now = new Date().toISOString();
   return {
     id: 'prod-1',
     category_id: 'cat-main',
@@ -81,13 +23,41 @@ function makeProduct(overrides: Partial<products> = {}): products {
     dietary_labels: null,
     available: true,
     sort_order: 0,
+    created_at: now,
+    updated_at: now,
+    ...overrides,
+  };
+}
+
+function makeCategory(overrides: Partial<categories> = {}): categories {
+  return {
+    id: 'cat-1',
+    name: 'Categoria',
+    description: null,
+    image_url: null,
+    sort_order: 0,
+    active: true,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     ...overrides,
   };
 }
 
-function buildState(overrides: Partial<MenuState> = {}): MenuState {
+function makeModifierGroup(overrides: Partial<modifier_groups> = {}): modifier_groups {
+  return {
+    id: 'mod-1',
+    name: 'Grupo',
+    description: null,
+    min_selections: 0,
+    max_selections: null,
+    required: false,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    ...overrides,
+  };
+}
+
+function buildState(overrides: Partial<ReturnType<typeof useMenuStore.getState>> = {}): ReturnType<typeof useMenuStore.getState> {
   return {
     categories: [],
     products: [],
@@ -97,416 +67,421 @@ function buildState(overrides: Partial<MenuState> = {}): MenuState {
     searchQuery: '',
     isLoading: false,
     error: null,
+    setCategories: vi.fn(),
+    setProducts: vi.fn(),
+    setModifierGroups: vi.fn(),
+    setSelectedCategory: vi.fn(),
+    toggleDietaryFilter: vi.fn(),
+    setSearchQuery: vi.fn(),
+    clearFilters: vi.fn(),
+    reset: vi.fn(),
     ...overrides,
   };
 }
 
-// ── Test Data ─────────────────────────────────────────────────────────────────
+// ── Test Data ───────────────────────────────────────────────────────────────
 
-const VEG_PRODUCT = makeProduct({ id: 'p1', name: 'Salada Verde', dietary_labels: ['vegetarian'] });
-const GF_PRODUCT = makeProduct({ id: 'p2', name: 'Arroz Branco', dietary_labels: ['gluten_free'] });
-const VEG_GF_PRODUCT = makeProduct({ id: 'p3', name: 'Salada de Quinoa', dietary_labels: ['vegetarian', 'gluten_free'] });
-const REGULAR_PRODUCT = makeProduct({ id: 'p4', name: 'Bife' });
+const CAT_MAIN = makeCategory({ id: 'cat-main', name: 'Pratos Principais' });
+const CAT_DESSERT = makeCategory({ id: 'cat-dessert', name: 'Sobremesas' });
 
-const PIZZA = makeProduct({ id: 'pizza1', name: 'Pizza' });
-const PIZZA_LOWER = makeProduct({ id: 'pizza2', name: 'pizza' });
-const PIZZA_UPPER = makeProduct({ id: 'pizza3', name: 'PIZZA' });
-const HAMBURGER = makeProduct({ id: 'p5', name: 'Hambúrguer Artesanal' });
+const PIZZA = makeProduct({ id: 'pizza1', name: 'Pizza Margherita', category_id: 'cat-main' });
+const SALAD = makeProduct({ id: 'salad1', name: 'Salada Verde', category_id: 'cat-main', dietary_labels: ['vegetarian'] });
+const CAKE = makeProduct({ id: 'cake1', name: 'Bolo de Chocolate', category_id: 'cat-dessert' });
+const QUINOA = makeProduct({
+  id: 'quinoa1',
+  name: 'Salada de Quinoa',
+  category_id: 'cat-main',
+  dietary_labels: ['vegetarian', 'gluten_free'],
+});
 
-const CAT_MAIN = 'cat-main';
-const CAT_DESSERT = 'cat-dessert';
-const PRODUCT_IN_MAIN = makeProduct({ id: 'p6', name: 'Pão', category_id: CAT_MAIN });
-const PRODUCT_IN_DESSERT = makeProduct({ id: 'p7', name: 'Bolo', category_id: CAT_DESSERT });
+const MODIFIER_GROUP = makeModifierGroup({ id: 'mod-1', name: 'Extras' });
 
 // ══════════════════════════════════════════════════════════════════════════════
-// Tests
+// Store Actions — real store tests
 // ══════════════════════════════════════════════════════════════════════════════
 
-describe('menuStore — filtering and search logic', () => {
+describe('menuStore — actions (real store)', () => {
+  beforeEach(() => {
+    useMenuStore.getState().reset();
+  });
 
-  // ════════════════════════════════════════════════════════════════════════════
-  // Dietary Filter — AND logic
-  // ════════════════════════════════════════════════════════════════════════════
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
-  describe('Dietary filter — AND logic', () => {
-    it('returns only vegetarian products when vegetarian filter is selected', () => {
-      const state = buildState({
-        products: [VEG_PRODUCT, GF_PRODUCT, VEG_GF_PRODUCT, REGULAR_PRODUCT],
-        dietaryFilters: ['vegetarian'],
-      });
-
-      const filtered = getFilteredProducts(state);
-
-      expect(filtered).toHaveLength(2);
-      expect(filtered.map((p) => p.id)).toContain('p1');
-      expect(filtered.map((p) => p.id)).toContain('p3');
+  describe('setCategories', () => {
+    it('sets categories array', () => {
+      useMenuStore.getState().setCategories([CAT_MAIN, CAT_DESSERT]);
+      expect(useMenuStore.getState().categories).toHaveLength(2);
+      expect(useMenuStore.getState().categories[0].id).toBe('cat-main');
     });
 
-    it('returns only products with ALL selected dietary labels (AND logic)', () => {
-      const state = buildState({
-        products: [VEG_PRODUCT, GF_PRODUCT, VEG_GF_PRODUCT, REGULAR_PRODUCT],
-        dietaryFilters: ['vegetarian', 'gluten_free'],
-      });
-
-      const filtered = getFilteredProducts(state);
-
-      expect(filtered).toHaveLength(1);
-      expect(filtered[0].id).toBe('p3');
-    });
-
-    it('returns empty array when no product matches dietary filter', () => {
-      const state = buildState({
-        products: [REGULAR_PRODUCT],
-        dietaryFilters: ['vegan'],
-      });
-
-      const filtered = getFilteredProducts(state);
-
-      expect(filtered).toHaveLength(0);
-    });
-
-    it('product with null dietary_labels does not match any filter', () => {
-      const state = buildState({
-        products: [REGULAR_PRODUCT],
-        dietaryFilters: ['vegetarian'],
-      });
-
-      const filtered = getFilteredProducts(state);
-
-      expect(filtered).toHaveLength(0);
+    it('replaces existing categories', () => {
+      useMenuStore.getState().setCategories([CAT_MAIN]);
+      useMenuStore.getState().setCategories([CAT_DESSERT]);
+      expect(useMenuStore.getState().categories).toHaveLength(1);
+      expect(useMenuStore.getState().categories[0].id).toBe('cat-dessert');
     });
   });
 
-  // ════════════════════════════════════════════════════════════════════════════
-  // Search — case insensitive & partial match
-  // ════════════════════════════════════════════════════════════════════════════
-
-  describe('Search — case insensitive', () => {
-    it('returns all case variants when searching "pizza"', () => {
-      const state = buildState({
-        products: [PIZZA, PIZZA_LOWER, PIZZA_UPPER],
-        searchQuery: 'pizza',
-      });
-
-      const filtered = getFilteredProducts(state);
-
-      expect(filtered).toHaveLength(3);
+  describe('setProducts', () => {
+    it('sets products array', () => {
+      useMenuStore.getState().setProducts([PIZZA, SALAD]);
+      expect(useMenuStore.getState().products).toHaveLength(2);
     });
 
-    it('search is case insensitive for mixed case queries', () => {
-      const state = buildState({
-        products: [PIZZA, PIZZA_LOWER, PIZZA_UPPER],
-        searchQuery: 'PIZZa',
-      });
-
-      const filtered = getFilteredProducts(state);
-
-      expect(filtered).toHaveLength(3);
+    it('replaces existing products', () => {
+      useMenuStore.getState().setProducts([PIZZA]);
+      useMenuStore.getState().setProducts([CAKE]);
+      expect(useMenuStore.getState().products).toHaveLength(1);
+      expect(useMenuStore.getState().products[0].id).toBe('cake1');
     });
   });
 
-  describe('Search — partial match', () => {
-    it('returns product on partial name match (hamb)', () => {
-      // Note: "burg" does NOT match "Hambúrguer" due to the accented "ú".
-      // Standard includes() is literal, not accent-insensitive.
-      // Using "hamb" which matches the beginning of "Hambúrguer".
-      const state = buildState({
-        products: [HAMBURGER],
-        searchQuery: 'hamb',
-      });
-
-      const filtered = getFilteredProducts(state);
-
-      expect(filtered).toHaveLength(1);
-      expect(filtered[0].id).toBe('p5');
-    });
-
-    it('returns product when search matches beginning of name', () => {
-      const state = buildState({
-        products: [HAMBURGER],
-        searchQuery: 'Hamb',
-      });
-
-      const filtered = getFilteredProducts(state);
-
-      expect(filtered).toHaveLength(1);
-    });
-
-    it('returns product when search matches end of name', () => {
-      const state = buildState({
-        products: [HAMBURGER],
-        searchQuery: 'nal',
-      });
-
-      const filtered = getFilteredProducts(state);
-
-      expect(filtered).toHaveLength(1);
-    });
-
-    it('returns empty when no product name contains the query', () => {
-      const state = buildState({
-        products: [HAMBURGER],
-        searchQuery: 'xyz',
-      });
-
-      const filtered = getFilteredProducts(state);
-
-      expect(filtered).toHaveLength(0);
-    });
-
-    it('search is accent-sensitive: "burg" does not match "Hambúrguer"', () => {
-      // Documents that standard includes() does not handle accent-insensitive matching
-      const state = buildState({
-        products: [HAMBURGER],
-        searchQuery: 'burg',
-      });
-
-      const filtered = getFilteredProducts(state);
-
-      expect(filtered).toHaveLength(0); // "burg" ≠ "búrguer" due to accent
-    });
-
-    it('trims whitespace from search query', () => {
-      // Using "hamb" which matches "Hambúrguer" (not "burg" due to accent)
-      const state = buildState({
-        products: [HAMBURGER],
-        searchQuery: '  hamb  ',
-      });
-
-      const filtered = getFilteredProducts(state);
-
-      expect(filtered).toHaveLength(1);
-    });
-
-    it('empty search query returns all products (unfiltered)', () => {
-      const state = buildState({
-        products: [PIZZA, PIZZA_LOWER, VEG_PRODUCT],
-        searchQuery: '',
-      });
-
-      const filtered = getFilteredProducts(state);
-
-      expect(filtered).toHaveLength(3);
+  describe('setModifierGroups', () => {
+    it('sets modifier groups array', () => {
+      useMenuStore.getState().setModifierGroups([MODIFIER_GROUP]);
+      expect(useMenuStore.getState().modifierGroups).toHaveLength(1);
     });
   });
 
-  // ════════════════════════════════════════════════════════════════════════════
-  // Combined — Search + Dietary
-  // ════════════════════════════════════════════════════════════════════════════
-
-  describe('Search + dietary filter combined', () => {
-    it('applies both search and dietary filter together', () => {
-      const SALAD_VEG = makeProduct({ id: 's1', name: 'Salada Verde', dietary_labels: ['vegetarian'] });
-      const SALAD_VEG_GF = makeProduct({ id: 's2', name: 'Salada de Quinoa', dietary_labels: ['vegetarian', 'gluten_free'] });
-      const SALAD_GF = makeProduct({ id: 's3', name: 'Salada Simples', dietary_labels: ['gluten_free'] });
-
-      const state = buildState({
-        products: [SALAD_VEG, SALAD_VEG_GF, SALAD_GF],
-        searchQuery: 'Salada',
-        dietaryFilters: ['vegetarian'],
-      });
-
-      const filtered = getFilteredProducts(state);
-
-      expect(filtered).toHaveLength(2);
-      expect(filtered.map((p) => p.id)).toContain('s1');
-      expect(filtered.map((p) => p.id)).toContain('s2');
+  describe('setSelectedCategory', () => {
+    it('sets selected category id', () => {
+      useMenuStore.getState().setSelectedCategory('cat-main');
+      expect(useMenuStore.getState().selectedCategoryId).toBe('cat-main');
     });
 
-    it('returns empty when search matches but dietary does not', () => {
-      const state = buildState({
-        products: [VEG_PRODUCT],
-        searchQuery: 'Salada Verde',
-        dietaryFilters: ['vegan'],
-      });
-
-      const filtered = getFilteredProducts(state);
-
-      expect(filtered).toHaveLength(0);
+    it('can set null to clear category', () => {
+      useMenuStore.getState().setSelectedCategory('cat-main');
+      useMenuStore.getState().setSelectedCategory(null);
+      expect(useMenuStore.getState().selectedCategoryId).toBeNull();
     });
   });
 
-  // ════════════════════════════════════════════════════════════════════════════
-  // Category Filter
-  // ════════════════════════════════════════════════════════════════════════════
+  describe('toggleDietaryFilter', () => {
+    it('adds a dietary filter when not present', () => {
+      useMenuStore.getState().toggleDietaryFilter('vegetarian');
+      expect(useMenuStore.getState().dietaryFilters).toContain('vegetarian');
+    });
 
-  describe('Category filter', () => {
+    it('removes a dietary filter when already present', () => {
+      useMenuStore.getState().toggleDietaryFilter('vegetarian');
+      useMenuStore.getState().toggleDietaryFilter('vegetarian');
+      expect(useMenuStore.getState().dietaryFilters).not.toContain('vegetarian');
+    });
+
+    it('can have multiple filters', () => {
+      useMenuStore.getState().toggleDietaryFilter('vegetarian');
+      useMenuStore.getState().toggleDietaryFilter('gluten_free');
+      expect(useMenuStore.getState().dietaryFilters).toHaveLength(2);
+    });
+  });
+
+  describe('setSearchQuery', () => {
+    it('sets search query', () => {
+      useMenuStore.getState().setSearchQuery('pizza');
+      expect(useMenuStore.getState().searchQuery).toBe('pizza');
+    });
+
+    it('overwrites previous query', () => {
+      useMenuStore.getState().setSearchQuery('pizza');
+      useMenuStore.getState().setSearchQuery('bolo');
+      expect(useMenuStore.getState().searchQuery).toBe('bolo');
+    });
+  });
+
+  describe('clearFilters', () => {
+    it('clears selectedCategoryId', () => {
+      useMenuStore.getState().setSelectedCategory('cat-main');
+      useMenuStore.getState().clearFilters();
+      expect(useMenuStore.getState().selectedCategoryId).toBeNull();
+    });
+
+    it('clears dietaryFilters', () => {
+      useMenuStore.getState().toggleDietaryFilter('vegetarian');
+      useMenuStore.getState().toggleDietaryFilter('gluten_free');
+      useMenuStore.getState().clearFilters();
+      expect(useMenuStore.getState().dietaryFilters).toEqual([]);
+    });
+
+    it('clears searchQuery', () => {
+      useMenuStore.getState().setSearchQuery('pizza');
+      useMenuStore.getState().clearFilters();
+      expect(useMenuStore.getState().searchQuery).toBe('');
+    });
+  });
+
+  describe('reset', () => {
+    it('resets all state to initial values', () => {
+      useMenuStore.getState().setCategories([CAT_MAIN]);
+      useMenuStore.getState().setProducts([PIZZA]);
+      useMenuStore.getState().setModifierGroups([MODIFIER_GROUP]);
+      useMenuStore.getState().setSelectedCategory('cat-main');
+      useMenuStore.getState().toggleDietaryFilter('vegetarian');
+      useMenuStore.getState().setSearchQuery('pizza');
+
+      useMenuStore.getState().reset();
+
+      const state = useMenuStore.getState();
+      expect(state.categories).toEqual([]);
+      expect(state.products).toEqual([]);
+      expect(state.modifierGroups).toEqual([]);
+      expect(state.selectedCategoryId).toBeNull();
+      expect(state.dietaryFilters).toEqual([]);
+      expect(state.searchQuery).toBe('');
+      expect(state.isLoading).toBe(false);
+      expect(state.error).toBeNull();
+    });
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Selectors — getFilteredProducts (using isolated state objects)
+// ══════════════════════════════════════════════════════════════════════════════
+
+describe('menuStore — getFilteredProducts selector', () => {
+  describe('category filter', () => {
     it('returns only products in the selected category', () => {
       const state = buildState({
-        products: [PRODUCT_IN_MAIN, PRODUCT_IN_DESSERT],
-        selectedCategoryId: CAT_MAIN,
+        products: [PIZZA, CAKE],
+        selectedCategoryId: 'cat-main',
       });
 
       const filtered = getFilteredProducts(state);
-
       expect(filtered).toHaveLength(1);
-      expect(filtered[0].id).toBe('p6');
+      expect(filtered[0].id).toBe('pizza1');
     });
 
     it('returns all products when no category is selected', () => {
       const state = buildState({
-        products: [PRODUCT_IN_MAIN, PRODUCT_IN_DESSERT],
+        products: [PIZZA, CAKE],
         selectedCategoryId: null,
       });
 
       const filtered = getFilteredProducts(state);
-
       expect(filtered).toHaveLength(2);
     });
+  });
 
-    it('category filter works with dietary filter', () => {
-      const CAT_VEG = 'cat-veg';
-      const VEG_IN_VEG_CAT = makeProduct({ id: 'v1', name: 'Verdura', category_id: CAT_VEG, dietary_labels: ['vegetarian'] });
-      const VEG_IN_OTHER_CAT = makeProduct({ id: 'v2', name: 'Folha', category_id: CAT_MAIN, dietary_labels: ['vegetarian'] });
-
+  describe('dietary filter — AND logic', () => {
+    it('returns only products with ALL selected labels', () => {
       const state = buildState({
-        products: [VEG_IN_VEG_CAT, VEG_IN_OTHER_CAT],
-        selectedCategoryId: CAT_VEG,
+        products: [SALAD, QUINOA, PIZZA],
+        dietaryFilters: ['vegetarian', 'gluten_free'],
+      });
+
+      const filtered = getFilteredProducts(state);
+      expect(filtered).toHaveLength(1);
+      expect(filtered[0].id).toBe('quinoa1');
+    });
+
+    it('returns empty when no product matches dietary filter', () => {
+      const state = buildState({
+        products: [PIZZA, CAKE],
+        dietaryFilters: ['vegan'],
+      });
+
+      const filtered = getFilteredProducts(state);
+      expect(filtered).toHaveLength(0);
+    });
+
+    it('product with null dietary_labels does not match filter', () => {
+      const state = buildState({
+        products: [PIZZA],
         dietaryFilters: ['vegetarian'],
       });
 
       const filtered = getFilteredProducts(state);
+      expect(filtered).toHaveLength(0);
+    });
+  });
 
+  describe('search — case insensitive partial match', () => {
+    it('matches partial name', () => {
+      const state = buildState({
+        products: [PIZZA, CAKE, SALAD],
+        searchQuery: 'Sal',
+      });
+
+      const filtered = getFilteredProducts(state);
       expect(filtered).toHaveLength(1);
-      expect(filtered[0].id).toBe('v1');
-    });
-  });
-
-  // ════════════════════════════════════════════════════════════════════════════
-  // clearFilters
-  // ════════════════════════════════════════════════════════════════════════════
-
-  describe('clearFilters', () => {
-    it('resets selectedCategoryId to null', () => {
-      const initialState = buildState({ selectedCategoryId: 'cat-123' });
-      const store = createMockStore(initialState);
-
-      store.setSelectedCategory('cat-123');
-      expect(initialState.selectedCategoryId).toBe('cat-123');
-
-      store.clearFilters();
-
-      expect(initialState.selectedCategoryId).toBeNull();
-      expect(store.clearFilters).toHaveBeenCalled();
+      expect(filtered[0].id).toBe('salad1');
     });
 
-    it('resets dietaryFilters to empty array', () => {
-      const initialState = buildState({ dietaryFilters: [] });
-      const store = createMockStore(initialState);
-
-      store.toggleDietaryFilter('vegetarian');
-      store.toggleDietaryFilter('gluten_free');
-      expect(initialState.dietaryFilters).toHaveLength(2);
-
-      store.clearFilters();
-
-      expect(initialState.dietaryFilters).toEqual([]);
-    });
-
-    it('resets searchQuery to empty string', () => {
-      const initialState = buildState({ searchQuery: '' });
-      const store = createMockStore(initialState);
-
-      store.setSearchQuery('pizza');
-      expect(initialState.searchQuery).toBe('pizza');
-
-      store.clearFilters();
-
-      expect(initialState.searchQuery).toEqual('');
-    });
-
-    it('after clearFilters, getFilteredProducts returns all products', () => {
-      const initialState = buildState({
-        products: [PIZZA, VEG_PRODUCT, PRODUCT_IN_MAIN],
-        selectedCategoryId: CAT_MAIN,
-        dietaryFilters: ['vegetarian'],
-        searchQuery: 'pizza',
+    it('is case insensitive', () => {
+      const state = buildState({
+        products: [PIZZA, CAKE],
+        searchQuery: 'PIZZA',
       });
-      const store = createMockStore(initialState);
 
-      store.clearFilters();
-
-      const filtered = getFilteredProducts(initialState);
-      expect(filtered).toHaveLength(3);
-    });
-  });
-
-  // ════════════════════════════════════════════════════════════════════════════
-  // Store Actions (mocked)
-  // ════════════════════════════════════════════════════════════════════════════
-
-  describe('Store actions', () => {
-    it('setProducts updates the products array', () => {
-      const initialState = buildState({ products: [] });
-      const store = createMockStore(initialState);
-
-      store.setProducts([PIZZA, VEG_PRODUCT]);
-
-      expect(initialState.products).toHaveLength(2);
-      expect(store.setProducts).toHaveBeenCalledWith([PIZZA, VEG_PRODUCT]);
+      const filtered = getFilteredProducts(state);
+      expect(filtered).toHaveLength(1);
     });
 
-    it('setSelectedCategory sets the category id', () => {
-      const initialState = buildState({ selectedCategoryId: null });
-      const store = createMockStore(initialState);
-
-      store.setSelectedCategory('cat-new');
-
-      expect(initialState.selectedCategoryId).toBe('cat-new');
-    });
-
-    it('setSelectedCategory with null clears the category', () => {
-      const initialState = buildState({ selectedCategoryId: null });
-      const store = createMockStore(initialState);
-
-      store.setSelectedCategory('cat-new');
-      store.setSelectedCategory(null);
-
-      expect(initialState.selectedCategoryId).toBeNull();
-    });
-
-    it('toggleDietaryFilter adds a new filter', () => {
-      const initialState = buildState({ dietaryFilters: [] });
-      const store = createMockStore(initialState);
-
-      store.toggleDietaryFilter('vegetarian');
-
-      expect(initialState.dietaryFilters).toContain('vegetarian');
-    });
-
-    it('toggleDietaryFilter removes an existing filter', () => {
-      const initialState = buildState({ dietaryFilters: ['vegetarian'] });
-      const store = createMockStore(initialState);
-
-      store.toggleDietaryFilter('vegetarian');
-
-      expect(initialState.dietaryFilters).not.toContain('vegetarian');
-    });
-
-    it('setSearchQuery updates the search query', () => {
-      const initialState = buildState({ searchQuery: '' });
-      const store = createMockStore(initialState);
-
-      store.setSearchQuery('burger');
-
-      expect(initialState.searchQuery).toBe('burger');
-    });
-
-    it('reset restores initial state', () => {
-      const initialState = buildState({
+    it('trims whitespace from query', () => {
+      const state = buildState({
         products: [PIZZA],
-        selectedCategoryId: 'cat-1',
-        dietaryFilters: ['vegetarian'],
-        searchQuery: 'test',
+        searchQuery: '  pizza  ',
       });
-      const store = createMockStore(initialState);
 
-      store.reset();
-
-      expect(initialState.products).toEqual([]);
-      expect(initialState.selectedCategoryId).toBeNull();
-      expect(initialState.dietaryFilters).toEqual([]);
-      expect(initialState.searchQuery).toEqual('');
+      const filtered = getFilteredProducts(state);
+      expect(filtered).toHaveLength(1);
     });
+
+    it('empty query returns all products', () => {
+      const state = buildState({
+        products: [PIZZA, CAKE],
+        searchQuery: '',
+      });
+
+      const filtered = getFilteredProducts(state);
+      expect(filtered).toHaveLength(2);
+    });
+  });
+
+  describe('combined filters', () => {
+    it('applies category + dietary + search together', () => {
+      const CAT_VEG = makeCategory({ id: 'cat-veg', name: 'Vegetariano' });
+      const state = buildState({
+        categories: [CAT_MAIN, CAT_VEG],
+        products: [SALAD, QUINOA, PIZZA],
+        selectedCategoryId: 'cat-main',
+        dietaryFilters: ['vegetarian'],
+        searchQuery: 'Verde', // uniquely matches SALAD but not QUINOA
+      });
+
+      const filtered = getFilteredProducts(state);
+      expect(filtered).toHaveLength(1);
+      expect(filtered[0].id).toBe('salad1');
+    });
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Selectors — getProductsByCategory
+// ══════════════════════════════════════════════════════════════════════════════
+
+describe('menuStore — getProductsByCategory selector', () => {
+  it('returns products for a given category id', () => {
+    const state = buildState({
+      products: [PIZZA, SALAD, CAKE],
+    });
+
+    const result = getProductsByCategory(state, 'cat-main');
+    expect(result).toHaveLength(2);
+    expect(result.map((p) => p.id)).toContain('pizza1');
+    expect(result.map((p) => p.id)).toContain('salad1');
+  });
+
+  it('returns empty array when no products in category', () => {
+    const state = buildState({
+      products: [PIZZA, SALAD, CAKE],
+    });
+
+    const result = getProductsByCategory(state, 'cat-nonexistent');
+    expect(result).toHaveLength(0);
+  });
+
+  it('returns empty when products array is empty', () => {
+    const state = buildState({
+      products: [],
+    });
+
+    const result = getProductsByCategory(state, 'cat-main');
+    expect(result).toHaveLength(0);
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Hydration — hydrateFromCache
+// ══════════════════════════════════════════════════════════════════════════════
+
+describe('menuStore — hydrateFromCache', () => {
+  beforeEach(() => {
+    useMenuStore.getState().reset();
+    mockGetCachedMenu.mockResolvedValue(null);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('does nothing when cache is empty', async () => {
+    mockGetCachedMenu.mockResolvedValue(null);
+
+    await hydrateFromCache();
+
+    // State should remain empty
+    expect(useMenuStore.getState().categories).toEqual([]);
+    expect(useMenuStore.getState().products).toEqual([]);
+  });
+
+  it('loads cached data into store when cache exists', async () => {
+    const cachedData = {
+      categories: [CAT_MAIN, CAT_DESSERT],
+      products: [PIZZA, SALAD, CAKE],
+      modifiers: [MODIFIER_GROUP],
+      timestamp: Date.now(),
+    };
+    mockGetCachedMenu.mockResolvedValue(cachedData);
+
+    await hydrateFromCache();
+
+    const state = useMenuStore.getState();
+    expect(state.categories).toHaveLength(2);
+    expect(state.products).toHaveLength(3);
+    expect(state.modifierGroups).toHaveLength(1);
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Hydration — useHydratedMenu
+// ══════════════════════════════════════════════════════════════════════════════
+
+describe('menuStore — useHydratedMenu', () => {
+  beforeEach(() => {
+    useMenuStore.getState().reset();
+    mockGetCachedMenu.mockResolvedValue(null);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('returns success:false when no cache and API fails', async () => {
+    const result = await useHydratedMenu();
+    expect(result).toEqual({ success: false, fromCache: false });
+  });
+
+  it('returns success:true with fromCache:true when cache is available after API failure', async () => {
+    const cachedData = {
+      categories: [CAT_MAIN],
+      products: [PIZZA],
+      modifiers: [],
+      timestamp: Date.now(),
+    };
+    mockGetCachedMenu.mockResolvedValue(cachedData);
+
+    const result = await useHydratedMenu();
+
+    expect(result).toEqual({ success: true, fromCache: true });
+    expect(useMenuStore.getState().products).toHaveLength(1);
+  });
+
+  it('loads cached categories, products, and modifiers', async () => {
+    const cachedData = {
+      categories: [CAT_MAIN, CAT_DESSERT],
+      products: [PIZZA, CAKE],
+      modifiers: [MODIFIER_GROUP],
+      timestamp: Date.now(),
+    };
+    mockGetCachedMenu.mockResolvedValue(cachedData);
+
+    await useHydratedMenu();
+
+    const state = useMenuStore.getState();
+    expect(state.categories).toHaveLength(2);
+    expect(state.products).toHaveLength(2);
+    expect(state.modifierGroups).toHaveLength(1);
   });
 });

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import { ReactQueryProvider } from '@/components/providers/ReactQueryProvider';
 import { StoreProvider } from '@/components/providers/StoreProvider';
 import { ServiceWorkerRegistration } from '@/components/providers/ServiceWorkerRegistration';
+import { AppInitializer } from '@/components/providers/AppInitializer';
 import { OfflineIndicator } from '@/components/providers/OfflineIndicator';
 import './globals.css';
 
@@ -193,6 +194,7 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <ReactQueryProvider>
           <StoreProvider>
+            <AppInitializer />
             <ServiceWorkerRegistration />
             <OfflineIndicator />
             {children}

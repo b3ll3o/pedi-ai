@@ -47,6 +47,24 @@ describe('userService', () => {
 
       await expect(getUsers('restaurant-123')).rejects.toThrow('Failed to fetch')
     })
+
+    it('throws error when json parsing fails', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.reject(new Error('Invalid JSON')),
+      })
+
+      await expect(getUsers('restaurant-123')).rejects.toThrow('Failed to fetch users')
+    })
+
+    it('throws error when response ok but json returns empty object', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.resolve({}),
+      })
+
+      await expect(getUsers('restaurant-123')).rejects.toThrow('Failed to fetch users')
+    })
   })
 
   describe('getUser', () => {
@@ -62,6 +80,33 @@ describe('userService', () => {
 
       expect(result).toEqual(mockUser)
       expect(mockFetch).toHaveBeenCalledWith('/api/admin/users/1')
+    })
+
+    it('throws error on failed fetch', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.resolve({ error: 'Failed to fetch user' }),
+      })
+
+      await expect(getUser('1')).rejects.toThrow('Failed to fetch user')
+    })
+
+    it('throws error when json parsing fails', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.reject(new Error('Invalid JSON')),
+      })
+
+      await expect(getUser('1')).rejects.toThrow('Failed to fetch user')
+    })
+
+    it('throws error when response ok but json returns empty object', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.resolve({}),
+      })
+
+      await expect(getUser('1')).rejects.toThrow('Failed to fetch user')
     })
   })
 
@@ -105,6 +150,38 @@ describe('userService', () => {
         })
       ).rejects.toThrow('User already exists')
     })
+
+    it('throws error when json parsing fails on invite', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.reject(new Error('Invalid JSON')),
+      })
+
+      await expect(
+        inviteUser({
+          restaurant_id: 'rest-1',
+          email: 'test@test.com',
+          name: 'Test',
+          role: 'staff',
+        })
+      ).rejects.toThrow('Failed to invite user')
+    })
+
+    it('throws error when response ok but json returns empty object', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.resolve({}),
+      })
+
+      await expect(
+        inviteUser({
+          restaurant_id: 'rest-1',
+          email: 'test@test.com',
+          name: 'Test',
+          role: 'staff',
+        })
+      ).rejects.toThrow('Failed to invite user')
+    })
   })
 
   describe('updateUser', () => {
@@ -121,6 +198,33 @@ describe('userService', () => {
 
       expect(result.name).toBe('Updated Name')
       expect(result.role).toBe('manager')
+    })
+
+    it('throws error on failed update', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.resolve({ error: 'Failed to update user' }),
+      })
+
+      await expect(updateUser('1', { name: 'New' })).rejects.toThrow('Failed to update user')
+    })
+
+    it('throws error when json parsing fails on update', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.reject(new Error('Invalid JSON')),
+      })
+
+      await expect(updateUser('1', { name: 'New' })).rejects.toThrow('Failed to update user')
+    })
+
+    it('throws error when response ok but json returns empty object', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.resolve({}),
+      })
+
+      await expect(updateUser('1', { name: 'New' })).rejects.toThrow('Failed to update user')
     })
   })
 
@@ -145,6 +249,24 @@ describe('userService', () => {
       })
 
       await expect(deleteUser('1')).rejects.toThrow('Cannot delete the last owner')
+    })
+
+    it('throws error when json parsing fails on delete', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.reject(new Error('Invalid JSON')),
+      })
+
+      await expect(deleteUser('1')).rejects.toThrow('Failed to delete user')
+    })
+
+    it('throws error when response ok but json returns empty object', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.resolve({}),
+      })
+
+      await expect(deleteUser('1')).rejects.toThrow('Failed to delete user')
     })
   })
 
@@ -174,6 +296,10 @@ describe('userService', () => {
       expect(getRoleLabel('manager')).toBe('Gerente')
       expect(getRoleLabel('staff')).toBe('Funcionário')
     })
+
+    it('returns role itself for unknown role', () => {
+      expect(getRoleLabel('unknown' as any)).toBe('unknown')
+    })
   })
 
   describe('getRoleColor', () => {
@@ -181,6 +307,10 @@ describe('userService', () => {
       expect(getRoleColor('owner')).toBe('#dc2626')
       expect(getRoleColor('manager')).toBe('#d97706')
       expect(getRoleColor('staff')).toBe('#2563eb')
+    })
+
+    it('returns default color for unknown role', () => {
+      expect(getRoleColor('unknown' as any)).toBe('#6b7280')
     })
   })
 })
