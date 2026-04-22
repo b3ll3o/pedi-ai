@@ -57,6 +57,8 @@ export default defineConfig({
         'src/lib/offline/db.ts',
         // Guest auth - not directly unit tested (browser-only localStorage)
         'src/lib/auth/guest.ts',
+        // BroadcastChannel - browser-only API, mock in unit tests, integration tests for real behavior
+        'src/lib/broadcast-channel.ts',
       ],
     },
   },

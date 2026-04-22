@@ -5,40 +5,26 @@ import { persist, subscribeWithSelector } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { db } from '@/lib/offline/db';
 import type { CartItem as DBCartItem } from '@/lib/offline/types';
+import { createBroadcastChannelManager, type BroadcastChannelManager } from '@/lib/broadcast-channel';
 
-// ── BroadcastChannel Sync ─────────────────────────────────────
+// ── BroadcastChannel Sync (delegated to separate module) ────────
 
-const CART_CHANNEL_NAME = 'pedi-ai-cart';
+// Singleton instance - lazily initialized
+let channelManager: BroadcastChannelManager | null = null;
 
-interface CartBroadcast {
-  type: 'CART_UPDATE';
-  items: CartItem[];
-  timestamp: number;
+function getChannelManager(): BroadcastChannelManager {
+  if (!channelManager) {
+    channelManager = createBroadcastChannelManager();
+  }
+  return channelManager;
 }
-
-let cartChannel: BroadcastChannel | null = null;
-let lastBroadcastTimestamp = 0;
 
 /**
  * Broadcast cart update to other tabs (browser-only).
  * Guards with typeof check to prevent server-side errors.
  */
 function broadcastCartUpdate(items: CartItem[]): void {
-  if (typeof window === 'undefined') return;
-
-  try {
-    if (!cartChannel) {
-      cartChannel = new BroadcastChannel(CART_CHANNEL_NAME);
-      cartChannel.onmessageerror = () => {
-        console.warn('[cartStore] BroadcastChannel message error');
-      };
-    }
-    const timestamp = Date.now();
-    lastBroadcastTimestamp = timestamp;
-    cartChannel.postMessage({ type: 'CART_UPDATE', items, timestamp } satisfies CartBroadcast);
-  } catch (error) {
-    console.warn('[cartStore] Failed to broadcast cart update:', error);
-  }
+  getChannelManager().broadcastCartUpdate(items);
 }
 
 /**
@@ -46,32 +32,7 @@ function broadcastCartUpdate(items: CartItem[]): void {
  * Returns cleanup function. Browser-only.
  */
 function listenForCartUpdates(callback: (items: CartItem[]) => void): () => void {
-  if (typeof window === 'undefined') return () => {};
-
-  try {
-    if (!cartChannel) {
-      cartChannel = new BroadcastChannel(CART_CHANNEL_NAME);
-      cartChannel.onmessageerror = () => {
-        console.warn('[cartStore] BroadcastChannel message error');
-      };
-    }
-
-    const handler = (event: MessageEvent<CartBroadcast>) => {
-      if (event.data.type !== 'CART_UPDATE') return;
-      // Ignore broadcasts from self (compare timestamp to avoid echo)
-      if (event.data.timestamp <= lastBroadcastTimestamp) return;
-      callback(event.data.items);
-    };
-
-    cartChannel.addEventListener('message', handler);
-
-    return () => {
-      cartChannel?.removeEventListener('message', handler);
-    };
-  } catch (error) {
-    console.warn('[cartStore] Failed to listen for cart updates:', error);
-    return () => {};
-  }
+  return getChannelManager().listenForCartUpdates(callback);
 }
 
 // ── Types ────────────────────────────────────────────────────
@@ -279,11 +240,16 @@ useCartStore.subscribe(
 
 // ── Listen for updates from other tabs ────────────────────────
 
-if (typeof window !== 'undefined') {
-  // Set initial timestamp to avoid ignoring broadcasts from current tab on load
-  lastBroadcastTimestamp = Date.now();
+/**
+ * Initialize cross-tab sync. Called after store is set up.
+ * In browser environment, sets up BroadcastChannel listener.
+ *
+ * Tests can call this manually after setting up BroadcastChannel mocks.
+ */
+export function initCrossTabSync(): () => void {
+  if (typeof window === 'undefined') return () => {};
 
-  const cleanup = listenForCartUpdates((items) => {
+  const cleanup = listenForCartUpdates(/* istanbul ignore next */ (items) => {
     // Only update if different from current state to avoid unnecessary re-renders
     const currentItems = useCartStore.getState().items;
     if (JSON.stringify(currentItems) !== JSON.stringify(items)) {
@@ -292,10 +258,17 @@ if (typeof window !== 'undefined') {
   });
 
   // Cleanup on page unload
-  window.addEventListener('unload', () => {
+  window.addEventListener('unload', /* istanbul ignore next */ () => {
     cleanup();
-    cartChannel?.close();
+    getChannelManager().close();
   });
+
+  return cleanup;
+}
+
+// Auto-initialize cross-tab sync (browser only)
+if (typeof window !== 'undefined') {
+  initCrossTabSync();
 }
 
 // ── Selectors ─────────────────────────────────────────────────

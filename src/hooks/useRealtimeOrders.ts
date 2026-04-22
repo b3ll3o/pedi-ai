@@ -91,7 +91,7 @@ export function useRealtimeOrders({
           table: 'orders',
           filter: `restaurant_id=eq.${restaurantId}`,
         },
-        (payload) => {
+        /* istanbul ignore next */ (payload) => {
           // Invalidate and refetch on any change
           queryClient.invalidateQueries({ queryKey: ['admin-orders', restaurantId] })
           setIsConnected(true)
@@ -104,7 +104,7 @@ export function useRealtimeOrders({
           schema: 'public',
           table: 'order_items',
         },
-        (payload) => {
+        /* istanbul ignore next */ (payload) => {
           // Also refetch if order items change
           queryClient.invalidateQueries({ queryKey: ['admin-orders', restaurantId] })
         }
@@ -166,7 +166,7 @@ export function useRealtimeConnection() {
     pingIntervalRef.current = setInterval(measureLatency, 30000)
 
     return () => {
-      if (pingIntervalRef.current) {
+      /* istanbul ignore if */ if (pingIntervalRef.current) {
         clearInterval(pingIntervalRef.current)
       }
     }

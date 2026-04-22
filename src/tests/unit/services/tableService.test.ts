@@ -55,6 +55,16 @@ describe('tableService', () => {
 
       await expect(getTables('restaurant-123')).rejects.toThrow('Failed to fetch tables')
     })
+
+    it('handles json parsing failure on error response', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        json: () => Promise.reject(new Error('Invalid JSON')),
+      })
+
+      await expect(getTables('restaurant-123')).rejects.toThrow('Failed to fetch tables')
+    })
   })
 
   describe('getTable', () => {
@@ -79,6 +89,16 @@ describe('tableService', () => {
       })
 
       await expect(getTable('nonexistent')).rejects.toThrow('Table not found')
+    })
+
+    it('throws fallback error when response.json() throws on getTable', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        json: () => Promise.reject(new Error('Invalid JSON')),
+      })
+
+      await expect(getTable('nonexistent')).rejects.toThrow('Failed to fetch table')
     })
   })
 
@@ -113,6 +133,18 @@ describe('tableService', () => {
         'Table number already exists'
       )
     })
+
+    it('throws fallback error when response.json() throws', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        json: () => Promise.reject(new Error('Invalid JSON')),
+      })
+
+      await expect(createTable({ restaurant_id: 'rest-1', number: 1 })).rejects.toThrow(
+        'Failed to create table'
+      )
+    })
   })
 
   describe('updateTable', () => {
@@ -143,6 +175,16 @@ describe('tableService', () => {
       })
 
       await expect(updateTable('nonexistent', { name: 'Test' })).rejects.toThrow('Table not found')
+    })
+
+    it('throws fallback error when response.json() throws', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        json: () => Promise.reject(new Error('Invalid JSON')),
+      })
+
+      await expect(updateTable('1', { name: 'Test' })).rejects.toThrow('Failed to update table')
     })
   })
 
@@ -177,6 +219,16 @@ describe('tableService', () => {
       })
 
       await expect(deleteTable('1')).rejects.toThrow('Network error')
+    })
+
+    it('handles json parsing failure on delete error response', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        json: () => Promise.reject(new Error('Invalid JSON')),
+      })
+
+      await expect(deleteTable('1')).rejects.toThrow('Failed to delete table')
     })
 
     it('handles malformed error response', async () => {
@@ -231,6 +283,16 @@ describe('tableService', () => {
         ok: false,
         status: 500,
         json: () => Promise.resolve({ error: 'Failed to generate QR code' }),
+      })
+
+      await expect(generateTableQR('1')).rejects.toThrow('Failed to generate QR code')
+    })
+
+    it('throws fallback error when response.json() throws on QR generation', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        json: () => Promise.reject(new Error('Invalid JSON')),
       })
 
       await expect(generateTableQR('1')).rejects.toThrow('Failed to generate QR code')

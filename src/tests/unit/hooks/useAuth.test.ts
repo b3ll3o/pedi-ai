@@ -259,6 +259,25 @@ describe('useAuth hook', () => {
       expect(result.current.error).toBe('Sign in failed');
     });
 
+    it('signIn sets generic error when signIn throws object without message', async () => {
+      (getSession as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+      (getUser as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+      // signIn throws an object that is not an Error instance
+      (signIn as ReturnType<typeof vi.fn>).mockRejectedValue({ code: 'ERR_NETWORK', status: 500 });
+
+      const { result } = renderHook(() => useAuth());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      await act(async () => {
+        await result.current.signIn('admin@test.com', 'password123');
+      });
+
+      expect(result.current.error).toBe('Sign in failed');
+    });
+
     it('isLoading is true during signIn', async () => {
       (getSession as ReturnType<typeof vi.fn>).mockResolvedValue(null);
       (getUser as ReturnType<typeof vi.fn>).mockResolvedValue(null);
@@ -371,6 +390,34 @@ describe('useAuth hook', () => {
       });
 
       expect(result.current.error).toBe('User fetch failed');
+    });
+
+    it('sets generic error when initAuth catches non-Error throw', async () => {
+      // getSession throws a non-Error value (e.g., string)
+      (getSession as ReturnType<typeof vi.fn>).mockRejectedValue('Network error string');
+      (getUser as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+
+      const { result } = renderHook(() => useAuth());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.error).toBe('Failed to initialize auth');
+    });
+
+    it('sets error when initAuth catches object without message', async () => {
+      // getUser throws an object that is not an Error instance
+      (getSession as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+      (getUser as ReturnType<typeof vi.fn>).mockRejectedValue({ code: 'ERR_NETWORK' });
+
+      const { result } = renderHook(() => useAuth());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.error).toBe('Failed to initialize auth');
     });
   });
 

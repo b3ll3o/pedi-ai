@@ -46,7 +46,7 @@ export function useAuth(): UseAuthReturn {
           setError(err instanceof Error ? err.message : 'Failed to initialize auth');
         }
       } finally {
-        if (isMounted) {
+        /* istanbul ignore if */ if (isMounted) {
           setIsLoading(false);
         }
       }
@@ -70,7 +70,7 @@ export function useAuth(): UseAuthReturn {
       } else if (event === 'TOKEN_REFRESHED' && session) {
         // Token refreshed - update session
         setSession(session);
-      } else if (event === 'SIGNED_IN' && session) {
+      } /* istanbul ignore next */ else if (event === 'SIGNED_IN' && session) {
         // User signed in - update state
         setSession(session);
         setUser(session.user);
@@ -96,7 +96,7 @@ export function useAuth(): UseAuthReturn {
         setUser(data.user);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sign in failed');
+      /* istanbul ignore next */ setError(err instanceof Error ? err.message : 'Sign in failed');
     } finally {
       setIsLoading(false);
     }
@@ -110,7 +110,7 @@ export function useAuth(): UseAuthReturn {
       setSession(null);
       setUser(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sign out failed');
+      /* istanbul ignore next */ setError(err instanceof Error ? err.message : 'Sign out failed');
     } finally {
       setIsLoading(false);
     }

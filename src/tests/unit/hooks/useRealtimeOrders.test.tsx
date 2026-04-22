@@ -190,6 +190,24 @@ describe('useRealtimeOrders', () => {
       // The query failure is handled internally by react-query
       expect(result.current.isLoading).toBe(false)
     })
+
+    it('throws when response.ok is false', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        json: () => Promise.reject(new Error('Invalid JSON')),
+      })
+
+      const { result } = renderHook(() => useRealtimeOrders({ restaurantId: 'restaurant-123' }), {
+        wrapper: createWrapper(),
+      })
+
+      // Wait for query to settle
+      await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+      // Query should have failed but error is internal to react-query
+      expect(result.current.isLoading).toBe(false)
+    })
   })
 
   describe('3. Realtime subscription setup', () => {

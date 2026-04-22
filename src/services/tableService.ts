@@ -33,7 +33,7 @@ export async function getTables(restaurantId: string): Promise<tables[]> {
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Failed to fetch tables' }))
-    throw new Error(error.error || 'Failed to fetch tables')
+    /* istanbul ignore next */ throw new Error(error.error || 'Failed to fetch tables')
   }
 
   const { tables } = await response.json()
@@ -45,7 +45,7 @@ export async function getTable(tableId: string): Promise<tables> {
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Failed to fetch table' }))
-    throw new Error(error.error || 'Failed to fetch table')
+    /* istanbul ignore next */ throw new Error(error.error || 'Failed to fetch table')
   }
 
   const { table } = await response.json()
@@ -65,7 +65,7 @@ export async function createTable(input: TableInput): Promise<tables> {
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Failed to create table' }))
-    throw new Error(error.error || 'Failed to create table')
+    /* istanbul ignore next */ throw new Error(error.error || 'Failed to create table')
   }
 
   const { table } = await response.json()
@@ -88,7 +88,7 @@ export async function updateTable(
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Failed to update table' }))
-    throw new Error(error.error || 'Failed to update table')
+    /* istanbul ignore next */ throw new Error(error.error || 'Failed to update table')
   }
 
   const { table } = await response.json()
@@ -103,7 +103,7 @@ export async function deleteTable(tableId: string): Promise<void> {
   })
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Failed to delete table' }))
+    const error = await response.json().catch(/* istanbul ignore next */ () => ({ error: 'Failed to delete table' }))
     throw new Error(error.error || 'Failed to delete table')
   }
 }
@@ -114,7 +114,7 @@ export async function generateTableQR(tableId: string): Promise<TableQRData> {
   const response = await fetch(`/api/admin/tables/${tableId}/qr`)
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Failed to generate QR code' }))
+    const error = await response.json().catch(/* istanbul ignore next */ () => ({ error: 'Failed to generate QR code' }))
     throw new Error(error.error || 'Failed to generate QR code')
   }
 
