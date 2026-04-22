@@ -20,8 +20,8 @@
 **Verificação:** `grep -n 'processQueue' src/components/providers/OfflineIndicator.tsx`
 
 - [x] 2.1 Importar `processQueue` de `@/lib/offline/sync`
-- [ ] 2.2 No handler `onOnline`: adicionar chamada `processQueue()`
-- [ ] 2.3 Verificar que sync ocorre após reconexão
+- [x] 2.2 No handler `onOnline`: adicionar chamada `processQueue()`
+- [x] 2.3 Verificar que sync ocorre após reconexão
 
 ---
 
@@ -30,10 +30,10 @@
 **Arquivo:** `src/stores/menuStore.ts`
 **Verificação:** `grep -n 'getCachedMenu' src/stores/menuStore.ts`
 
-- [~] 3.1 Criar função/hook `useHydratedMenu()` que tenta API e usa cache no fallback
-- [ ] 3.2 Importar `getCachedMenu` de `@/lib/offline/cache`
-- [ ] 3.3 Implementar fallback: se fetch falhar, usar cache
-- [ ] 3.4 Documentar que `useMenu` hook já faz hydrate automaticamente
+- [x] 3.1 Criar função/hook `useHydratedMenu()` que tenta API e usa cache no fallback
+- [x] 3.2 Importar `getCachedMenu` de `@/lib/offline/cache`
+- [x] 3.3 Implementar fallback: se fetch falhar, usar cache
+- [x] 3.4 Documentar que `useMenu` hook já faz hydrate automaticamente
 
 ---
 

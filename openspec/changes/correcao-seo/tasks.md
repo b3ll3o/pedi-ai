@@ -18,7 +18,7 @@
 
 ## Fase 3: Acessibilidade
 
-- [~] Adicionar aria-label nos links da hero section em `src/app/page.tsx`
+- [x] Adicionar aria-label nos links da hero section em `src/app/page.tsx`
 
 ## Fase 4: Verificação
 
