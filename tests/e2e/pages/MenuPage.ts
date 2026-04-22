@@ -34,7 +34,8 @@ export class MenuPage {
 
   async search(query: string): Promise<void> {
     await this.searchInput.fill(query)
-    await this.page.waitForResponse(/\/api\/menu/)
+    // Search is debounced client-side (300ms), wait for debounce
+    await this.page.waitForTimeout(400)
   }
 
   getProductPrice(productName: string): Locator {

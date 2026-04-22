@@ -34,6 +34,7 @@ export function CartBadge() {
       onClick={handleClick}
       aria-label={`Carrinho com ${totalItems} item${totalItems !== 1 ? 's' : ''}`}
       type="button"
+      data-testid="cart-badge"
     >
       <svg
         className={styles.icon}

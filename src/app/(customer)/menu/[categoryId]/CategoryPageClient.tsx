@@ -3,6 +3,7 @@
 import { useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { useMenuStore } from '@/stores/menuStore';
 import { DietaryFilter } from '@/components/menu/DietaryFilter';
 import { ProductList } from '@/components/menu/ProductList';
@@ -44,6 +45,7 @@ function toStoreDietaryLabel(label: DietaryLabel): import('@/stores/menuStore').
 const DEMO_RESTAURANT_ID = '00000000-0000-0000-0000-000000000001';
 
 export default function CategoryPageClient({ categoryId }: CategoryPageClientProps) {
+  const router = useRouter();
   const categories = useMenuStore((state) => state.categories);
   const storeProducts = useMenuStore((state) => state.products);
   const storeDietaryFilters = useMenuStore((state) => state.dietaryFilters);
@@ -57,11 +59,9 @@ export default function CategoryPageClient({ categoryId }: CategoryPageClientPro
   const setError = useMenuStore((state) => state.setError);
   const setSearchQuery = useMenuStore((state) => state.setSearchQuery);
 
-  // Fetch menu data on mount if store is empty
+  // Fetch menu data on mount - always fetch to ensure we have latest data
   useEffect(() => {
     async function fetchMenuData() {
-      if (categories.length > 0) return; // Already loaded
-
       setIsLoading(true);
       setError(null);
 
@@ -80,7 +80,7 @@ export default function CategoryPageClient({ categoryId }: CategoryPageClientPro
     }
 
     fetchMenuData();
-  }, [categories.length, setCategories, setProducts, setIsLoading, setError]);
+  }, [setCategories, setProducts, setIsLoading, setError]);
 
   // Get category by ID
   const category = useMemo(() => {
@@ -142,6 +142,10 @@ export default function CategoryPageClient({ categoryId }: CategoryPageClientPro
     filters
       .filter((f) => !currentComponentLabels.includes(f))
       .forEach((f) => toggleDietaryFilter(toStoreDietaryLabel(f)));
+  };
+
+  const handleProductClick = (productId: string) => {
+    router.push(`/product/${productId}`);
   };
 
   if (!category) {
@@ -228,6 +232,7 @@ export default function CategoryPageClient({ categoryId }: CategoryPageClientPro
           products={products}
           isLoading={isLoading}
           selectedCategoryId={categoryId}
+          onProductClick={handleProductClick}
         />
       </main>
     </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import type { products } from '@/lib/supabase/types';
+import { useCartStore } from '@/stores/cartStore';
 import styles from './ProductList.module.css';
 
 export type Product = products;
@@ -18,6 +19,7 @@ export function ProductList({
   onProductClick,
   selectedCategoryId,
 }: ProductListProps) {
+  const addItem = useCartStore((state) => state.addItem);
   if (isLoading) {
     return (
       <div className={styles.grid} data-testid="product-list">
@@ -68,6 +70,23 @@ export function ProductList({
               <span className={styles.productPrice} data-testid="product-price">
                 R$ {product.price.toFixed(2).replace('.', ',')}
               </span>
+              <button
+                className={styles.addToCartButton}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  addItem({
+                    productId: product.id,
+                    name: product.name,
+                    quantity: 1,
+                    unitPrice: product.price,
+                    modifiers: [],
+                  });
+                }}
+                data-testid="add-to-cart-button"
+                aria-label={`Adicionar ${product.name} ao carrinho`}
+              >
+                +
+              </button>
             </div>
           </div>
         </div>

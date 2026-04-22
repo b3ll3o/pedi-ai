@@ -5,6 +5,8 @@ import { StoreProvider } from '@/components/providers/StoreProvider';
 import { ServiceWorkerRegistration } from '@/components/providers/ServiceWorkerRegistration';
 import { AppInitializer } from '@/components/providers/AppInitializer';
 import { OfflineIndicator } from '@/components/providers/OfflineIndicator';
+import { CartBadge } from '@/components/cart/CartBadge';
+import { CartDrawer } from '@/components/cart/CartDrawer';
 import './globals.css';
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://pedi-ai.com';
@@ -197,6 +199,8 @@ export default function RootLayout({
             <AppInitializer />
             <ServiceWorkerRegistration />
             <OfflineIndicator />
+            <CartDrawer />
+            <CartBadge />
             {children}
           </StoreProvider>
         </ReactQueryProvider>
