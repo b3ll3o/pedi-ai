@@ -2,20 +2,13 @@ import { test as base, Page } from '@playwright/test'
 import * as fs from 'fs'
 import * as path from 'path'
 
-/**
- * Dados de usuários de teste para autenticação E2E.
- * Em produção, usar variáveis de ambiente ou seed data.
- */
-export const TEST_USERS = {
-  customer: { email: 'customer@test.com', password: 'CustomerPassword123!' },
-  admin: { email: 'admin@test.com', password: 'AdminPassword123!' },
-  waiter: { email: 'waiter@test.com', password: 'WaiterPassword123!' },
-} as const
+// Caminho para o resultado do seed
+const SEED_RESULT_PATH = path.join(__dirname, '..', '..', '..', 'scripts', '.seed-result.json')
 
 /**
  * Tipo para roles de usuário.
  */
-export type UserRole = keyof typeof TEST_USERS
+export type UserRole = 'customer' | 'admin' | 'waiter'
 
 /**
  * Fixture extendido com métodos de autenticação e seed data.
@@ -33,8 +26,9 @@ export interface Fixtures {
  * Dados de seed para testes.
  */
 export interface SeedData {
+  restaurant: { id: string; name: string }
   customer: { email: string; password: string; id: string }
-  admin: { email: string; password: string; id: string; resetToken: string }
+  admin: { email: string; password: string; id: string }
   waiter: { email: string; password: string; id: string }
   table: { id: string; code: string }
   categories: Array<{ id: string; name: string }>
@@ -112,49 +106,49 @@ function writeStorageMeta(email: string): void {
   fs.writeFileSync(getMetaPath(email), JSON.stringify(meta))
 }
 
-async function createTestData(): Promise<SeedData> {
-  const customer = {
-    email: generateEmail(),
-    password: 'TestPassword123!',
-    id: generateId(),
+/**
+ * Lê dados de seed do arquivo `.seed-result.json`.
+ * O seed deve ser executado via `pnpm test:e2e:seed` antes dos testes.
+ */
+async function loadSeedData(): Promise<SeedData> {
+  if (!fs.existsSync(SEED_RESULT_PATH)) {
+    throw new Error(
+      `Seed result não encontrado: ${SEED_RESULT_PATH}\n` +
+      `Execute 'pnpm test:e2e:seed' antes de rodar os testes.`
+    )
   }
 
-  const admin = {
-    email: generateEmail(),
-    password: 'AdminPassword123!',
-    id: generateId(),
-    resetToken: `reset-token-${generateId()}`,
+  const raw = JSON.parse(fs.readFileSync(SEED_RESULT_PATH, 'utf-8'))
+
+  // Adapta formato do seed para formato interno do fixture
+  return {
+    restaurant: raw.restaurant,
+    customer: {
+      id: raw.users.customer.id,
+      email: raw.users.customer.email,
+      password: raw.users.customer.password,
+    },
+    admin: {
+      id: raw.users.admin.id,
+      email: raw.users.admin.email,
+      password: raw.users.admin.password,
+    },
+    waiter: {
+      id: raw.users.waiter.id,
+      email: raw.users.waiter.email,
+      password: raw.users.waiter.password,
+    },
+    table: {
+      id: raw.tables[0]?.id ?? raw.table?.id ?? '',
+      code: raw.tables[0]?.qr_code ?? raw.table?.code ?? '',
+    },
+    categories: raw.categories,
+    products: raw.products.map((p: { id: string; name: string; price: number }) => ({
+      id: p.id,
+      name: p.name,
+      price: p.price,
+    })),
   }
-
-  const waiter = {
-    email: generateEmail(),
-    password: 'WaiterPassword123!',
-    id: generateId(),
-  }
-
-  const table = {
-    id: generateId(),
-    code: `TABLE-${generateId().substring(0, 6).toUpperCase()}`,
-  }
-
-  const categories = [
-    { id: generateId(), name: 'Bebidas' },
-    { id: generateId(), name: 'Pratos Principais' },
-    { id: generateId(), name: 'Sobremesas' },
-  ]
-
-  const products = [
-    { id: generateId(), name: 'Coca-Cola', price: 5.99 },
-    { id: generateId(), name: 'Picanha', price: 45.99 },
-    { id: generateId(), name: 'Tiramisu', price: 15.99 },
-  ]
-
-  return { customer, admin, waiter, table, categories, products }
-}
-
-async function cleanupTestData(_data: SeedData): Promise<void> {
-  // Cleanup é tratado por soft delete do Supabase ou TTL
-  // Em produção, implementar cleanup adequado
 }
 
 /**
@@ -190,9 +184,8 @@ async function loadStorageState(page: Page, email: string, destinationUrl: strin
 
 export const test = base.extend<Fixtures>({
   seedData: async ({ browser }, use) => {
-    const data = await createTestData()
+    const data = await loadSeedData()
     await use(data)
-    await cleanupTestData(data)
   },
 
   guest: async ({ page }, use) => {

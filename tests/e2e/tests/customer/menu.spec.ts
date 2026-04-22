@@ -9,7 +9,7 @@ test.describe('Menu', () => {
     await menuPage.goto()
   })
 
-  test('@smoke', 'should display menu page with categories', async ({ page }) => {
+  test('should display menu page with categories', { tag: '@smoke' }, async ({ page }) => {
     await expect(page).toHaveURL(/\/menu/)
     await expect(page.locator('[data-testid="page-title"]')).toContainText('Cardápio')
     await expect(menuPage.categoryTabs.first()).toBeVisible()

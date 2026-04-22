@@ -11,6 +11,8 @@
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
     "test:e2e": "playwright test --project=chromium-headless",
+    "test:e2e:seed": "tsx tests/e2e/scripts/seed.ts",
+    "test:e2e:cleanup": "tsx tests/e2e/scripts/cleanup.ts",
     "test:e2e:all": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:all": "vitest run tests/unit tests/integration && playwright test --project=chromium-headless",
@@ -39,18 +41,20 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
+    "@playwright/test": "^1.52.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
-    "@playwright/test": "^1.52.0",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitest/coverage-v8": "^4.1.4",
+    "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
     "fake-indexeddb": "^6.2.5",
     "jsdom": "^29.0.2",
     "prettier": "^3.8.3",
+    "tsx": "^4.21.0",
     "typescript": "^5",
     "vitest": "^4.1.4"
   }

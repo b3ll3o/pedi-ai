@@ -15,7 +15,7 @@ test.describe('Autenticação do Cliente', () => {
     await expect(loginPage.loginButton).toBeVisible()
   })
 
-  test('@smoke @critical', 'deve logar com credenciais válidas de cliente', async ({ page, seedData }) => {
+  test('deve logar com credenciais válidas de cliente', { tag: ['@smoke', '@critical'] }, async ({ page, seedData }) => {
     await loginPage.login(seedData.customer.email, seedData.customer.password)
     await loginPage.waitForMenu()
     await expect(page).toHaveURL('/menu')
@@ -32,12 +32,12 @@ test.describe('Autenticação do Cliente', () => {
     await expect(page.locator('[data-testid="field-error"]').first()).toBeVisible()
   })
 
-  test('@critical', 'deve fazer logout e redirecionar para login', async ({ authenticated }) => {
+  test('deve fazer logout e redirecionar para login', { tag: '@critical' }, async ({ authenticated }) => {
     await authenticated.locator('[data-testid="logout-button"]').click()
     await expect(authenticated).toHaveURL('/login')
   })
 
-  test('@critical', 'deve redirecionar para login ao acessar rota protegida', async ({ page }) => {
+  test('deve redirecionar para login ao acessar rota protegida', { tag: '@critical' }, async ({ page }) => {
     await page.goto('/menu')
     await expect(page).toHaveURL(/\/login/)
   })

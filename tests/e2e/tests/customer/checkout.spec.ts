@@ -34,7 +34,7 @@ test.describe('Checkout', () => {
     await expect(guest.locator('[data-testid="field-error"]').first()).toBeVisible()
   })
 
-  test('@smoke @slow', 'should submit order with valid data', async ({ guest }) => {
+  test('should submit order with valid data', { tag: ['@smoke', '@slow'] }, async ({ guest }) => {
     await checkoutPage.fillCustomerInfo({
       name: 'João Silva',
       email: 'joao@example.com',
