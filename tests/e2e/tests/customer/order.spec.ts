@@ -2,7 +2,7 @@ import { test, expect } from '../shared/fixtures'
 import { OrderPage, OrderStatus } from '../../pages/OrderPage'
 
 test.describe('Order', () => {
-  test('should display order tracking information', async ({ guest, seedData }) => {
+  test('@smoke', 'should display order tracking information', async ({ guest, seedData }) => {
     const orderPage = new OrderPage(guest)
     await orderPage.goto('test-order-123')
 
@@ -27,7 +27,7 @@ test.describe('Order', () => {
     expect(total).toMatch(/R\$\s*[\d,]+/)
   })
 
-  test('should update status in real-time', async ({ guest }) => {
+  test('@slow', 'should update status in real-time', async ({ guest }) => {
     const orderPage = new OrderPage(guest)
     await orderPage.goto('test-order-123')
 
@@ -64,7 +64,7 @@ test.describe('Order', () => {
     }
   })
 
-  test('should not allow cancellation when preparing', async ({ guest }) => {
+  test('@slow', 'should not allow cancellation when preparing', async ({ guest }) => {
     const orderPage = new OrderPage(guest)
     await orderPage.goto('test-order-123')
 

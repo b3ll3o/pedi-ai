@@ -5,11 +5,24 @@
  * - Local dev: single 'chromium-headless' project, no video/trace/screenshot,
  *   half the CPU cores, reuseExistingServer=true for faster iteration.
  * - CI: all 5 browser/device projects, video+trace+screenshot on failure,
- *   1 worker, fresh server every run.
+ *   1 worker, 4 shards, fresh server every run.
+ *
+ * Sharding (CI):
+ * - Default: 4 shards (tests distribuídos entre workers)
+ * - Controlar shard específico: SHARD=1/4 npx playwright test --shard=1/4
+ * - Cada runner CI executa: SHARD=1/4, SHARD=2/4, SHARD=3/4, SHARD=4/4
+ *
+ * Network Blocking:
+ * - globalSetup.ts launches a browser and applies route blocking globally
+ * - Blocked: fonts.googleapis.com, google-analytics.com, facebook.net, etc.
  */
 import { defineConfig, devices } from '@playwright/test'
 
 const isCI = process.env.CI === 'true'
+// SHARD=current/total (ex: 1/4, 2/4). Default em CI: 4 shards.
+const shardMatch = process.env.SHARD?.match(/^(\d+)\/(\d+)$/)
+const shardCurrent = shardMatch ? Number(shardMatch[1]) : 1
+const shardTotal = shardMatch ? Number(shardMatch[2]) : isCI ? 4 : 1
 
 export default defineConfig({
   testDir: './tests',
@@ -17,6 +30,7 @@ export default defineConfig({
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
   workers: isCI ? 1 : Math.max(1, require('os').cpus().length / 2),
+  shard: isCI && !shardMatch ? { current: 1, total: 4 } : { current: shardCurrent, total: shardTotal },
   reporter: [
     ['html', { outputFolder: 'playwright-report' }],
     ['json', { outputFile: 'playwright-results.json' }],
@@ -73,4 +87,6 @@ export default defineConfig({
     timeout: 120_000,
   },
   outputDir: 'test-results',
+
+  globalSetup: './globalSetup.ts',
 })

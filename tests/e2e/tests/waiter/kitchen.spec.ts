@@ -64,7 +64,7 @@ test.describe('Kitchen / Waiter Dashboard', () => {
     // Audio should toggle
   })
 
-  test('should wait for new order notification', async ({ waiter }) => {
+  test('@slow', 'should wait for new order notification', async ({ waiter }) => {
     // This is a long-waiting test
     await expect(kitchenPage.kitchenOrders.first()).toBeVisible({ timeout: 5000 })
   })

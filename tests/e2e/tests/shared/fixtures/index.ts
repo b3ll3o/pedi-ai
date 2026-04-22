@@ -1,4 +1,6 @@
 import { test as base, Page } from '@playwright/test'
+import * as fs from 'fs'
+import * as path from 'path'
 
 /**
  * Dados de usuários de teste para autenticação E2E.
@@ -23,6 +25,7 @@ export interface Fixtures {
   authenticated: Page
   admin: Page
   waiter: Page
+  cleanPage: Page
   seedData: SeedData
 }
 
@@ -38,12 +41,75 @@ export interface SeedData {
   products: Array<{ id: string; name: string; price: number }>
 }
 
+/** TTL de 30 minutos para cache de sessão */
+const STORAGE_TTL_MS = 30 * 60 * 1000
+
+/** Diretório para armazenar state de autenticação */
+const STORAGE_DIR = '.playwright/.auth'
+
+interface StorageMeta {
+  createdAt: number
+  email: string
+}
+
 function generateId(): string {
   return Math.random().toString(36).substring(2, 15)
 }
 
 function generateEmail(): string {
   return `test-${generateId()}@pedi-ai.test`
+}
+
+/**
+ * Garante que o diretório de storage existe.
+ */
+function ensureStorageDir(): void {
+  const dir = path.join(process.cwd(), STORAGE_DIR)
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true })
+  }
+}
+
+/**
+ * Retorna path do arquivo de storage state para um email.
+ */
+function getStoragePath(email: string): string {
+  ensureStorageDir()
+  const safeName = email.replace(/[^a-zA-Z0-9]/g, '_')
+  return path.join(process.cwd(), STORAGE_DIR, `${safeName}.json`)
+}
+
+/**
+ * Retorna path do arquivo de metadata do storage.
+ */
+function getMetaPath(email: string): string {
+  ensureStorageDir()
+  const safeName = email.replace(/[^a-zA-Z0-9]/g, '_')
+  return path.join(process.cwd(), STORAGE_DIR, `${safeName}.meta.json`)
+}
+
+/**
+ * Verifica se o storage state é válido (existe e não expirou).
+ */
+function isStorageValid(email: string): boolean {
+  const metaPath = getMetaPath(email)
+  if (!fs.existsSync(metaPath)) return false
+
+  try {
+    const meta: StorageMeta = JSON.parse(fs.readFileSync(metaPath, 'utf-8'))
+    const now = Date.now()
+    return (now - meta.createdAt) < STORAGE_TTL_MS
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Salva metadata do storage (timestamp de criação).
+ */
+function writeStorageMeta(email: string): void {
+  const meta: StorageMeta = { createdAt: Date.now(), email }
+  fs.writeFileSync(getMetaPath(email), JSON.stringify(meta))
 }
 
 async function createTestData(): Promise<SeedData> {
@@ -92,9 +158,9 @@ async function cleanupTestData(_data: SeedData): Promise<void> {
 }
 
 /**
- * Realiza login genérico.
+ * Realiza login genérico e salva storage state.
  */
-async function login(
+async function performLogin(
   page: Page,
   email: string,
   password: string,
@@ -106,6 +172,20 @@ async function login(
   await page.fill('[data-testid="password-input"]', password)
   await page.click('[data-testid="login-button"]')
   await page.waitForURL(expectedUrl)
+
+  // Salva storage state após login
+  const storagePath = getStoragePath(email)
+  await page.context().storageState({ path: storagePath })
+  writeStorageMeta(email)
+}
+
+/**
+ * Carrega storage state salvo (se válido).
+ */
+async function loadStorageState(page: Page, email: string, destinationUrl: string): Promise<void> {
+  const storagePath = getStoragePath(email)
+  await page.context().storageState({ path: storagePath })
+  await page.goto(destinationUrl)
 }
 
 export const test = base.extend<Fixtures>({
@@ -121,17 +201,48 @@ export const test = base.extend<Fixtures>({
   },
 
   authenticated: async ({ page, seedData }, use) => {
-    await login(page, seedData.customer.email, seedData.customer.password, '/login', /\/menu/)
+    const email = seedData.customer.email
+    const password = seedData.customer.password
+
+    if (isStorageValid(email)) {
+      await loadStorageState(page, email, '/menu')
+    } else {
+      await performLogin(page, email, password, '/login', /\/menu/)
+    }
     await use(page)
   },
 
   admin: async ({ page, seedData }, use) => {
-    await login(page, seedData.admin.email, seedData.admin.password, '/admin/login', /\/admin\/dashboard/)
+    const email = seedData.admin.email
+    const password = seedData.admin.password
+
+    if (isStorageValid(email)) {
+      await loadStorageState(page, email, '/admin/dashboard')
+    } else {
+      await performLogin(page, email, password, '/admin/login', /\/admin\/dashboard/)
+    }
     await use(page)
   },
 
   waiter: async ({ page, seedData }, use) => {
-    await login(page, seedData.waiter.email, seedData.waiter.password, '/admin/login', /\/admin\/dashboard/)
+    const email = seedData.waiter.email
+    const password = seedData.waiter.password
+
+    if (isStorageValid(email)) {
+      await loadStorageState(page, email, '/admin/dashboard')
+    } else {
+      await performLogin(page, email, password, '/admin/login', /\/admin\/dashboard/)
+    }
+    await use(page)
+  },
+
+  cleanPage: async ({ page }, use) => {
+    await page.goto('about:blank')
+    await page.context().clearCookies()
+    await page.evaluate(() => {
+      localStorage.clear()
+      sessionStorage.clear()
+    })
     await use(page)
   },
 })

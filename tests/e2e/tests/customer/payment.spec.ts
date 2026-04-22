@@ -33,7 +33,7 @@ test.describe('Payment', () => {
     await expect(guest.locator('[data-testid="pix-qr-code"]')).toBeVisible()
   })
 
-  test('should wait for PIX payment confirmation', async ({ guest, seedData }) => {
+  test('@slow', 'should wait for PIX payment confirmation', async ({ guest, seedData }) => {
     // Create PIX order
     await guest.goto('/checkout')
     await checkoutPage.fillCustomerInfo({
@@ -69,7 +69,7 @@ test.describe('Payment', () => {
     await expect(guest.locator('[data-testid="credit-card-form"]')).toBeVisible()
   })
 
-  test('should handle payment timeout', async ({ guest }) => {
+  test('@slow', 'should handle payment timeout', async ({ guest }) => {
     await guest.goto('/checkout')
     await checkoutPage.fillCustomerInfo({
       name: 'Timeout User',

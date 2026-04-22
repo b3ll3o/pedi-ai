@@ -15,7 +15,7 @@ test.describe('Admin Authentication', () => {
     await expect(loginPage.loginButton).toBeVisible()
   })
 
-  test('should login with valid admin credentials', async ({ page, seedData }) => {
+  test('@smoke @critical', 'should login with valid admin credentials', async ({ page, seedData }) => {
     await loginPage.login(seedData.admin.email, seedData.admin.password)
     await loginPage.waitForDashboard()
     await expect(page).toHaveURL('/admin/dashboard')
@@ -32,12 +32,12 @@ test.describe('Admin Authentication', () => {
     await expect(page.locator('[data-testid="field-error"]').first()).toBeVisible()
   })
 
-  test('should logout and redirect to login', async ({ admin }) => {
+  test('@critical', 'should logout and redirect to login', async ({ admin }) => {
     await admin.locator('[data-testid="logout-button"]').click()
     await expect(admin).toHaveURL('/admin/login')
   })
 
-  test('should redirect to login when accessing protected route', async ({ page }) => {
+  test('@critical', 'should redirect to login when accessing protected route', async ({ page }) => {
     await page.goto('/admin/dashboard')
     await expect(page).toHaveURL(/\/admin\/login/)
   })

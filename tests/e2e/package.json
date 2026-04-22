@@ -16,6 +16,10 @@
     "test:e2e:firefox": "playwright test --project=firefox",
     "test:e2e:webkit": "playwright test --project=webkit",
     "test:e2e:grep": "playwright test -g",
+    "test:e2e:smoke": "playwright test --grep=@smoke",
+    "test:e2e:critical": "playwright test --grep=@critical",
+    "test:e2e:slow": "playwright test --grep=@slow",
+    "test:e2e:fast": "playwright test --grepInvert=@slow",
     "clean": "playwright clean",
     "install:browsers": "playwright install --with-deps chromium firefox webkit",
     "codegen": "playwright codegen"
