@@ -1,9 +1,6 @@
 # Supabase CLI Configuration
 # https://supabase.com/docs/guides/cli/config
 
-[project]
-project_id = "your-project-id"
-
 [api]
 enabled = true
 port = 54321
@@ -43,8 +40,6 @@ file_size_limit = "50MiB"
 
 [auth]
 enabled = true
-# Port used by the GoTrue server
-port = 54321
 site_url = "http://localhost:3000"
 additional_redirect_urls = ["https://localhost:3000"]
 jwt_expiry = 3600
@@ -72,4 +67,3 @@ secret = ""
 [edge_runtime]
 enabled = true
 policy = "oneshot"
-inspect = true

@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import type { products } from '@/lib/supabase/types';
+import { useCartStore } from '@/stores/cartStore';
 import styles from './ProductCard.module.css';
 
 interface ProductCardProps {
@@ -45,6 +46,8 @@ function getGradientPlaceholder(name: string): string {
 }
 
 export function ProductCard({ product, onClick }: ProductCardProps) {
+  const addItem = useCartStore((state) => state.addItem);
+
   const handleClick = () => {
     onClick?.(product.id);
   };
@@ -56,11 +59,23 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
     }
   };
 
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!product.available) return;
+    addItem({
+      productId: product.id,
+      name: product.name,
+      unitPrice: product.price,
+      quantity: 1,
+      modifiers: [],
+    });
+  };
+
   const hasImage = Boolean(product.image_url);
   const gradientBg = getGradientPlaceholder(product.name);
 
   return (
-    <div className={styles.wrapper}>
+    <div className={styles.wrapper} data-testid="product-card">
       <button
         className={`${styles.card} ${!product.available ? styles.unavailable : ''}`}
         onClick={handleClick}
@@ -105,7 +120,7 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
           )}
 
           <div className={styles.footer}>
-            <span className={styles.price}>{formatPrice(product.price)}</span>
+            <span className={styles.price} data-testid="product-price">{formatPrice(product.price)}</span>
 
             {product.dietary_labels && product.dietary_labels.length > 0 && (
               <div className={styles.badges}>
@@ -130,6 +145,16 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
             )}
           </div>
         </div>
+      </button>
+      <button
+        className={styles.addButton}
+        onClick={handleAddToCart}
+        disabled={!product.available}
+        data-testid="add-to-cart-button"
+        type="button"
+        aria-label={`Adicionar ${product.name} ao carrinho`}
+      >
+        Adicionar
       </button>
     </div>
   );

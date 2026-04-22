@@ -1,16 +1,16 @@
 import { test as base } from '@playwright/test'
 
 /**
- * Soft assertions helper for Playwright E2E tests.
+ * Helper de soft assertions para testes E2E com Playwright.
  *
- * Collects all assertion failures instead of stopping at the first error.
- * Useful for validating multiple conditions in a single test flow.
+ * Coleta todas as falhas de assertion ao invés de parar no primeiro erro.
+ * Útil para validar múltiplas condições em um único fluxo de teste.
  *
  * @example
  * import { softExpect } from '../shared/helpers/soft-assertions'
  *
- * await softExpect(page.locator('.title')).toHaveText('Esperado')
- * await softExpect(page.locator('.subtitle')).toHaveText('Outro')
- * // If both fail, report shows both errors
+ * await softExpect(page.locator('.titulo')).toHaveText('Esperado')
+ * await softExpect(page.locator('.subtitulo')).toHaveText('Outro')
+ * // Se ambos falharem, o relatório mostra ambos os erros
  */
 export const softExpect = base.expect.configure({ soft: true })

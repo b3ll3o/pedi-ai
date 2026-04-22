@@ -9,7 +9,7 @@ test.describe('Admin Orders', () => {
     await ordersPage.goto()
   })
 
-  test('should display orders list', async ({ admin }) => {
+  test('should display orders list', { tag: '@smoke' }, async ({ admin }) => {
     await expect(admin.locator('[data-testid="page-title"]')).toContainText('Pedidos')
     await expect(ordersPage.ordersList.first()).toBeVisible()
   })
@@ -24,7 +24,7 @@ test.describe('Admin Orders', () => {
     // Should show matching orders
   })
 
-  test('should view order details', async ({ admin }) => {
+  test('should view order details', { tag: '@smoke' }, async ({ admin }) => {
     const orderId = await ordersPage.ordersList.first().locator('[data-testid="order-id"]').textContent()
     if (orderId) {
       await ordersPage.viewOrderDetails(orderId)
@@ -32,7 +32,7 @@ test.describe('Admin Orders', () => {
     }
   })
 
-  test('should update order status to confirmed', async ({ admin }) => {
+  test('should update order status to confirmed', { tag: '@smoke' }, async ({ admin }) => {
     const orderId = await ordersPage.ordersList.first().locator('[data-testid="order-id"]').textContent()
     if (orderId) {
       await ordersPage.updateOrderStatus(orderId, 'confirmed')

@@ -294,6 +294,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
   width: 44px;
   height: 44px;
   background-color: var(--button-bg, #f5f5f5);

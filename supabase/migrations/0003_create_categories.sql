@@ -1,8 +1,6 @@
 -- Migration: Create categories table
 -- Product categories with soft delete support
 
-COMMENT ON TABLE categories IS 'Product categories with sort ordering and soft delete';
-
 CREATE TABLE categories (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
@@ -15,6 +13,8 @@ CREATE TABLE categories (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+COMMENT ON TABLE categories IS 'Product categories with sort ordering and soft delete';
 
 CREATE INDEX idx_categories_restaurant_id ON categories(restaurant_id);
 CREATE INDEX idx_categories_sort_order ON categories(restaurant_id, sort_order);

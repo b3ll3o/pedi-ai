@@ -3,8 +3,14 @@ import Stripe from 'stripe'
 import { createClient } from '@/lib/supabase/server'
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
+const isDemoMode = process.env.NEXT_PUBLIC_DEMO_PAYMENT_MODE === 'true'
 
 export async function POST(request: NextRequest) {
+  // Demo mode: skip webhook processing
+  if (isDemoMode) {
+    return NextResponse.json({ received: true, demo: true })
+  }
+
   try {
     const body = await request.text()
     const signature = request.headers.get('stripe-signature')

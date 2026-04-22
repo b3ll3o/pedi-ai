@@ -12,7 +12,7 @@ export function OrderConfirmation({ orderId, estimatedTime }: OrderConfirmationP
     <div className="flex flex-col items-center gap-4 p-6 text-center">
       <CheckCircle className="h-16 w-16 text-green-500" />
       <h2 className="text-2xl font-bold">Pedido realizado com sucesso!</h2>
-      <p className="text-muted-foreground">Pedido #{orderId}</p>
+      <p className="text-muted-foreground" data-testid="order-id">Pedido #{orderId}</p>
       {estimatedTime != null && (
         <p className="text-muted-foreground">Tempo estimado: {estimatedTime} min</p>
       )}

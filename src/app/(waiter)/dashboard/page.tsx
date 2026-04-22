@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { WaiterDashboard } from '@/components/kitchen/WaiterDashboard'
 import { ConnectionStatus } from '@/components/kitchen/ConnectionStatus'
 import { useRealtimeConnection } from '@/hooks/useRealtimeOrders'
@@ -27,6 +28,9 @@ export default function WaiterDashboardPage() {
       <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 100 }}>
         <ConnectionStatus isConnected={isConnected} latency={latency} variant="badge" />
       </div>
+      <Link href="/kitchen" data-testid="nav-kitchen" style={{ position: 'fixed', top: 16, left: 16, zIndex: 100 }}>
+        Cozinha
+      </Link>
       <WaiterDashboard restaurantId={restaurantId} />
     </div>
   )

@@ -66,7 +66,7 @@ export function useAuth(): UseAuthReturn {
         // Session expired or user signed out - redirect to login
         setSession(null);
         setUser(null);
-        router.push('/(admin)/(auth)/login');
+        router.push('/admin/login');
       } else if (event === 'TOKEN_REFRESHED' && session) {
         // Token refreshed - update session
         setSession(session);

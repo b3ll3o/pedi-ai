@@ -1,8 +1,6 @@
 -- Migration: Create products table
 -- Menu products with pricing and dietary information
 
-COMMENT ON TABLE products IS 'Menu products with prices, dietary labels, and soft delete';
-
 CREATE TABLE products (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     category_id UUID NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
@@ -17,6 +15,8 @@ CREATE TABLE products (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+COMMENT ON TABLE products IS 'Menu products with prices, dietary labels, and soft delete';
 
 CREATE INDEX idx_products_category_id ON products(category_id);
 CREATE INDEX idx_products_sort_order ON products(category_id, sort_order);

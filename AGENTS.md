@@ -32,6 +32,37 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Touch-friendly: botões mínimo 44x44px, gaps adequados
 - Performance mobile优先 — evitar bundle grande em mobile
 
+## CSS Best Practices
+
+### Unidades Relativas (Preferir sempre que possível)
+- **Usar `rem` para tamanhos de fonte e espaçamento**: `1rem = 16px` base, permite scaling correto quando usuário muda tamanho de fonte do navegador
+- **Usar `em` para valores que devem escalar em relação ao elemento pai**: margens, paddings relativos
+- **Evitar `px` para tamanhos de fonte**: `px` não escala com preferências do usuário
+- **Exceção**: valores muito pequenos (< 4px), bordas (`1px`), sombras e valores que precisam ser exatamente `0` podem usar `px`
+
+### Regras Gerais de CSS
+- **Usar CSS Custom Properties (variáveis)**: Definir cores, espaçamentos e valores reutilizáveis em `:root`
+  ```css
+  :root {
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --color-primary: #007bff;
+  }
+  ```
+- **Evitar números mágicos**: Usar variáveis ou múltiplos de uma base (ex: `0.25rem`, `0.5rem`, `1rem`)
+- **Usar shorthand properties**: `margin: 0 auto` em vez de `margin-top: 0; margin-right: auto; ...`
+- **Agrupar propriedades relacionadas**: layout (display, position), box model (margin, padding), visual (color, background)
+- **Ordem de propriedades**: seguir convenção (visual → layout → tipografia → outros)
+- **Evitar `!important`**: Preferir specificity adequada; usar apenas como último recurso
+- **Usar `clamp()` para valores fluidos**: `font-size: clamp(1rem, 2.5vw, 1.5rem)` para responsividade automática
+- **Minificar e usar sourcemaps em produção**
+
+### Breakpoints
+- Mobile: < 640px
+- Tablet: 640px - 1024px
+- Desktop: > 1024px
+- Usar `em` em media queries: `@media (min-width: 40em)` (equivalente a 640px)
+
 ## Offline-First
 
 - A aplicação **DEVE** funcionar sem conexão de internet

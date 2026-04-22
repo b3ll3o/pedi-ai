@@ -42,7 +42,7 @@ export function CartSummary({
 
       <div className={styles.row}>
         <span className={styles.totalLabel}>Total</span>
-        <span className={styles.totalValue}>{formatPrice(total)}</span>
+        <span className={styles.totalValue} data-testid="cart-total">{formatPrice(total)}</span>
       </div>
 
       <p className={styles.itemCount}>
@@ -54,6 +54,7 @@ export function CartSummary({
         onClick={onCheckout}
         disabled={isLoading || itemCount === 0}
         type="button"
+        data-testid="checkout-button"
       >
         {isLoading ? 'Carregando...' : 'Finalizar Pedido'}
       </button>

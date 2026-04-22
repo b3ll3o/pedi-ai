@@ -81,13 +81,188 @@ interface TestUser {
 // Cliente Supabase Admin
 // ============================================
 
-function createAdminClient(): SupabaseClient {
+export function createAdminClient(): SupabaseClient {
   return createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
     },
   })
+}
+
+// Cache do restaurant de teste para reutilização
+let cachedRestaurantId: string | null = null
+
+async function getOrCreateTestRestaurantId(admin: SupabaseClient): Promise<string> {
+  if (cachedRestaurantId) return cachedRestaurantId
+
+  const { data } = await admin
+    .from('restaurants')
+    .select('id')
+    .eq('name', RESTAURANT_NAME)
+    .maybeSingle()
+
+  if (data) {
+    cachedRestaurantId = data.id as string
+    return cachedRestaurantId
+  }
+
+  const { data: newRestaurant } = await admin
+    .from('restaurants')
+    .insert({
+      name: RESTAURANT_NAME,
+      description: 'Restaurant de testes E2E',
+      settings: {
+        currency: 'BRL',
+        timezone: 'America/Sao_Paulo',
+        tax_rate: 0.1,
+      },
+    })
+    .select()
+    .single()
+
+  cachedRestaurantId = newRestaurant!.id as string
+  return cachedRestaurantId
+}
+
+// ============================================
+// Funções exportadas para uso individual (Requirements 2.2-2.3)
+// ============================================
+
+export interface CreateUserOptions {
+  email: string
+  password: string
+  role?: 'customer' | 'admin' | 'waiter'
+}
+
+/**
+ * Cria um usuário de teste via Supabase Admin API.
+ * @param email Email do usuário
+ * @param password Senha do usuário
+ * @param role Papel do usuário (customer, admin, waiter) - usado apenas para logging
+ * @returns ID do usuário criado
+ */
+export async function createTestUser(
+  email: string,
+  password: string,
+  role: string = 'customer'
+): Promise<string> {
+  const admin = createAdminClient()
+
+  const { data, error } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+  })
+
+  if (error) {
+    throw new Error(`Erro ao criar usuário ${role}: ${error.message}`)
+  }
+
+  return data.user.id
+}
+
+/**
+ * Cria uma categoria de teste via Supabase Admin API.
+ * @param name Nome da categoria
+ * @returns Objeto com id e name da categoria criada
+ */
+export async function createTestCategory(name: string): Promise<{ id: string; name: string }> {
+  const admin = createAdminClient()
+  const restaurantId = await getOrCreateTestRestaurantId(admin)
+
+  const { data, error } = await admin
+    .from('categories')
+    .insert({
+      name,
+      restaurant_id: restaurantId,
+      active: true,
+      sort_order: 0,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    throw new Error(`Erro ao criar categoria: ${error.message}`)
+  }
+
+  return { id: data.id, name: data.name }
+}
+
+/**
+ * Cria um produto de teste via Supabase Admin API.
+ * @param name Nome do produto
+ * @param price Preço do produto
+ * @param categoryId ID da categoria associada
+ * @returns ID do produto criado
+ */
+export async function createTestProduct(
+  name: string,
+  price: number,
+  categoryId: string
+): Promise<string> {
+  const admin = createAdminClient()
+
+  const { data, error } = await admin
+    .from('products')
+    .insert({
+      name,
+      description: `Produto de teste: ${name}`,
+      price,
+      category_id: categoryId,
+      available: true,
+      sort_order: 0,
+      dietary_labels: [],
+    })
+    .select()
+    .single()
+
+  if (error) {
+    throw new Error(`Erro ao criar produto: ${error.message}`)
+  }
+
+  return data.id
+}
+
+/**
+ * Cria uma mesa de teste via Supabase Admin API.
+ * @param code Código QR da mesa (usado como qr_code)
+ * @param number Número da mesa (opcional, extraído do code se não fornecido)
+ * @param capacity Capacidade da mesa (padrão: 4)
+ * @returns Objeto com id, number e qr_code da mesa criada
+ */
+export async function createTestTable(
+  code: string,
+  number?: number,
+  capacity: number = 4
+): Promise<{ id: string; number: number; qr_code: string }> {
+  const admin = createAdminClient()
+  const restaurantId = await getOrCreateTestRestaurantId(admin)
+
+  const tableNumber = number ?? (parseInt(code.replace(/\D/g, ''), 10) || Math.floor(Math.random() * 100))
+
+  const { data, error } = await admin
+    .from('tables')
+    .insert({
+      number: tableNumber,
+      capacity,
+      name: `Mesa ${tableNumber}`,
+      qr_code: code,
+      restaurant_id: restaurantId,
+      active: true,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    throw new Error(`Erro ao criar mesa: ${error.message}`)
+  }
+
+  return {
+    id: data.id,
+    number: data.number,
+    qr_code: data.qr_code,
+  }
 }
 
 // ============================================
@@ -176,9 +351,13 @@ async function createUsers(admin: SupabaseClient): Promise<SeedResult['users']> 
 async function createRestaurant(admin: SupabaseClient): Promise<{ id: string; name: string }> {
   console.log('🏪 Criando restaurant de teste...')
 
+  // Use fixed UUID to match hardcoded ID in MenuPageClient
+  const DEMO_RESTAURANT_ID = '00000000-0000-0000-0000-000000000001'
+
   const { data, error } = await admin
     .from('restaurants')
-    .insert({
+    .upsert({
+      id: DEMO_RESTAURANT_ID,
       name: RESTAURANT_NAME,
       description: 'Restaurant de testes E2E',
       settings: {
@@ -186,7 +365,7 @@ async function createRestaurant(admin: SupabaseClient): Promise<{ id: string; na
         timezone: 'America/Sao_Paulo',
         tax_rate: 0.1,
       },
-    })
+    }, { onConflict: 'id' })
     .select()
     .single()
 
@@ -374,7 +553,7 @@ async function createUserProfiles(
 // Função principal
 // ============================================
 
-async function seed(): Promise<SeedResult> {
+export async function seed(): Promise<SeedResult> {
   console.log('========================================')
   console.log('🚀 SEED E2E - Iniciando...')
   console.log('========================================\n')

@@ -58,6 +58,7 @@ export function CategoryList({
                 onCategoryClick?.(category.id);
               }
             }}
+            data-testid="category-tab"
           >
             {category.name}
           </div>

@@ -1,8 +1,6 @@
 -- Migration: Create orders table
 -- Customer orders with payment tracking
 
-COMMENT ON TABLE orders IS 'Customer orders with payment and status tracking';
-
 CREATE TYPE order_status AS ENUM ('pending_payment', 'paid', 'preparing', 'ready', 'delivered', 'cancelled');
 CREATE TYPE payment_method AS ENUM ('pix', 'card');
 CREATE TYPE payment_status AS ENUM ('pending', 'paid', 'failed', 'refunded');
@@ -21,6 +19,8 @@ CREATE TABLE orders (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+COMMENT ON TABLE orders IS 'Customer orders with payment and status tracking';
 
 CREATE INDEX idx_orders_restaurant_id ON orders(restaurant_id);
 CREATE INDEX idx_orders_table_id ON orders(table_id);

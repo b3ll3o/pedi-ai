@@ -90,7 +90,7 @@ export function PixQRCode({
 
   if (state === 'loading') {
     return (
-      <div className={styles.container}>
+      <div className={styles.container} data-testid="pix-qr-code">
         <div className={styles.loading}>
           <div className={styles.spinner} />
           <span className={styles.loadingText}>Gerando QR Code...</span>
@@ -101,7 +101,7 @@ export function PixQRCode({
 
   if (state === 'paid') {
     return (
-      <div className={styles.container}>
+      <div className={styles.container} data-testid="pix-qr-code">
         <div className={styles.paid}>
           <div className={styles.checkmark}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
@@ -118,7 +118,7 @@ export function PixQRCode({
   const isExpired = state === 'expired';
 
   return (
-    <div className={styles.container}>
+    <div className={styles.container} data-testid="pix-qr-code">
       <div className={`${styles.qrWrapper} ${isExpired ? styles.qrExpired : ''}`}>
         <img
           src={qrCodeBase64}

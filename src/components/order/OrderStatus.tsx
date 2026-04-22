@@ -104,7 +104,7 @@ export function OrderStatus({ orderId }: OrderStatusProps) {
   return (
     <div className="flex flex-col gap-6 p-4">
       {/* Current Status */}
-      <div className="flex flex-col items-center gap-3 text-center">
+      <div className="flex flex-col items-center gap-3 text-center" data-testid="order-status">
         {(() => {
           const config = STATUS_CONFIG[currentStatus]
           const Icon = config.icon

@@ -83,8 +83,8 @@ export function CheckoutForm({
   };
 
   return (
-    <form className={styles.form} onSubmit={handleSubmit}>
-      <div className={styles.section}>
+    <form className={styles.form} onSubmit={handleSubmit} data-testid="checkout-form">
+      <div className={styles.section} data-testid="order-summary">
         <h2 className={styles.sectionTitle}>Resumo do Pedido</h2>
         <div className={styles.orderItems}>
           {items.map((item) => (
@@ -126,8 +126,9 @@ export function CheckoutForm({
             onChange={(e) => setCustomerName(e.target.value)}
             placeholder="Seu nome"
             disabled={isSubmitting}
+            data-testid="customer-name-input"
           />
-          {errors.name && <span className={styles.error}>{errors.name}</span>}
+            {errors.name && <span className={styles.error} data-testid="field-error">{errors.name}</span>}
         </div>
         <div className={styles.field}>
           <label htmlFor="customerPhone" className={styles.label}>Telefone</label>
@@ -139,14 +140,15 @@ export function CheckoutForm({
             onChange={handlePhoneChange}
             placeholder="(00) 00000-0000"
             disabled={isSubmitting}
+            data-testid="customer-phone-input"
           />
-          {errors.phone && <span className={styles.error}>{errors.phone}</span>}
+          {errors.phone && <span className={styles.error} data-testid="field-error">{errors.phone}</span>}
         </div>
       </div>
 
       <div className={styles.section}>
         <h2 className={styles.sectionTitle}>Forma de Pagamento</h2>
-        <div className={styles.paymentMethods}>
+        <div className={styles.paymentMethods} data-testid="payment-method-select">
           <label className={`${styles.paymentOption} ${paymentMethod === 'pix' ? styles.paymentOptionSelected : ''}`}>
             <input
               type="radio"
@@ -203,12 +205,18 @@ export function CheckoutForm({
             <span className={styles.paymentName}>Débito</span>
           </label>
         </div>
+        {paymentMethod === 'pix' && (
+          <div className={styles.pixInfo} data-testid="pix-info">
+            <p>Use o QR Code abaixo para pagar com PIX</p>
+          </div>
+        )}
       </div>
 
       <button
         type="submit"
         className={styles.submitButton}
         disabled={isSubmitting || items.length === 0}
+        data-testid="submit-order-button"
       >
         {isSubmitting ? 'Processando...' : 'Finalizar Pagamento'}
       </button>

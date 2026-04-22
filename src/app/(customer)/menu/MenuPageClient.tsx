@@ -10,7 +10,8 @@ import type { Category } from '@/components/menu/CategoryList';
 import styles from './page.module.css';
 
 // TODO: Get restaurantId from context/provider when available
-const DEMO_RESTAURANT_ID = 'demo-restaurant-001';
+// Use fixed UUID to match E2E seed data
+const DEMO_RESTAURANT_ID = '00000000-0000-0000-0000-000000000001';
 
 // Transform database categories to Category type expected by CategoryList
 function transformCategories(
@@ -85,7 +86,7 @@ export default function MenuPageClient() {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1 className={styles.title}>Cardápio</h1>
+        <h1 className={styles.title} data-testid="page-title">Cardápio</h1>
         <p className={styles.subtitle}>
           {isLoading ? 'Carregando...' : `${transformedCategories.length} categorias`}
         </p>

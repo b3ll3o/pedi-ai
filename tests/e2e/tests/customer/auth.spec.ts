@@ -32,12 +32,12 @@ test.describe('Autenticação do Cliente', () => {
     await expect(page.locator('[data-testid="field-error"]').first()).toBeVisible()
   })
 
-  test('deve fazer logout e redirecionar para login', { tag: '@critical' }, async ({ authenticated }) => {
+  test('deve fazer logout e redirecionar para login', { tag: ['@smoke', '@critical'] }, async ({ authenticated }) => {
     await authenticated.locator('[data-testid="logout-button"]').click()
     await expect(authenticated).toHaveURL('/login')
   })
 
-  test('deve redirecionar para login ao acessar rota protegida', { tag: '@critical' }, async ({ page }) => {
+  test('deve redirecionar para login ao acessar rota protegida', { tag: ['@smoke', '@critical'] }, async ({ page }) => {
     await page.goto('/menu')
     await expect(page).toHaveURL(/\/login/)
   })

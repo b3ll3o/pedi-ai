@@ -1,0 +1,159 @@
+# Kong declarative configuration for Supabase local
+# https://supabase.com/docs/guides/cli/local-development#kong
+
+_format_version: "3.0"
+_transform: true
+
+services:
+  - name: postgrest
+    url: http://postgrest:3000/
+    routes:
+      - name: postgrest-route
+        strip_path: true
+        paths:
+          - /rest/v1/
+    plugins:
+      - name: cors
+        config:
+          origins:
+            - "*"
+          methods:
+            - GET
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Authorization
+            - Content-Type
+            - Prefer
+          exposed_headers:
+            - Content-Range
+            - X-Total-Count
+          credentials: true
+          max_age: 3600
+
+  - name: gotrue
+    url: http://gotrue:9999/
+    routes:
+      - name: gotrue-route
+        strip_path: true
+        paths:
+          - /auth/v1/
+    plugins:
+      - name: cors
+        config:
+          origins:
+            - "*"
+          methods:
+            - GET
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Authorization
+            - Content-Type
+            - X-Client-Info
+            - X-Client-Version
+          exposed_headers:
+            - X-Total-Count
+          credentials: true
+          max_age: 3600
+
+  - name: realtime
+    url: http://realtime:4000/socket
+    routes:
+      - name: realtime-route
+        strip_path: true
+        paths:
+          - /realtime/v1/
+    plugins:
+      - name: cors
+        config:
+          origins:
+            - "*"
+          methods:
+            - GET
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Authorization
+            - Content-Type
+          credentials: true
+          max_age: 3600
+
+  - name: storage
+    url: http://storage:5000/
+    routes:
+      - name: storage-route
+        strip_path: true
+        paths:
+          - /storage/v1/
+    plugins:
+      - name: cors
+        config:
+          origins:
+            - "*"
+          methods:
+            - GET
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Authorization
+            - Content-Type
+            - X-Client-Info
+            - X-Client-Version
+          exposed_headers:
+            - Content-Range
+            - X-Total-Count
+          credentials: true
+          max_age: 3600
+
+  - name: meta
+    url: http://meta:8080/
+    routes:
+      - name: meta-route
+        strip_path: true
+        paths:
+          - /meta/v1/
+
+  - name: studio
+    url: http://studio:3000/
+    routes:
+      - name: studio-route
+        strip_path: true
+        paths:
+          - /
+
+  - name: functions
+    url: http://DOCKER_HOST:54321/functions/v1/
+    routes:
+      - name: functions-route
+        strip_path: true
+        paths:
+          - /functions/v1/
+
+plugins:
+  - name: request-transformer
+    config:
+      add:
+        headers:
+          - Kong-Name:supabase
+  - name: acl
+    config:
+      allow:
+        - authenticated
+        - public

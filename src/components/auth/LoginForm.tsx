@@ -2,6 +2,7 @@
 
 import { useState, FormEvent } from 'react';
 import styles from './LoginForm.module.css';
+import { resetPassword } from '@/lib/supabase/auth';
 
 interface LoginFormProps {
   onSubmit?: (email: string, password: string) => Promise<void> | void;
@@ -11,34 +12,56 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false);
 
   const validateEmail = (value: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(value);
   };
 
+  const handleForgotPassword = async (e: FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (!forgotPasswordEmail || !validateEmail(forgotPasswordEmail)) {
+      return;
+    }
+    try {
+      await resetPassword(forgotPasswordEmail);
+      setForgotPasswordSuccess(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao enviar email de recuperação');
+    }
+  };
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
 
+    setEmailError('');
+    setPasswordError('');
+
     if (!email) {
-      setError('Email é obrigatório');
+      setEmailError('Email é obrigatório');
       return;
     }
 
     if (!validateEmail(email)) {
-      setError('Por favor, insira um email válido');
+      setEmailError('Por favor, insira um email válido');
       return;
     }
 
     if (!password) {
-      setError('Senha é obrigatória');
+      setPasswordError('Senha é obrigatória');
       return;
     }
 
     if (password.length < 6) {
-      setError('Senha deve ter pelo menos 6 caracteres');
+      setPasswordError('Senha deve ter pelo menos 6 caracteres');
       return;
     }
 
@@ -70,7 +93,13 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
           placeholder="seu@email.com"
           disabled={isLoading}
           autoComplete="email"
+          data-testid="email-input"
         />
+        {emailError && (
+          <span className={styles.fieldError} data-testid="field-error">
+            {emailError}
+          </span>
+        )}
       </div>
 
       <div className={styles.field}>
@@ -86,11 +115,28 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
           placeholder="••••••••"
           disabled={isLoading}
           autoComplete="current-password"
+          data-testid="password-input"
         />
+        {passwordError && (
+          <span className={styles.fieldError} data-testid="field-error">
+            {passwordError}
+          </span>
+        )}
+      </div>
+
+      <div className={styles.forgotPassword}>
+        <button
+          type="button"
+          className={styles.forgotPasswordLink}
+          onClick={() => setShowForgotPassword(!showForgotPassword)}
+          data-testid="forgot-password-link"
+        >
+          Esqueceu a senha?
+        </button>
       </div>
 
       {error && (
-        <div className={styles.error} role="alert">
+        <div className={styles.error} role="alert" data-testid="error-message">
           <svg
             className={styles.errorIcon}
             viewBox="0 0 24 24"
@@ -108,10 +154,44 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
         </div>
       )}
 
+      {showForgotPassword && !forgotPasswordSuccess && (
+        <div className={styles.forgotPasswordForm}>
+          <div>
+            <label htmlFor="forgot-password-email" className={styles.label}>
+              Email para recuperação
+            </label>
+            <input
+              id="forgot-password-email"
+              type="email"
+              value={forgotPasswordEmail}
+              onChange={(e) => setForgotPasswordEmail(e.target.value)}
+              className={styles.input}
+              placeholder="seu@email.com"
+              data-testid="forgot-password-email"
+            />
+            <button
+              type="button"
+              className={styles.button}
+              onClick={handleForgotPassword}
+              data-testid="forgot-password-submit"
+            >
+              Enviar link de recuperação
+            </button>
+          </div>
+        </div>
+      )}
+
+      {forgotPasswordSuccess && (
+        <div className={styles.success} data-testid="forgot-password-success">
+          Link de recuperação enviado! Verifique seu email.
+        </div>
+      )}
+
       <button
         type="submit"
         className={styles.button}
         disabled={isLoading}
+        data-testid="login-button"
       >
         {isLoading ? (
           <>

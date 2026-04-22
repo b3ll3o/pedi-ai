@@ -1,8 +1,6 @@
 -- Migration: Create order_items table
 -- Individual items within an order
 
-COMMENT ON TABLE order_items IS 'Order line items with product/combo references';
-
 CREATE TABLE order_items (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
@@ -14,6 +12,8 @@ CREATE TABLE order_items (
     notes TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+COMMENT ON TABLE order_items IS 'Order line items with product/combo references';
 
 CREATE INDEX idx_order_items_order_id ON order_items(order_id);
 CREATE INDEX idx_order_items_product_id ON order_items(product_id);

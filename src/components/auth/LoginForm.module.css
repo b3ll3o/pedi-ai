@@ -64,6 +64,51 @@
   flex-shrink: 0;
 }
 
+.fieldError {
+  font-size: 13px;
+  color: #dc2626;
+  margin-top: 4px;
+}
+
+.forgotPassword {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -8px;
+}
+
+.forgotPasswordLink {
+  background: none;
+  border: none;
+  font-size: 13px;
+  color: #2563eb;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.forgotPasswordLink:hover {
+  text-decoration: underline;
+}
+
+.forgotPasswordForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.success {
+  padding: 12px 16px;
+  font-size: 14px;
+  color: #166534;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  text-align: center;
+}
+
 .button {
   display: flex;
   align-items: center;

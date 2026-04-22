@@ -17,6 +17,7 @@
  * - Blocked: fonts.googleapis.com, google-analytics.com, facebook.net, etc.
  */
 import { defineConfig, devices } from '@playwright/test'
+import path from 'path'
 
 const isCI = process.env.CI === 'true'
 // SHARD=current/total (ex: 1/4, 2/4). Default em CI: 4 shards.
@@ -81,12 +82,12 @@ export default defineConfig({
   ],
   webServer: {
     command: 'pnpm dev',
-    cwd: process.cwd(),
+    cwd: path.resolve(__dirname, '..'),
     url: 'http://localhost:3000',
     reuseExistingServer: !isCI,
     timeout: 120_000,
   },
   outputDir: 'test-results',
 
-  globalSetup: './globalSetup.ts',
+  globalSetup: './global-setup.ts',
 })

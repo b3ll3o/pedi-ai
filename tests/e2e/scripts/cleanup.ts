@@ -40,7 +40,7 @@ const RESTAURANT_NAME = 'Restaurant E2E Test'
 // Cliente Supabase Admin
 // ============================================
 
-function createAdminClient(): SupabaseClient {
+export function createAdminClient(): SupabaseClient {
   return createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!, {
     auth: {
       autoRefreshToken: false,
@@ -50,7 +50,69 @@ function createAdminClient(): SupabaseClient {
 }
 
 // ============================================
-// Funções de cleanup
+// Funções de cleanup exportadas (Requirement 2.4)
+// ============================================
+
+/**
+ * Deleta um usuário pelo email.
+ * @param email Email do usuário a ser deletado
+ * @returns true se deletado com sucesso
+ */
+export async function deleteTestUserByEmail(email: string): Promise<boolean> {
+  const admin = createAdminClient()
+
+  const { data: existingUsers } = await admin.auth.admin.listUsers()
+  const user = existingUsers?.users.find((u) => u.email === email)
+
+  if (!user) {
+    return false
+  }
+
+  const { error } = await admin.auth.admin.deleteUser(user.id)
+  return !error
+}
+
+/**
+ * Deleta um usuário pelo ID.
+ * @param userId ID do usuário a ser deletado
+ * @returns true se deletado com sucesso
+ */
+export async function deleteTestUserById(userId: string): Promise<boolean> {
+  const admin = createAdminClient()
+  const { error } = await admin.auth.admin.deleteUser(userId)
+  return !error
+}
+
+/**
+ * Deleta um restaurant de teste pelo nome.
+ * @param restaurantName Nome do restaurant (default: 'Restaurant E2E Test')
+ * @returns true se deletado com sucesso
+ */
+export async function deleteTestRestaurantByName(
+  restaurantName: string = RESTAURANT_NAME
+): Promise<boolean> {
+  const admin = createAdminClient()
+
+  const { data: restaurants } = await admin
+    .from('restaurants')
+    .select('id')
+    .eq('name', restaurantName)
+    .maybeSingle()
+
+  if (!restaurants) {
+    return false
+  }
+
+  const { error } = await admin
+    .from('restaurants')
+    .delete()
+    .eq('id', restaurants.id)
+
+  return !error
+}
+
+// ============================================
+// Funções internas de cleanup
 // ============================================
 
 async function deleteTestUsers(admin: SupabaseClient): Promise<number> {
@@ -166,7 +228,7 @@ async function deleteOrdersByRestaurant(
 // Função principal
 // ============================================
 
-async function cleanup(): Promise<void> {
+export async function cleanup(): Promise<void> {
   console.log('========================================')
   console.log('🧹 CLEANUP E2E - Iniciando...')
   console.log('========================================\n')

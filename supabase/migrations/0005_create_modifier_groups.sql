@@ -1,8 +1,6 @@
 -- Migration: Create modifier_groups table
 -- Groups of modifiers for product customization
 
-COMMENT ON TABLE modifier_groups IS 'Modifier groups defining selection rules for product options';
-
 CREATE TABLE modifier_groups (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
@@ -12,5 +10,7 @@ CREATE TABLE modifier_groups (
     max_selections INTEGER DEFAULT 1,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+COMMENT ON TABLE modifier_groups IS 'Modifier groups defining selection rules for product options';
 
 CREATE INDEX idx_modifier_groups_restaurant_id ON modifier_groups(restaurant_id);

@@ -3,13 +3,19 @@ import { MercadoPagoConfig, Payment } from 'mercadopago'
 import { createClient } from '@/lib/supabase/server'
 import type { orders } from '@/lib/supabase/types'
 
-// Configure MercadoPago client
-const client = new MercadoPagoConfig({
-  accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN!,
-})
+// Demo mode check
+const isDemoMode = process.env.NEXT_PUBLIC_DEMO_PAYMENT_MODE === 'true'
 
-// Create Payment instance
-const paymentClient = new Payment(client)
+// Configure MercadoPago client (only if not demo mode)
+let client: MercadoPagoConfig | null = null
+let paymentClient: Payment | null = null
+
+if (!isDemoMode) {
+  client = new MercadoPagoConfig({
+    accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN!,
+  })
+  paymentClient = new Payment(client)
+}
 
 interface CreatePixPaymentRequest {
   order_id: string
@@ -22,6 +28,21 @@ interface PixPaymentResponse {
 }
 
 export async function POST(request: NextRequest) {
+  // DEMO MODE: Return mock PIX data
+  if (isDemoMode) {
+    const body = await request.json().catch(() => ({ order_id: 'demo' }))
+    const expiresAt = new Date()
+    expiresAt.setMinutes(expiresAt.getMinutes() + 30)
+
+    const mockQrCode = '00020101021226880014br.gov.bcb.pix2565demo.here.co/v2/demo' + Math.random().toString(36).substring(7)
+
+    return NextResponse.json({
+      qr_code: mockQrCode,
+      qr_code_base64: `data:image/png;base64,${Buffer.from(mockQrCode).toString('base64')}`,
+      expires_at: expiresAt.toISOString(),
+    })
+  }
+
   try {
     const body: CreatePixPaymentRequest = await request.json()
 
@@ -59,7 +80,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create Pix payment with Mercado Pago
-    const payment = await paymentClient.create({
+    const payment = await paymentClient!.create({
       body: {
         transaction_amount: dbOrder.total,
         description: `Pedido ${dbOrder.id}`,

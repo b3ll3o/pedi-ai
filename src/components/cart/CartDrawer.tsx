@@ -192,6 +192,7 @@ export function CartDrawer() {
               className={styles.clearButton}
               onClick={clearCart}
               type="button"
+              data-testid="clear-cart-button"
             >
               Limpar carrinho
             </button>

@@ -1,8 +1,6 @@
 -- Migration: Create users_profiles table
 -- User profiles with restaurant roles
 
-COMMENT ON TABLE users_profiles IS 'User profiles linked to auth.users with restaurant roles';
-
 CREATE TYPE user_role AS ENUM ('owner', 'manager', 'staff');
 
 CREATE TABLE users_profiles (
@@ -14,6 +12,8 @@ CREATE TABLE users_profiles (
     email VARCHAR(255) NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+COMMENT ON TABLE users_profiles IS 'User profiles linked to auth.users with restaurant roles';
 
 CREATE INDEX idx_users_profiles_user_id ON users_profiles(user_id);
 CREATE INDEX idx_users_profiles_restaurant_id ON users_profiles(restaurant_id);

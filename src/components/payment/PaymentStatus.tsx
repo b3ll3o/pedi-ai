@@ -36,7 +36,7 @@ export function PaymentStatus({ status, onRetry }: PaymentStatusProps) {
   const config = configs[status]
 
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-col items-center gap-2" data-testid="payment-status">
       <div className={`flex items-center gap-2 ${config.color}`}>
         {'spinner' in config && config.spinner && (
           <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">

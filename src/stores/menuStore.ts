@@ -42,6 +42,10 @@ export interface MenuActions {
   setSearchQuery: (query: string) => void;
   clearFilters: () => void;
 
+  // Loading/error setters
+  setIsLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void;
+
   // Reset
   reset: () => void;
 }
@@ -107,6 +111,16 @@ export const useMenuStore = create<MenuStore>()(
         state.selectedCategoryId = null;
         state.dietaryFilters = [];
         state.searchQuery = '';
+      }),
+
+    setIsLoading: (loading) =>
+      set((state) => {
+        state.isLoading = loading;
+      }),
+
+    setError: (error) =>
+      set((state) => {
+        state.error = error;
       }),
 
     reset: () =>

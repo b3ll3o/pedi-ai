@@ -240,3 +240,52 @@
     background-color: #333;
   }
 }
+
+.addButton {
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px 16px;
+  background-color: #667eea;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.addButton:hover:not(:disabled) {
+  background-color: #5a67d8;
+  transform: translateY(-2px);
+}
+
+.addButton:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.addButton:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.addButton:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+/* Dark mode for add button */
+@media (prefers-color-scheme: dark) {
+  .addButton {
+    background-color: #667eea;
+  }
+
+  .addButton:hover:not(:disabled) {
+    background-color: #5a67d8;
+  }
+
+  .addButton:disabled {
+    background-color: #4b5563;
+  }
+}

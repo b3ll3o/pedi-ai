@@ -35,8 +35,8 @@ export interface SeedData {
   products: Array<{ id: string; name: string; price: number }>
 }
 
-/** TTL de 30 minutos para cache de sessão */
-const STORAGE_TTL_MS = 30 * 60 * 1000
+/** TTL de 1 hora para cache de sessão */
+const STORAGE_TTL_MS = 60 * 60 * 1000
 
 /** Diretório para armazenar state de autenticação */
 const STORAGE_DIR = '.playwright/.auth'
@@ -182,61 +182,62 @@ async function loadStorageState(page: Page, email: string, destinationUrl: strin
   await page.goto(destinationUrl)
 }
 
-export const test = base.extend<Fixtures>({
-  seedData: async ({ browser }, use) => {
+export const test = base.extend<Fixtures, { reuse: boolean }>({
+  reuse: [true, { scope: 'worker', option: true }],
+  seedData: async ({ browser }, fixtureUse) => {
     const data = await loadSeedData()
-    await use(data)
+    await fixtureUse(data)
   },
 
-  guest: async ({ page }, use) => {
-    await page.goto('/')
-    await use(page)
+  guest: async ({ page }, fixtureUse) => {
+    await page.goto('/menu')
+    await fixtureUse(page)
   },
 
-  authenticated: async ({ page, seedData }, use) => {
+  authenticated: async ({ page, seedData, reuse }, fixtureUse) => {
     const email = seedData.customer.email
     const password = seedData.customer.password
 
-    if (isStorageValid(email)) {
+    if (reuse && isStorageValid(email)) {
       await loadStorageState(page, email, '/menu')
     } else {
       await performLogin(page, email, password, '/login', /\/menu/)
     }
-    await use(page)
+    await fixtureUse(page)
   },
 
-  admin: async ({ page, seedData }, use) => {
+  admin: async ({ page, seedData, reuse }, fixtureUse) => {
     const email = seedData.admin.email
     const password = seedData.admin.password
 
-    if (isStorageValid(email)) {
+    if (reuse && isStorageValid(email)) {
       await loadStorageState(page, email, '/admin/dashboard')
     } else {
       await performLogin(page, email, password, '/admin/login', /\/admin\/dashboard/)
     }
-    await use(page)
+    await fixtureUse(page)
   },
 
-  waiter: async ({ page, seedData }, use) => {
+  waiter: async ({ page, seedData, reuse }, fixtureUse) => {
     const email = seedData.waiter.email
     const password = seedData.waiter.password
 
-    if (isStorageValid(email)) {
+    if (reuse && isStorageValid(email)) {
       await loadStorageState(page, email, '/admin/dashboard')
     } else {
       await performLogin(page, email, password, '/admin/login', /\/admin\/dashboard/)
     }
-    await use(page)
+    await fixtureUse(page)
   },
 
-  cleanPage: async ({ page }, use) => {
+  cleanPage: async ({ page }, fixtureUse) => {
     await page.goto('about:blank')
     await page.context().clearCookies()
     await page.evaluate(() => {
       localStorage.clear()
       sessionStorage.clear()
     })
-    await use(page)
+    await fixtureUse(page)
   },
 })
 

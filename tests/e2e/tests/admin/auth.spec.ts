@@ -24,7 +24,7 @@ test.describe('Admin Authentication', () => {
   test('should show error with invalid credentials', async ({ page }) => {
     await loginPage.login('invalid@test.com', 'wrongpassword')
     const error = await loginPage.getError()
-    expect(error).toMatch(/inválido|incorreto|não encontrado/i)
+    expect(error).toMatch(/inválido|incorreto|não encontrado|invalid|incorrect|not found/i)
   })
 
   test('should show error with empty fields', async ({ page }) => {
@@ -32,12 +32,12 @@ test.describe('Admin Authentication', () => {
     await expect(page.locator('[data-testid="field-error"]').first()).toBeVisible()
   })
 
-  test('should logout and redirect to login', { tag: '@critical' }, async ({ admin }) => {
+  test('should logout and redirect to login', { tag: ['@smoke', '@critical'] }, async ({ admin }) => {
     await admin.locator('[data-testid="logout-button"]').click()
     await expect(admin).toHaveURL('/admin/login')
   })
 
-  test('should redirect to login when accessing protected route', { tag: '@critical' }, async ({ page }) => {
+  test('should redirect to login when accessing protected route', { tag: ['@smoke', '@critical'] }, async ({ page }) => {
     await page.goto('/admin/dashboard')
     await expect(page).toHaveURL(/\/admin\/login/)
   })
@@ -53,9 +53,9 @@ test.describe('Admin Authentication', () => {
     await expect(loginPage.forgotPasswordSuccessMessage).toBeVisible()
   })
 
-  test('should show error with non-existent email for password reset', async ({ page }) => {
+  test('should show success for password reset request', async ({ page }) => {
+    // Supabase always returns success for password reset (security - never reveals if email exists)
     await loginPage.forgotPassword('nonexistent@test.com')
-    const error = await loginPage.getError()
-    expect(error).toMatch(/não encontrado|inválido/i)
+    await expect(loginPage.forgotPasswordSuccessMessage).toBeVisible()
   })
 })

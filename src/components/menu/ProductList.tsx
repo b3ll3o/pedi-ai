@@ -48,7 +48,6 @@ export function ProductList({
           className={styles.item}
           style={{ animationDelay: `${index * 50}ms` }}
         >
-          {/* ProductCard will be rendered here in task 2.1.6 */}
           <div
             className={styles.productCard}
             onClick={() => onProductClick?.(product.id)}
@@ -59,13 +58,14 @@ export function ProductList({
                 onProductClick?.(product.id);
               }
             }}
+            data-testid="product-card"
           >
             <div className={styles.productInfo}>
               <h3 className={styles.productName}>{product.name}</h3>
               {product.description && (
                 <p className={styles.productDescription}>{product.description}</p>
               )}
-              <span className={styles.productPrice}>
+              <span className={styles.productPrice} data-testid="product-price">
                 R$ {product.price.toFixed(2).replace('.', ',')}
               </span>
             </div>

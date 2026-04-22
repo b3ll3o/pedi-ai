@@ -56,6 +56,7 @@ export function SearchBar({ className }: SearchBarProps) {
           value={value}
           onChange={handleChange}
           aria-label="Buscar produtos"
+          data-testid="search-input"
         />
 
         {value && (

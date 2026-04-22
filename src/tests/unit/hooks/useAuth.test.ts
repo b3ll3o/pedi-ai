@@ -527,7 +527,7 @@ describe('useAuth hook', () => {
       });
 
       // Router.push should have been called to redirect to login
-      expect(mockPush).toHaveBeenCalledWith('/(admin)/(auth)/login');
+      expect(mockPush).toHaveBeenCalledWith('/admin/login');
     });
 
     it('handles SIGNED_OUT with null session (session expiry)', async () => {

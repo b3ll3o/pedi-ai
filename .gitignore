@@ -40,5 +40,18 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# E2E Test Artifacts
+tests/e2e/test-results/
+tests/e2e/playwright-report/
+tests/e2e/playwright-results.json
+tests/e2e/.playwright/
+tests/e2e/scripts/.seed-result.json
 
-tests/e2e/test-results
+# Playwright
+/.playwright/
+
+# Supabase
+.supabase/
+
+# OS
+Thumbs.db

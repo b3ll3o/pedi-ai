@@ -1,8 +1,6 @@
 -- Migration: Create tables table
 -- Restaurant tables for QR code ordering
 
-COMMENT ON TABLE tables IS 'Restaurant tables linked to QR codes for mobile ordering';
-
 CREATE TABLE tables (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
@@ -14,6 +12,8 @@ CREATE TABLE tables (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(restaurant_id, number)
 );
+
+COMMENT ON TABLE tables IS 'Restaurant tables linked to QR codes for mobile ordering';
 
 CREATE INDEX idx_tables_restaurant_id ON tables(restaurant_id);
 CREATE INDEX idx_tables_qr_code ON tables(qr_code);

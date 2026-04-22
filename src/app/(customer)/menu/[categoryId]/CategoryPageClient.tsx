@@ -40,13 +40,47 @@ function toStoreDietaryLabel(label: DietaryLabel): import('@/stores/menuStore').
   return mapping[label] as import('@/stores/menuStore').DietaryLabel;
 }
 
+// Import DEMO_RESTAURANT_ID from MenuPageClient
+const DEMO_RESTAURANT_ID = '00000000-0000-0000-0000-000000000001';
+
 export default function CategoryPageClient({ categoryId }: CategoryPageClientProps) {
   const categories = useMenuStore((state) => state.categories);
+  const storeProducts = useMenuStore((state) => state.products);
   const storeDietaryFilters = useMenuStore((state) => state.dietaryFilters);
   const searchQuery = useMenuStore((state) => state.searchQuery);
   const isLoading = useMenuStore((state) => state.isLoading);
   const setSelectedCategory = useMenuStore((state) => state.setSelectedCategory);
   const toggleDietaryFilter = useMenuStore((state) => state.toggleDietaryFilter);
+  const setCategories = useMenuStore((state) => state.setCategories);
+  const setProducts = useMenuStore((state) => state.setProducts);
+  const setIsLoading = useMenuStore((state) => state.setIsLoading);
+  const setError = useMenuStore((state) => state.setError);
+  const setSearchQuery = useMenuStore((state) => state.setSearchQuery);
+
+  // Fetch menu data on mount if store is empty
+  useEffect(() => {
+    async function fetchMenuData() {
+      if (categories.length > 0) return; // Already loaded
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch(`/api/menu?restaurant_id=${DEMO_RESTAURANT_ID}`);
+        if (!response.ok) throw new Error('Failed to fetch menu');
+        const data = await response.json();
+
+        setCategories(data.categories || []);
+        setProducts(data.products || []);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load menu');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchMenuData();
+  }, [categories.length, setCategories, setProducts, setIsLoading, setError]);
 
   // Get category by ID
   const category = useMemo(() => {
@@ -63,7 +97,7 @@ export default function CategoryPageClient({ categoryId }: CategoryPageClientPro
   // Filter products by category + dietary + search
   // When searching, show products from ALL categories (search is global)
   const products = useMemo(() => {
-    let filtered = useMenuStore.getState().products;
+    let filtered = storeProducts;
 
     // Only filter by category if NOT searching
     if (searchQuery.trim() === '') {
@@ -85,7 +119,7 @@ export default function CategoryPageClient({ categoryId }: CategoryPageClientPro
     }
 
     return filtered;
-  }, [categoryId, storeDietaryFilters, searchQuery]);
+  }, [storeProducts, categoryId, storeDietaryFilters, searchQuery]);
 
   // Set category on mount/unmount
   useEffect(() => {
