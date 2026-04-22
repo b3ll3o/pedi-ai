@@ -9,8 +9,7 @@ import { ProductList } from '@/components/menu/ProductList';
 import type { Category } from '@/components/menu/CategoryList';
 import styles from './page.module.css';
 
-// TODO: Get restaurantId from context/provider when available
-// Use fixed UUID to match E2E seed data
+// Fixed UUID to match E2E seed data - in production this would come from table context
 const DEMO_RESTAURANT_ID = '00000000-0000-0000-0000-000000000001';
 
 // Transform database categories to Category type expected by CategoryList

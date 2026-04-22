@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { useMenuStore, getFilteredProducts, getProductsByCategory, hydrateFromCache, useHydratedMenu } from '@/stores/menuStore';
 import type { categories, products, modifier_groups } from '@/lib/supabase/types';

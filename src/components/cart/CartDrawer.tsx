@@ -51,8 +51,7 @@ export function CartDrawer() {
   }, [isOpen, closeCart]);
 
   const handleCheckout = () => {
-    // TODO: Implement checkout navigation
-    console.log('Checkout clicked');
+    // Checkout navigation handled by CartSummary component
   };
 
   if (!isOpen) {

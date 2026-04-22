@@ -11,22 +11,18 @@ export default function CombosPage() {
 
   const handleEdit = useCallback((combo: combos) => {
     // TODO: Open edit modal or navigate to edit page
-    console.log('Edit combo:', combo);
   }, []);
 
   const handleDelete = useCallback(async (id: string) => {
     // TODO: Implement delete with confirmation
-    console.log('Delete combo:', id);
   }, []);
 
   const handleToggleAvailability = useCallback((combo: combos) => {
     // TODO: Implement toggle availability API call
-    console.log('Toggle availability:', combo);
   }, []);
 
   const handleCreate = useCallback(() => {
     // TODO: Open create modal or navigate to create page
-    console.log('Create new combo');
   }, []);
 
   const formatPrice = (price: number) => {

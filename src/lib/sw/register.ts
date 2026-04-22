@@ -24,7 +24,7 @@ export function registerServiceWorker(): void {
           });
         });
 
-        console.log('[SW] Registered successfully:', registration.scope);
+
       } catch (error) {
         console.error('[SW] Registration failed:', error);
       }

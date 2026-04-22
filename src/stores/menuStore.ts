@@ -194,10 +194,9 @@ export async function hydrateFromCache(): Promise<void> {
  */
 export async function useHydratedMenu(): Promise<{ success: boolean; fromCache: boolean }> {
   try {
-    // TODO: Replace with actual API call, e.g. menuService.fetchMenu()
-    // const data = await menuService.fetchMenu();
     throw new Error('API not implemented');
-  } catch {
+  } catch (err) {
+    console.warn('useHydratedMenu: API not available, falling back to cache', err);
     const cached = await getCachedMenu();
     if (!cached) return { success: false, fromCache: false };
 

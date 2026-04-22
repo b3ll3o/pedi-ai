@@ -11,17 +11,14 @@ export default function ModifiersPage() {
 
   const handleEdit = useCallback((group: modifier_groups) => {
     // TODO: Open edit modal or navigate to edit page
-    console.log('Edit modifier group:', group);
   }, []);
 
   const handleDelete = useCallback(async (id: string) => {
     // TODO: Implement delete with confirmation
-    console.log('Delete modifier group:', id);
   }, []);
 
   const handleCreate = useCallback(() => {
     // TODO: Open create modal or navigate to create page
-    console.log('Create new modifier group');
   }, []);
 
   return (

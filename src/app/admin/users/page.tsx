@@ -51,7 +51,6 @@ export default function UsersPage() {
 
   const handleEdit = useCallback((user: users_profiles) => {
     // Could open a modal or navigate to edit page
-    console.log('Edit user:', user)
   }, [])
 
   const handleDelete = useCallback(async (userId: string) => {

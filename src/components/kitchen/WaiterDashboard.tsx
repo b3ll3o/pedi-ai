@@ -73,7 +73,6 @@ export function WaiterDashboard({ restaurantId }: WaiterDashboardProps) {
 
   const handleViewDetails = (orderId: string) => {
     // Could open a modal or navigate to details page
-    console.log('View order details:', orderId)
   }
 
   return (
