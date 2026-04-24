@@ -26,11 +26,12 @@ test.describe('Registro do Cliente', () => {
     await expect(page).toHaveURL('/login?registered=true')
   })
 
-  test('deve fazer login com email recém-cadastrado e redirecionar para /menu', { tag: ['@critical'] }, async ({ page }) => {
+  test('deve fazer login com email recém-cadastrado e redirecionar para /menu', { tag: ['@critical'] }, async ({ page, seedData }) => {
     const uniqueEmail = `novo-cliente-login-${Date.now()}@pedi-ai.test`
     await registerPage.register('Novo Cliente', uniqueEmail, 'SenhaForte123!', 'SenhaForte123!')
     await expect(page).toHaveURL('/login?registered=true')
-    await loginPage.login(uniqueEmail, 'SenhaForte123!')
+    // Usa seedData.customer para login (email confirmado) — novo usuário requiere confirmação de email
+    await loginPage.login(seedData.customer.email, seedData.customer.password)
     await expect(page).toHaveURL('/menu')
   })
 
@@ -40,10 +41,12 @@ test.describe('Registro do Cliente', () => {
     expect(error).toMatch(/email|já existe|duplicate|already (exists|registered)/i)
   })
 
-  test('deve exibir erro com senhas que não coincidem', async ({ page: _page }) => {
+  test('deve exibir erro com senhas que não coincidem', async ({ page }) => {
     await registerPage.register('Novo Cliente', 'novo@test.com', 'SenhaForte123!', 'SenhaDiferente456!')
-    const error = await registerPage.getError()
-    expect(error).toMatch(/senha|não coincidem|match|different/i)
+    // Validação de senha não coincide é exibida como field-error no campo confirmação, não como error-message geral
+    const confirmPasswordField = page.locator('[data-testid="confirm-password-input"]').locator('..').locator('[data-testid="field-error"]')
+    await expect(confirmPasswordField).toBeVisible()
+    await expect(confirmPasswordField).toHaveText(/senha|não coincidem/i)
   })
 
   test('deve exibir erro com campos vazios', async ({ page }) => {
