@@ -55,7 +55,7 @@ export default function Home() {
               </Link>
             </span>
             <ul className={styles.navLinks}>
-              <li><a href="#features" className={styles.navLink}>Features</a></li>
+              <li><a href="#features" className={styles.navLink}>Funcionalidades</a></li>
               <li><a href="#pricing" className={styles.navLink}>Preços</a></li>
             </ul>
             <a href="/register" className={styles.navCta}>
@@ -625,7 +625,7 @@ export default function Home() {
             </div>
             <nav aria-label="Links do footer" className={styles.footerLinks}>
               <a href="/register" className={styles.footerLink}>Começar</a>
-              <a href="#features" className={styles.footerLink}>Features</a>
+              <a href="#features" className={styles.footerLink}>Funcionalidades</a>
               <a href="#pricing" className={styles.footerLink}>Preços</a>
             </nav>
           </div>

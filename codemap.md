@@ -1,6 +1,8 @@
 # Pedi-AI — Repository Atlas
 
 > Cardápio Digital para Restaurantes (offline-first, multi-tenant)
+>
+> **Versão:** 1.0.0 | **Atualizado em:** 2026-04-24
 
 ## Project Responsibility
 

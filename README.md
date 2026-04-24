@@ -140,6 +140,7 @@ src/
 │   ├── api/              # API routes
 │   ├── kitchen/          # Display cozinha
 │   ├── login/            # Login cliente
+│   ├── register/         # Registro cliente
 │   └── table/            # QR code scan
 ├── components/            # Componentes React (admin, cart, menu, order, payment, shared)
 ├── hooks/               # React Hooks

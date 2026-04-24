@@ -14,7 +14,7 @@ vi.mock('@/lib/supabase/middleware', () => ({
   }),
 }))
 
-describe('middleware', () => {
+describe('proxy (middleware)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
@@ -24,6 +24,7 @@ describe('middleware', () => {
       nextUrl: {
         pathname: new URL(url).pathname,
         startsWith: (str: string) => new URL(url).pathname.startsWith(str),
+        searchParams: new URL(url).searchParams,
       },
       url,
       cookies: {
@@ -38,10 +39,10 @@ describe('middleware', () => {
   it('deve redirecionar para /admin/login quando sem sessão em rota admin', async () => {
     mockGetSession.mockResolvedValue({ data: { session: null } })
 
-    const { middleware } = await import('@/middleware')
+    const { proxy } = await import('@/proxy')
     const request = createMockRequest('http://localhost/admin/dashboard')
 
-    const response = await middleware(request)
+    const response = await proxy(request)
 
     expect(response.status).toBe(307)
     expect(response.headers.get('location')).toContain('/admin/login')
@@ -54,10 +55,10 @@ describe('middleware', () => {
       },
     })
 
-    const { middleware } = await import('@/middleware')
+    const { proxy } = await import('@/proxy')
     const request = createMockRequest('http://localhost/admin/dashboard')
 
-    const response = await middleware(request)
+    const response = await proxy(request)
 
     expect(response).toBeInstanceOf(NextResponse)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -67,10 +68,10 @@ describe('middleware', () => {
   it('não deve interceptar rotas não-admin', async () => {
     mockGetSession.mockResolvedValue({ data: { session: null } })
 
-    const { middleware } = await import('@/middleware')
+    const { proxy } = await import('@/proxy')
     const request = createMockRequest('http://localhost/cardapio')
 
-    const response = await middleware(request)
+    const response = await proxy(request)
 
     expect(response).toBeInstanceOf(NextResponse)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -2,6 +2,17 @@ import type { AuthResponse, Session, User } from '@supabase/supabase-js'
 import { createClient } from './client'
 
 /**
+ * Sign up with email and password
+ */
+async function signUp(email: string, password: string): Promise<AuthResponse> {
+  const supabase = createClient()
+  return supabase.auth.signUp({
+    email,
+    password,
+  })
+}
+
+/**
  * Sign in with email and password
  */
 async function signIn(email: string, password: string): Promise<AuthResponse> {
@@ -58,7 +69,7 @@ function onAuthStateChange(callback: (event: string, session: Session | null) =>
   return supabase.auth.onAuthStateChange(callback)
 }
 
-export { signIn, signOut, getSession, getUser, resetPassword, onAuthStateChange }
+export { signUp, signIn, signOut, getSession, getUser, resetPassword, onAuthStateChange }
 export type { AuthResponse, Session, User }
 
 // Test helper - not part of production API
