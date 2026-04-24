@@ -50,6 +50,7 @@ export function PaymentMethodSelector({ selected, onChange }: PaymentMethodSelec
           className={`${styles.option} ${selected === 'pix' ? styles.selected : ''}`}
           onClick={() => onChange('pix')}
           aria-pressed={selected === 'pix'}
+          data-testid="payment-method-pix"
         >
           <span className={styles.iconWrapper}>
             <PixIcon />
@@ -66,6 +67,7 @@ export function PaymentMethodSelector({ selected, onChange }: PaymentMethodSelec
           className={`${styles.option} ${selected === 'card' ? styles.selected : ''}`}
           onClick={() => onChange('card')}
           aria-pressed={selected === 'card'}
+          data-testid="payment-method-card"
         >
           <span className={styles.iconWrapper}>
             <CardIcon />

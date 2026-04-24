@@ -23,7 +23,7 @@ export function CategoryList({
 }: CategoryListProps) {
   if (isLoading) {
     return (
-      <div className={styles.grid} data-testid="category-list">
+      <div className={styles.grid} data-testid="menu-categories">
         {Array.from({ length: 6 }).map((_, index) => (
           <div key={`skeleton-${index}`} className={styles.skeleton} />
         ))}
@@ -33,14 +33,14 @@ export function CategoryList({
 
   if (categories.length === 0) {
     return (
-      <div className={styles.empty} data-testid="category-list">
+      <div className={styles.empty} data-testid="menu-categories">
         <p>Nenhuma categoria disponível</p>
       </div>
     );
   }
 
   return (
-    <div className={styles.grid} data-testid="category-list">
+    <div className={styles.grid} data-testid="menu-categories">
       {categories.map((category, index) => (
         <div
           key={category.id}
@@ -58,7 +58,7 @@ export function CategoryList({
                 onCategoryClick?.(category.id);
               }
             }}
-            data-testid="category-tab"
+            data-testid={`menu-category-card-${category.id}`}
           >
             {category.name}
           </div>

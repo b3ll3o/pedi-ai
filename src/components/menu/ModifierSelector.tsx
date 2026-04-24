@@ -9,6 +9,7 @@ interface ModifierSelectorProps {
   modifierGroup: ModifierGroup;
   selectedValues: SelectedModifier[];
   onChange: (values: SelectedModifier[]) => void;
+  'data-testid'?: string;
 }
 
 // ── Helpers ────────────────────────────────────────────────────
@@ -33,6 +34,7 @@ export function ModifierSelector({
   modifierGroup,
   selectedValues,
   onChange,
+  'data-testid': dataTestid,
 }: ModifierSelectorProps) {
   const { min_selections, max_selections, required, name } = modifierGroup;
 
@@ -72,7 +74,7 @@ export function ModifierSelector({
   };
 
   return (
-    <div className={styles.group}>
+    <div className={styles.group} data-testid={dataTestid}>
       <div className={styles.header}>
         <h4 className={styles.name}>{name}</h4>
         {required && <span className={styles.requiredBadge}>Obrigatório</span>}

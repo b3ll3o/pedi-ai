@@ -55,7 +55,7 @@ export default function CartClient() {
   const isEmpty = items.length === 0;
 
   return (
-    <div className={styles.container}>
+    <div className={styles.container} data-testid="cart-container">
       <header className={styles.header}>
         <button
           className={styles.backButton}
@@ -83,6 +83,7 @@ export default function CartClient() {
             onClick={handleClearCart}
             aria-label="Limpar carrinho"
             type="button"
+            data-testid="cart-clear-button"
           >
             Limpar
           </button>
@@ -106,7 +107,7 @@ export default function CartClient() {
               <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
             </svg>
           </div>
-          <h2 className={styles.emptyTitle}>Carrinho vazio</h2>
+          <h2 className={styles.emptyTitle} data-testid="empty-cart-message">Carrinho vazio</h2>
           <p className={styles.emptyText}>
             Adicione itens do cardápio para fazer seu pedido.
           </p>

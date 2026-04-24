@@ -16,7 +16,7 @@ export function ConnectionStatus({
   if (variant === 'badge') {
     return (
       <span className={`${styles.badge} ${isConnected ? styles.connected : styles.disconnected}`}>
-        {isConnected ? '🟢 Online' : '🔴 Offline'}
+        {isConnected ? '🟢 Conectado' : '🔴 Sem conexão'}
       </span>
     )
   }
@@ -44,9 +44,9 @@ export function ConnectionStatus({
       <span className={styles.text}>
         {isConnected
           ? latency !== null && latency !== undefined
-            ? `Online (${latency}ms)`
-            : 'Online'
-          : 'Offline'}
+            ? `Conectado (${latency}ms)`
+            : 'Conectado'
+          : 'Sem conexão'}
       </span>
     </div>
   )

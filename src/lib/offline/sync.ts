@@ -94,3 +94,10 @@ export async function clearCompleted(): Promise<void> {
 export async function getFailedItems(): Promise<PendingSync[]> {
   return db.pending_sync.where('status').equals('failed').toArray();
 }
+
+export async function getPendingItems(): Promise<PendingSync[]> {
+  return db.pending_sync
+    .where('status')
+    .anyOf(['pending', 'syncing'] as SyncStatus[])
+    .toArray();
+}

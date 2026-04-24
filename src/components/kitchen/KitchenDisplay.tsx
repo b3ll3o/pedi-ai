@@ -25,12 +25,13 @@ export function KitchenDisplay({
   const renderOrderCard = (order: KitchenOrder, showAccept: boolean = false) => (
     <div
       key={order.id}
+      data-testid={`kitchen-order-card-${order.id}`}
       className={`${styles.orderCard} ${order.is_stale ? styles.stale : ''}`}
       onClick={() => onViewDetails(order.id)}
     >
       <div className={styles.cardHeader}>
         <span className={styles.orderId}>#{order.id.slice(0, 8)}</span>
-        <span className={styles.tableName}>
+        <span className={styles.tableName} data-testid={`kitchen-order-table-${order.id}`}>
           {order.table?.name || `Mesa ${order.table?.number}` || '-'}
         </span>
       </div>
@@ -59,6 +60,7 @@ export function KitchenDisplay({
           {showAccept && (
             <button
               type="button"
+              data-testid={`kitchen-preparing-button-${order.id}`}
               className={styles.acceptBtn}
               onClick={(e) => {
                 e.stopPropagation()
@@ -71,6 +73,7 @@ export function KitchenDisplay({
           {order.status === 'preparing' && (
             <button
               type="button"
+              data-testid={`kitchen-ready-button-${order.id}`}
               className={styles.readyBtn}
               onClick={(e) => {
                 e.stopPropagation()
@@ -86,7 +89,7 @@ export function KitchenDisplay({
   )
 
   return (
-    <div className={styles.container}>
+    <div className={styles.container} data-testid="kitchen-display">
       <div className={styles.header}>
         <h1 className={styles.title}>🏠 Kitchen Display</h1>
         <div className={`${styles.connectionStatus} ${isConnected ? styles.connected : styles.disconnected}`}>
@@ -101,7 +104,7 @@ export function KitchenDisplay({
             📋 Novos Pedidos
             <span className={styles.count}>{pendingOrders.length}</span>
           </h2>
-          <div className={styles.orderList}>
+          <div className={styles.orderList} data-testid="kitchen-orders-list">
             {pendingOrders.length === 0 ? (
               <div className={styles.emptyColumn}>Nenhum pedido pendente</div>
             ) : (
@@ -116,7 +119,7 @@ export function KitchenDisplay({
             🔥 Preparando
             <span className={styles.count}>{preparingOrders.length}</span>
           </h2>
-          <div className={styles.orderList}>
+          <div className={styles.orderList} data-testid="kitchen-orders-list">
             {preparingOrders.length === 0 ? (
               <div className={styles.emptyColumn}>Nenhum pedido em preparo</div>
             ) : (
@@ -131,7 +134,7 @@ export function KitchenDisplay({
             ✅ Prontos
             <span className={styles.count}>{readyOrders.length}</span>
           </h2>
-          <div className={styles.orderList}>
+          <div className={styles.orderList} data-testid="kitchen-orders-list">
             {readyOrders.length === 0 ? (
               <div className={styles.emptyColumn}>Nenhum pedido pronto</div>
             ) : (

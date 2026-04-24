@@ -34,7 +34,7 @@ export function OfflineIndicator() {
 
   if (!isOnline) {
     return (
-      <div className='offline-banner'>
+      <div className='offline-banner' data-testid='offline-indicator'>
         <span>📵</span>
         <span>Você está offline</span>
         <style jsx>{`
@@ -61,7 +61,7 @@ export function OfflineIndicator() {
 
   if (showRestored) {
     return (
-      <div className='restored-toast'>
+      <div className='restored-toast' data-testid='online-indicator'>
         <span>✓</span>
         <span>Conexão restaurada</span>
         <style jsx>{`

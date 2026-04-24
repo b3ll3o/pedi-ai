@@ -18,12 +18,12 @@ export class WaiterDashboardPage {
   constructor(page: Page) {
     this.page = page
     this.sidebar = page.locator('[data-testid="waiter-sidebar"]')
-    this.kitchenOrders = page.locator('[data-testid="kitchen-order"]')
+    this.kitchenOrders = page.locator('[data-testid^="kitchen-order-card-"]')
     this.activeOrders = page.locator('[data-testid="active-order"]')
     this.completedOrders = page.locator('[data-testid="completed-order"]')
     this.orderTicket = page.locator('[data-testid="order-ticket"]')
-    this.startPreparingButton = page.locator('[data-testid="start-preparing-button"]')
-    this.markReadyButton = page.locator('[data-testid="mark-ready-button"]')
+    this.startPreparingButton = page.locator('[data-testid^="kitchen-preparing-button-"]')
+    this.markReadyButton = page.locator('[data-testid^="kitchen-ready-button-"]')
     this.markDeliveredButton = page.locator('[data-testid="mark-delivered-button"]')
     this.refreshButton = page.locator('[data-testid="refresh-button"]')
     this.audioToggle = page.locator('[data-testid="audio-toggle"]')
@@ -54,12 +54,12 @@ export class WaiterDashboardPage {
 
   async startPreparing(orderId: string): Promise<void> {
     const order = this.kitchenOrders.filter({ hasText: orderId })
-    await order.locator('[data-testid="start-preparing-button"]').click()
+    await order.locator(`[data-testid="kitchen-preparing-button-${orderId}"]`).click()
   }
 
   async markReady(orderId: string): Promise<void> {
     const order = this.kitchenOrders.filter({ hasText: orderId })
-    await order.locator('[data-testid="mark-ready-button"]').click()
+    await order.locator(`[data-testid="kitchen-ready-button-${orderId}"]`).click()
   }
 
   async markDelivered(orderId: string): Promise<void> {
@@ -86,7 +86,7 @@ export class WaiterDashboardPage {
   async waitForNewOrder(timeout = 60_000): Promise<void> {
     const initialCount = await this.getKitchenOrdersCount()
     await this.page.waitForFunction(
-      (count) => document.querySelectorAll('[data-testid="kitchen-order"]').length > count,
+      (count) => document.querySelectorAll('[data-testid^="kitchen-order-card-"]').length > count,
       initialCount,
       { timeout }
     )

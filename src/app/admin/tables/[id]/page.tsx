@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getTable, updateTable } from '@/services/tableService'
+import { getSession } from '@/lib/supabase/auth'
 import type { tables } from '@/lib/supabase/types'
 import styles from './page.module.css'
 
@@ -16,6 +17,24 @@ export default function TableEditPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [authChecked, setAuthChecked] = useState(false)
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const session = await getSession()
+        if (!session) {
+          router.replace('/admin/login')
+          return
+        }
+        setAuthChecked(true)
+      } catch (error) {
+        console.error('Auth check failed:', error)
+        router.replace('/admin/login')
+      }
+    }
+    checkAuth()
+  }, [router])
 
   const [formData, setFormData] = useState({
     number: '',
@@ -25,6 +44,8 @@ export default function TableEditPage() {
   })
 
   useEffect(() => {
+    if (!authChecked) return
+
     const loadTable = async () => {
       try {
         const data = await getTable(tableId)
@@ -43,7 +64,7 @@ export default function TableEditPage() {
       }
     }
     loadTable()
-  }, [tableId])
+  }, [tableId, authChecked])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -68,7 +89,7 @@ export default function TableEditPage() {
     }
   }
 
-  if (isLoading) {
+  if (!authChecked || isLoading) {
     return (
       <div className={styles.container}>
         <div className={styles.loading}>Carregando...</div>

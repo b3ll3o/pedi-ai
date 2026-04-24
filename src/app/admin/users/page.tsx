@@ -1,20 +1,43 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { AdminLayout } from '@/components/admin/AdminLayout'
 import { UserManagement } from '@/components/users/UserManagement'
 import { StaffInviteForm } from '@/components/users/StaffInviteForm'
 import { getUsers, inviteUser, deleteUser, updateUser, type UserRole } from '@/services/userService'
+import { getSession } from '@/lib/supabase/auth'
 import type { users_profiles } from '@/lib/supabase/types'
 
 export default function UsersPage() {
+  const router = useRouter()
   const [users, setUsers] = useState<users_profiles[]>([])
   const [currentUserRole, setCurrentUserRole] = useState<UserRole>('owner')
   const [isLoading, setIsLoading] = useState(true)
   const [showInviteForm, setShowInviteForm] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [authChecked, setAuthChecked] = useState(false)
 
   useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const session = await getSession()
+        if (!session) {
+          router.replace('/admin/login')
+          return
+        }
+        setAuthChecked(true)
+      } catch (error) {
+        console.error('Auth check failed:', error)
+        router.replace('/admin/login')
+      }
+    }
+    checkAuth()
+  }, [router])
+
+  useEffect(() => {
+    if (!authChecked) return
+
     const loadUsers = async () => {
       try {
         const restaurantId = 'demo-restaurant'
@@ -30,7 +53,7 @@ export default function UsersPage() {
       }
     }
     loadUsers()
-  }, [])
+  }, [authChecked])
 
   const handleInvite = useCallback(
     async (data: { email: string; name: string; role: UserRole }) => {

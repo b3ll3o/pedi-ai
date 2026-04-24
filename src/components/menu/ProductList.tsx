@@ -22,7 +22,7 @@ export function ProductList({
   const addItem = useCartStore((state) => state.addItem);
   if (isLoading) {
     return (
-      <div className={styles.grid} data-testid="product-list">
+      <div className={styles.grid} data-testid="menu-products-grid">
         {Array.from({ length: 6 }).map((_, index) => (
           <div key={`skeleton-${index}`} className={styles.skeleton} />
         ))}
@@ -36,14 +36,14 @@ export function ProductList({
 
   if (filteredProducts.length === 0) {
     return (
-      <div className={styles.empty} data-testid="product-list">
+      <div className={styles.empty} data-testid="menu-products-grid">
         <p>Nenhum produto disponível nesta categoria</p>
       </div>
     );
   }
 
   return (
-    <div className={styles.grid} data-testid="product-list">
+    <div className={styles.grid} data-testid="menu-products-grid">
       {filteredProducts.map((product, index) => (
         <div
           key={product.id}
@@ -60,7 +60,7 @@ export function ProductList({
                 onProductClick?.(product.id);
               }
             }}
-            data-testid="product-card"
+            data-testid={`menu-product-card-${product.id}`}
           >
             <div className={styles.productInfo}>
               <h3 className={styles.productName}>{product.name}</h3>
@@ -82,7 +82,7 @@ export function ProductList({
                     modifiers: [],
                   });
                 }}
-                data-testid="add-to-cart-button"
+                data-testid={`menu-add-to-cart-${product.id}`}
                 aria-label={`Adicionar ${product.name} ao carrinho`}
               >
                 +

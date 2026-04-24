@@ -93,6 +93,7 @@ export function CategoryList({ categories, onReorder, onEdit, onDelete }: Catego
       {items.map((category, index) => (
         <div
           key={category.id}
+          data-testid="category-item"
           className={`${styles.item} ${draggedId === category.id ? styles.dragging : ''}`}
           draggable
           onDragStart={(e) => handleDragStart(e, category.id)}
@@ -120,6 +121,7 @@ export function CategoryList({ categories, onReorder, onEdit, onDelete }: Catego
           <div className={styles.actions}>
             <button
               type="button"
+              data-testid="edit-button"
               className={styles.btnIcon}
               onClick={() => onEdit(category)}
               title="Editar"
@@ -128,6 +130,7 @@ export function CategoryList({ categories, onReorder, onEdit, onDelete }: Catego
             </button>
             <button
               type="button"
+              data-testid="delete-button"
               className={`${styles.btnIcon} ${styles.btnDelete}`}
               onClick={() => onDelete(category.id)}
               title="Excluir"

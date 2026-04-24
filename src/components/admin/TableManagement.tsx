@@ -79,6 +79,7 @@ export function TableManagement({
             <div
               key={table.id}
               className={`${styles.card} ${!table.active ? styles.inactive : ''}`}
+              data-testid="table-item"
             >
               <div className={styles.cardHeader}>
                 <span className={styles.tableNumber}>Mesa {table.number}</span>
@@ -113,6 +114,7 @@ export function TableManagement({
                   className={styles.btnIcon}
                   onClick={() => onGenerateQR(table)}
                   title="Gerar QR Code"
+                  data-testid="generate-qr-button"
                 >
                   📱
                 </button>
@@ -121,6 +123,7 @@ export function TableManagement({
                   className={styles.btnIcon}
                   onClick={() => onEdit(table)}
                   title="Editar"
+                  data-testid="edit-button"
                 >
                   ✏️
                 </button>
@@ -129,6 +132,7 @@ export function TableManagement({
                   className={`${styles.btnIcon} ${styles.btnDelete}`}
                   onClick={() => handleDelete(table)}
                   title="Excluir"
+                  data-testid="delete-button"
                 >
                   🗑️
                 </button>

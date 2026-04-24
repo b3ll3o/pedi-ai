@@ -1,5 +1,6 @@
 import { chromium } from '@playwright/test'
 import { enableDemoMode } from './support/demo-mode'
+import { mockPaymentHandlers } from './support/mock-payment'
 
 export default async () => {
   const browser = await chromium.launch()
@@ -9,5 +10,12 @@ export default async () => {
   // Enable demo mode globally
   await enableDemoMode(page)
 
-  await browser.close()
+  // Register payment mock handlers on the page
+  // These routes will intercept Stripe API calls during tests
+  mockPaymentHandlers(page)
+
+  // Cleanup function called as globalTeardown after all tests
+  return async () => {
+    await browser.close()
+  }
 }

@@ -46,3 +46,48 @@
   border-radius: 8px;
   border: 2px dashed #d1d5db;
 }
+
+.ordersList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal select {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.modal button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.modal button[data-testid="confirm-status-update"] {
+  background: #16a34a;
+  color: #fff;
+  border: none;
+}
+
+.modal button[data-testid="cancel-order-modal-button"] {
+  background: #fff;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}

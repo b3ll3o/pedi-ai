@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { getSession } from '@/lib/supabase/auth';
 import { ProductForm, type ProductInput } from '@/components/admin/ProductForm';
 import type { products, categories } from '@/lib/supabase/types';
 import styles from './page.module.css';
@@ -19,6 +20,24 @@ export default function ProductEditPage({ params }: PageProps) {
   const [categoriesList, setCategoriesList] = useState<categories[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const session = await getSession();
+        if (!session) {
+          router.replace('/admin/login');
+          return;
+        }
+        setAuthChecked(true);
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        router.replace('/admin/login');
+      }
+    };
+    checkAuth();
+  }, [router]);
 
   // Unwrap params (Next.js 15+ async params)
   useEffect(() => {
@@ -27,7 +46,7 @@ export default function ProductEditPage({ params }: PageProps) {
 
   // Fetch product and categories data
   useEffect(() => {
-    if (!productId) return;
+    if (!productId || !authChecked) return;
 
     const fetchData = async () => {
       setIsLoading(true);
@@ -74,7 +93,7 @@ export default function ProductEditPage({ params }: PageProps) {
     };
 
     fetchData();
-  }, [productId]);
+  }, [productId, authChecked]);
 
   const handleSubmit = useCallback(
     async (input: ProductInput) => {
@@ -107,7 +126,7 @@ export default function ProductEditPage({ params }: PageProps) {
     router.push('/admin/produtos');
   }, [router]);
 
-  if (isLoading) {
+  if (!authChecked || isLoading) {
     return (
       <div className={styles.container}>
         <div className={styles.loading}>Carregando...</div>

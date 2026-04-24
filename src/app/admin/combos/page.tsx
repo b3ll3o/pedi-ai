@@ -1,13 +1,34 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/admin/AdminLayout';
+import { getSession } from '@/lib/supabase/auth';
 import type { combos } from '@/lib/supabase/types';
 import styles from './page.module.css';
 
 export default function CombosPage() {
+  const router = useRouter();
   const [combos, setCombos] = useState<combos[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const session = await getSession();
+        if (!session) {
+          router.replace('/admin/login');
+          return;
+        }
+        setAuthChecked(true);
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        router.replace('/admin/login');
+      }
+    };
+    checkAuth();
+  }, [router]);
 
   const handleEdit = useCallback((combo: combos) => {
     // TODO: Open edit modal or navigate to edit page
@@ -31,6 +52,16 @@ export default function CombosPage() {
       currency: 'BRL',
     }).format(price);
   };
+
+  if (!authChecked) {
+    return (
+      <AdminLayout>
+        <div className={styles.container}>
+          <div className={styles.loading}>Carregando...</div>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>

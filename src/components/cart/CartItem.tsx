@@ -83,7 +83,7 @@ export function CartItem({ item, onUpdateQuantity, onRemove }: CartItemProps) {
             onClick={handleRemove}
             aria-label={`Remover ${item.name} do carrinho`}
             type="button"
-            data-testid="remove-cart-item-button"
+            data-testid="cart-item-remove"
           >
             <svg
               viewBox="0 0 24 24"
@@ -136,7 +136,7 @@ export function CartItem({ item, onUpdateQuantity, onRemove }: CartItemProps) {
               onClick={handleDecrement}
               aria-label="Diminuir quantidade"
               type="button"
-              data-testid="decrease-quantity-button"
+              data-testid="cart-item-decrease"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -150,13 +150,13 @@ export function CartItem({ item, onUpdateQuantity, onRemove }: CartItemProps) {
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
             </button>
-            <span className={styles.quantity} data-testid="cart-item-quantity">{item.quantity}</span>
+            <span className={styles.quantity} data-testid="quantity-input">{item.quantity}</span>
             <button
               className={styles.quantityButton}
               onClick={handleIncrement}
               aria-label="Aumentar quantidade"
               type="button"
-              data-testid="increase-quantity-button"
+              data-testid="cart-item-increase"
             >
               <svg
                 viewBox="0 0 24 24"

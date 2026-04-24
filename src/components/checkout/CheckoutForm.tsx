@@ -126,7 +126,7 @@ export function CheckoutForm({
             onChange={(e) => setCustomerName(e.target.value)}
             placeholder="Seu nome"
             disabled={isSubmitting}
-            data-testid="customer-name-input"
+            data-testid="checkout-email"
           />
             {errors.name && <span className={styles.error} data-testid="field-error">{errors.name}</span>}
         </div>
@@ -140,7 +140,7 @@ export function CheckoutForm({
             onChange={handlePhoneChange}
             placeholder="(00) 00000-0000"
             disabled={isSubmitting}
-            data-testid="customer-phone-input"
+            data-testid="checkout-table-number"
           />
           {errors.phone && <span className={styles.error} data-testid="field-error">{errors.phone}</span>}
         </div>
@@ -167,7 +167,7 @@ export function CheckoutForm({
             </div>
             <span className={styles.paymentName}>PIX</span>
           </label>
-          <label className={`${styles.paymentOption} ${paymentMethod === 'credit' ? styles.paymentOptionSelected : ''}`}>
+          <label className={`${styles.paymentOption} ${paymentMethod === 'credit' ? styles.paymentOptionSelected : ''}`} data-testid="card-form">
             <input
               type="radio"
               name="paymentMethod"
@@ -206,17 +206,18 @@ export function CheckoutForm({
           </label>
         </div>
         {paymentMethod === 'pix' && (
-          <div className={styles.pixInfo} data-testid="pix-info">
+          <div className={styles.pixInfo} data-testid="pix-qr-code">
             <p>Use o QR Code abaixo para pagar com PIX</p>
           </div>
         )}
+        <div className={styles.paymentTimeoutMessage} data-testid="payment-timeout-message" />
       </div>
 
       <button
         type="submit"
         className={styles.submitButton}
         disabled={isSubmitting || items.length === 0}
-        data-testid="submit-order-button"
+        data-testid="checkout-submit"
       >
         {isSubmitting ? 'Processando...' : 'Finalizar Pagamento'}
       </button>

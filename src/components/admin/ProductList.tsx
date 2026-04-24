@@ -78,7 +78,7 @@ export function ProductList({
       ) : (
         <div className={styles.list}>
           {filtered.map((product) => (
-            <div key={product.id} className={styles.item}>
+            <div key={product.id} className={styles.item} data-testid="product-item">
               <div className={styles.info}>
                 <span className={styles.name}>{product.name}</span>
                 {product.description && (
@@ -104,6 +104,7 @@ export function ProductList({
                   className={styles.btnIcon}
                   onClick={() => onToggleAvailability(product)}
                   title={product.available ? 'Marcar como indisponível' : 'Marcar como disponível'}
+                  data-testid="toggle-availability"
                 >
                   {product.available ? '⏸️' : '▶️'}
                 </button>
@@ -112,6 +113,7 @@ export function ProductList({
                   className={styles.btnIcon}
                   onClick={() => onEdit(product)}
                   title="Editar"
+                  data-testid="edit-button"
                 >
                   ✏️
                 </button>
@@ -120,6 +122,7 @@ export function ProductList({
                   className={`${styles.btnIcon} ${styles.btnDelete}`}
                   onClick={() => onDelete(product.id)}
                   title="Excluir"
+                  data-testid="delete-button"
                 >
                   🗑️
                 </button>

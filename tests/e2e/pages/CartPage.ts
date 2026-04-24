@@ -34,14 +34,14 @@ export class CartPage {
 
   async removeItem(productName: string): Promise<void> {
     const item = this.cartItems.filter({ hasText: productName })
-    await item.locator('[data-testid="remove-button"]').click()
+    await item.locator('[data-testid="cart-item-remove"]').click()
     await this.page.waitForResponse(/\/api\/cart/)
   }
 
   async clearCart(): Promise<void> {
     const count = await this.getItemCount()
     for (let i = 0; i < count; i++) {
-      await this.cartItems.first().locator('[data-testid="remove-button"]').click()
+      await this.cartItems.first().locator('[data-testid="cart-item-remove"]').click()
       await this.page.waitForTimeout(300)
     }
   }

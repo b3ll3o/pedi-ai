@@ -12,8 +12,8 @@ const MOCK_PIX_DATA = {
  * Mock data for credit card payment
  */
 const MOCK_CARD_DATA = {
-  client_secret: 'pi_mock_secret_' + Math.random().toString(36).substring(7),
-  payment_intent_id: 'pi_mock_' + Math.random().toString(36).substring(7),
+  clientSecret: 'demo_secret_' + Math.random().toString(36).substring(7),
+  paymentIntentId: 'pi_mock_' + Math.random().toString(36).substring(7),
 }
 
 /**
@@ -43,7 +43,8 @@ export function mockPaymentHandlers(page: Page) {
     }
 
     if (url.includes('webhook')) {
-      // Return success immediately for mock
+      // Simulate confirmation after 2s (mimics real Stripe webhook processing)
+      await new Promise(resolve => setTimeout(resolve, 2000))
       await route.fulfill({
         status: 200,
         contentType: 'application/json',

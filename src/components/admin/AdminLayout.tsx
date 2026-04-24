@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { signOut } from '@/lib/supabase/auth';
 import styles from './AdminLayout.module.css';
 
 interface NavItem {
@@ -25,6 +26,12 @@ interface AdminLayoutProps {
 
 export function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await signOut();
+    router.push('/admin/login');
+  };
 
   return (
     <div className={styles.layout}>
@@ -65,6 +72,14 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             <div className={styles.userInfo}>
               <span className={styles.userAvatar}>A</span>
               <span className={styles.userName}>Administrador</span>
+              <button
+                type="button"
+                onClick={handleLogout}
+                data-testid="admin-logout-button"
+                className={styles.logoutButton}
+              >
+                Sair
+              </button>
             </div>
           </div>
         </header>

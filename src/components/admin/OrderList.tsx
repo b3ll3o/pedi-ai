@@ -85,7 +85,7 @@ export function OrderList({
   }
 
   return (
-    <div className={styles.container}>
+    <div className={styles.container} data-testid="order-details-modal">
       <div className={styles.toolbar}>
         <input
           type="search"
@@ -125,17 +125,18 @@ export function OrderList({
           <p>Nenhum pedido encontrado</p>
         </div>
       ) : (
-        <div className={styles.list}>
+        <div className={styles.list} data-testid="admin-order-item">
           {filtered.map((order) => (
-            <div key={order.id} className={styles.orderCard}>
+            <div key={order.id} className={styles.orderCard} data-testid="order-card">
               <div className={styles.orderHeader}>
                 <span
                   className={styles.statusBadge}
                   style={{ backgroundColor: STATUS_COLORS[order.status] }}
+                  data-testid="order-status"
                 >
                   {STATUS_LABELS[order.status]}
                 </span>
-                <span className={styles.orderId}>#{order.id.slice(0, 8)}</span>
+                <span className={styles.orderId} data-testid="order-id">#{order.id.slice(0, 8)}</span>
               </div>
 
               <div className={styles.orderInfo}>
@@ -168,27 +169,31 @@ export function OrderList({
                   type="button"
                   className={styles.viewButton}
                   onClick={() => onViewDetails(order.id)}
+                  data-testid="view-details-button"
                 >
                   Ver Detalhes
                 </button>
                 {order.status !== 'delivered' && order.status !== 'cancelled' && (
-                  <select
-                    className={styles.statusSelect}
-                    value=""
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        onUpdateStatus(order.id, e.target.value as OrderStatus)
-                      }
-                    }}
-                    aria-label="Atualizar status"
-                  >
-                    <option value="">Atualizar status...</option>
-                    {order.status === 'pending' && <option value="confirmed">Confirmar</option>}
-                    {order.status === 'confirmed' && <option value="preparing">Iniciar preparo</option>}
-                    {order.status === 'preparing' && <option value="ready">Marcar como pronto</option>}
-                    {order.status === 'ready' && <option value="delivered">Marcar como entregue</option>}
-                    <option value="cancelled">Cancelar</option>
-                  </select>
+                  <span data-testid="update-status-button">
+                    <select
+                      className={styles.statusSelect}
+                      value=""
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          onUpdateStatus(order.id, e.target.value as OrderStatus)
+                        }
+                      }}
+                      aria-label="Atualizar status"
+                      data-testid="order-status-select"
+                    >
+                      <option value="">Atualizar status...</option>
+                      {order.status === 'pending' && <option value="confirmed">Confirmar</option>}
+                      {order.status === 'confirmed' && <option value="preparing">Iniciar preparo</option>}
+                      {order.status === 'preparing' && <option value="ready">Marcar como pronto</option>}
+                      {order.status === 'ready' && <option value="delivered">Marcar como entregue</option>}
+                      <option value="cancelled">Cancelar</option>
+                    </select>
+                  </span>
                 )}
               </div>
             </div>

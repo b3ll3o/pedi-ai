@@ -8,8 +8,8 @@ export class MenuPage {
 
   constructor(page: Page) {
     this.page = page
-    this.categoryTabs = page.locator('[data-testid="category-tab"]')
-    this.productCards = page.locator('[data-testid="product-card"]')
+    this.categoryTabs = page.locator('[data-testid^="menu-category-card-"]')
+    this.productCards = page.locator('[data-testid^="menu-product-card-"]')
     this.searchInput = page.locator('[data-testid="search-input"]')
   }
 
@@ -24,7 +24,7 @@ export class MenuPage {
 
   async addProductToCart(productName: string): Promise<void> {
     const productCard = this.productCards.filter({ hasText: productName })
-    await productCard.locator('[data-testid="add-to-cart-button"]').click()
+    await productCard.locator('[data-testid^="menu-add-to-cart-"]').click()
   }
 
   async viewProduct(productName: string): Promise<void> {

@@ -8,7 +8,8 @@ export class CheckoutPage {
   readonly emailInput: Locator
   readonly phoneInput: Locator
   readonly tableCodeInput: Locator
-  readonly paymentMethodSelect: Locator
+  readonly pixButton: Locator
+  readonly cardButton: Locator
   readonly submitButton: Locator
   readonly orderSummary: Locator
   readonly errorMessage: Locator
@@ -16,11 +17,12 @@ export class CheckoutPage {
   constructor(page: Page) {
     this.page = page
     this.nameInput = page.locator('[data-testid="customer-name-input"]')
-    this.emailInput = page.locator('[data-testid="customer-email-input"]')
+    this.emailInput = page.locator('[data-testid="checkout-email"]')
     this.phoneInput = page.locator('[data-testid="customer-phone-input"]')
-    this.tableCodeInput = page.locator('[data-testid="table-code-input"]')
-    this.paymentMethodSelect = page.locator('[data-testid="payment-method-select"]')
-    this.submitButton = page.locator('[data-testid="submit-order-button"]')
+    this.tableCodeInput = page.locator('[data-testid="checkout-table-number"]')
+    this.pixButton = page.locator('[data-testid="payment-method-pix"]')
+    this.cardButton = page.locator('[data-testid="payment-method-card"]')
+    this.submitButton = page.locator('[data-testid="checkout-submit"]')
     this.orderSummary = page.locator('[data-testid="order-summary"]')
     this.errorMessage = page.locator('[data-testid="error-message"]')
   }
@@ -42,7 +44,11 @@ export class CheckoutPage {
   }
 
   async selectPaymentMethod(method: PaymentMethod): Promise<void> {
-    await this.paymentMethodSelect.selectOption(method)
+    if (method === 'pix') {
+      await this.pixButton.click()
+    } else {
+      await this.cardButton.click()
+    }
   }
 
   async submitOrder(): Promise<void> {

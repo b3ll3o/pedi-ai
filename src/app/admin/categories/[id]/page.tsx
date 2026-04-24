@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { getSession } from '@/lib/supabase/auth';
 import { CategoryForm, type CategoryInput } from '@/components/admin/CategoryForm';
 import type { categories } from '@/lib/supabase/types';
 import styles from './page.module.css';
@@ -18,6 +19,24 @@ export default function CategoryEditPage({ params }: PageProps) {
   const [category, setCategory] = useState<categories | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const session = await getSession();
+        if (!session) {
+          router.replace('/admin/login');
+          return;
+        }
+        setAuthChecked(true);
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        router.replace('/admin/login');
+      }
+    };
+    checkAuth();
+  }, [router]);
 
   // Unwrap params (Next.js 15+ async params)
   useEffect(() => {
@@ -26,7 +45,7 @@ export default function CategoryEditPage({ params }: PageProps) {
 
   // Fetch category data
   useEffect(() => {
-    if (!categoryId) return;
+    if (!categoryId || !authChecked) return;
 
     const fetchCategory = async () => {
       setIsLoading(true);
@@ -59,7 +78,7 @@ export default function CategoryEditPage({ params }: PageProps) {
     };
 
     fetchCategory();
-  }, [categoryId]);
+  }, [categoryId, authChecked]);
 
   const handleSubmit = useCallback(
     async (input: CategoryInput) => {
@@ -88,7 +107,7 @@ export default function CategoryEditPage({ params }: PageProps) {
     router.push('/admin/categorias');
   }, [router]);
 
-  if (isLoading) {
+  if (!authChecked || isLoading) {
     return (
       <div className={styles.container}>
         <div className={styles.loading}>Carregando...</div>

@@ -1,20 +1,42 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { OrderDetailAdmin } from '@/components/admin/OrderDetailAdmin'
 import { getOrder, updateOrderStatus, type OrderStatus } from '@/services/adminOrderService'
+import { getSession } from '@/lib/supabase/auth'
 import type { OrderWithItems } from '@/services/adminOrderService'
 
 export default function OrderDetailPage() {
   const params = useParams()
+  const router = useRouter()
   const orderId = params.id as string
 
   const [order, setOrder] = useState<OrderWithItems | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [authChecked, setAuthChecked] = useState(false)
 
   useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const session = await getSession()
+        if (!session) {
+          router.replace('/admin/login')
+          return
+        }
+        setAuthChecked(true)
+      } catch (error) {
+        console.error('Auth check failed:', error)
+        router.replace('/admin/login')
+      }
+    }
+    checkAuth()
+  }, [router])
+
+  useEffect(() => {
+    if (!authChecked) return
+
     const loadOrder = async () => {
       try {
         const data = await getOrder(orderId)
@@ -27,7 +49,7 @@ export default function OrderDetailPage() {
       }
     }
     loadOrder()
-  }, [orderId])
+  }, [orderId, authChecked])
 
   const handleUpdateStatus = useCallback(
     async (id: string, status: OrderStatus, notes?: string) => {
@@ -59,7 +81,7 @@ export default function OrderDetailPage() {
     []
   )
 
-  if (isLoading) {
+  if (!authChecked || isLoading) {
     return (
       <div style={{ padding: 48, textAlign: 'center', color: '#6b7280' }}>
         Carregando...

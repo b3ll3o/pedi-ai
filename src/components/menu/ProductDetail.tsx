@@ -193,12 +193,12 @@ export function ProductDetail({ productId, restaurantId, onAddToCart }: ProductD
 
       <div className={styles.content}>
         <div className={styles.header}>
-          <h1 className={styles.name}>{product.name}</h1>
-          <span className={styles.price}>{formatPrice(product.price)}</span>
+          <h1 className={styles.name} data-testid="product-detail-name">{product.name}</h1>
+          <span className={styles.price} data-testid="product-detail-price">{formatPrice(product.price)}</span>
         </div>
 
         {product.description && (
-          <p className={styles.description}>{product.description}</p>
+          <p className={styles.description} data-testid="product-detail-description">{product.description}</p>
         )}
 
         {product.dietary_labels && product.dietary_labels.length > 0 && (
@@ -234,6 +234,7 @@ export function ProductDetail({ productId, restaurantId, onAddToCart }: ProductD
                   (m) => m.group_id === group.id
                 )}
                 onChange={(values) => handleModifierChange(group.id, values)}
+                data-testid={`product-detail-modifier-group-${group.id}`}
               />
             ))}
           </div>
@@ -268,6 +269,7 @@ export function ProductDetail({ productId, restaurantId, onAddToCart }: ProductD
             type="button"
             className={styles.addToCartButton}
             onClick={handleAddToCart}
+            data-testid="product-detail-add-button"
           >
             Adicionar ao carrinho — {formatPrice(calculateTotalPrice())}
           </button>
