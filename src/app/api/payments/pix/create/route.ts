@@ -121,6 +121,7 @@ export async function POST(request: NextRequest) {
       qr_code: pixData.qr_code,
       qr_code_base64: pixData.qr_code_base64 ?? null,
       expires_at: expiresAt.toISOString(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any)
 
     if (intentError) {

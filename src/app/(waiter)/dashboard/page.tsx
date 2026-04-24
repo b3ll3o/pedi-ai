@@ -1,19 +1,14 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { WaiterDashboard } from '@/components/kitchen/WaiterDashboard'
 import { ConnectionStatus } from '@/components/kitchen/ConnectionStatus'
 import { useRealtimeConnection } from '@/hooks/useRealtimeOrders'
 
 export default function WaiterDashboardPage() {
-  const [restaurantId, setRestaurantId] = useState<string | null>(null)
+  const [restaurantId] = useState<string>('demo-restaurant')
   const { isConnected, latency } = useRealtimeConnection()
-
-  useEffect(() => {
-    // In a real app, get restaurantId from auth context
-    setRestaurantId('demo-restaurant')
-  }, [])
 
   if (!restaurantId) {
     return (

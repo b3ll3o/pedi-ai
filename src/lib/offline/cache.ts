@@ -1,7 +1,6 @@
 import { db } from './db';
 import type { MenuCache } from './types';
 
-const MENU_CACHE_KEY = 'menu_cache';
 const MENU_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export interface CachedMenu {

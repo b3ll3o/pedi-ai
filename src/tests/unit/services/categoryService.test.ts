@@ -33,6 +33,7 @@ vi.mock('@/lib/offline/db', () => {
         first: vi.fn(async () => Array.from(items.values())[0]),
         equals: vi.fn(() => ({
           first: vi.fn(async (val: unknown) =>
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             Array.from(items.values()).find((item: any) => item.restaurant_id === val)
           ),
         })),
@@ -82,6 +83,7 @@ const categoryService: CategoryService = {
       updated_at: now,
     } as categories;
     // @ts-expect-error - Test mock extends db with categories table not in PediDatabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await db.categories.add(newCategory as any);
     return { id };
   },
@@ -94,6 +96,7 @@ const categoryService: CategoryService = {
   async getCategoriesByRestaurant(restaurantId) {
     // @ts-expect-error - Test mock extends db with categories table not in PediDatabase
     const all = await db.categories.toArray();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return all.filter((c: any) => (c as any).restaurant_id === restaurantId) as categories[];
   },
 
@@ -107,6 +110,7 @@ const categoryService: CategoryService = {
       updated_at: new Date().toISOString(),
     };
     // @ts-expect-error - Test mock extends db with categories table not in PediDatabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await db.categories.put(updated as any);
     return updated;
   },
@@ -120,6 +124,7 @@ const categoryService: CategoryService = {
       ...existing,
       active: false,
       updated_at: new Date().toISOString(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
   },
 };
@@ -161,6 +166,7 @@ describe('categoryService', () => {
         active: true,
       };
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = await categoryService.createCategory(categoryData as any);
       const retrieved = await categoryService.getCategoryById(result.id);
 
@@ -173,11 +179,13 @@ describe('categoryService', () => {
         restaurant_id: 'rest-123',
         name: 'Entradas',
         active: true,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
       const cat2 = await categoryService.createCategory({
         restaurant_id: 'rest-123',
         name: 'Pratos Principais',
         active: true,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
 
       expect(cat1.id).not.toBe(cat2.id);
@@ -190,6 +198,7 @@ describe('categoryService', () => {
         restaurant_id: 'rest-123',
         name: 'Bebidas',
         active: true,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
 
       const result = await categoryService.getCategoryById(created.id);
@@ -211,21 +220,25 @@ describe('categoryService', () => {
         restaurant_id: 'rest-123',
         name: 'Entradas',
         active: true,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
       await categoryService.createCategory({
         restaurant_id: 'rest-123',
         name: 'Pratos',
         active: true,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
       await categoryService.createCategory({
         restaurant_id: 'rest-456',
         name: 'Other Restaurant Category',
         active: true,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
 
       const result = await categoryService.getCategoriesByRestaurant('rest-123');
 
       expect(result).toHaveLength(2);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect(result.every(c => (c as any).restaurant_id === 'rest-123')).toBe(true);
     });
 
@@ -242,6 +255,7 @@ describe('categoryService', () => {
         restaurant_id: 'rest-123',
         name: 'Old Name',
         active: true,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
 
       const updated = await categoryService.updateCategory(created.id, { name: 'New Name' });
@@ -256,6 +270,7 @@ describe('categoryService', () => {
         name: 'Original',
         sort_order: 1,
         active: true,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
 
       const updated = await categoryService.updateCategory(created.id, {
@@ -275,6 +290,7 @@ describe('categoryService', () => {
         name: 'Category',
         description: 'Original description',
         active: true,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
 
       const updated = await categoryService.updateCategory(created.id, { name: 'New Name' });
@@ -297,6 +313,7 @@ describe('categoryService', () => {
         restaurant_id: 'rest-123',
         name: 'Category to Delete',
         active: true,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
 
       await categoryService.softDeleteCategory(created.id);
@@ -318,6 +335,7 @@ describe('categoryService', () => {
         restaurant_id: 'rest-123',
         name: 'Soft Deleted Category',
         active: true,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
 
       await categoryService.softDeleteCategory(created.id);
@@ -333,11 +351,13 @@ describe('categoryService', () => {
         restaurant_id: 'rest-123',
         name: 'Active Category',
         active: true,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
       const softDeletedCat = await categoryService.createCategory({
         restaurant_id: 'rest-123',
         name: 'Will be Deleted',
         active: true,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
 
       await categoryService.softDeleteCategory(softDeletedCat.id);

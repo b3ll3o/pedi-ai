@@ -8,7 +8,11 @@ export function OfflineIndicator() {
   const [showRestored, setShowRestored] = useState(false);
 
   useEffect(() => {
-    setIsOnline(navigator.onLine);
+    // Initialize online state from navigator
+    function initOnlineState() {
+      setIsOnline(navigator.onLine);
+    }
+    initOnlineState();
 
     function onOnline() {
       setIsOnline(true);

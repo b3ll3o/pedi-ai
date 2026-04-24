@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useCallback } from 'react';
+import Link from 'next/link';
 import { useMenu } from '@/hooks/useMenu';
 import { useMenuStore } from '@/stores/menuStore';
 import { SearchBar } from '@/components/menu/SearchBar';
@@ -123,9 +124,9 @@ export default function MenuPageClient() {
                 <p>Nenhum produto encontrado.</p>
                 <p className={styles.noResultsHint}>
                   Tente buscar por outro termo ou{' '}
-                  <a href="/menu" className={styles.clearLink}>
+                  <Link href="/menu" className={styles.clearLink}>
                     ver todas as categorias
-                  </a>
+                  </Link>
                   .
                 </p>
               </div>

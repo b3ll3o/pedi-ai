@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin'
 import type { tables } from '@/lib/supabase/types'
 
 interface RouteParams {
@@ -9,14 +10,18 @@ interface RouteParams {
 // GET /api/admin/tables/[id] - Get a single table
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const { id } = await params
+    const authUser = await requireAuth()
+    requireRole(authUser, ['owner', 'manager'])
 
+    const { id } = await params
+    const restaurantId = getRestaurantId(authUser)
     const supabase = await createClient()
 
     const { data: table, error } = await supabase
       .from('tables')
       .select('*')
       .eq('id', id)
+      .eq('restaurant_id', restaurantId)
       .single()
 
     if (error) {
@@ -47,17 +52,22 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // PUT /api/admin/tables/[id] - Update a table
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
+    const authUser = await requireAuth()
+    requireRole(authUser, ['owner', 'manager'])
+
     const { id } = await params
+    const restaurantId = getRestaurantId(authUser)
     const body = await request.json()
     const { number, name, capacity, active, qr_code } = body
 
     const supabase = await createClient()
 
-    // Check if table exists
+    // Check if table exists and belongs to user's restaurant
     const { data: existingTable, error: fetchError } = await supabase
       .from('tables')
       .select('id, restaurant_id, number')
       .eq('id', id)
+      .eq('restaurant_id', restaurantId)
       .single()
 
     if (fetchError || !existingTable) {
@@ -128,15 +138,19 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 // DELETE /api/admin/tables/[id] - Delete a table
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const { id } = await params
+    const authUser = await requireAuth()
+    requireRole(authUser, ['owner', 'manager'])
 
+    const { id } = await params
+    const restaurantId = getRestaurantId(authUser)
     const supabase = await createClient()
 
-    // Check if table exists
+    // Check if table exists and belongs to user's restaurant
     const { data: existingTable, error: fetchError } = await supabase
       .from('tables')
       .select('id')
       .eq('id', id)
+      .eq('restaurant_id', restaurantId)
       .single()
 
     if (fetchError || !existingTable) {

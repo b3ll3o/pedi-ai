@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { KitchenOrder } from '@/hooks/useKitchenOrders'
 import { KitchenDisplay } from './KitchenDisplay'
 import { OrderNotification } from './OrderNotification'
@@ -29,14 +29,16 @@ export function WaiterDashboard({ restaurantId }: WaiterDashboardProps) {
   })
 
   // Check for new pending orders to show notification
+  const prevOrderIdRef = useRef<string | null>(null)
   useEffect(() => {
     if (pendingOrders.length > 0) {
       const newestPending = pendingOrders[0]
-      if (!newOrder || newOrder.id !== newestPending.id) {
+      if (prevOrderIdRef.current !== newestPending.id) {
+        prevOrderIdRef.current = newestPending.id
         setNewOrder(newestPending)
       }
     }
-  }, [pendingOrders, newOrder])
+  }, [pendingOrders])
 
   const handleAcceptOrder = async (orderId: string) => {
     try {

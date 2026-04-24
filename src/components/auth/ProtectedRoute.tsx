@@ -80,7 +80,7 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
         router.replace(redirectPath);
       }
     }
-  }, [authState, router]);
+  }, [authState, router, allowedRoles]);
 
   if (authState.isLoading) {
     return (

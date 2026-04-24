@@ -5,27 +5,26 @@ import { useRouter } from 'next/navigation'
 import { AdminLayout } from '@/components/admin/AdminLayout'
 import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard'
 import { getAnalytics } from '@/services/analyticsService'
-import { getSession } from '@/lib/supabase/auth'
+import { requireAuth } from '@/lib/auth/admin'
 import type { AnalyticsData } from '@/services/analyticsService'
 
 export default function AnalyticsPage() {
   const router = useRouter()
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [dateRange, setDateRange] = useState({
-    from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    to: new Date().toISOString().split('T')[0],
+  const [dateRange, setDateRange] = useState(() => {
+    const now = Date.now()
+    return {
+      from: new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      to: new Date(now).toISOString().split('T')[0],
+    }
   })
   const [authChecked, setAuthChecked] = useState(false)
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const session = await getSession()
-        if (!session) {
-          router.replace('/admin/login')
-          return
-        }
+        await requireAuth()
         setAuthChecked(true)
       } catch (error) {
         console.error('Auth check failed:', error)
@@ -41,9 +40,9 @@ export default function AnalyticsPage() {
     const loadAnalytics = async () => {
       setIsLoading(true)
       try {
-        const restaurantId = 'demo-restaurant'
+        const authUser = await requireAuth()
         const analyticsData = await getAnalytics({
-          restaurant_id: restaurantId,
+          restaurant_id: authUser.restaurant_id,
           date_from: dateRange.from,
           date_to: dateRange.to,
         })

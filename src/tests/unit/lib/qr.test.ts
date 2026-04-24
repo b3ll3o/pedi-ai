@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, it, expect } from 'vitest';
 import { createHmac } from 'crypto';
 import { generateQRPayload } from '@/lib/qr/generator';

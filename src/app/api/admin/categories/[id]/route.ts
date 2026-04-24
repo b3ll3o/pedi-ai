@@ -1,22 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { invalidateMenuCache } from '@/lib/offline/cache'
+import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params
-    const { searchParams } = new URL(request.url)
-    const restaurantId = searchParams.get('restaurant_id')
+    const authUser = await requireAuth()
+    requireRole(authUser, ['owner', 'manager'])
 
-    if (!restaurantId) {
-      return NextResponse.json(
-        { error: 'restaurant_id is required' },
-        { status: 400 }
-      )
-    }
+    const restaurantId = getRestaurantId(authUser)
+    const { id } = await params
 
     const supabase = await createClient()
 
@@ -30,18 +26,16 @@ export async function GET(
 
     if (error || !category) {
       return NextResponse.json(
-        { error: 'Category not found' },
+        { error: 'Categoria não encontrada' },
         { status: 404 }
       )
     }
 
     return NextResponse.json({ category })
   } catch (error) {
-    console.error('Unexpected error in /api/admin/categories/[id]:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    const message = error instanceof Error ? error.message : 'Erro interno'
+    const status = (error as Error & { status?: number }).status || 500
+    return NextResponse.json({ error: message }, { status })
   }
 }
 
@@ -50,31 +44,43 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const authUser = await requireAuth()
+    requireRole(authUser, ['owner', 'manager'])
+
+    const restaurantId = getRestaurantId(authUser)
     const { id } = await params
     const body = await request.json()
-    const { restaurant_id, name, description, image_url, sort_order, active } = body
+    const { name, description, sort_order, active } = body
 
-    if (!restaurant_id) {
+    // Validações
+    if (name !== undefined && (typeof name !== 'string' || name.trim() === '')) {
       return NextResponse.json(
-        { error: 'restaurant_id is required' },
+        { error: 'Nome não pode ser vazio' },
+        { status: 400 }
+      )
+    }
+
+    if (sort_order !== undefined && (typeof sort_order !== 'number' || sort_order < 0)) {
+      return NextResponse.json(
+        { error: 'sort_order deve ser um número >= 0' },
         { status: 400 }
       )
     }
 
     const supabase = await createClient()
 
-    // Verify category exists and belongs to restaurant
+    // Verifica ownership
     const { data: existing, error: fetchError } = await supabase
       .from('categories')
       .select('id')
       .eq('id', id)
-      .eq('restaurant_id', restaurant_id)
+      .eq('restaurant_id', restaurantId)
       .is('deleted_at', null)
       .single()
 
     if (fetchError || !existing) {
       return NextResponse.json(
-        { error: 'Category not found' },
+        { error: 'Categoria não encontrada' },
         { status: 404 }
       )
     }
@@ -82,13 +88,12 @@ export async function PUT(
     const updateData: {
       name?: string;
       description?: string | null;
-      image_url?: string | null;
       sort_order?: number;
       active?: boolean;
     } = {}
-    if (name !== undefined) updateData.name = name
+
+    if (name !== undefined) updateData.name = name.trim()
     if (description !== undefined) updateData.description = description
-    if (image_url !== undefined) updateData.image_url = image_url
     if (sort_order !== undefined) updateData.sort_order = sort_order
     if (active !== undefined) updateData.active = active
 
@@ -100,9 +105,9 @@ export async function PUT(
       .single()
 
     if (error) {
-      console.error('Error updating category:', error)
+      console.error('Erro ao atualizar categoria:', error)
       return NextResponse.json(
-        { error: 'Failed to update category' },
+        { error: 'Falha ao atualizar categoria' },
         { status: 500 }
       )
     }
@@ -110,11 +115,9 @@ export async function PUT(
     await invalidateMenuCache()
     return NextResponse.json({ category })
   } catch (error) {
-    console.error('Unexpected error in /api/admin/categories/[id]:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    const message = error instanceof Error ? error.message : 'Erro interno'
+    const status = (error as Error & { status?: number }).status || 500
+    return NextResponse.json({ error: message }, { status })
   }
 }
 
@@ -123,20 +126,15 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params
-    const { searchParams } = new URL(request.url)
-    const restaurantId = searchParams.get('restaurant_id')
+    const authUser = await requireAuth()
+    requireRole(authUser, ['owner', 'manager'])
 
-    if (!restaurantId) {
-      return NextResponse.json(
-        { error: 'restaurant_id is required' },
-        { status: 400 }
-      )
-    }
+    const restaurantId = getRestaurantId(authUser)
+    const { id } = await params
 
     const supabase = await createClient()
 
-    // Verify category exists and belongs to restaurant
+    // Verifica ownership
     const { data: existing, error: fetchError } = await supabase
       .from('categories')
       .select('id')
@@ -147,21 +145,21 @@ export async function DELETE(
 
     if (fetchError || !existing) {
       return NextResponse.json(
-        { error: 'Category not found' },
+        { error: 'Categoria não encontrada' },
         { status: 404 }
       )
     }
 
-    // Soft delete - set deleted_at
+    // Soft delete
     const { error } = await supabase
       .from('categories')
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', id)
 
     if (error) {
-      console.error('Error deleting category:', error)
+      console.error('Erro ao excluir categoria:', error)
       return NextResponse.json(
-        { error: 'Failed to delete category' },
+        { error: 'Falha ao excluir categoria' },
         { status: 500 }
       )
     }
@@ -169,10 +167,8 @@ export async function DELETE(
     await invalidateMenuCache()
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Unexpected error in /api/admin/categories/[id]:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    const message = error instanceof Error ? error.message : 'Erro interno'
+    const status = (error as Error & { status?: number }).status || 500
+    return NextResponse.json({ error: message }, { status })
   }
 }

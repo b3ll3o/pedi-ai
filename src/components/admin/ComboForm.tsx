@@ -12,7 +12,7 @@ export interface ComboInput {
   bundle_price: number
   image_url?: string
   available?: boolean
-  items: { product_id: string; quantity: number }[]
+  product_ids: string[]
 }
 
 interface ComboFormProps {
@@ -138,9 +138,9 @@ export function ComboForm({ combo, products, onSubmit, onCancel }: ComboFormProp
 
     setIsSubmitting(true)
     try {
-      const items = Object.entries(selectedProducts)
+      const product_ids = Object.entries(selectedProducts)
         .filter(([, qty]) => qty > 0)
-        .map(([product_id, quantity]) => ({ product_id, quantity }))
+        .map(([product_id]) => product_id)
 
       await onSubmit({
         name: name.trim(),
@@ -148,7 +148,7 @@ export function ComboForm({ combo, products, onSubmit, onCancel }: ComboFormProp
         bundle_price: parseFloat(bundlePrice),
         image_url: imageUrl || undefined,
         available,
-        items,
+        product_ids,
       })
     } finally {
       setIsSubmitting(false)

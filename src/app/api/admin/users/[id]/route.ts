@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -8,14 +9,18 @@ interface RouteParams {
 // GET /api/admin/users/[id] - Get a single user
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const { id } = await params
+    const authUser = await requireAuth()
+    requireRole(authUser, ['owner'])
 
+    const { id } = await params
+    const restaurantId = getRestaurantId(authUser)
     const supabase = await createClient()
 
     const { data: user, error } = await supabase
       .from('users_profiles')
       .select('*')
       .eq('id', id)
+      .eq('restaurant_id', restaurantId)
       .single()
 
     if (error) {
@@ -46,17 +51,22 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // PUT /api/admin/users/[id] - Update user (role, name, active status)
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
+    const authUser = await requireAuth()
+    requireRole(authUser, ['owner'])
+
     const { id } = await params
+    const restaurantId = getRestaurantId(authUser)
     const body = await request.json()
     const { name, role, active } = body
 
     const supabase = await createClient()
 
-    // Check if user exists
+    // Check if user exists and belongs to the same restaurant
     const { data: existingUser, error: fetchError } = await supabase
       .from('users_profiles')
       .select('id, role, restaurant_id')
       .eq('id', id)
+      .eq('restaurant_id', restaurantId)
       .single()
 
     if (fetchError || !existingUser) {
@@ -101,7 +111,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       }
     }
 
-    const updateData: Record<string, any> = {}
+    const updateData: { name?: string; role?: string; active?: boolean } = {}
     if (name !== undefined) updateData.name = name
     if (role !== undefined) updateData.role = role
     if (active !== undefined) updateData.active = active
@@ -134,15 +144,19 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 // DELETE /api/admin/users/[id] - Remove a user
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const { id } = await params
+    const authUser = await requireAuth()
+    requireRole(authUser, ['owner'])
 
+    const { id } = await params
+    const restaurantId = getRestaurantId(authUser)
     const supabase = await createClient()
 
-    // Check if user exists
+    // Check if user exists and belongs to the same restaurant
     const { data: existingUser, error: fetchError } = await supabase
       .from('users_profiles')
       .select('id, role, restaurant_id')
       .eq('id', id)
+      .eq('restaurant_id', restaurantId)
       .single()
 
     if (fetchError || !existingUser) {

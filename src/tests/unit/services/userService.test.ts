@@ -298,6 +298,7 @@ describe('userService', () => {
     })
 
     it('returns role itself for unknown role', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect(getRoleLabel('unknown' as any)).toBe('unknown')
     })
   })
@@ -310,6 +311,7 @@ describe('userService', () => {
     })
 
     it('returns default color for unknown role', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect(getRoleColor('unknown' as any)).toBe('#6b7280')
     })
   })

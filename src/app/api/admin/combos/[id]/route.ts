@@ -1,25 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { invalidateMenuCache } from '@/lib/offline/cache'
+import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin'
 import type { combos } from '@/lib/supabase/types'
-
-type Combo = combos
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params
-    const { searchParams } = new URL(request.url)
-    const restaurantId = searchParams.get('restaurant_id')
+    const authUser = await requireAuth()
+    requireRole(authUser, ['owner', 'manager'])
 
-    if (!restaurantId) {
-      return NextResponse.json(
-        { error: 'restaurant_id is required' },
-        { status: 400 }
-      )
-    }
+    const restaurantId = getRestaurantId(authUser)
+    const { id } = await params
 
     const supabase = await createClient()
 
@@ -34,22 +28,21 @@ export async function GET(
       `)
       .eq('id', id)
       .eq('restaurant_id', restaurantId)
+      .is('deleted_at', null)
       .single()
 
     if (error || !combo) {
       return NextResponse.json(
-        { error: 'Combo not found' },
+        { error: 'Combo não encontrado' },
         { status: 404 }
       )
     }
 
     return NextResponse.json({ combo })
   } catch (error) {
-    console.error('Unexpected error in /api/admin/combos/[id]:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    const message = error instanceof Error ? error.message : 'Erro interno'
+    const status = (error as Error & { status?: number }).status || 500
+    return NextResponse.json({ error: message }, { status })
   }
 }
 
@@ -58,102 +51,132 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const authUser = await requireAuth()
+    requireRole(authUser, ['owner', 'manager'])
+
+    const restaurantId = getRestaurantId(authUser)
     const { id } = await params
     const body = await request.json()
-    const {
-      restaurant_id,
-      name,
-      description,
-      bundle_price,
-      image_url,
-      available,
-      combo_items
-    } = body
-
-    if (!restaurant_id) {
-      return NextResponse.json(
-        { error: 'restaurant_id is required' },
-        { status: 400 }
-      )
-    }
+    const { name, description, bundle_price, available, product_ids } = body
 
     const supabase = await createClient()
 
-    // Verify combo exists and belongs to restaurant
+    // Verificar se o combo existe e pertence ao restaurant
     const { data: existing, error: fetchError } = await supabase
       .from('combos')
       .select('id')
       .eq('id', id)
-      .eq('restaurant_id', restaurant_id)
+      .eq('restaurant_id', restaurantId)
+      .is('deleted_at', null)
       .single()
 
     if (fetchError || !existing) {
       return NextResponse.json(
-        { error: 'Combo not found' },
+        { error: 'Combo não encontrado' },
         { status: 404 }
       )
     }
 
-    // Update combo fields
-    const updateData: {
-      name?: string;
-      description?: string | null;
-      bundle_price?: number;
-      image_url?: string | null;
-      available?: boolean;
-    } = {}
-    if (name !== undefined) updateData.name = name
-    if (description !== undefined) updateData.description = description
-    if (bundle_price !== undefined) updateData.bundle_price = bundle_price
-    if (image_url !== undefined) updateData.image_url = image_url
-    if (available !== undefined) updateData.available = available
-
-    const { data: combo, error: comboError } = await supabase
-      .from('combos')
-      .update(updateData)
-      .eq('id', id)
-      .select()
-      .single()
-
-    if (comboError) {
-      console.error('Error updating combo:', comboError)
+    // Validações
+    if (name !== undefined && (typeof name !== 'string' || name.trim() === '')) {
       return NextResponse.json(
-        { error: 'Failed to update combo' },
-        { status: 500 }
+        { error: 'Nome não pode ser vazio' },
+        { status: 400 }
       )
     }
 
-    // Update combo items if provided
-    let items = null
-    if (combo_items && Array.isArray(combo_items)) {
-      // Delete existing combo items
-      await supabase.from('combo_items').delete().eq('combo_id', id)
+    if (bundle_price !== undefined && (typeof bundle_price !== 'number' || bundle_price < 0)) {
+      return NextResponse.json(
+        { error: 'bundle_price deve ser um número >= 0' },
+        { status: 400 }
+      )
+    }
 
-      // Insert new combo items
-      if (combo_items.length > 0) {
-        const comboItemsWithIds = combo_items.map((item: { product_id: string; quantity: number }) => ({
-          combo_id: id,
-          product_id: item.product_id,
-          quantity: item.quantity || 1
-        }))
+    // Validar product_ids se fornecido
+    if (product_ids !== undefined) {
+      if (!Array.isArray(product_ids) || product_ids.length === 0) {
+        return NextResponse.json(
+          { error: 'product_ids deve ser um array com pelo menos um item' },
+          { status: 400 }
+        )
+      }
 
-        const { data: newItems, error: itemsError } = await supabase
-          .from('combo_items')
-          .insert(comboItemsWithIds)
-          .select()
+      const { data: products, error: productsError } = await supabase
+        .from('products')
+        .select('id')
+        .eq('restaurant_id', restaurantId)
+        .in('id', product_ids)
+        .is('deleted_at', null)
 
-        if (itemsError) {
-          console.error('Error updating combo items:', itemsError)
-          return NextResponse.json(
-            { error: 'Failed to update combo items' },
-            { status: 500 }
-          )
-        }
-        items = newItems
+      if (productsError) {
+        console.error('Erro ao validar produtos:', productsError)
+        return NextResponse.json(
+          { error: 'Falha ao validar produtos' },
+          { status: 500 }
+        )
+      }
+
+      const validProductIds = new Set(products?.map(p => p.id) || [])
+      const invalidIds = product_ids.filter((pid: string) => !validProductIds.has(pid))
+
+      if (invalidIds.length > 0) {
+        return NextResponse.json(
+          { error: `Produtos não encontrados ou não pertencem ao restaurante: ${invalidIds.join(', ')}` },
+          { status: 400 }
+        )
       }
     }
 
-    // Fetch updated combo with items
+    // Atualizar campos do combo
+    const updateData: Partial<Omit<combos, 'id'>> = {}
+    if (name !== undefined) updateData.name = name.trim()
+    if (description !== undefined) updateData.description = description
+    if (bundle_price !== undefined) updateData.bundle_price = bundle_price
+    if (available !== undefined) updateData.available = available
+
+    if (Object.keys(updateData).length > 0) {
+      const { error: updateError } = await supabase
+        .from('combos')
+        .update(updateData)
+        .eq('id', id)
+
+      if (updateError) {
+        console.error('Erro ao atualizar combo:', updateError)
+        return NextResponse.json(
+          { error: 'Falha ao atualizar combo' },
+          { status: 500 }
+        )
+      }
+    }
+
+    // Atualizar combo_items se product_ids fornecido
+    if (product_ids !== undefined) {
+      // Deletar itens existentes
+      await supabase.from('combo_items').delete().eq('combo_id', id)
+
+      // Inserir novos itens
+      if (product_ids.length > 0) {
+        const comboItemsData = product_ids.map((product_id: string) => ({
+          combo_id: id,
+          product_id,
+          quantity: 1,
+        }))
+
+        const { error: itemsError } = await supabase
+          .from('combo_items')
+          .insert(comboItemsData)
+
+        if (itemsError) {
+          console.error('Erro ao atualizar itens do combo:', itemsError)
+          return NextResponse.json(
+            { error: 'Falha ao atualizar itens do combo' },
+            { status: 500 }
+          )
+        }
+      }
+    }
+
+    // Buscar combo atualizado com itens
     const { data: updatedCombo, error: fetchUpdatedError } = await supabase
       .from('combos')
       .select(`
@@ -167,9 +190,9 @@ export async function PUT(
       .single()
 
     if (fetchUpdatedError) {
-      console.error('Error fetching updated combo:', fetchUpdatedError)
+      console.error('Erro ao buscar combo atualizado:', fetchUpdatedError)
       return NextResponse.json(
-        { error: 'Failed to fetch updated combo' },
+        { error: 'Falha ao buscar combo atualizado' },
         { status: 500 }
       )
     }
@@ -177,11 +200,9 @@ export async function PUT(
     await invalidateMenuCache()
     return NextResponse.json({ combo: updatedCombo })
   } catch (error) {
-    console.error('Unexpected error in /api/admin/combos/[id]:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    const message = error instanceof Error ? error.message : 'Erro interno'
+    const status = (error as Error & { status?: number }).status || 500
+    return NextResponse.json({ error: message }, { status })
   }
 }
 
@@ -190,49 +211,40 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params
-    const { searchParams } = new URL(request.url)
-    const restaurantId = searchParams.get('restaurant_id')
+    const authUser = await requireAuth()
+    requireRole(authUser, ['owner', 'manager'])
 
-    if (!restaurantId) {
-      return NextResponse.json(
-        { error: 'restaurant_id is required' },
-        { status: 400 }
-      )
-    }
+    const restaurantId = getRestaurantId(authUser)
+    const { id } = await params
 
     const supabase = await createClient()
 
-    // Verify combo exists and belongs to restaurant
+    // Verificar se o combo existe e pertence ao restaurant
     const { data: existing, error: fetchError } = await supabase
       .from('combos')
       .select('id')
       .eq('id', id)
       .eq('restaurant_id', restaurantId)
+      .is('deleted_at', null)
       .single()
 
     if (fetchError || !existing) {
       return NextResponse.json(
-        { error: 'Combo not found' },
+        { error: 'Combo não encontrado' },
         { status: 404 }
       )
     }
 
-    // Soft delete - set deleted_at on combo items first, then combo
-    await supabase
-      .from('combo_items')
-      .delete()
-      .eq('combo_id', id)
-
-    const { error } = await supabase
+    // Soft delete - definir deleted_at
+    const { error: deleteError } = await supabase
       .from('combos')
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq('id', id)
 
-    if (error) {
-      console.error('Error deleting combo:', error)
+    if (deleteError) {
+      console.error('Erro ao deletar combo:', deleteError)
       return NextResponse.json(
-        { error: 'Failed to delete combo' },
+        { error: 'Falha ao deletar combo' },
         { status: 500 }
       )
     }
@@ -240,10 +252,8 @@ export async function DELETE(
     await invalidateMenuCache()
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Unexpected error in /api/admin/combos/[id]:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    const message = error instanceof Error ? error.message : 'Erro interno'
+    const status = (error as Error & { status?: number }).status || 500
+    return NextResponse.json({ error: message }, { status })
   }
 }

@@ -5,6 +5,8 @@ import type { modifier_groups, modifier_values } from '@/lib/supabase/types';
 import styles from './ModifierGroupForm.module.css';
 
 export interface ModifierValueInput {
+  id?: string;
+  tempId?: string;
   name: string;
   price_adjustment: number;
 }
@@ -36,7 +38,7 @@ export function ModifierGroupForm({ modifierGroup, modifierValues = [], onSubmit
   const [maxSelections, setMaxSelections] = useState(modifierGroup?.max_selections ?? 1);
   const [values, setValues] = useState<ValueEntry[]>(
     modifierValues.length > 0
-      ? modifierValues.map(v => ({ name: v.name, price_adjustment: v.price_adjustment }))
+      ? modifierValues.map(v => ({ id: v.id, name: v.name, price_adjustment: v.price_adjustment }))
       : []
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -51,8 +53,12 @@ export function ModifierGroupForm({ modifierGroup, modifierValues = [], onSubmit
 
     if (minSelections < 0) {
       newErrors.minMax = 'Valor mínimo não pode ser negativo';
+    } else if (maxSelections < 1) {
+      newErrors.minMax = 'Valor máximo deve ser pelo menos 1';
     } else if (maxSelections < minSelections) {
       newErrors.minMax = 'Valor máximo deve ser maior ou igual ao mínimo';
+    } else if (required && minSelections < 1) {
+      newErrors.minMax = 'Se obrigatório, mínimo deve ser pelo menos 1';
     }
 
     setErrors(newErrors);
@@ -177,7 +183,7 @@ export function ModifierGroupForm({ modifierGroup, modifierValues = [], onSubmit
         </div>
 
         {values.length === 0 ? (
-          <span className={styles.hint}>Nenhum valor adicionado. Clique em "Adicionar Valor" para começar.</span>
+          <span className={styles.hint}>Nenhum valor adicionado. Clique em &quot;Adicionar Valor&quot; para começar.</span>
         ) : (
           <div className={styles.valuesList}>
             {values.map((value, index) => (

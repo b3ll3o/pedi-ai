@@ -35,9 +35,14 @@ function createWrapper() {
     },
   })
 
-  return ({ children }: { children: React.ReactNode }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  )
+  function Wrapper({ children }: { children: React.ReactNode }) {
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    )
+  }
+  Wrapper.displayName = 'createWrapper'
+
+  return Wrapper
 }
 
 const mockQRPayload: QRPayload = {

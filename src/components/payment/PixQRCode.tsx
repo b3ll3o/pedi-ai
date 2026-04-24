@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import styles from './PixQRCode.module.css';
 
 export interface PixQRCodeProps {
@@ -31,12 +32,6 @@ export function PixQRCode({
 }: PixQRCodeProps) {
   const [state, setState] = useState<QRState>('loading');
   const [timeLeft, setTimeLeft] = useState(0);
-
-  const calculateTimeLeft = useCallback(() => {
-    const now = new Date();
-    const diff = Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / 1000));
-    return Math.min(diff, TIMEOUT_SECONDS);
-  }, [expiresAt]);
 
   useEffect(() => {
     // Simulate QR code generation delay
@@ -120,9 +115,11 @@ export function PixQRCode({
   return (
     <div className={styles.container} data-testid="pix-qr-code">
       <div className={`${styles.qrWrapper} ${isExpired ? styles.qrExpired : ''}`}>
-        <img
+        <Image
           src={qrCodeBase64}
           alt="QR Code PIX"
+          width={200}
+          height={200}
           className={styles.qrImage}
         />
         {isExpired && (

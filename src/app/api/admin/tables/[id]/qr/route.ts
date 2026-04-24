@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin'
 import { generateQRPayload } from '@/lib/qr/generator'
 import { validateQRPayload } from '@/lib/qr/validator'
 import type { tables } from '@/lib/supabase/types'
@@ -11,7 +12,11 @@ interface RouteParams {
 // GET /api/admin/tables/[id]/qr - Generate QR code for a table
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
+    const authUser = await requireAuth()
+    requireRole(authUser, ['owner', 'manager'])
+
     const { id } = await params
+    const restaurantId = getRestaurantId(authUser)
 
     const secretKey = process.env.QR_SECRET_KEY
     if (!secretKey) {
@@ -28,6 +33,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .from('tables')
       .select('*')
       .eq('id', id)
+      .eq('restaurant_id', restaurantId)
       .single()
 
     if (error || !table) {
@@ -88,7 +94,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // POST /api/admin/tables/[id]/qr - Validate QR code (for testing)
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
+    const authUser = await requireAuth()
+    requireRole(authUser, ['owner', 'manager'])
+
     const { id } = await params
+    const restaurantId = getRestaurantId(authUser)
 
     const secretKey = process.env.QR_SECRET_KEY
     if (!secretKey) {

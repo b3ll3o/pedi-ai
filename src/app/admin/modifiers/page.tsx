@@ -4,14 +4,43 @@ import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { getSession } from '@/lib/supabase/auth';
-import type { modifier_groups } from '@/lib/supabase/types';
+import type { modifier_groups, modifier_values } from '@/lib/supabase/types';
+import { ModifierGroupForm, type ModifierGroupInput, type ModifierValueInput } from '@/components/admin/ModifierGroupForm';
 import styles from './page.module.css';
+
+interface ModifierGroupWithValues extends modifier_groups {
+  modifier_values?: modifier_values[];
+}
 
 export default function ModifiersPage() {
   const router = useRouter();
-  const [modifierGroups, setModifierGroups] = useState<modifier_groups[]>([]);
+  const [modifierGroups, setModifierGroups] = useState<ModifierGroupWithValues[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [authChecked, setAuthChecked] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Modal state
+  const [showModal, setShowModal] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<ModifierGroupWithValues | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const fetchModifierGroups = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/admin/modifiers');
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({ error: 'Falha ao carregar' }));
+        throw new Error(data.error || 'Falha ao carregar');
+      }
+      const data = await response.json();
+      setModifierGroups(data.modifier_groups || []);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao carregar grupos';
+      setError(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -21,36 +50,159 @@ export default function ModifiersPage() {
           router.replace('/admin/login');
           return;
         }
-        setAuthChecked(true);
+        setIsLoading(true);
+        await fetchModifierGroups();
       } catch (error) {
         console.error('Auth check failed:', error);
         router.replace('/admin/login');
       }
     };
     checkAuth();
-  }, [router]);
+  }, [router, fetchModifierGroups]);
 
-  const handleEdit = useCallback((group: modifier_groups) => {
-    // TODO: Open edit modal or navigate to edit page
+  const handleEdit = useCallback((group: ModifierGroupWithValues) => {
+    setEditingGroup(group);
+    setShowModal(true);
   }, []);
 
   const handleDelete = useCallback(async (id: string) => {
-    // TODO: Implement delete with confirmation
-  }, []);
+    if (!confirm('Tem certeza que deseja excluir este grupo de modificadores?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/modifiers/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({ error: 'Falha ao excluir' }));
+        throw new Error(data.error || 'Falha ao excluir');
+      }
+      await fetchModifierGroups();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao excluir';
+      alert(message);
+    }
+  }, [fetchModifierGroups]);
 
   const handleCreate = useCallback(() => {
-    // TODO: Open create modal or navigate to create page
+    setEditingGroup(null);
+    setShowModal(true);
   }, []);
 
-  if (!authChecked) {
-    return (
-      <AdminLayout>
-        <div className={styles.container}>
-          <div className={styles.loading}>Carregando...</div>
-        </div>
-      </AdminLayout>
-    );
-  }
+  const handleCloseModal = useCallback(() => {
+    setShowModal(false);
+    setEditingGroup(null);
+  }, []);
+
+  // Helper to sync modifier values (for edit mode)
+  const syncModifierValues = async (groupId: string, newValues: ModifierValueInput[]) => {
+    const existingValues = editingGroup?.modifier_values || [];
+
+    // Delete values that are no longer present
+    for (const existing of existingValues) {
+      const stillExists = newValues.some((v) => v.id === existing.id);
+      if (!stillExists) {
+        await fetch(`/api/admin/modifiers/values/${existing.id}`, { method: 'DELETE' });
+      }
+    }
+
+    // Update or create values
+    for (const newVal of newValues) {
+      if (newVal.id) {
+        // This value came from DB - update it
+        await fetch(`/api/admin/modifiers/values/${newVal.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: newVal.name,
+            price_adjustment: newVal.price_adjustment,
+          }),
+        });
+      } else {
+        // This is a new value (has tempId but no real id) - create it
+        await fetch(`/api/admin/modifiers/${groupId}/values`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: newVal.name,
+            price_adjustment: newVal.price_adjustment,
+          }),
+        });
+      }
+    }
+  };
+
+  const handleSubmit = useCallback(async (data: ModifierGroupInput) => {
+    setIsSubmitting(true);
+    try {
+      if (editingGroup) {
+        // Update modifier group
+        const groupResponse = await fetch(`/api/admin/modifiers/${editingGroup.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: data.name,
+            required: data.required,
+            min_selections: data.min_selections,
+            max_selections: data.max_selections,
+          }),
+        });
+
+        if (!groupResponse.ok) {
+          const resp = await groupResponse.json().catch(() => ({ error: 'Falha ao atualizar' }));
+          throw new Error(resp.error || 'Falha ao atualizar grupo');
+        }
+
+        // Sync modifier values
+        await syncModifierValues(editingGroup.id, data.values || []);
+      } else {
+        // Create modifier group
+        const groupResponse = await fetch('/api/admin/modifiers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: data.name,
+            required: data.required,
+            min_selections: data.min_selections,
+            max_selections: data.max_selections,
+          }),
+        });
+
+        if (!groupResponse.ok) {
+          const resp = await groupResponse.json().catch(() => ({ error: 'Falha ao criar' }));
+          throw new Error(resp.error || 'Falha ao criar grupo');
+        }
+
+        const { modifier_group } = await groupResponse.json();
+
+        // Create modifier values
+        if (data.values && data.values.length > 0) {
+          for (const value of data.values) {
+            const valueResponse = await fetch(`/api/admin/modifiers/${modifier_group.id}/values`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: value.name,
+                price_adjustment: value.price_adjustment,
+              }),
+            });
+            if (!valueResponse.ok) {
+              console.error('Erro ao criar valor do modificador');
+            }
+          }
+        }
+      }
+
+      handleCloseModal();
+      await fetchModifierGroups();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao salvar';
+      alert(message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [editingGroup, handleCloseModal, fetchModifierGroups]);
 
   return (
     <AdminLayout>
@@ -71,6 +223,12 @@ export default function ModifiersPage() {
             + Novo Grupo
           </button>
         </header>
+
+        {error && (
+          <div className={styles.error}>
+            {error}
+          </div>
+        )}
 
         {isLoading ? (
           <div className={styles.loading}>
@@ -97,6 +255,9 @@ export default function ModifiersPage() {
                     <p className={styles.itemMeta}>
                       {group.required ? 'Obrigatório' : 'Opcional'} •{' '}
                       {group.min_selections}–{group.max_selections} opções
+                      {group.modifier_values && group.modifier_values.length > 0 && (
+                        <> • {group.modifier_values.length} valores</>
+                      )}
                     </p>
                   </div>
                   <div className={styles.itemActions}>
@@ -118,6 +279,19 @@ export default function ModifiersPage() {
                 </div>
               ))
             )}
+          </div>
+        )}
+
+        {showModal && (
+          <div className={styles.modalOverlay}>
+            <div className={styles.modalContent}>
+              <ModifierGroupForm
+                modifierGroup={editingGroup || undefined}
+                modifierValues={editingGroup?.modifier_values}
+                onSubmit={handleSubmit}
+                onCancel={handleCloseModal}
+              />
+            </div>
           </div>
         )}
       </div>

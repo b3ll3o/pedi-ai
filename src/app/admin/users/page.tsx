@@ -3,10 +3,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { AdminLayout } from '@/components/admin/AdminLayout'
-import { UserManagement } from '@/components/users/UserManagement'
-import { StaffInviteForm } from '@/components/users/StaffInviteForm'
+import { UserManagement } from '@/components/admin/UserManagement'
+import { UserForm } from '@/components/admin/UserForm'
 import { getUsers, inviteUser, deleteUser, updateUser, type UserRole } from '@/services/userService'
-import { getSession } from '@/lib/supabase/auth'
+import { requireAuth } from '@/lib/auth/admin'
 import type { users_profiles } from '@/lib/supabase/types'
 
 export default function UsersPage() {
@@ -14,18 +14,17 @@ export default function UsersPage() {
   const [users, setUsers] = useState<users_profiles[]>([])
   const [currentUserRole, setCurrentUserRole] = useState<UserRole>('owner')
   const [isLoading, setIsLoading] = useState(true)
-  const [showInviteForm, setShowInviteForm] = useState(false)
+  const [showForm, setShowForm] = useState(false)
+  const [editingUser, setEditingUser] = useState<users_profiles | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [authChecked, setAuthChecked] = useState(false)
+  const [authUser, setAuthUser] = useState<Awaited<ReturnType<typeof requireAuth>> | null>(null)
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const session = await getSession()
-        if (!session) {
-          router.replace('/admin/login')
-          return
-        }
+        const user = await requireAuth()
+        setAuthUser(user)
         setAuthChecked(true)
       } catch (error) {
         console.error('Auth check failed:', error)
@@ -36,15 +35,13 @@ export default function UsersPage() {
   }, [router])
 
   useEffect(() => {
-    if (!authChecked) return
+    if (!authChecked || !authUser) return
 
     const loadUsers = async () => {
       try {
-        const restaurantId = 'demo-restaurant'
-        const data = await getUsers(restaurantId)
+        const data = await getUsers(authUser.restaurant_id)
         setUsers(data)
-        // In a real app, get current user's role from auth context
-        setCurrentUserRole('owner')
+        setCurrentUserRole(authUser.role as UserRole)
       } catch (err) {
         console.error('Failed to load users:', err)
         setError('Erro ao carregar usuários')
@@ -53,27 +50,46 @@ export default function UsersPage() {
       }
     }
     loadUsers()
-  }, [authChecked])
+  }, [authChecked, authUser])
 
   const handleInvite = useCallback(
     async (data: { email: string; name: string; role: UserRole }) => {
+      if (!authUser) return
       try {
-        const restaurantId = 'demo-restaurant'
-        await inviteUser({ ...data, restaurant_id: restaurantId })
-        setShowInviteForm(false)
-        // Refresh users
-        const updated = await getUsers(restaurantId)
+        await inviteUser({ ...data, restaurant_id: authUser.restaurant_id })
+        setShowForm(false)
+        const updated = await getUsers(authUser.restaurant_id)
         setUsers(updated)
       } catch (err) {
         console.error('Failed to invite user:', err)
         throw err
       }
     },
-    []
+    [authUser]
+  )
+
+  const handleUpdate = useCallback(
+    async (data: { email: string; name: string; role: UserRole }) => {
+      if (!editingUser) return
+      try {
+        await updateUser(editingUser.id, { name: data.name, role: data.role })
+        setShowForm(false)
+        setEditingUser(null)
+        if (authUser) {
+          const updated = await getUsers(authUser.restaurant_id)
+          setUsers(updated)
+        }
+      } catch (err) {
+        console.error('Failed to update user:', err)
+        throw err
+      }
+    },
+    [editingUser, authUser]
   )
 
   const handleEdit = useCallback((user: users_profiles) => {
-    // Could open a modal or navigate to edit page
+    setEditingUser(user)
+    setShowForm(true)
   }, [])
 
   const handleDelete = useCallback(async (userId: string) => {
@@ -85,6 +101,33 @@ export default function UsersPage() {
       alert('Erro ao remover usuário')
     }
   }, [])
+
+  const handleCloseForm = useCallback(() => {
+    setShowForm(false)
+    setEditingUser(null)
+  }, [])
+
+  // Role protection: only owner can manage users
+  if (authChecked && authUser && authUser.role !== 'owner') {
+    return (
+      <AdminLayout>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '48px',
+          textAlign: 'center',
+        }}>
+          <span style={{ fontSize: '48px', marginBottom: '16px' }}>🔒</span>
+          <h2 style={{ margin: '0 0 8px 0', color: '#111827' }}>Acesso Negado</h2>
+          <p style={{ margin: 0, color: '#6b7280' }}>
+            Apenas o proprietário pode gerenciar usuários.
+          </p>
+        </div>
+      </AdminLayout>
+    )
+  }
 
   if (isLoading) {
     return (
@@ -100,7 +143,14 @@ export default function UsersPage() {
     <AdminLayout>
       <div style={{ padding: 24 }}>
         {error && (
-          <div style={{ padding: 12, marginBottom: 16, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#991b1b' }}>
+          <div style={{
+            padding: 12,
+            marginBottom: 16,
+            background: '#fef2f2',
+            border: '1px solid #fecaca',
+            borderRadius: 6,
+            color: '#991b1b'
+          }}>
             {error}
           </div>
         )}
@@ -110,14 +160,15 @@ export default function UsersPage() {
           currentUserRole={currentUserRole}
           onEdit={handleEdit}
           onDelete={handleDelete}
-          onInvite={() => setShowInviteForm(true)}
+          onInvite={() => setShowForm(true)}
         />
       </div>
 
-      {showInviteForm && (
-        <StaffInviteForm
-          onSubmit={handleInvite}
-          onCancel={() => setShowInviteForm(false)}
+      {showForm && (
+        <UserForm
+          user={editingUser || undefined}
+          onSubmit={editingUser ? handleUpdate : handleInvite}
+          onCancel={handleCloseForm}
         />
       )}
     </AdminLayout>

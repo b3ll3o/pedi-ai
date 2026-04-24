@@ -1,57 +1,68 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { invalidateMenuCache } from '@/lib/offline/cache'
-import type { categories } from '@/lib/supabase/types'
-
-type Category = categories
+import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin'
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const restaurantId = searchParams.get('restaurant_id')
+    const authUser = await requireAuth()
+    requireRole(authUser, ['owner', 'manager'])
 
-    if (!restaurantId) {
-      return NextResponse.json(
-        { error: 'restaurant_id is required' },
-        { status: 400 }
-      )
-    }
+    const restaurantId = getRestaurantId(authUser)
+    const { searchParams } = new URL(request.url)
+    const activeOnly = searchParams.get('active') === 'true'
 
     const supabase = await createClient()
 
-    const { data: categories, error } = await supabase
+    let query = supabase
       .from('categories')
       .select('*')
       .eq('restaurant_id', restaurantId)
       .is('deleted_at', null)
       .order('sort_order', { ascending: true })
 
+    if (activeOnly) {
+      query = query.eq('active', true)
+    }
+
+    const { data: categories, error } = await query
+
     if (error) {
-      console.error('Error fetching categories:', error)
+      console.error('Erro ao buscar categorias:', error)
       return NextResponse.json(
-        { error: 'Failed to fetch categories' },
+        { error: 'Falha ao buscar categorias' },
         { status: 500 }
       )
     }
 
     return NextResponse.json({ categories })
   } catch (error) {
-    console.error('Unexpected error in /api/admin/categories:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    const message = error instanceof Error ? error.message : 'Erro interno'
+    const status = (error as Error & { status?: number }).status || 500
+    return NextResponse.json({ error: message }, { status })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { restaurant_id, name, description, image_url, sort_order, active } = body
+    const authUser = await requireAuth()
+    requireRole(authUser, ['owner', 'manager'])
 
-    if (!restaurant_id || !name) {
+    const restaurantId = getRestaurantId(authUser)
+    const body = await request.json()
+    const { name, description, sort_order } = body
+
+    // Validações
+    if (!name || typeof name !== 'string' || name.trim() === '') {
       return NextResponse.json(
-        { error: 'restaurant_id and name are required' },
+        { error: 'Nome é obrigatório e não pode ser vazio' },
+        { status: 400 }
+      )
+    }
+
+    if (sort_order !== undefined && (typeof sort_order !== 'number' || sort_order < 0)) {
+      return NextResponse.json(
+        { error: 'sort_order deve ser um número >= 0' },
         { status: 400 }
       )
     }
@@ -61,20 +72,19 @@ export async function POST(request: NextRequest) {
     const { data: category, error } = await supabase
       .from('categories')
       .insert({
-        restaurant_id,
-        name,
-        description: description || null,
-        image_url: image_url || null,
+        restaurant_id: restaurantId,
+        name: name.trim(),
+        description: body.description || null,
         sort_order: sort_order ?? 0,
-        active: active ?? true
+        active: true,
       })
       .select()
       .single()
 
     if (error) {
-      console.error('Error creating category:', error)
+      console.error('Erro ao criar categoria:', error)
       return NextResponse.json(
-        { error: 'Failed to create category' },
+        { error: 'Falha ao criar categoria' },
         { status: 500 }
       )
     }
@@ -82,10 +92,8 @@ export async function POST(request: NextRequest) {
     await invalidateMenuCache()
     return NextResponse.json({ category }, { status: 201 })
   } catch (error) {
-    console.error('Unexpected error in /api/admin/categories:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    const message = error instanceof Error ? error.message : 'Erro interno'
+    const status = (error as Error & { status?: number }).status || 500
+    return NextResponse.json({ error: message }, { status })
   }
 }

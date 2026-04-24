@@ -1,6 +1,17 @@
 'use client'
 
 import { useState } from 'react'
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+} from 'recharts'
 import type { AnalyticsData } from '@/services/analyticsService'
 import { formatCurrency, formatNumber, formatPercent } from '@/services/analyticsService'
 import styles from './AnalyticsDashboard.module.css'
@@ -166,22 +177,103 @@ export function AnalyticsDashboard({
             {/* Orders by Day */}
             <div className={styles.chartCard}>
               <h3 className={styles.chartTitle}>Pedidos por Dia</h3>
-              <div className={styles.chartPlaceholder}>
-                <span className={styles.placeholderIcon}>📈</span>
-                <span className={styles.placeholderText}>
-                  {Object.keys(data.orders_by_day).length} dias com pedidos
-                </span>
+              <div className={styles.chartContainer}>
+                {Object.keys(data.orders_by_day).length > 0 ? (
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart
+                      data={Object.entries(data.orders_by_day).map(([date, count]) => ({
+                        date: new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+                        pedidos: count,
+                      }))}
+                      margin={{ top: 5, right: 5, left: -20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                      <XAxis
+                        dataKey="date"
+                        tick={{ fontSize: 11, fill: '#6b7280' }}
+                        tickLine={false}
+                        axisLine={{ stroke: '#e5e7eb' }}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 11, fill: '#6b7280' }}
+                        tickLine={false}
+                        axisLine={{ stroke: '#e5e7eb' }}
+                        allowDecimals={false}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          background: '#fff',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: 6,
+                          fontSize: 12,
+                        }}
+                        labelStyle={{ color: '#111827', fontWeight: 600 }}
+                        formatter={(value) => [Number(value) || 0, 'Pedidos']}
+                      />
+                      <Bar dataKey="pedidos" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className={styles.chartPlaceholder}>
+                    <span className={styles.placeholderIcon}>📈</span>
+                    <span className={styles.placeholderText}>Sem dados de pedidos</span>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Revenue by Day */}
             <div className={styles.chartCard}>
               <h3 className={styles.chartTitle}>Receita por Dia</h3>
-              <div className={styles.chartPlaceholder}>
-                <span className={styles.placeholderIcon}>💰</span>
-                <span className={styles.placeholderText}>
-                  Total: {formatCurrency(Object.values(data.revenue_by_day).reduce((a, b) => a + b, 0))}
-                </span>
+              <div className={styles.chartContainer}>
+                {Object.keys(data.revenue_by_day).length > 0 ? (
+                  <ResponsiveContainer width="100%" height={200}>
+                    <LineChart
+                      data={Object.entries(data.revenue_by_day).map(([date, revenue]) => ({
+                        date: new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+                        receita: revenue,
+                      }))}
+                      margin={{ top: 5, right: 5, left: -20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                      <XAxis
+                        dataKey="date"
+                        tick={{ fontSize: 11, fill: '#6b7280' }}
+                        tickLine={false}
+                        axisLine={{ stroke: '#e5e7eb' }}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 11, fill: '#6b7280' }}
+                        tickLine={false}
+                        axisLine={{ stroke: '#e5e7eb' }}
+                        tickFormatter={(value) => `R$ ${value}`}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          background: '#fff',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: 6,
+                          fontSize: 12,
+                        }}
+                        labelStyle={{ color: '#111827', fontWeight: 600 }}
+                        formatter={(value) => [formatCurrency(Number(value) || 0), 'Receita']}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="receita"
+                        stroke="#059669"
+                        strokeWidth={2}
+                        dot={{ fill: '#059669', strokeWidth: 0, r: 3 }}
+                        activeDot={{ r: 5 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className={styles.chartPlaceholder}>
+                    <span className={styles.placeholderIcon}>💰</span>
+                    <span className={styles.placeholderText}>Sem dados de receita</span>
+                  </div>
+                )}
               </div>
             </div>
 

@@ -695,7 +695,7 @@ describe('cartStore (real store)', () => {
         useCartStore.getState().addItem(makeCartItem({ productId: 'prod-2', quantity: 2 }));
       });
 
-      let id = (await getItems())[0].id;
+      const id = (await getItems())[0].id;
 
       await act(async () => {
         useCartStore.getState().updateQuantity(id, 5);
@@ -776,6 +776,7 @@ describe('cartStore (real store)', () => {
 
       // Set some items in store first
       await act(async () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         useCartStore.setState({ items: [{ ...makeCartItem(), id: 'existing', createdAt: new Date() } as any] });
       });
 

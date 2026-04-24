@@ -33,6 +33,7 @@ vi.mock('@/lib/offline/db', () => {
         first: vi.fn(async () => Array.from(items.values())[0]),
         equals: vi.fn(() => ({
           first: vi.fn(async (val: unknown) =>
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             Array.from(items.values()).find((item: any) => item.modifier_group_id === val)
           ),
         })),
@@ -64,6 +65,7 @@ vi.mock('@/lib/offline/db', () => {
 
 // Import after mock
 import { db } from '@/lib/offline/db';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const dbAny = db as any;
 import type { modifier_groups, modifier_values } from '@/lib/supabase/types';
 
@@ -96,6 +98,7 @@ const modifierGroupService: ModifierGroupService = {
       id,
       created_at: now,
     } as modifier_groups;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await dbAny.modifier_groups.add(newGroup as any);
     return { id };
   },
@@ -106,6 +109,7 @@ const modifierGroupService: ModifierGroupService = {
 
   async getModifierGroupsByRestaurant(restaurantId) {
     const all = await dbAny.modifier_groups.toArray();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return all.filter((g: any) => (g as any).restaurant_id === restaurantId) as modifier_groups[];
   },
 
@@ -116,6 +120,7 @@ const modifierGroupService: ModifierGroupService = {
       ...existing,
       ...updates,
     };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await dbAny.modifier_groups.put(updated as any);
     return updated;
   },
@@ -126,6 +131,7 @@ const modifierGroupService: ModifierGroupService = {
     await dbAny.modifier_groups.put({
       ...existing,
       required: false,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
   },
 };
@@ -140,6 +146,7 @@ const modifierValueService: ModifierValueService = {
       id,
       created_at: now,
     } as modifier_values;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await dbAny.modifier_values.add(newValue as any);
     return { id };
   },
@@ -150,11 +157,13 @@ const modifierValueService: ModifierValueService = {
 
   async getModifierValuesByGroup(groupId) {
     const all = await dbAny.modifier_values.toArray();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return all.filter((v: any) => (v as any).modifier_group_id === groupId) as modifier_values[];
   },
 
   async getAvailableModifierValuesByGroup(groupId) {
     const all = await dbAny.modifier_values.toArray();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return all.filter((v: any) => (v as any).modifier_group_id === groupId && v.available === true) as modifier_values[];
   },
 
@@ -165,6 +174,7 @@ const modifierValueService: ModifierValueService = {
       ...existing,
       ...updates,
     };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await dbAny.modifier_values.put(updated as any);
     return updated;
   },
@@ -175,6 +185,7 @@ const modifierValueService: ModifierValueService = {
     await dbAny.modifier_values.put({
       ...existing,
       available: false,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
   },
 };
@@ -308,6 +319,7 @@ describe('modifierGroupService', () => {
       const result = await modifierGroupService.getModifierGroupsByRestaurant('rest-123');
 
       expect(result).toHaveLength(2);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect(result.every(g => (g as any).restaurant_id === 'rest-123')).toBe(true);
     });
 
@@ -562,6 +574,7 @@ describe('modifierValueService', () => {
       const result = await modifierValueService.getModifierValuesByGroup('group-123');
 
       expect(result).toHaveLength(2);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect(result.every(v => (v as any).modifier_group_id === 'group-123')).toBe(true);
     });
 

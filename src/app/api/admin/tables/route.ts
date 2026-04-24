@@ -1,20 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin'
 import type { tables } from '@/lib/supabase/types'
 
 // GET /api/admin/tables - List all tables for a restaurant
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const restaurantId = searchParams.get('restaurant_id')
+    const authUser = await requireAuth()
+    requireRole(authUser, ['owner', 'manager'])
 
-    if (!restaurantId) {
-      return NextResponse.json(
-        { error: 'restaurant_id is required' },
-        { status: 400 }
-      )
-    }
-
+    const restaurantId = getRestaurantId(authUser)
     const supabase = await createClient()
 
     const { data: tables, error } = await supabase
@@ -44,12 +39,16 @@ export async function GET(request: NextRequest) {
 // POST /api/admin/tables - Create a new table
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { restaurant_id, number, name, capacity, active } = body
+    const authUser = await requireAuth()
+    requireRole(authUser, ['owner', 'manager'])
 
-    if (!restaurant_id || number === undefined) {
+    const restaurantId = getRestaurantId(authUser)
+    const body = await request.json()
+    const { number, name, capacity, active } = body
+
+    if (number === undefined) {
       return NextResponse.json(
-        { error: 'restaurant_id and number are required' },
+        { error: 'number is required' },
         { status: 400 }
       )
     }
@@ -60,7 +59,7 @@ export async function POST(request: NextRequest) {
     const { data: existingTable, error: checkError } = await supabase
       .from('tables')
       .select('id')
-      .eq('restaurant_id', restaurant_id)
+      .eq('restaurant_id', restaurantId)
       .eq('number', number)
       .single()
 
@@ -82,7 +81,7 @@ export async function POST(request: NextRequest) {
     const { data: table, error } = await supabase
       .from('tables')
       .insert({
-        restaurant_id,
+        restaurant_id: restaurantId,
         number,
         name: name || null,
         capacity: capacity || null,

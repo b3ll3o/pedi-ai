@@ -100,6 +100,16 @@
   background-color: var(--primary-hover);
 }
 
+.navItemDisabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.navItemDisabled:hover {
+  background-color: transparent;
+  color: var(--text-sidebar);
+}
+
 .navIcon {
   font-size: 18px;
   width: 24px;

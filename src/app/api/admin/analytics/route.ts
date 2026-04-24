@@ -1,20 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin'
 
 // GET /api/admin/analytics - Get analytics data
 export async function GET(request: NextRequest) {
   try {
+    const authUser = await requireAuth()
+    requireRole(authUser, ['owner', 'manager'])
+
+    const restaurantId = getRestaurantId(authUser)
     const { searchParams } = new URL(request.url)
-    const restaurantId = searchParams.get('restaurant_id')
     const dateFrom = searchParams.get('date_from')
     const dateTo = searchParams.get('date_to')
-
-    if (!restaurantId) {
-      return NextResponse.json(
-        { error: 'restaurant_id is required' },
-        { status: 400 }
-      )
-    }
 
     // Default date range: last 30 days
     const defaultDateFrom = new Date()
@@ -121,22 +118,23 @@ export async function GET(request: NextRequest) {
         .in('order_id', orderIds)
 
       if (!itemsError && items) {
-        const itemsByProduct: Record<string, any> = {}
+        type PopularItem = { product_id: string; product_name: string; quantity: number; revenue: number };
+        const itemsByProduct: Record<string, PopularItem> = {}
         items.forEach(item => {
           const key = String(item.product_id)
           if (!itemsByProduct[key]) {
             itemsByProduct[key] = {
-              product_id: item.product_id,
+              product_id: String(item.product_id),
               product_name: 'Product', // Would need separate query to get name
               quantity: 0,
               revenue: 0,
             }
           }
-          itemsByProduct[key].quantity += item.quantity
-          itemsByProduct[key].revenue += item.total_price
+          itemsByProduct[key].quantity += Number(item.quantity)
+          itemsByProduct[key].revenue += Number(item.total_price)
         })
         popularItems = Object.values(itemsByProduct)
-          .sort((a: any, b: any) => b.quantity - a.quantity)
+          .sort((a: PopularItem, b: PopularItem) => b.quantity - a.quantity)
           .slice(0, 10)
       }
     }

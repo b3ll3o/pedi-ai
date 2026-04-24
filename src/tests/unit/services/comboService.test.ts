@@ -31,6 +31,7 @@ vi.mock('@/lib/offline/db', () => {
         first: vi.fn(async () => Array.from(items.values())[0]),
         equals: vi.fn(() => ({
           first: vi.fn(async (val: unknown) =>
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             Array.from(items.values()).find((item: any) => item.combo_id === val)
           ),
         })),
@@ -83,6 +84,7 @@ const comboService: ComboService = {
       updated_at: now,
     } as combos;
     // @ts-expect-error - Test mock extends db with combos table not in PediDatabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await db.combos.add(newCombo as any);
 
     // Create combo items
@@ -96,6 +98,7 @@ const comboService: ComboService = {
         created_at: now,
       } as combo_items;
       // @ts-expect-error - Test mock extends db with combo_items table not in PediDatabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await db.combo_items.add(newItem as any);
     }
 
@@ -110,6 +113,7 @@ const comboService: ComboService = {
     // Manually filter combo_items by combo_id (avoiding mock where chain complexity)
     // @ts-expect-error - Test mock extends db with combo_items table not in PediDatabase
     const allItems = await db.combo_items.toArray();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const items = allItems.filter((item: any) => (item as any).combo_id === id);
     return { ...combo, combo_items: items };
   },
@@ -117,12 +121,14 @@ const comboService: ComboService = {
   async getCombosByRestaurant(restaurantId) {
     // @ts-expect-error - Test mock extends db with combos table not in PediDatabase
     const all = await db.combos.toArray();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return all.filter((c: any) => (c as any).restaurant_id === restaurantId) as combos[];
   },
 
   async getAvailableCombosByRestaurant(restaurantId) {
     // @ts-expect-error - Test mock extends db with combos table not in PediDatabase
     const all = await db.combos.toArray();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return all.filter((c: any) => (c as any).restaurant_id === restaurantId && c.available === true) as combos[];
   },
 
@@ -137,6 +143,7 @@ const comboService: ComboService = {
       updated_at: new Date().toISOString(),
     };
     // @ts-expect-error - Test mock extends db with combos table not in PediDatabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await db.combos.put(updated as any);
 
     // Update combo items if provided
@@ -145,8 +152,10 @@ const comboService: ComboService = {
       // @ts-expect-error - Test mock extends db with combo_items table not in PediDatabase
       const allItems = await db.combo_items.toArray();
       for (const item of allItems) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if ((item as any).combo_id === id) {
           // @ts-expect-error - Test mock extends db with combo_items table not in PediDatabase
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await db.combo_items.delete((item as any).id);
         }
       }
@@ -162,6 +171,7 @@ const comboService: ComboService = {
           created_at: new Date().toISOString(),
         } as combo_items;
         // @ts-expect-error - Test mock extends db with combo_items table not in PediDatabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await db.combo_items.add(newItem as any);
       }
     }
@@ -178,8 +188,10 @@ const comboService: ComboService = {
     // @ts-expect-error - Test mock extends db with combo_items table not in PediDatabase
     const allItems = await db.combo_items.toArray();
     for (const item of allItems) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if ((item as any).combo_id === id) {
         // @ts-expect-error - Test mock extends db with combo_items table not in PediDatabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await db.combo_items.delete((item as any).id);
       }
     }
@@ -211,6 +223,7 @@ describe('comboService', () => {
         { product_id: 'prod-3', quantity: 1 },
       ];
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = await comboService.createCombo(comboData as any, items);
 
       expect(result.id).toBeDefined();
@@ -234,6 +247,7 @@ describe('comboService', () => {
       };
       const items = [{ product_id: 'prod-1', quantity: 1 }];
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = await comboService.createCombo(comboData as any, items);
       const retrieved = await comboService.getComboById(result.id);
 
@@ -249,19 +263,23 @@ describe('comboService', () => {
       };
       const items = [{ product_id: 'prod-1', quantity: 1 }];
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = await comboService.createCombo(comboData as any, items);
       const retrieved = await comboService.getComboById(result.id);
 
       // image_url is not set, so it should be undefined (not explicitly null)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect((retrieved as any).image_url).toBeUndefined();
     });
 
     it('generates unique ids for multiple combos', async () => {
       const combo1 = await comboService.createCombo(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { restaurant_id: 'rest-123', name: 'Combo 1', bundle_price: 10, available: true } as any,
         [{ product_id: 'prod-1', quantity: 1 }]
       );
       const combo2 = await comboService.createCombo(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { restaurant_id: 'rest-123', name: 'Combo 2', bundle_price: 20, available: true } as any,
         [{ product_id: 'prod-2', quantity: 1 }]
       );
@@ -271,6 +289,7 @@ describe('comboService', () => {
 
     it('sets created_at and updated_at timestamps', async () => {
       const result = await comboService.createCombo(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { restaurant_id: 'rest-123', name: 'Test Combo', bundle_price: 15, available: true } as any,
         [{ product_id: 'prod-1', quantity: 1 }]
       );
@@ -288,6 +307,7 @@ describe('comboService', () => {
       ];
 
       const result = await comboService.createCombo(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { restaurant_id: 'rest-123', name: 'Full Combo', bundle_price: 35, available: true } as any,
         items
       );
@@ -300,16 +320,20 @@ describe('comboService', () => {
       const items = [
         { product_id: 'prod-1' },
         { product_id: 'prod-2', quantity: 3 },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ] as any;
 
       const result = await comboService.createCombo(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { restaurant_id: 'rest-123', name: 'Combo', bundle_price: 20, available: true } as any,
         items
       );
 
       const retrieved = await comboService.getComboById(result.id);
       const comboItems = retrieved?.combo_items || [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const item1 = comboItems.find((i: any) => i.product_id === 'prod-1');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const item2 = comboItems.find((i: any) => i.product_id === 'prod-2');
 
       expect(item1?.quantity).toBe(1);
@@ -320,6 +344,7 @@ describe('comboService', () => {
   describe('getComboById', () => {
     it('returns combo when it exists', async () => {
       const created = await comboService.createCombo(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { restaurant_id: 'rest-123', name: 'Test Combo', bundle_price: 25, available: true } as any,
         [{ product_id: 'prod-1', quantity: 1 }]
       );
@@ -344,6 +369,7 @@ describe('comboService', () => {
       ];
 
       const created = await comboService.createCombo(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { restaurant_id: 'rest-123', name: 'Combo com Items', bundle_price: 30, available: true } as any,
         items
       );
@@ -358,14 +384,17 @@ describe('comboService', () => {
   describe('getCombosByRestaurant', () => {
     it('returns all combos for a restaurant', async () => {
       await comboService.createCombo(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { restaurant_id: 'rest-123', name: 'Combo A', bundle_price: 20, available: true } as any,
         [{ product_id: 'prod-1', quantity: 1 }]
       );
       await comboService.createCombo(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { restaurant_id: 'rest-123', name: 'Combo B', bundle_price: 30, available: true } as any,
         [{ product_id: 'prod-2', quantity: 1 }]
       );
       await comboService.createCombo(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { restaurant_id: 'rest-456', name: 'Combo C', bundle_price: 40, available: true } as any,
         [{ product_id: 'prod-3', quantity: 1 }]
       );
@@ -373,6 +402,7 @@ describe('comboService', () => {
       const result = await comboService.getCombosByRestaurant('rest-123');
 
       expect(result).toHaveLength(2);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect(result.every(c => (c as any).restaurant_id === 'rest-123')).toBe(true);
     });
 
@@ -384,10 +414,12 @@ describe('comboService', () => {
 
     it('returns both available and unavailable combos', async () => {
       await comboService.createCombo(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { restaurant_id: 'rest-123', name: 'Available Combo', bundle_price: 20, available: true } as any,
         [{ product_id: 'prod-1', quantity: 1 }]
       );
       await comboService.createCombo(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { restaurant_id: 'rest-123', name: 'Unavailable Combo', bundle_price: 20, available: false } as any,
         [{ product_id: 'prod-2', quantity: 1 }]
       );
@@ -401,10 +433,12 @@ describe('comboService', () => {
   describe('getAvailableCombosByRestaurant', () => {
     it('returns only available combos', async () => {
       await comboService.createCombo(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { restaurant_id: 'rest-123', name: 'Available Combo', bundle_price: 20, available: true } as any,
         [{ product_id: 'prod-1', quantity: 1 }]
       );
       await comboService.createCombo(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { restaurant_id: 'rest-123', name: 'Unavailable Combo', bundle_price: 20, available: false } as any,
         [{ product_id: 'prod-2', quantity: 1 }]
       );
@@ -418,6 +452,7 @@ describe('comboService', () => {
 
     it('returns empty array when all combos are unavailable', async () => {
       await comboService.createCombo(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { restaurant_id: 'rest-123', name: 'Unavailable Combo', bundle_price: 20, available: false } as any,
         [{ product_id: 'prod-1', quantity: 1 }]
       );
@@ -431,6 +466,7 @@ describe('comboService', () => {
   describe('updateCombo', () => {
     it('updates combo name', async () => {
       const created = await comboService.createCombo(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { restaurant_id: 'rest-123', name: 'Old Name', bundle_price: 20, available: true } as any,
         [{ product_id: 'prod-1', quantity: 1 }]
       );
@@ -443,6 +479,7 @@ describe('comboService', () => {
 
     it('updates combo bundle_price', async () => {
       const created = await comboService.createCombo(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { restaurant_id: 'rest-123', name: 'Combo', bundle_price: 20, available: true } as any,
         [{ product_id: 'prod-1', quantity: 1 }]
       );
@@ -454,6 +491,7 @@ describe('comboService', () => {
 
     it('updates combo description', async () => {
       const created = await comboService.createCombo(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { restaurant_id: 'rest-123', name: 'Combo', bundle_price: 20, available: true, description: 'Old desc' } as any,
         [{ product_id: 'prod-1', quantity: 1 }]
       );
@@ -465,6 +503,7 @@ describe('comboService', () => {
 
     it('updates available status', async () => {
       const created = await comboService.createCombo(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { restaurant_id: 'rest-123', name: 'Combo', bundle_price: 20, available: true } as any,
         [{ product_id: 'prod-1', quantity: 1 }]
       );
@@ -476,6 +515,7 @@ describe('comboService', () => {
 
     it('updates multiple fields at once', async () => {
       const created = await comboService.createCombo(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { restaurant_id: 'rest-123', name: 'Original', bundle_price: 20, available: true } as any,
         [{ product_id: 'prod-1', quantity: 1 }]
       );
@@ -495,6 +535,7 @@ describe('comboService', () => {
 
     it('preserves unchanged fields when updating', async () => {
       const created = await comboService.createCombo(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { restaurant_id: 'rest-123', name: 'Original', bundle_price: 20, available: true, description: 'Original desc' } as any,
         [{ product_id: 'prod-1', quantity: 1 }]
       );
@@ -515,6 +556,7 @@ describe('comboService', () => {
 
     it('replaces combo items when comboItems parameter is provided', async () => {
       const created = await comboService.createCombo(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { restaurant_id: 'rest-123', name: 'Combo', bundle_price: 20, available: true } as any,
         [{ product_id: 'prod-old-1', quantity: 1 }]
       );
@@ -533,6 +575,7 @@ describe('comboService', () => {
   describe('deleteCombo', () => {
     it('removes combo from database', async () => {
       const created = await comboService.createCombo(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { restaurant_id: 'rest-123', name: 'Combo to Delete', bundle_price: 20, available: true } as any,
         [{ product_id: 'prod-1', quantity: 1 }]
       );
@@ -551,6 +594,7 @@ describe('comboService', () => {
 
     it('also deletes associated combo_items', async () => {
       const created = await comboService.createCombo(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { restaurant_id: 'rest-123', name: 'Combo with Items', bundle_price: 20, available: true } as any,
         [{ product_id: 'prod-1', quantity: 1 }, { product_id: 'prod-2', quantity: 2 }]
       );
@@ -559,6 +603,7 @@ describe('comboService', () => {
 
       // @ts-expect-error - Test mock extends db with combo_items table not in PediDatabase
       const allItems = await db.combo_items.toArray();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const deletedComboItems = allItems.filter((item: any) => item.combo_id === created.id);
       expect(deletedComboItems).toHaveLength(0);
     });

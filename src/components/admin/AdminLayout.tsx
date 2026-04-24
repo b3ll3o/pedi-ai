@@ -9,15 +9,17 @@ interface NavItem {
   label: string;
   href: string;
   icon: string;
+  disabled?: boolean;
 }
 
 const navItems: NavItem[] = [
   { label: 'Dashboard', href: '/admin', icon: '📊' },
-  { label: 'Categorias', href: '/admin/categorias', icon: '📁' },
-  { label: 'Produtos', href: '/admin/produtos', icon: '🍽️' },
-  { label: 'Mesas', href: '/admin/mesas', icon: '🪑' },
-  { label: 'Pedidos', href: '/admin/pedidos', icon: '📋' },
-  { label: 'Configurações', href: '/admin/configuracoes', icon: '⚙️' },
+  { label: 'Analytics', href: '/admin/analytics', icon: '📈' },
+  { label: 'Categorias', href: '/admin/categories', icon: '📁' },
+  { label: 'Produtos', href: '/admin/products', icon: '🍽️' },
+  { label: 'Mesas', href: '/admin/tables', icon: '🪑' },
+  { label: 'Pedidos', href: '/admin/orders', icon: '📋' },
+  { label: 'Configurações', href: '/admin/configuracoes', icon: '⚙️', disabled: true },
 ];
 
 interface AdminLayoutProps {
@@ -48,14 +50,31 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 ? pathname === '/admin'
                 : pathname.startsWith(item.href);
 
+            const content = (
+              <>
+                <span className={styles.navIcon}>{item.icon}</span>
+                <span className={styles.navLabel}>{item.label}</span>
+              </>
+            );
+
+            if (item.disabled) {
+              return (
+                <span
+                  key={item.href}
+                  className={`${styles.navItem} ${styles.navItemDisabled}`}
+                >
+                  {content}
+                </span>
+              );
+            }
+
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
               >
-                <span className={styles.navIcon}>{item.icon}</span>
-                <span className={styles.navLabel}>{item.label}</span>
+                {content}
               </Link>
             );
           })}

@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
 import { getSession } from '@/lib/supabase/auth';
 import { CategoryForm, type CategoryInput } from '@/components/admin/CategoryForm';
 import type { categories } from '@/lib/supabase/types';
@@ -43,7 +42,7 @@ export default function CategoryEditPage({ params }: PageProps) {
     params.then((p) => setCategoryId(p.id));
   }, [params]);
 
-  // Fetch category data
+  // Fetch category data via API
   useEffect(() => {
     if (!categoryId || !authChecked) return;
 
@@ -52,26 +51,16 @@ export default function CategoryEditPage({ params }: PageProps) {
       setError(null);
 
       try {
-        const supabase = createClient();
-        const { data, error: fetchError } = await supabase
-          .from('categories')
-          .select('*')
-          .eq('id', categoryId)
-          .single();
-
-        if (fetchError) {
-          throw fetchError;
+        const res = await fetch(`/api/admin/categories/${categoryId}`);
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || 'Erro ao carregar categoria');
         }
-
-        if (!data) {
-          setError('Categoria não encontrada');
-          return;
-        }
-
-        setCategory(data as categories);
+        const data = await res.json();
+        setCategory(data.category);
       } catch (err) {
         console.error('Failed to fetch category:', err);
-        setError('Erro ao carregar categoria');
+        setError(err instanceof Error ? err.message : 'Erro ao carregar categoria');
       } finally {
         setIsLoading(false);
       }
@@ -84,27 +73,24 @@ export default function CategoryEditPage({ params }: PageProps) {
     async (input: CategoryInput) => {
       if (!categoryId) return;
 
-      const supabase = createClient();
-      const { error: updateError } = await supabase
-        .from('categories')
-        .update({
-          name: input.name,
-          description: input.description ?? null,
-          image_url: input.image_url ?? null,
-        })
-        .eq('id', categoryId);
+      const res = await fetch(`/api/admin/categories/${categoryId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      });
 
-      if (updateError) {
-        throw updateError;
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Erro ao atualizar categoria');
       }
 
-      router.push('/admin/categorias');
+      router.push('/admin/categories');
     },
     [categoryId, router]
   );
 
   const handleCancel = useCallback(() => {
-    router.push('/admin/categorias');
+    router.push('/admin/categories');
   }, [router]);
 
   if (!authChecked || isLoading) {
@@ -120,7 +106,7 @@ export default function CategoryEditPage({ params }: PageProps) {
       <div className={styles.container}>
         <div className={styles.error}>
           <h2>{error ?? 'Categoria não encontrada'}</h2>
-          <Link href="/admin/categorias" className={styles.backLink}>
+          <Link href="/admin/categories" className={styles.backLink}>
             Voltar para categorias
           </Link>
         </div>
@@ -131,7 +117,7 @@ export default function CategoryEditPage({ params }: PageProps) {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <Link href="/admin/categorias" className={styles.backButton} aria-label="Voltar">
+        <Link href="/admin/categories" className={styles.backButton} aria-label="Voltar">
           ←
         </Link>
         <h1 className={styles.title}>Editar Categoria</h1>

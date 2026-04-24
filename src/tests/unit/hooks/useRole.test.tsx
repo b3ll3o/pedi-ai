@@ -315,10 +315,12 @@ describe('useRole hook', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
+      /* eslint-disable @typescript-eslint/no-explicit-any */
       const queries = (queryClient as any).getQueryCache().getAll();
       const profileQuery = queries.find(
         (q: any) => JSON.stringify(q.queryKey) === JSON.stringify(['user-profile'])
       );
+      /* eslint-enable @typescript-eslint/no-explicit-any */
 
       expect(profileQuery?.options?.staleTime).toBe(5 * 60 * 1000);
     });

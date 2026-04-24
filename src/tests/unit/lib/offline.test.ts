@@ -72,6 +72,7 @@ import { db } from '@/lib/offline/db';
 describe('IndexedDB Operations', () => {
   beforeEach(() => {
     // Reset all tables before each test
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (db as any)._reset();
   });
 

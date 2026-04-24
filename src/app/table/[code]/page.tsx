@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import styles from './page.module.css';
 
 export default function TableQRPage() {
@@ -25,9 +26,9 @@ export default function TableQRPage() {
         <div data-testid="table-info" className={styles.tableInfo}>
           {/* Table info will be displayed here */}
         </div>
-        <a href="/menu" data-testid="menu-link" className={styles.menuLink}>
+        <Link href="/menu" data-testid="menu-link" className={styles.menuLink}>
           Ver Cardápio
-        </a>
+        </Link>
         <p data-testid="error-message" className={styles.error}></p>
         <p data-testid="success-message" className={styles.success}></p>
       </div>

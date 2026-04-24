@@ -18,6 +18,7 @@
  */
 import { defineConfig, devices } from '@playwright/test'
 import path from 'path'
+import os from 'os'
 
 const isCI = process.env.CI === 'true'
 // SHARD=current/total (ex: 1/4, 2/4). Default em CI: 4 shards.
@@ -30,7 +31,7 @@ export default defineConfig({
   fullyParallel: isCI,
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
-  workers: isCI ? 1 : Math.max(1, require('os').cpus().length / 2),
+  workers: isCI ? 1 : Math.max(1, os.cpus().length / 2),
   shard: isCI && !shardMatch ? { current: 1, total: 4 } : { current: shardCurrent, total: shardTotal },
   reporter: [
     ['html', { outputFolder: 'playwright-report' }],

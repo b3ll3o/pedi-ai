@@ -48,6 +48,7 @@ export async function getUser(userId: string): Promise<users_profiles> {
 
 // ── Invite User ─────────────────────────────────────────────
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function inviteUser(input: UserInput): Promise<{ invitation: any }> {
   const response = await fetch('/api/admin/users', {
     method: 'POST',

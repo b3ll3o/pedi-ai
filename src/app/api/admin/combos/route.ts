@@ -1,25 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { invalidateMenuCache } from '@/lib/offline/cache'
-import type { combos } from '@/lib/supabase/types'
-
-type Combo = combos
+import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin'
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const restaurantId = searchParams.get('restaurant_id')
+    const authUser = await requireAuth()
+    requireRole(authUser, ['owner', 'manager'])
 
-    if (!restaurantId) {
-      return NextResponse.json(
-        { error: 'restaurant_id is required' },
-        { status: 400 }
-      )
-    }
+    const restaurantId = getRestaurantId(authUser)
+    const { searchParams } = new URL(request.url)
+    const activeOnly = searchParams.get('active') === 'true'
 
     const supabase = await createClient()
 
-    const { data: combos, error } = await supabase
+    let query = supabase
       .from('combos')
       .select(`
         *,
@@ -29,109 +24,138 @@ export async function GET(request: NextRequest) {
         )
       `)
       .eq('restaurant_id', restaurantId)
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
 
+    if (activeOnly) {
+      query = query.eq('available', true)
+    }
+
+    const { data: combos, error } = await query
+
     if (error) {
-      console.error('Error fetching combos:', error)
+      console.error('Erro ao buscar combos:', error)
       return NextResponse.json(
-        { error: 'Failed to fetch combos' },
+        { error: 'Falha ao buscar combos' },
         { status: 500 }
       )
     }
 
     return NextResponse.json({ combos })
   } catch (error) {
-    console.error('Unexpected error in /api/admin/combos:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    const message = error instanceof Error ? error.message : 'Erro interno'
+    const status = (error as Error & { status?: number }).status || 500
+    return NextResponse.json({ error: message }, { status })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const {
-      restaurant_id,
-      name,
-      description,
-      bundle_price,
-      image_url,
-      available,
-      combo_items
-    } = body
+    const authUser = await requireAuth()
+    requireRole(authUser, ['owner', 'manager'])
 
-    if (!restaurant_id || !name || bundle_price === undefined) {
+    const restaurantId = getRestaurantId(authUser)
+    const body = await request.json()
+    const { name, description, bundle_price, product_ids } = body
+
+    // Validações
+    if (!name || typeof name !== 'string' || name.trim() === '') {
       return NextResponse.json(
-        { error: 'restaurant_id, name, and bundle_price are required' },
+        { error: 'Nome é obrigatório e não pode ser vazio' },
         { status: 400 }
       )
     }
 
-    if (!combo_items || !Array.isArray(combo_items) || combo_items.length === 0) {
+    if (bundle_price === undefined || typeof bundle_price !== 'number' || bundle_price < 0) {
       return NextResponse.json(
-        { error: 'combo_items array with at least one item is required' },
+        { error: 'bundle_price é obrigatório e deve ser um número >= 0' },
+        { status: 400 }
+      )
+    }
+
+    if (!product_ids || !Array.isArray(product_ids) || product_ids.length === 0) {
+      return NextResponse.json(
+        { error: 'product_ids é obrigatório e deve ser um array com pelo menos um item' },
         { status: 400 }
       )
     }
 
     const supabase = await createClient()
 
-    // Create combo
+    // Validar que todos os product_ids pertencem ao restaurant
+    const { data: products, error: productsError } = await supabase
+      .from('products')
+      .select('id')
+      .eq('restaurant_id', restaurantId)
+      .in('id', product_ids)
+      .is('deleted_at', null)
+
+    if (productsError) {
+      console.error('Erro ao validar produtos:', productsError)
+      return NextResponse.json(
+        { error: 'Falha ao validar produtos' },
+        { status: 500 }
+      )
+    }
+
+    const validProductIds = new Set(products?.map(p => p.id) || [])
+    const invalidIds = product_ids.filter((id: string) => !validProductIds.has(id))
+
+    if (invalidIds.length > 0) {
+      return NextResponse.json(
+        { error: `Produtos não encontrados ou não pertencem ao restaurante: ${invalidIds.join(', ')}` },
+        { status: 400 }
+      )
+    }
+
+    // Criar combo
     const { data: combo, error: comboError } = await supabase
       .from('combos')
       .insert({
-        restaurant_id,
-        name,
+        restaurant_id: restaurantId,
+        name: name.trim(),
         description: description || null,
         bundle_price,
-        image_url: image_url || null,
-        available: available ?? true
+        available: true,
       })
       .select()
       .single()
 
     if (comboError) {
-      console.error('Error creating combo:', comboError)
+      console.error('Erro ao criar combo:', comboError)
       return NextResponse.json(
-        { error: 'Failed to create combo' },
+        { error: 'Falha ao criar combo' },
         { status: 500 }
       )
     }
 
-    // Create combo items
-    const comboItemsWithIds = combo_items.map((item: { product_id: string; quantity: number }) => ({
-      combo_id: combo.id as string,
-      product_id: item.product_id,
-      quantity: item.quantity || 1
+    // Criar combo_items
+    const comboItemsData = product_ids.map((product_id: string) => ({
+      combo_id: combo.id,
+      product_id,
+      quantity: 1,
     }))
 
     const { data: items, error: itemsError } = await supabase
       .from('combo_items')
-      .insert(comboItemsWithIds)
+      .insert(comboItemsData)
       .select()
 
     if (itemsError) {
-      console.error('Error creating combo items:', itemsError)
-      // Rollback: delete the combo
+      console.error('Erro ao criar itens do combo:', itemsError)
+      // Rollback: deletar o combo
       await supabase.from('combos').delete().eq('id', combo.id as string)
       return NextResponse.json(
-        { error: 'Failed to create combo items, combo rolled back' },
+        { error: 'Falha ao criar itens do combo, operação revertida' },
         { status: 500 }
       )
     }
 
     await invalidateMenuCache()
-    return NextResponse.json(
-      { combo, combo_items: items },
-      { status: 201 }
-    )
+    return NextResponse.json({ combo, combo_items: items }, { status: 201 })
   } catch (error) {
-    console.error('Unexpected error in /api/admin/combos:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    const message = error instanceof Error ? error.message : 'Erro interno'
+    const status = (error as Error & { status?: number }).status || 500
+    return NextResponse.json({ error: message }, { status })
   }
 }

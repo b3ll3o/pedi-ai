@@ -1,15 +1,57 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSession } from '@/lib/supabase/auth';
+import { CategoryList } from '@/components/admin/CategoryList';
+import { CategoryForm, type CategoryInput } from '@/components/admin/CategoryForm';
+import type { categories } from '@/lib/supabase/types';
 import styles from './page.module.css';
+
+type ToastType = 'success' | 'error' | null;
 
 export default function CategoriesPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState<categories[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<categories | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Loading states for operations
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Toast state
+  const [toast, setToast] = useState<{ type: ToastType; message: string }>({ type: null, message: '' });
+
+  const showToast = useCallback((type: ToastType, message: string) => {
+    setToast({ type, message });
+    if (type) {
+      setTimeout(() => setToast({ type: null, message: '' }), 4000);
+    }
+  }, []);
+
+  // Fetch categories from API
+  const fetchCategories = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/categories');
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Erro ao buscar categorias');
+      }
+      const data = await res.json();
+      setCategories(data.categories || []);
+      setError(null);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao carregar categorias';
+      setError(message);
+      showToast('error', message);
+    }
+  }, [showToast]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -20,13 +62,119 @@ export default function CategoriesPage() {
           return;
         }
         setLoading(false);
+        await fetchCategories();
       } catch (error) {
         console.error('Auth check failed:', error);
         router.replace('/admin/login');
       }
     };
     checkAuth();
-  }, [router]);
+  }, [router, fetchCategories]);
+
+  // Handle create new category
+  const handleAddCategory = () => {
+    setEditingCategory(null);
+    setIsModalOpen(true);
+  };
+
+  // Handle edit category
+  const handleEdit = (category: categories) => {
+    setEditingCategory(category);
+    setIsModalOpen(true);
+  };
+
+  // Handle form submit (create or update)
+  const handleSubmit = async (input: CategoryInput) => {
+    try {
+      if (editingCategory) {
+        // Update existing
+        const res = await fetch(`/api/admin/categories/${editingCategory.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(input),
+        });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || 'Erro ao atualizar categoria');
+        }
+        showToast('success', 'Categoria atualizada com sucesso');
+      } else {
+        // Create new
+        const res = await fetch('/api/admin/categories', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(input),
+        });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || 'Erro ao criar categoria');
+        }
+        showToast('success', 'Categoria criada com sucesso');
+      }
+      setIsModalOpen(false);
+      setEditingCategory(null);
+      await fetchCategories();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao salvar categoria';
+      showToast('error', message);
+      throw err;
+    }
+  };
+
+  // Handle delete click
+  const handleDelete = (id: string) => {
+    setDeletingId(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  // Confirm delete
+  const handleConfirmDelete = async () => {
+    if (!deletingId) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/categories/${deletingId}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Erro ao excluir categoria');
+      }
+      showToast('success', 'Categoria excluída com sucesso');
+      setIsDeleteModalOpen(false);
+      setDeletingId(null);
+      await fetchCategories();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao excluir categoria';
+      showToast('error', message);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Handle reorder
+  const handleReorder = async (updates: { id: string; sort_order: number }[]) => {
+    try {
+      const res = await fetch('/api/admin/categories/reorder', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ categories: updates }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Erro ao reordenar categorias');
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao reordenar categorias';
+      showToast('error', message);
+      throw err;
+    }
+  };
+
+  // Handle cancel modal
+  const handleCancelModal = () => {
+    setIsModalOpen(false);
+    setEditingCategory(null);
+  };
 
   if (loading) {
     return (
@@ -41,34 +189,89 @@ export default function CategoriesPage() {
       <header className={styles.header}>
         <h1 data-testid="page-title" className={styles.title}>Categorias</h1>
         <div className={styles.actions}>
-          <button data-testid="add-category-button" className={styles.addButton} onClick={() => setIsModalOpen(true)}>
-            Adicionar Categoria
+          <button
+            data-testid="add-category-button"
+            className={styles.addButton}
+            onClick={handleAddCategory}
+          >
+            Nova Categoria
           </button>
         </div>
       </header>
-      <div data-testid="search-input" className={styles.searchPlaceholder}>
-        <input type="text" placeholder="Buscar categorias..." aria-label="Buscar categorias" />
-      </div>
-      <div data-testid="success-message" className={styles.successMessage} aria-live="polite" />
-      <div data-testid="error-message" className={styles.errorMessage} aria-live="assertive" />
-      <div data-testid="field-error" className={styles.fieldError} aria-live="polite" />
-      <div className={styles.placeholder}>
-        Lista de categorias aparecerá aqui
-      </div>
+
+      {/* Toast notification */}
+      {toast.type && (
+        <div
+          data-testid={toast.type === 'success' ? 'success-message' : 'error-message'}
+          className={`${styles.toast} ${toast.type === 'success' ? styles.toastSuccess : styles.toastError}`}
+          aria-live="polite"
+        >
+          {toast.message}
+        </div>
+      )}
+
+      {/* Error state */}
+      {error && !categories.length && (
+        <div className={styles.errorState}>
+          <p>{error}</p>
+          <button onClick={fetchCategories} className={styles.retryButton}>
+            Tentar novamente
+          </button>
+        </div>
+      )}
+
+      {/* Category list */}
+      {!error && (
+        <CategoryList
+          categories={categories}
+          onReorder={handleReorder}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+      )}
 
       {/* Modal de adição/edição de categoria */}
-      <div data-testid="category-form-modal" className={styles.modal} hidden={!isModalOpen}>
-        <input data-testid="category-name-input" type="text" placeholder="Nome da categoria" />
-        <input data-testid="category-description-input" type="text" placeholder="Descrição" />
-        <button data-testid="save-button" onClick={() => setIsModalOpen(false)}>Salvar</button>
-        <button data-testid="cancel-button" onClick={() => setIsModalOpen(false)}>Cancelar</button>
-      </div>
+      {isModalOpen && (
+        <div data-testid="category-form-modal" className={styles.modal}>
+          <div className={styles.modalContent}>
+            <CategoryForm
+              category={editingCategory || undefined}
+              onSubmit={handleSubmit}
+              onCancel={handleCancelModal}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Modal de confirmação de delete */}
       <div data-testid="confirm-delete-modal" className={styles.modal} hidden={!isDeleteModalOpen}>
-        <p>Confirmar exclusão?</p>
-        <button data-testid="confirm-delete-button" onClick={() => setIsDeleteModalOpen(false)}>Confirmar</button>
-        <button data-testid="cancel-delete-button" onClick={() => setIsDeleteModalOpen(false)}>Cancelar</button>
+        <div className={styles.modalContent}>
+          <h3 className={styles.deleteTitle}>Confirmar exclusão</h3>
+          <p className={styles.deleteText}>
+            Tem certeza que deseja excluir esta categoria? Esta ação não pode ser desfeita.
+          </p>
+          <div className={styles.deleteActions}>
+            <button
+              data-testid="cancel-delete-button"
+              className={styles.cancelButton}
+              onClick={() => {
+                setIsDeleteModalOpen(false);
+                setDeletingId(null);
+              }}
+              disabled={isDeleting}
+            >
+              Cancelar
+            </button>
+            <button
+              data-testid="confirm-delete-button"
+              className={styles.confirmDeleteButton}
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Excluindo...' : 'Excluir'}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

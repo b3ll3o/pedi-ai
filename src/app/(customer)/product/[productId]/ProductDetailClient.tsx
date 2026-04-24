@@ -51,12 +51,7 @@ export default function ProductDetailClient({ productId }: ProductDetailClientPr
   const [pendingCartItem, setPendingCartItem] = useState<CartItem | null>(null);
 
   const addItem = useCartStore((state) => state.addItem);
-  const [cartCount, setCartCount] = useState(0);
-
-  // Update cart badge count
-  useEffect(() => {
-    setCartCount(getTotalItems(useCartStore.getState()));
-  }, []);
+  const [cartCount, setCartCount] = useState(() => getTotalItems(useCartStore.getState()));
 
   const handleAddToCart = useCallback((item: CartItem) => {
     setPendingCartItem(item);
@@ -76,6 +71,7 @@ export default function ProductDetailClient({ productId }: ProductDetailClientPr
         createdAt: new Date(),
       };
       addItem(storeCartItem);
+      setCartCount(getTotalItems(useCartStore.getState()));
       setToast({ message: 'Produto adicionado ao carrinho', type: 'success' });
     }
     setShowCartOptions(false);
@@ -95,6 +91,7 @@ export default function ProductDetailClient({ productId }: ProductDetailClientPr
         createdAt: new Date(),
       };
       addItem(storeCartItem);
+      setCartCount(getTotalItems(useCartStore.getState()));
       setToast({ message: 'Produto adicionado ao carrinho', type: 'success' });
     }
     setShowCartOptions(false);

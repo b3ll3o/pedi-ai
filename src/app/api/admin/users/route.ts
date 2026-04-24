@@ -1,19 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin'
 
 // GET /api/admin/users - List users for a restaurant
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const restaurantId = searchParams.get('restaurant_id')
+    const authUser = await requireAuth()
+    requireRole(authUser, ['owner'])
 
-    if (!restaurantId) {
-      return NextResponse.json(
-        { error: 'restaurant_id is required' },
-        { status: 400 }
-      )
-    }
-
+    const restaurantId = getRestaurantId(authUser)
     const supabase = await createClient()
 
     const { data: users, error } = await supabase
@@ -43,12 +38,16 @@ export async function GET(request: NextRequest) {
 // POST /api/admin/users - Invite a new staff member
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { restaurant_id, email, name, role } = body
+    const authUser = await requireAuth()
+    requireRole(authUser, ['owner'])
 
-    if (!restaurant_id || !email || !name || !role) {
+    const restaurantId = getRestaurantId(authUser)
+    const body = await request.json()
+    const { email, name, role } = body
+
+    if (!email || !name || !role) {
       return NextResponse.json(
-        { error: 'restaurant_id, email, name, and role are required' },
+        { error: 'email, name, and role are required' },
         { status: 400 }
       )
     }
@@ -68,7 +67,7 @@ export async function POST(request: NextRequest) {
     const { data: existingUser, error: checkError } = await supabase
       .from('users_profiles')
       .select('id, email')
-      .eq('restaurant_id', restaurant_id)
+      .eq('restaurant_id', restaurantId)
       .eq('email', email.toLowerCase())
       .single()
 
@@ -93,7 +92,7 @@ export async function POST(request: NextRequest) {
     const { data: invitation, error: inviteError } = await supabase
       .from('invitations')
       .insert({
-        restaurant_id,
+        restaurant_id: restaurantId,
         email: email.toLowerCase(),
         name,
         role,

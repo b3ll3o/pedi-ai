@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -343,7 +342,7 @@ describe('useMenu hook', () => {
     });
 
     it('fetch is called with null when restaurantId is null', async () => {
-      renderHook(() => useMenu(null as any), { wrapper });
+      renderHook(() => useMenu(null as unknown), { wrapper });
 
       await waitFor(() => expect(global.fetch).toHaveBeenCalled());
 
@@ -351,7 +350,7 @@ describe('useMenu hook', () => {
     });
 
     it('fetch is called with undefined when restaurantId is undefined', async () => {
-      renderHook(() => useMenu(undefined as any), { wrapper });
+      renderHook(() => useMenu(undefined as unknown), { wrapper });
 
       await waitFor(() => expect(global.fetch).toHaveBeenCalled());
 
@@ -388,9 +387,9 @@ describe('useMenu hook', () => {
 
       await waitFor(() => expect(result.current.isSuccess));
 
-      const queries = (queryClient as any).getQueryCache().getAll();
+      const queries = (queryClient as unknown as { getQueryCache: () => { getAll: () => unknown[] } }).getQueryCache().getAll();
       const menuQuery = queries.find(
-        (q: any) => JSON.stringify(q.queryKey) === JSON.stringify(['menu', restaurantId])
+        (q: unknown) => JSON.stringify((q as { queryKey: unknown[] }).queryKey) === JSON.stringify(['menu', restaurantId])
       );
 
       expect(menuQuery?.options?.staleTime).toBe(5 * 60 * 1000);

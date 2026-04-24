@@ -4,9 +4,8 @@ import { createContext, useContext, useEffect } from 'react';
 import { hydrateCartFromIndexedDB } from '@/stores/cartStore';
 import { processQueue } from '@/lib/offline/sync';
 
-interface StoreContextValue {
-  // Placeholder for store context
-}
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+interface StoreContextValue {}
 
 const StoreContext = createContext<StoreContextValue | null>(null);
 
