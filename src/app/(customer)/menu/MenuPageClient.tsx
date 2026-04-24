@@ -43,9 +43,10 @@ export default function MenuPageClient() {
 
   // Transform categories to expected type
   const transformedCategories = useMemo(() => {
-    if (!data?.categories) return [];
-    return transformCategories(data.categories);
-  }, [data?.categories]);
+    const categories = data?.categories;
+    if (!categories) return [];
+    return transformCategories(categories);
+  }, [data]);
 
   // Sync fetched data to store
   useEffect(() => {
