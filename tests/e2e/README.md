@@ -93,13 +93,20 @@ Localização: `tests/e2e/pages/`
 ### Pré-requisitos
 
 ```bash
-# Instalar dependências
+# 1. Configurar .env.e2e com Supabase Cloud
+cp .env.local.example .env.e2e
+# Edite .env.e2e com suas credenciais Supabase Cloud
+
+# 2. Instalar dependências
 pnpm install
 
-# Instalar navegadores
+# 3. Instalar navegadores
 pnpm install:browsers
 
-# Iniciar o servidor de desenvolvimento
+# 4. Popular dados de teste no Supabase Cloud
+pnpm test:e2e:seed
+
+# 5. Iniciar o servidor de desenvolvimento
 pnpm dev
 ```
 
@@ -133,6 +140,9 @@ pnpm test:e2e:grep "checkout"
 |----------|---------|-----------|
 | `BASE_URL` | `http://localhost:3000` | URL base da aplicação |
 | `CI` | `undefined` | Quando definido, ativa retry e webServer automático |
+| `E2E_SKIP_NEW_TESTS` | `undefined` | Quando `true`, executa apenas auth.spec (rollback) |
+
+> **Nota**: E2E usa `.env.e2e` (Supabase Cloud). Para development local, use `.env.local`.
 
 ### Relatórios
 

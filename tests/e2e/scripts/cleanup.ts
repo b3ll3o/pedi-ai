@@ -185,9 +185,9 @@ async function deleteTestRestaurant(admin: SupabaseClient): Promise<boolean> {
   return true
 }
 
-async function deleteOrdersByRestaurant(
-  admin: SupabaseClient,
-  restaurantId: string
+async function _deleteOrdersByRestaurant(
+  _admin: SupabaseClient,
+  _restaurantId: string
 ): Promise<void> {
   console.log('🛒 Limpando pedidos do restaurant...')
 

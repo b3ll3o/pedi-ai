@@ -15,8 +15,8 @@
 import * as dotenv from 'dotenv'
 import * as path from 'path'
 
-// Carregar .env.local explicitamente
-dotenv.config({ path: path.join(process.cwd(), '.env.local') })
+// Carregar .env.e2e explicitamente (Supabase cloud E2E)
+dotenv.config({ path: path.join(process.cwd(), '.env.e2e') })
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 

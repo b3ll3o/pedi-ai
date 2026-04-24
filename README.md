@@ -19,8 +19,8 @@ Aplicação de **Cardápio Digital** para restaurantes com foco em **mobile-firs
 - **Backend**: Supabase (Auth, Database, Realtime, Storage)
 - **Offline**: Service Worker (Workbox) + IndexedDB (Dexie)
 - **Estado**: Zustand + React Query
-- **Testes Unitários**: Vitest (607 testes, 80%+ cobertura)
-- **Testes E2E**: Playwright (13 specs)
+- **Testes Unitários**: Vitest (607 testes, 97%+ cobertura)
+- **Testes E2E**: Playwright (17 specs)
 - **Pagamentos**: Mercado Pago (Pix) + Stripe (Cartão)
 
 ## Getting Started
@@ -90,15 +90,27 @@ pnpm test         # Testes unitários (Vitest)
 pnpm test:watch   # Testes em watch mode
 pnpm test:coverage # Com cobertura
 
-# E2E (Playwright)
-pnpm test:e2e           # Rodar E2E
+# E2E (Playwright) — requer .env.e2e com Supabase Cloud
+pnpm test:e2e           # Rodar E2E (Chromium headless)
+pnpm test:e2e:seed     # Popular dados de teste no Supabase Cloud
+pnpm test:e2e:cleanup   # Limpar dados de teste
 pnpm test:e2e:ui        # E2E com UI
-pnpm test:e2e:debug     # E2E em modo debug
+pnpm test:e2e:all       # E2E em todos os browsers
 
 # Lint
 pnpm lint           # ESLint
 pnpm format         # Prettier
 ```
+
+## Regras do Projeto
+
+O projeto segue regras definidas em [AGENTS.md](./AGENTS.md):
+
+- **Idioma**: Todo código, UI e documentação em **português brasileiro (pt-BR)**
+- **Mobile-first**: Desenvolver para mobile primeiro, escalar para desktop
+- **Offline-first**: Funciona sem internet, sync automático ao reconectar
+- **Cobertura mínima**: 80% para unit tests
+- **Testes E2E**: Atualizados imediatamente ao modificar qualquer funcionalidade
 
 ## Estrutura do Projeto
 
@@ -177,11 +189,12 @@ A aplicação é um **Progressive Web App** com:
 ## Testes
 
 ```bash
-# Unit tests (338 testes)
+# Unit tests (607 testes)
 pnpm test
 
-# E2E tests (13 specs)
-cd tests/e2e && pnpm install && pnpm test
+# E2E tests (17 specs) — requer Supabase Cloud configurado em .env.e2e
+pnpm test:e2e:seed    # Popula dados de teste
+pnpm test:e2e         # Executa testes E2E
 ```
 
 ## License

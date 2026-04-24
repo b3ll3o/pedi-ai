@@ -197,7 +197,7 @@ export async function createOrderAdmin(
     .eq('id', order.id)
     .single()
 
-  const totalAmount = updatedOrder?.total_amount || 0
+  const _totalAmount = updatedOrder?.total_amount || 0
 
   return order.id
 }

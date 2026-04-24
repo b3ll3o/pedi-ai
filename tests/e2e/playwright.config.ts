@@ -43,6 +43,7 @@ export default defineConfig({
     ['json', { outputFile: 'playwright-results.json' }],
     ['list'],
   ],
+  envFile: '.env.e2e',
   use: {
     baseURL: process.env.BASE_URL || 'http://localhost:3000',
     video: isCI ? 'retain-on-failure' : 'off',
