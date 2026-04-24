@@ -4,19 +4,19 @@ import { invalidateMenuCache } from '@/lib/offline/cache'
 import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin'
 
 /**
- * POST /api/admin/modifiers/[groupId]/values
+ * POST /api/admin/modifiers/[id]/values
  * Adiciona um novo valor de modificador a um grupo.
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ groupId: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authUser = await requireAuth()
     requireRole(authUser, ['owner', 'manager'])
 
     const restaurantId = getRestaurantId(authUser)
-    const { groupId } = await params
+    const { id: modifierGroupId } = await params
     const body = await request.json()
     const { name, price_adjustment } = body
 
@@ -41,7 +41,7 @@ export async function POST(
     const { data: group, error: groupError } = await supabase
       .from('modifier_groups')
       .select('id')
-      .eq('id', groupId)
+      .eq('id', modifierGroupId)
       .eq('restaurant_id', restaurantId)
       .single()
 
@@ -55,7 +55,7 @@ export async function POST(
     const { data: value, error } = await supabase
       .from('modifier_values')
       .insert({
-        modifier_group_id: groupId,
+        modifier_group_id: modifierGroupId,
         name: name.trim(),
         price_adjustment: price_adjustment ?? 0,
         available: true,

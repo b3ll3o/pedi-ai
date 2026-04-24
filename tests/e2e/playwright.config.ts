@@ -32,7 +32,7 @@ const shardTotal = shardMatch ? Number(shardMatch[2]) : isCI ? 4 : 1
 const skipNewTests = process.env.E2E_SKIP_NEW_TESTS === 'true'
 
 export default defineConfig({
-  testDir: './tests',
+  testDir: path.resolve(__dirname, 'tests'),
   fullyParallel: isCI,
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
