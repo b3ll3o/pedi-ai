@@ -9,12 +9,12 @@ test.describe('Kitchen / Waiter Dashboard', () => {
     await kitchenPage.navigateToKitchen()
   })
 
-  test('should display kitchen orders', async ({ waiter }) => {
+  test('should display kitchen orders', async ({ waiter: _waiter }) => {
     await expect(waiter.locator('[data-testid="page-title"]')).toContainText('Cozinha')
     await expect(kitchenPage.kitchenOrders.first()).toBeVisible()
   })
 
-  test('should show order items on ticket', async ({ waiter }) => {
+  test('should show order items on ticket', async ({ waiter: _waiter }) => {
     const count = await kitchenPage.getKitchenOrdersCount()
     if (count > 0) {
       const items = await kitchenPage.getOrderItems('1')
@@ -44,12 +44,12 @@ test.describe('Kitchen / Waiter Dashboard', () => {
     }
   })
 
-  test('should display active orders count', async ({ waiter }) => {
+  test('should display active orders count', async ({ waiter: _waiter }) => {
     const count = await kitchenPage.getActiveOrdersCount()
     expect(typeof count).toBe('number')
   })
 
-  test('should display completed orders count', async ({ waiter }) => {
+  test('should display completed orders count', async ({ waiter: _waiter }) => {
     const count = await kitchenPage.getCompletedOrdersCount()
     expect(typeof count).toBe('number')
   })
@@ -59,12 +59,12 @@ test.describe('Kitchen / Waiter Dashboard', () => {
     await expect(waiter.locator('[data-testid="kitchen-order"]').first()).toBeVisible()
   })
 
-  test('should toggle audio notifications', async ({ waiter }) => {
+  test('should toggle audio notifications', async ({ waiter: _waiter }) => {
     await kitchenPage.audioToggle.click()
     // Audio should toggle
   })
 
-  test('should wait for new order notification', { tag: '@slow' }, async ({ waiter }) => {
+  test('should wait for new order notification', { tag: '@slow' }, async ({ waiter: _waiter }) => {
     // This is a long-waiting test
     await expect(kitchenPage.kitchenOrders.first()).toBeVisible({ timeout: 5000 })
   })

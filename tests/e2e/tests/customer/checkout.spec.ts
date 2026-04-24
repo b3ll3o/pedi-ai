@@ -23,7 +23,7 @@ test.describe('Checkout', () => {
     await expect(checkoutPage.tableCodeInput).toBeVisible()
   })
 
-  test('should display order summary', async ({ guest }) => {
+  test('should display order summary', async ({ guest: _guest }) => {
     await expect(checkoutPage.orderSummary).toBeVisible()
     const total = await checkoutPage.getOrderTotal()
     expect(total).toMatch(/[\d,]+/)
@@ -57,8 +57,45 @@ test.describe('Checkout', () => {
     await expect(guest.locator('[data-testid="credit-card-form"]')).toBeVisible()
   })
 
-  test('should calculate total with items', async ({ guest }) => {
+  test('should calculate total with items', async ({ guest: _guest }) => {
     const total = await checkoutPage.getOrderTotal()
     expect(total).toMatch(/R\$\s*[\d,]+/)
+  })
+
+  test('should validate mandatory modifiers before submit', async ({ guest }) => {
+    // Navigate to product with mandatory modifier
+    await menuPage.goto()
+    await menuPage.viewProduct('Combo Bacon')
+    // Add combo to cart without selecting mandatory modifier
+    await guest.locator('[data-testid="add-to-cart-button"]').click()
+    await checkoutPage.goto()
+    // Try to submit without required modifier selection
+    await checkoutPage.submitOrder()
+    await expect(guest.locator('[data-testid="modifier-error"]')).toBeVisible()
+  })
+
+  test('should display validation error when mandatory modifier not selected', async ({ guest }) => {
+    await menuPage.goto()
+    await menuPage.viewProduct('Picanha')
+    await guest.locator('[data-testid="add-to-cart-button"]').click()
+    await checkoutPage.goto()
+    // Attempting to submit should show mandatory modifier error
+    await checkoutPage.submitOrder()
+    const errorVisible = await guest.locator('[data-testid="modifier-required-error"]').isVisible()
+    expect(errorVisible).toBe(true)
+  })
+
+  test('should reflect modifiers in total calculation', async ({ guest }) => {
+    await menuPage.goto()
+    await menuPage.viewProduct('Picanha')
+    // Add modifiers
+    await guest.locator('[data-testid="modifier-option-bacon"]').click()
+    await guest.locator('[data-testid="add-to-cart-button"]').click()
+    await checkoutPage.goto()
+    const total = await checkoutPage.getOrderTotal()
+    expect(total).toMatch(/[\d,]+/)
+    // Total should be base price + modifier price
+    const summaryText = await checkoutPage.orderSummary.textContent()
+    expect(summaryText).toContain('bacon')
   })
 })

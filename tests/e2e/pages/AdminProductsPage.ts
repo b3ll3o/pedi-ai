@@ -43,13 +43,16 @@ export class AdminProductsPage {
     return this.productsList.count()
   }
 
-  async searchProducts(query: string): Promise<void> {
+  async searchProducts(query: string): Promise<number> {
     await this.searchInput.fill(query)
     await this.page.waitForResponse(/\/api\/admin\/products/)
+    return this.productsList.count()
   }
 
-  async filterByCategory(categoryName: string): Promise<void> {
+  async filterByCategory(categoryName: string): Promise<number> {
     await this.filterCategorySelect.selectOption({ label: categoryName })
+    await this.page.waitForResponse(/\/api\/admin\/products/)
+    return this.productsList.count()
   }
 
   async addProduct(product: {

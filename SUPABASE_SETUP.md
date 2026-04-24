@@ -36,7 +36,7 @@ After project creation, go to **Project Settings > API**:
 
 ### Steps:
 
-1. Copy `apps/web/.env.local.example` to `apps/web/.env.local`
+1. Copy `.env.local.example` to `.env.local`
 2. Fill in each variable from your Supabase dashboard
 3. **Never commit `.env.local` to version control**
 
@@ -107,9 +107,11 @@ supabase functions serve function-name
 supabase/
 ├── config.toml          # Supabase CLI configuration
 ├── migrations/          # Database schema migrations
-│   └── 001_initial_schema.sql
+│   ├── 0001_create_restaurants.sql
+│   ├── 0002_create_tables.sql
+│   └── ...              # Additional schema migrations
 └── functions/           # Edge Functions (Deno)
-    └── your-function/
+    └── pix-webhook/     # Exemplo de função Edge
         └── index.ts
 ```
 

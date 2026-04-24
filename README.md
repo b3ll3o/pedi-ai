@@ -19,7 +19,7 @@ Aplicação de **Cardápio Digital** para restaurantes com foco em **mobile-firs
 - **Backend**: Supabase (Auth, Database, Realtime, Storage)
 - **Offline**: Service Worker (Workbox) + IndexedDB (Dexie)
 - **Estado**: Zustand + React Query
-- **Testes Unitários**: Vitest (338 testes, 80%+ cobertura)
+- **Testes Unitários**: Vitest (607 testes, 80%+ cobertura)
 - **Testes E2E**: Playwright (13 specs)
 - **Pagamentos**: Mercado Pago (Pix) + Stripe (Cartão)
 
@@ -103,40 +103,41 @@ pnpm format         # Prettier
 ## Estrutura do Projeto
 
 ```
-pedi-ai/
-├── src/
-│   ├── app/                 # Next.js App Router
-│   │   ├── (customer)/     # Rotas do cliente (cardápio, checkout)
-│   │   ├── (admin)/        # Rotas admin (gestão)
-│   │   ├── (waiter)/       # Rotas garçom
-│   │   └── api/            # API routes
-│   ├── components/          # Componentes React
-│   │   ├── admin/          # Admin (CategoryForm, ProductForm...)
-│   │   ├── cart/            # Carrinho (CartDrawer, CartItem...)
-│   │   ├── menu/            # Cardápio (CategoryList, ProductCard...)
-│   │   ├── order/           # Pedidos (OrderStatus, OrderHistory...)
-│   │   ├── payment/         # Pagamentos (PixQRCode, StripeCardForm...)
-│   │   └── shared/          # Compartilhados
-│   ├── hooks/               # React Hooks customizados
-│   ├── lib/
-│   │   ├── auth/           # Auth (guest session)
-│   │   ├── offline/        # IndexedDB, sync, cache
-│   │   ├── qr/             # QR code (generator, validator)
-│   │   └── supabase/       # Cliente Supabase
-│   ├── services/            # Lógica de negócio
-│   └── stores/              # Zustand stores
-├── public/
-│   ├── icons/              # Ícones PWA
-│   ├── sw.js               # Service Worker
-│   ├── manifest.json       # PWA manifest
-│   └── offline.html        # Página offline
-├── supabase/
-│   ├── migrations/         # Migrations SQL
-│   └── functions/          # Edge Functions (pix-webhook)
-├── tests/
-│   ├── e2e/               # Playwright E2E
-│   └── unit/               # Vitest unit tests
-└── openspec/               # SDD artifacts
+src/
+├── app/                    # Next.js App Router
+│   ├── (customer)/        # Rotas do cliente (cardápio, checkout, pedido)
+│   │   ├── cart/         # Carrinho
+│   │   ├── checkout/     # Finalização
+│   │   ├── menu/        # Cardápio (lista categorias)
+│   │   ├── order/       # Acompanhamento pedido
+│   │   └── product/     # Detalhe do produto
+│   ├── (waiter)/         # Rotas garçom (display cozinha)
+│   │   └── dashboard/   # Dashboard cozinha
+│   ├── admin/            # Painel administrativo
+│   │   ├── analytics/   # Analytics
+│   │   ├── categories/  # CRUD categorias
+│   │   ├── combos/      # CRUD combos
+│   │   ├── configuracoes/ # Configurações
+│   │   ├── dashboard/   # Dashboard principal
+│   │   ├── login/       # Login admin
+│   │   ├── modifiers/   # CRUD modificadores
+│   │   ├── orders/      # Gestão pedidos
+│   │   ├── products/    # CRUD produtos
+│   │   ├── tables/      # CRUD mesas/QR
+│   │   └── users/       # Gestão usuários
+│   ├── api/              # API routes
+│   ├── kitchen/          # Display cozinha
+│   ├── login/            # Login cliente
+│   └── table/            # QR code scan
+├── components/            # Componentes React (admin, cart, menu, order, payment, shared)
+├── hooks/               # React Hooks
+├── lib/
+│   ├── auth/            # Auth
+│   ├── offline/         # IndexedDB, sync
+│   ├── qr/              # QR code
+│   └── supabase/        # Cliente Supabase
+├── services/             # Lógica de negócio
+└── stores/              # Zustand stores
 ```
 
 ## Database Schema
@@ -155,7 +156,6 @@ O banco de dados possui as seguintes tabelas:
 - `order_items` — Itens do pedido
 - `order_status_history` — Histórico de status
 - `users_profiles` — Perfis de usuário (owner/manager/staff)
-- `payment_intents` — Intentos de pagamento
 - `webhook_events` — Eventos de webhook (idempotência)
 
 ## PWA

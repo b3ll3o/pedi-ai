@@ -9,7 +9,7 @@ test.describe('Autenticação do Cliente', () => {
     await loginPage.goto()
   })
 
-  test('deve exibir o formulário de login', async ({ page }) => {
+  test('deve exibir o formulário de login', async ({ page: _page }) => {
     await expect(loginPage.emailInput).toBeVisible()
     await expect(loginPage.passwordInput).toBeVisible()
     await expect(loginPage.loginButton).toBeVisible()
@@ -21,7 +21,7 @@ test.describe('Autenticação do Cliente', () => {
     await expect(page).toHaveURL('/menu')
   })
 
-  test('deve exibir erro com credenciais inválidas', async ({ page }) => {
+  test('deve exibir erro com credenciais inválidas', async ({ page: _page }) => {
     await loginPage.login('invalid@test.com', 'wrongpassword')
     const error = await loginPage.getError()
     expect(error).toMatch(/inválido|incorreto|não encontrado/i)
@@ -48,12 +48,12 @@ test.describe('Autenticação do Cliente', () => {
     await expect(authenticated).toHaveURL('/menu')
   })
 
-  test('deve solicitar recuperação de senha', async ({ page, seedData }) => {
+  test('deve solicitar recuperação de senha', async ({ page: _page, seedData }) => {
     await loginPage.forgotPassword(seedData.customer.email)
     await expect(loginPage.forgotPasswordSuccessMessage).toBeVisible()
   })
 
-  test('deve exibir erro com email inexistente na recuperação de senha', async ({ page }) => {
+  test('deve exibir erro com email inexistente na recuperação de senha', async ({ page: _page }) => {
     await loginPage.forgotPassword('nonexistent@test.com')
     const error = await loginPage.getError()
     expect(error).toMatch(/não encontrado|inválido/i)

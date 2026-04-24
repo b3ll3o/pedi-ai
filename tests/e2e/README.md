@@ -4,45 +4,67 @@ Cobertura de testes end-to-end usando [Playwright](https://playwright.dev/).
 
 ## Visão Geral
 
-| Persona | Arquivos de Teste | Page Objects |
-|---------|------------------|--------------|
-| Cliente | 7 specs | CustomerLoginPage, MenuPage, CartPage, CheckoutPage, OrderPage |
-| Administrador | 5 specs | AdminLoginPage, AdminDashboardPage, AdminCategoriesPage, AdminProductsPage, AdminOrdersPage, TableQRPage |
-| Garçom | 1 spec | WaiterDashboardPage |
+| Persona | Arquivos de Teste | Fluxos |
+|---------|------------------|--------|
+| Cliente | 9 specs | auth, menu, cart, checkout, order, payment, offline, combos, modifier-groups |
+| Administrador | 6 specs | auth, categories, products, orders, table-qr, combos-admin |
+| Realtime | 2 specs | realtime-updates, kitchen |
 
-**Total: 13 arquivos de spec cobrindo 13 fluxos**
+**Total: 17 spec files cobrindo 17 fluxos**
 
 ---
 
-## Fluxos por Persona
+## Matriz de Cobertura
 
 ### Cliente
 
-| Arquivo | Fluxo Coberto | Status |
-|---------|--------------|--------|
-| `tests/customer/menu.spec.ts` | Navegação e busca no cardápio | ✅ |
-| `tests/customer/cart.spec.ts` | Adicionar, remover e editar itens no carrinho | ✅ |
-| `tests/customer/checkout.spec.ts` | Revisão do pedido e confirmação | ✅ |
-| `tests/customer/order.spec.ts` | Acompanhamento do pedido (status) | ✅ |
-| `tests/customer/payment.spec.ts` | Processamento de pagamento | ✅ |
-| `tests/customer/offline.spec.ts` | Funcionalidade offline e sincronização | ✅ |
-| `tests/customer/auth.spec.ts` | Login, autenticação e recuperação de senha do cliente | ✅ |
+| Fluxo | Spec File | Tags | Status |
+|-------|-----------|------|--------|
+| auth | `tests/customer/auth.spec.ts` | @smoke, @critical | ✅ |
+| menu | `tests/customer/menu.spec.ts` | — | ✅ |
+| cart | `tests/customer/cart.spec.ts` | — | ✅ |
+| checkout | `tests/customer/checkout.spec.ts` | @smoke, @slow | ✅ |
+| order | `tests/customer/order.spec.ts` | @slow | ✅ |
+| payment | `tests/customer/payment.spec.ts` | @slow | ✅ |
+| offline | `tests/customer/offline.spec.ts` | — | ✅ |
+| combos | `tests/customer/combos.spec.ts` | — | ✅ |
+| modifier-groups | `tests/customer/modifier-groups.spec.ts` | — | ✅ |
 
 ### Administrador
 
-| Arquivo | Fluxo Coberto | Status |
-|---------|--------------|--------|
-| `tests/admin/auth.spec.ts` | Login, logout e recuperação de senha do administrador | ✅ |
-| `tests/admin/categories.spec.ts` | CRUD de categorias do cardápio | ✅ |
-| `tests/admin/products.spec.ts` | CRUD de produtos | ✅ |
-| `tests/admin/orders.spec.ts` | Gestão e acompanhamento de pedidos | ✅ |
-| `tests/admin/table-qr.spec.ts` | Cadastro de mesas e geração de QR codes | ✅ |
+| Fluxo | Spec File | Tags | Status |
+|-------|-----------|------|--------|
+| auth | `tests/admin/auth.spec.ts` | @smoke, @critical | ✅ |
+| categories | `tests/admin/categories.spec.ts` | — | ✅ |
+| products | `tests/admin/products.spec.ts` | — | ✅ |
+| orders | `tests/admin/orders.spec.ts` | — | ✅ |
+| table-qr | `tests/admin/table-qr.spec.ts` | — | ✅ |
+| combos-admin | `tests/admin/combos-admin.spec.ts` | — | ✅ |
 
-### Garçom
+### Realtime
 
-| Arquivo | Fluxo Coberto | Status |
-|---------|--------------|--------|
-| `tests/waiter/kitchen.spec.ts` | Exibição de pedidos na cozinha | ✅ |
+| Fluxo | Spec File | Tags | Status |
+|-------|-----------|------|--------|
+| realtime-updates | `tests/admin/realtime-updates.spec.ts` | — | ✅ |
+| kitchen | `tests/waiter/kitchen.spec.ts` | @slow | ✅ |
+
+---
+
+## Tags
+
+| Tag | Descrição | Testes |
+|-----|-----------|--------|
+| `@smoke` | Testes essenciais de sanidade | auth, checkout, admin auth |
+| `@critical` | Fluxos críticos para negócio | auth, checkout, admin auth |
+| `@slow` | Testes que levam >30s | checkout, order, payment, kitchen |
+
+### Comandos por Tag
+
+```bash
+pnpm test:e2e:smoke    # Apenas @smoke
+pnpm test:e2e:slow     # Apenas @slow
+pnpm test:e2e:fast     # Exclui @slow
+```
 
 ---
 

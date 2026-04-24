@@ -13,21 +13,21 @@ test.describe('Table QR Code', () => {
     await expect(admin.locator('[data-testid="page-title"]')).toContainText('Mesas')
   })
 
-  test('should validate table code', async ({ admin, seedData }) => {
+  test('should validate table code', async ({ admin: _admin, seedData }) => {
     await tableQRPage.goto()
     await tableQRPage.validateTable(seedData.table.code)
     const info = await tableQRPage.getTableInfo()
     expect(info.code).toBe(seedData.table.code)
   })
 
-  test('should show error for invalid table code', async ({ admin }) => {
+  test('should show error for invalid table code', async ({ admin: _admin }) => {
     await tableQRPage.goto()
     await tableQRPage.validateTable('INVALID-CODE')
     const error = await tableQRPage.getError()
     expect(error).toMatch(/inválido|não encontrado/i)
   })
 
-  test('should generate QR code for table', async ({ admin, seedData }) => {
+  test('should generate QR code for table', async ({ admin: _admin, seedData }) => {
     await tableQRPage.goto(seedData.table.code)
     const qrCode = await tableQRPage.getQRCodeValue()
     expect(qrCode).toContain('data:image')
@@ -47,7 +47,7 @@ test.describe('Table QR Code', () => {
     await expect(admin).toHaveURL('/menu')
   })
 
-  test('should display table information', async ({ admin, seedData }) => {
+  test('should display table information', async ({ admin: _admin, seedData }) => {
     await tableQRPage.goto(seedData.table.code)
     const info = await tableQRPage.getTableInfo()
     expect(info.code).toBeTruthy()

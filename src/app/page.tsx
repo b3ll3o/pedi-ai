@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import styles from "./page.module.css";
 import {
   Smartphone,
@@ -44,56 +45,60 @@ export default function Home() {
   return (
     <div className={styles.page}>
       {/* Navigation */}
-      <nav className={styles.nav}>
-        <div className={styles.navContainer}>
-          <div className={styles.logo}>
-            <UtensilsCrossed size={28} className={styles.logoIcon} />
-            <span className={styles.logoText}>Pedi-AI</span>
+      <header>
+        <nav aria-label="Navegação principal" className={styles.nav}>
+          <div className={styles.navContainer}>
+            <span className={styles.logo}>
+              <Link href="/" aria-label="Página inicial Pedi-AI">
+                <UtensilsCrossed size={28} className={styles.logoIcon} aria-hidden="true" />
+                <span className={styles.logoText}>Pedi-AI</span>
+              </Link>
+            </span>
+            <ul className={styles.navLinks}>
+              <li><a href="#features" className={styles.navLink}>Features</a></li>
+              <li><a href="#pricing" className={styles.navLink}>Preços</a></li>
+            </ul>
+            <a href="/register" className={styles.navCta}>
+              Começar Agora
+            </a>
           </div>
-          <div className={styles.navLinks}>
-            <a href="#features" className={styles.navLink}>Features</a>
-            <a href="#pricing" className={styles.navLink}>Preços</a>
-          </div>
-          <a href="/register" aria-label="Criar conta gratuita no Pedi-AI" className={styles.navCta}>
-            Começar Agora
-          </a>
-        </div>
-      </nav>
+        </nav>
+      </header>
 
       {/* Hero Section */}
-      <section className={styles.hero}>
+      <section aria-labelledby="hero-title" className={styles.hero}>
         <div className={styles.heroBackground}>
           <div className={styles.heroBlob1} />
           <div className={styles.heroBlob2} />
         </div>
         <div className={styles.heroContent}>
           <div className={styles.heroBadge}>
-            <Sparkles size={14} />
+            <Sparkles size={14} aria-hidden="true" />
             <span>Teste grátis por 14 dias</span>
           </div>
-          <h1 className={styles.heroTitle}>
-            Nunca mais perca um pedido<br />
-            <span className={styles.heroTitleAccent}>nem offline</span>
+          <h1 id="hero-title" className={styles.heroTitle}>
+            Nunca mais perca um pedido
+            <em className={styles.heroTitleAccent}>nem offline</em>
           </h1>
           <p className={styles.heroSubtitle}>
             Cardápio digital que funciona sem internet, com pedidos em tempo real para cozinha e gerenciamento completo do seu restaurante.
           </p>
           <div className={styles.heroTags}>
             <span className={styles.heroTag}>
-              <CreditCard size={14} />
+              <CreditCard size={14} aria-hidden="true" />
               Sem cartão de crédito
             </span>
             <span className={styles.heroTag}>
-              <WifiOff size={14} />
+              <WifiOff size={14} aria-hidden="true" />
               Funciona offline
             </span>
           </div>
           <div className={styles.heroCtas}>
-            <a href="/register" aria-label="Criar conta gratuita no Pedi-AI" className={styles.ctaPrimary}>
+            <a href="/register" className={styles.ctaPrimary}>
               Começar Gratuitamente
-              <ArrowRight size={18} />
+              <ArrowRight size={18} aria-hidden="true" />
             </a>
-            <a href="#how-it-works" aria-label="Ver como funciona o Pedi-AI" className={styles.ctaSecondary}>
+            <a href="#how-it-works" className={styles.ctaSecondary}>
               Ver Como Funciona
             </a>
           </div>
@@ -106,7 +111,7 @@ export default function Home() {
             <div className={styles.stat}>
               <span className={styles.statNumber}>4.9</span>
               <span className={styles.statLabel}>
-                <Star size={12} fill="currentColor" /> Avaliação média
+                <Star size={12} fill="currentColor" aria-hidden="true" /> Avaliação média
               </span>
             </div>
             <div className={styles.statDivider} />
@@ -119,28 +124,28 @@ export default function Home() {
       </section>
 
       {/* Social Proof Bar */}
-      <section className={styles.socialProof}>
+      <section aria-labelledby="social-proof-title" className={styles.socialProof}>
         <div className={styles.container}>
-          <p className={styles.socialProofLabel}>Mais de 500 restaurantes já aumentaram suas vendas</p>
+          <p id="social-proof-title" className={styles.socialProofLabel}>Mais de 500 restaurantes já aumentaram suas vendas</p>
           <div className={styles.socialProofLogos}>
             <div className={styles.socialProofLogo}>
-              <UtensilsCrossed size={24} />
+              <UtensilsCrossed aria-hidden="true" size={24} />
               <span>Lanches do Bairro</span>
             </div>
             <div className={styles.socialProofLogo}>
-              <ChefHat size={24} />
+              <ChefHat aria-hidden="true" size={24} />
               <span>Pizza Express</span>
             </div>
             <div className={styles.socialProofLogo}>
-              <UtensilsCrossed size={24} />
+              <UtensilsCrossed aria-hidden="true" size={24} />
               <span>Espetinho & Cia</span>
             </div>
               <div className={styles.socialProofLogo}>
-                <Utensils size={24} />
+                <Utensils aria-hidden="true" size={24} />
                 <span>Café Central</span>
               </div>
             <div className={styles.socialProofLogo}>
-              <UtensilsCrossed size={24} />
+              <UtensilsCrossed aria-hidden="true" size={24} />
               <span>Bistrô Gourmet</span>
             </div>
           </div>
@@ -148,20 +153,20 @@ export default function Home() {
       </section>
 
       {/* How It Works Section */}
-      <section className={styles.howItWorks} id="how-it-works">
+      <section aria-labelledby="how-it-works-title" className={styles.howItWorks} id="how-it-works">
         <div className={styles.container}>
           <div className={styles.sectionBadge}>
-            <Zap size={14} />
+            <Zap aria-hidden="true" size={14} />
             <span>Como Funciona</span>
           </div>
-          <h2 className={styles.sectionTitle}>
+          <h2 id="how-it-works-title" className={styles.sectionTitle}>
             Comece em 3 passos simples
           </h2>
           <div className={styles.stepsGrid}>
             <div className={styles.stepCard}>
               <div className={styles.stepNumber}>1</div>
               <div className={styles.stepIcon}>
-                <QrCode size={32} />
+                <QrCode aria-hidden="true" size={32} />
               </div>
               <h3 className={styles.stepTitle}>Cadastre seu cardápio</h3>
               <p className={styles.stepText}>
@@ -172,7 +177,7 @@ export default function Home() {
             <div className={styles.stepCard}>
               <div className={styles.stepNumber}>2</div>
               <div className={styles.stepIcon}>
-                <PackageSearch size={32} />
+                <PackageSearch aria-hidden="true" size={32} />
               </div>
               <h3 className={styles.stepTitle}>Gere os QR Codes</h3>
               <p className={styles.stepText}>
@@ -183,7 +188,7 @@ export default function Home() {
             <div className={styles.stepCard}>
               <div className={styles.stepNumber}>3</div>
               <div className={styles.stepIcon}>
-                <BellRing size={32} />
+                <BellRing aria-hidden="true" size={32} />
               </div>
               <h3 className={styles.stepTitle}>Receba pedidos</h3>
               <p className={styles.stepText}>
@@ -195,19 +200,19 @@ export default function Home() {
       </section>
 
       {/* Problems Section */}
-      <section className={styles.problems}>
+      <section aria-labelledby="problems-title" className={styles.problems}>
         <div className={styles.container}>
             <div className={styles.sectionBadge}>
-              <AlertCircle size={14} />
+              <AlertCircle aria-hidden="true" size={14} />
               <span>Problemas Comuns</span>
             </div>
-          <h2 className={styles.sectionTitle}>
+          <h2 id="problems-title" className={styles.sectionTitle}>
             Você já conhece esses problemas
           </h2>
           <div className={styles.problemsGrid}>
             <div className={styles.problemCard}>
               <div className={styles.problemIcon}>
-                <WifiOff size={24} />
+                <WifiOff aria-hidden="true" size={24} />
               </div>
               <h3 className={styles.problemTitle}>Pedido perdido offline</h3>
               <p className={styles.problemText}>
@@ -216,7 +221,7 @@ export default function Home() {
             </div>
             <div className={styles.problemCard}>
               <div className={styles.problemIcon}>
-                <Clock size={24} />
+                <Clock aria-hidden="true" size={24} />
               </div>
               <h3 className={styles.problemTitle}>Atraso na cozinha</h3>
               <p className={styles.problemText}>
@@ -225,7 +230,7 @@ export default function Home() {
             </div>
             <div className={styles.problemCard}>
               <div className={styles.problemIcon}>
-                <BarChart3 size={24} />
+                <BarChart3 aria-hidden="true" size={24} />
               </div>
               <h3 className={styles.problemTitle}>Sem dados de vendas</h3>
               <p className={styles.problemText}>
@@ -237,19 +242,19 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section className={styles.features} id="features">
+      <section aria-labelledby="features-title" className={styles.features} id="features">
         <div className={styles.container}>
           <div className={styles.sectionBadge}>
-            <Star size={14} />
+            <Star aria-hidden="true" size={14} />
             <span>Funcionalidades</span>
           </div>
-          <h2 className={styles.sectionTitle}>
+          <h2 id="features-title" className={styles.sectionTitle}>
             Tudo que você precisa para vender mais
           </h2>
           <div className={styles.featuresGrid}>
             <div className={styles.featureCard}>
               <div className={styles.featureIcon}>
-                <WifiOff size={24} />
+                <WifiOff aria-hidden="true" size={24} />
               </div>
               <h3 className={styles.featureTitle}>Funciona Offline</h3>
               <p className={styles.featureText}>
@@ -258,7 +263,7 @@ export default function Home() {
             </div>
             <div className={styles.featureCard}>
               <div className={styles.featureIcon}>
-                <QrCode size={24} />
+                <QrCode aria-hidden="true" size={24} />
               </div>
               <h3 className={styles.featureTitle}>QR Code por Mesa</h3>
               <p className={styles.featureText}>
@@ -267,7 +272,7 @@ export default function Home() {
             </div>
             <div className={styles.featureCard}>
               <div className={styles.featureIcon}>
-                <Zap size={24} />
+                <Zap aria-hidden="true" size={24} />
               </div>
               <h3 className={styles.featureTitle}>Pedidos em Tempo Real</h3>
               <p className={styles.featureText}>
@@ -276,7 +281,7 @@ export default function Home() {
             </div>
             <div className={styles.featureCard}>
               <div className={styles.featureIcon}>
-                <Bell size={24} />
+                <Bell aria-hidden="true" size={24} />
               </div>
               <h3 className={styles.featureTitle}>Notificações</h3>
               <p className={styles.featureText}>
@@ -285,7 +290,7 @@ export default function Home() {
             </div>
             <div className={styles.featureCard}>
               <div className={styles.featureIcon}>
-                <Smartphone size={24} />
+                <Smartphone aria-hidden="true" size={24} />
               </div>
               <h3 className={styles.featureTitle}>Mobile-First</h3>
               <p className={styles.featureText}>
@@ -294,7 +299,7 @@ export default function Home() {
             </div>
             <div className={styles.featureCard}>
               <div className={styles.featureIcon}>
-                <Monitor size={24} />
+                <Monitor aria-hidden="true" size={24} />
               </div>
               <h3 className={styles.featureTitle}>Kitchen Display</h3>
               <p className={styles.featureText}>
@@ -303,7 +308,7 @@ export default function Home() {
             </div>
             <div className={styles.featureCard}>
               <div className={styles.featureIcon}>
-                <ShoppingCart size={24} />
+                <ShoppingCart aria-hidden="true" size={24} />
               </div>
               <h3 className={styles.featureTitle}>Carrinho Offline</h3>
               <p className={styles.featureText}>
@@ -312,7 +317,7 @@ export default function Home() {
             </div>
             <div className={styles.featureCard}>
               <div className={styles.featureIcon}>
-                <TrendingUp size={24} />
+                <TrendingUp aria-hidden="true" size={24} />
               </div>
               <h3 className={styles.featureTitle}>Relatórios</h3>
               <p className={styles.featureText}>
@@ -321,7 +326,7 @@ export default function Home() {
             </div>
             <div className={styles.featureCard}>
               <div className={styles.featureIcon}>
-                <ShieldCheck size={24} />
+                <ShieldCheck aria-hidden="true" size={24} />
               </div>
               <h3 className={styles.featureTitle}>100% Seguro</h3>
               <p className={styles.featureText}>
@@ -333,94 +338,94 @@ export default function Home() {
       </section>
 
       {/* Testimonials Section */}
-      <section className={styles.testimonials}>
+      <section aria-labelledby="testimonials-title" className={styles.testimonials}>
         <div className={styles.container}>
           <div className={styles.sectionBadge}>
-            <Star size={14} />
+            <Star aria-hidden="true" size={14} />
             <span>Depoimentos</span>
           </div>
-          <h2 className={styles.sectionTitle}>
+          <h2 id="testimonials-title" className={styles.sectionTitle}>
             O que nossos clientes dizem
           </h2>
           <div className={styles.testimonialsGrid}>
-            <div className={styles.testimonialCard}>
+            <article className={styles.testimonialCard}>
               <div className={styles.testimonialHeader}>
                 <div className={styles.testimonialStars}>
-                  <Star size={16} fill="currentColor" />
-                  <Star size={16} fill="currentColor" />
-                  <Star size={16} fill="currentColor" />
-                  <Star size={16} fill="currentColor" />
-                  <Star size={16} fill="currentColor" />
+                  <Star aria-hidden="true" size={16} fill="currentColor" />
+                  <Star aria-hidden="true" size={16} fill="currentColor" />
+                  <Star aria-hidden="true" size={16} fill="currentColor" />
+                  <Star aria-hidden="true" size={16} fill="currentColor" />
+                  <Star aria-hidden="true" size={16} fill="currentColor" />
                 </div>
                 <span className={styles.testimonialBadge}>Básico</span>
               </div>
               <p className={styles.testimonialText}>
                 &ldquo;Finalmente um sistema que funciona quando a internet cai. Já perdi muitos pedidos antes, agora isso não acontece mais.&rdquo;
               </p>
-              <div className={styles.testimonialAuthor}>
+              <footer className={styles.testimonialAuthor}>
                 <div className={styles.testimonialAvatar}>MF</div>
                 <div>
                   <span className={styles.testimonialName}>Marcos Ferreira</span>
                   <span className={styles.testimonialRole}>Dono, Lanches do Bairro</span>
                 </div>
-              </div>
-            </div>
-            <div className={styles.testimonialCard}>
+              </footer>
+            </article>
+            <article className={styles.testimonialCard}>
               <div className={styles.testimonialHeader}>
                 <div className={styles.testimonialStars}>
-                  <Star size={16} fill="currentColor" />
-                  <Star size={16} fill="currentColor" />
-                  <Star size={16} fill="currentColor" />
-                  <Star size={16} fill="currentColor" />
-                  <Star size={16} fill="currentColor" />
+                  <Star aria-hidden="true" size={16} fill="currentColor" />
+                  <Star aria-hidden="true" size={16} fill="currentColor" />
+                  <Star aria-hidden="true" size={16} fill="currentColor" />
+                  <Star aria-hidden="true" size={16} fill="currentColor" />
+                  <Star aria-hidden="true" size={16} fill="currentColor" />
                 </div>
                 <span className={`${styles.testimonialBadge} ${styles.testimonialBadgePopular}`}>Mais Popular</span>
               </div>
               <p className={styles.testimonialText}>
                 &ldquo;Minha equipe adorou o Kitchen Display. Antes perdíamos comandas, agora tudo chega direto na tela.&rdquo;
               </p>
-              <div className={styles.testimonialAuthor}>
+              <footer className={styles.testimonialAuthor}>
                 <div className={styles.testimonialAvatar}>AC</div>
                 <div>
                   <span className={styles.testimonialName}>Ana Carolina</span>
                   <span className={styles.testimonialRole}>Gerente, Pizza Express</span>
                 </div>
-              </div>
-            </div>
-            <div className={styles.testimonialCard}>
+              </footer>
+            </article>
+            <article className={styles.testimonialCard}>
               <div className={styles.testimonialHeader}>
                 <div className={styles.testimonialStars}>
-                  <Star size={16} fill="currentColor" />
-                  <Star size={16} fill="currentColor" />
-                  <Star size={16} fill="currentColor" />
-                  <Star size={16} fill="currentColor" />
-                  <Star size={16} fill="currentColor" />
+                  <Star aria-hidden="true" size={16} fill="currentColor" />
+                  <Star aria-hidden="true" size={16} fill="currentColor" />
+                  <Star aria-hidden="true" size={16} fill="currentColor" />
+                  <Star aria-hidden="true" size={16} fill="currentColor" />
+                  <Star aria-hidden="true" size={16} fill="currentColor" />
                 </div>
                 <span className={styles.testimonialBadge}>Profissional</span>
               </div>
               <p className={styles.testimonialText}>
                 &ldquo;Os relatórios me ajudaram a identificar quais itens vender mais. Consegui aumentar o ticket médio em 23%.&rdquo;
               </p>
-              <div className={styles.testimonialAuthor}>
+              <footer className={styles.testimonialAuthor}>
                 <div className={styles.testimonialAvatar}>RS</div>
                 <div>
                   <span className={styles.testimonialName}>Roberto Silva</span>
                   <span className={styles.testimonialRole}>Dono, Espetinho & Cia</span>
                 </div>
-              </div>
-            </div>
+              </footer>
+            </article>
           </div>
         </div>
       </section>
 
       {/* Pricing Section */}
-      <section className={styles.pricing} id="pricing">
+      <section aria-labelledby="pricing-title" className={styles.pricing} id="pricing">
         <div className={styles.container}>
           <div className={styles.sectionBadge}>
-            <CreditCard size={14} />
+            <CreditCard aria-hidden="true" size={14} />
             <span>Planos</span>
           </div>
-          <h2 className={styles.sectionTitle}>
+          <h2 id="pricing-title" className={styles.sectionTitle}>
             Planos simples e transparentes
           </h2>
           <p className={styles.pricingSubtitle}>
@@ -441,12 +446,12 @@ export default function Home() {
               </div>
               <p className={styles.pricingCardNote}>Por restaurante</p>
               <ul className={styles.pricingFeatures}>
-                <li><Check size={16} /> Cardápio digital completo</li>
-                <li><Check size={16} /> QR Codes por mesa</li>
-                <li><Check size={16} /> Pedidos em tempo real</li>
-                <li><Check size={16} /> Kitchen Display</li>
-                <li><Check size={16} /> Modo offline</li>
-                <li><Check size={16} /> Suporte por chat</li>
+                <li><Check aria-hidden="true" size={16} /> Cardápio digital completo</li>
+                <li><Check aria-hidden="true" size={16} /> QR Codes por mesa</li>
+                <li><Check aria-hidden="true" size={16} /> Pedidos em tempo real</li>
+                <li><Check aria-hidden="true" size={16} /> Kitchen Display</li>
+                <li><Check aria-hidden="true" size={16} /> Modo offline</li>
+                <li><Check aria-hidden="true" size={16} /> Suporte por chat</li>
               </ul>
               <a href="/register" className={styles.pricingCta}>
                 Começar Grátis
@@ -467,12 +472,12 @@ export default function Home() {
               </div>
               <p className={styles.pricingCardNote}>Por restaurante (5+ unidades)</p>
               <ul className={styles.pricingFeatures}>
-                <li><Check size={16} /> Tudo do Básico</li>
-                <li><Check size={16} /> Relatórios avançados</li>
-                <li><Check size={16} /> Múltiplos usuários</li>
-                <li><Check size={16} /> Integração com delivery</li>
-                <li><Check size={16} /> API de automação</li>
-                <li><Check size={16} /> Suporte prioritário</li>
+                <li><Check aria-hidden="true" size={16} /> Tudo do Básico</li>
+                <li><Check aria-hidden="true" size={16} /> Relatórios avançados</li>
+                <li><Check aria-hidden="true" size={16} /> Múltiplos usuários</li>
+                <li><Check aria-hidden="true" size={16} /> Integração com delivery</li>
+                <li><Check aria-hidden="true" size={16} /> API de automação</li>
+                <li><Check aria-hidden="true" size={16} /> Suporte prioritário</li>
               </ul>
               <a href="/register" className={styles.pricingCta}>
                 Começar Grátis
@@ -492,12 +497,12 @@ export default function Home() {
               </div>
               <p className={styles.pricingCardNote}>Por restaurante (10+ unidades)</p>
               <ul className={styles.pricingFeatures}>
-                <li><Check size={16} /> Tudo do Profissional</li>
-                <li><Check size={16} /> Dashboard personalizado</li>
-                <li><Check size={16} /> Gerente de conta</li>
-                <li><Check size={16} /> SLA garantido</li>
-                <li><Check size={16} /> Treinamento da equipe</li>
-                <li><Check size={16} /> Implementação dedicada</li>
+                <li><Check aria-hidden="true" size={16} /> Tudo do Profissional</li>
+                <li><Check aria-hidden="true" size={16} /> Dashboard personalizado</li>
+                <li><Check aria-hidden="true" size={16} /> Gerente de conta</li>
+                <li><Check aria-hidden="true" size={16} /> SLA garantido</li>
+                <li><Check aria-hidden="true" size={16} /> Treinamento da equipe</li>
+                <li><Check aria-hidden="true" size={16} /> Implementação dedicada</li>
               </ul>
               <a href="/register" className={styles.pricingCta}>
                 Falar com Vendas
@@ -505,26 +510,26 @@ export default function Home() {
             </div>
           </div>
           <p className={styles.pricingDisclaimer}>
-            <ShieldCheck size={14} />
+            <ShieldCheck aria-hidden="true" size={14} />
             Cancelar a qualquer momento. Sem burocracia. Sem multas.
           </p>
         </div>
       </section>
 
       {/* FAQ Section */}
-      <section className={styles.faq}>
+      <section aria-labelledby="faq-title" className={styles.faq}>
         <div className={styles.container}>
           <div className={styles.sectionBadge}>
-            <HelpCircle size={14} />
+            <HelpCircle aria-hidden="true" size={14} />
             <span>Perguntas Frequentes</span>
           </div>
-          <h2 className={styles.sectionTitle}>
+          <h2 id="faq-title" className={styles.sectionTitle}>
             Perguntas Frequentes
           </h2>
           <div className={styles.faqList}>
             <div className={styles.faqItem}>
               <h3 className={styles.faqQuestion}>
-                <HelpCircle size={20} />
+                <HelpCircle aria-hidden="true" size={20} />
                 <span>Preciso de internet para usar?</span>
               </h3>
               <p className={styles.faqAnswer}>
@@ -533,7 +538,7 @@ export default function Home() {
             </div>
             <div className={styles.faqItem}>
               <h3 className={styles.faqQuestion}>
-                <HelpCircle size={20} />
+                <HelpCircle aria-hidden="true" size={20} />
                 <span>Como os pedidos chegam na cozinha?</span>
               </h3>
               <p className={styles.faqAnswer}>
@@ -542,7 +547,7 @@ export default function Home() {
             </div>
             <div className={styles.faqItem}>
               <h3 className={styles.faqQuestion}>
-                <HelpCircle size={20} />
+                <HelpCircle aria-hidden="true" size={20} />
                 <span>Posso personalizar o cardápio?</span>
               </h3>
               <p className={styles.faqAnswer}>
@@ -551,7 +556,7 @@ export default function Home() {
             </div>
             <div className={styles.faqItem}>
               <h3 className={styles.faqQuestion}>
-                <HelpCircle size={20} />
+                <HelpCircle aria-hidden="true" size={20} />
                 <span>Funciona com meu sistema de delivery?</span>
               </h3>
               <p className={styles.faqAnswer}>
@@ -560,7 +565,7 @@ export default function Home() {
             </div>
             <div className={styles.faqItem}>
               <h3 className={styles.faqQuestion}>
-                <HelpCircle size={20} />
+                <HelpCircle aria-hidden="true" size={20} />
                 <span>Como funciona o suporte?</span>
               </h3>
               <p className={styles.faqAnswer}>
@@ -572,14 +577,14 @@ export default function Home() {
       </section>
 
       {/* Final CTA */}
-      <section className={styles.finalCta}>
+      <section aria-labelledby="final-cta-title" className={styles.finalCta}>
         <div className={styles.finalCtaBackground}>
           <div className={styles.finalCtaBlob1} />
           <div className={styles.finalCtaBlob2} />
         </div>
         <div className={styles.container}>
           <div className={styles.finalCtaContent}>
-            <h2 className={styles.finalCtaTitle}>
+            <h2 id="final-cta-title" className={styles.finalCtaTitle}>
               Pronto para nunca mais perder um pedido?
             </h2>
             <p className={styles.finalCtaText}>
@@ -587,17 +592,17 @@ export default function Home() {
             </p>
             <div className={styles.finalCtaTags}>
               <span className={styles.finalCtaTag}>
-                <CreditCard size={14} />
+                <CreditCard aria-hidden="true" size={14} />
                 Sem cartão de crédito
               </span>
               <span className={styles.finalCtaTag}>
-                <Zap size={14} />
+                <Zap aria-hidden="true" size={14} />
                 Teste grátis 14 dias
               </span>
             </div>
             <a href="/register" className={styles.ctaPrimary}>
               Criar Conta Grátis
-              <ArrowRight size={18} />
+              <ArrowRight aria-hidden="true" size={18} />
             </a>
           </div>
         </div>
@@ -608,19 +613,21 @@ export default function Home() {
         <div className={styles.container}>
           <div className={styles.footerContent}>
             <div className={styles.footerBrand}>
-              <div className={styles.logo}>
-                <UtensilsCrossed size={24} className={styles.logoIcon} />
-                <span className={styles.logoText}>Pedi-AI</span>
-              </div>
+              <span className={styles.logo}>
+                <Link href="/" aria-label="Página inicial Pedi-AI">
+                  <UtensilsCrossed size={24} className={styles.logoIcon} aria-hidden="true" />
+                  <span className={styles.logoText}>Pedi-AI</span>
+                </Link>
+              </span>
               <p className={styles.footerTagline}>
                 Cardápio digital para restaurantes modernos
               </p>
             </div>
-            <div className={styles.footerLinks}>
+            <nav aria-label="Links do footer" className={styles.footerLinks}>
               <a href="/register" className={styles.footerLink}>Começar</a>
               <a href="#features" className={styles.footerLink}>Features</a>
               <a href="#pricing" className={styles.footerLink}>Preços</a>
-            </div>
+            </nav>
           </div>
           <div className={styles.footerBottom}>
             <p>© 2026 Pedi-AI. Todos os direitos reservados.</p>

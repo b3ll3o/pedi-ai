@@ -9,19 +9,19 @@ test.describe('Admin Authentication', () => {
     await loginPage.goto()
   })
 
-  test('should display login form', async ({ page }) => {
+  test('should display login form', async ({ page: _page }) => {
     await expect(loginPage.emailInput).toBeVisible()
     await expect(loginPage.passwordInput).toBeVisible()
     await expect(loginPage.loginButton).toBeVisible()
   })
 
-  test('should login with valid admin credentials', { tag: ['@smoke', '@critical'] }, async ({ page, seedData }) => {
+  test('should login with valid admin credentials', { tag: ['@smoke', '@critical'] }, async ({ page: _page, seedData }) => {
     await loginPage.login(seedData.admin.email, seedData.admin.password)
     await loginPage.waitForDashboard()
     await expect(page).toHaveURL('/admin/dashboard')
   })
 
-  test('should show error with invalid credentials', async ({ page }) => {
+  test('should show error with invalid credentials', async ({ page: _page }) => {
     await loginPage.login('invalid@test.com', 'wrongpassword')
     const error = await loginPage.getError()
     expect(error).toMatch(/inválido|incorreto|não encontrado|invalid|incorrect|not found/i)
@@ -48,12 +48,12 @@ test.describe('Admin Authentication', () => {
     await expect(admin).toHaveURL('/admin/dashboard')
   })
 
-  test('should request password reset and login with new password', async ({ page, seedData }) => {
+  test('should request password reset and login with new password', async ({ page: _page, seedData }) => {
     await loginPage.forgotPassword(seedData.admin.email)
     await expect(loginPage.forgotPasswordSuccessMessage).toBeVisible()
   })
 
-  test('should show success for password reset request', async ({ page }) => {
+  test('should show success for password reset request', async ({ page: _page }) => {
     // Supabase always returns success for password reset (security - never reveals if email exists)
     await loginPage.forgotPassword('nonexistent@test.com')
     await expect(loginPage.forgotPasswordSuccessMessage).toBeVisible()

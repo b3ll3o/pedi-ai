@@ -1,6 +1,7 @@
 import { test as base, Page } from '@playwright/test'
 import * as fs from 'fs'
 import * as path from 'path'
+import { createTestOrder, OrderCreationResult, generateUUID, CreateTestOrderParams } from '../helpers/orderUtils'
 
 // Caminho para o resultado do seed
 const SEED_RESULT_PATH = path.join(__dirname, '..', '..', '..', 'scripts', '.seed-result.json')
@@ -50,7 +51,7 @@ function generateId(): string {
   return Math.random().toString(36).substring(2, 15)
 }
 
-function generateEmail(): string {
+function _generateEmail(): string {
   return `test-${generateId()}@pedi-ai.test`
 }
 
@@ -184,7 +185,7 @@ async function loadStorageState(page: Page, email: string, destinationUrl: strin
 
 export const test = base.extend<Fixtures, { reuse: boolean }>({
   reuse: [true, { scope: 'worker', option: true }],
-  seedData: async ({ browser }, fixtureUse) => {
+  seedData: async ({ browser: _browser }, fixtureUse) => {
     const data = await loadSeedData()
     await fixtureUse(data)
   },
@@ -242,3 +243,4 @@ export const test = base.extend<Fixtures, { reuse: boolean }>({
 })
 
 export { expect } from '@playwright/test'
+export { createTestOrder, OrderCreationResult, generateUUID, CreateTestOrderParams }

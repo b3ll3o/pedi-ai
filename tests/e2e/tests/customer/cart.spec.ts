@@ -4,11 +4,11 @@ import { CartPage } from '../../pages/CartPage'
 
 test.describe('Cart', () => {
   let menuPage: MenuPage
-  let cartPage: CartPage
+  let _cartPage: CartPage
 
   test.beforeEach(async ({ guest }) => {
     menuPage = new MenuPage(guest)
-    cartPage = new CartPage(guest)
+    _cartPage = new CartPage(guest)
 
     // Add items to cart before each test
     await menuPage.goto()

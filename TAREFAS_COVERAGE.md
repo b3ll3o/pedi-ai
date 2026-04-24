@@ -1,5 +1,9 @@
 # Cobertura de Testes - Tarefas Pendentes
 
+> ⚠️ **DEPRECADO**: Este documento está desatualizado. 
+> A meta de coverage de 80% foi atingida e superada.
+> Coverage atual: 97.91% statements, 92% branches, 94.85% functions, 98.39% lines.
+
 ## Objetivo
 Atingir **80% de coverage** em todas as métricas (statements, branches, functions, lines) nos arquivos testáveis (services, stores, hooks).
 

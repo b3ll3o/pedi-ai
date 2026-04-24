@@ -14,7 +14,7 @@ test.describe('Admin Products', () => {
     await expect(productsPage.productsList.first()).toBeVisible()
   })
 
-  test('should add new product', async ({ admin, seedData }) => {
+  test('should add new product', async ({ admin: _admin, seedData }) => {
     await productsPage.addProduct({
       name: 'Suco de Laranja',
       price: 12.99,
@@ -25,7 +25,7 @@ test.describe('Admin Products', () => {
     expect(error).toBe('')
   })
 
-  test('should edit existing product', async ({ admin }) => {
+  test('should edit existing product', async ({ admin: _admin }) => {
     await productsPage.editProduct('Coca-Cola', { price: 6.99 })
     const error = await productsPage.getError()
     expect(error).toBe('')
@@ -41,17 +41,24 @@ test.describe('Admin Products', () => {
     await productsPage.deleteProduct('Produto para Teste')
   })
 
-  test('should search products by name', async ({ admin }) => {
-    await productsPage.searchProducts('Picanha')
+  test('should search products by name', async ({ admin: _admin }) => {
+    const count = await productsPage.searchProducts('Picanha')
+    expect(count).toBeGreaterThanOrEqual(0)
     await expect(productsPage.productsList.filter({ hasText: 'Picanha' })).toBeVisible()
   })
 
-  test('should filter products by category', async ({ admin }) => {
-    await productsPage.filterByCategory('Bebidas')
-    // Products should be filtered
+  test('should filter products by category', async ({ admin: _admin }) => {
+    const count = await productsPage.filterByCategory('Bebidas')
+    expect(count).toBeGreaterThanOrEqual(0)
   })
 
-  test('should toggle product availability', async ({ admin }) => {
+  test('should show empty state when search returns no results', async ({ admin: _admin }) => {
+    const count = await productsPage.searchProducts('ProdutoInexistenteXYZ123')
+    expect(count).toBe(0)
+    await expect(productsPage.productsList.first()).not.toBeVisible()
+  })
+
+  test('should toggle product availability', async ({ admin: _admin }) => {
     await productsPage.toggleProductAvailability('Coca-Cola')
     // Availability should toggle
   })

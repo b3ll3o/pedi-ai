@@ -73,6 +73,58 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Sempre dar feedback visual de status de conectividade
 - Implementar retry com backoff exponencial para operações offline
 
+## HTML Semântico
+
+### Regras Obrigatórias
+
+- **Heading hierarchy**: Apenas UM `h1` por página; `h2`-`h6` em ordem lógica sem saltos (nunca pular de h2 para h4)
+- **Landmarks**: Usar elementos HTML5 corretos — `<header>`, `<nav>`, `<main>`, `<section>`, `<article>`, `<footer>`, `<aside>`
+- **Sections**: Cada `<section>` DEVE ter `aria-labelledby` apontando para o ID do seu título
+- **Nav**: Usar `<nav>` com `aria-label` descritivo (ex: `aria-label="Navegação principal"`)
+- **Listas**: Usar `<ul>` e `<li>` para listas de itens relacionados; não usar `<div>` ou `<br>` para separar itens
+- **Botões vs Links**: Usar `<button>` para ações (filtrar, toggle, submit); usar `<a>` para navegação
+- **Ênfase**: Usar `<strong>` para texto importante; `<em>` para ênfase/italico semântico
+- **Decorative Icons**: Ícones decorativos devem ter `aria-hidden="true"`
+- **Accessible Names**: Todos os elementos interativos devem ter nome acessível (texto visível ou `aria-label`)
+- **Paragraphs**: Usar `<p>` para parágrafos; não usar `<br>` para criar espaçamento entre blocos de texto
+
+### Estrutura Recomendada por Tipo de Página
+
+**Landing Page / Página de Marketing:**
+```
+<header><nav aria-label="Navegação principal">...</nav></header>
+<main>
+  <section aria-labelledby="hero-title"><h1>Título Principal</h1></section>
+  <section aria-labelledby="features-title"><h2>Features</h2></section>
+  ...
+</main>
+<footer>...</footer>
+```
+
+**Páginas de Lista/Grid:**
+```
+<main>
+  <header><h1>Título da Página</h1></header>
+  <section>
+    <ul>
+      <li><article>Item 1</article></li>
+      <li><article>Item 2</article></li>
+    </ul>
+  </section>
+</main>
+```
+
+**FAQ:**
+```
+<section aria-labelledby="faq-title">
+  <h2 id="faq-title">Perguntas Frequentes</h2>
+  <dl>
+    <dt><strong>Pergunta?</strong></dt>
+    <dd>Resposta.</dd>
+  </dl>
+</section>
+```
+
 ## SEO (Search Engine Optimization)
 
 ### Regras Obrigatórias
@@ -80,7 +132,6 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **Toda página DEVE ter metadata completa**: `title`, `description`, `og:*`, `twitter:*`, `robots`, `canonical`
 - **Títulos SEO**: Máximo 60 caracteres, incluir palavra-chave principal no início
 - **Descriptions**: Meta description entre 120-160 caracteres, incluir CTAs e palavras-chave
-- **Heading hierarchy**: Apenas UM `h1` por página; `h2`-`h6` em ordem lógica sem saltos
 - **Imagens**: Sempre usar `next/image` com `alt` descritivo; nunca imagens sem alt
 - **Links**: Usar `aria-label` quando o texto do link não for autoexplicativo
 - **URLs**: Devem ser semânticas, em minúsculas, com hífens (ex: `/cardapio-digital` não `/cardapio_digital`)
@@ -146,3 +197,14 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **Cobertura de fluxos**: Manter inventário atualizado de fluxos cobertos em `tests/e2e/README.md`
 
 <!-- END:pedi-ai-rules -->
+
+## Repository Map
+
+A full codemap is available at `codemap.md` in the project root.
+
+Before working on any task, read `codemap.md` to understand:
+- Project architecture and entry points
+- Directory responsibilities and design patterns
+- Data flow and integration points between modules
+
+For deep work on a specific folder, also read that folder's `codemap.md`.

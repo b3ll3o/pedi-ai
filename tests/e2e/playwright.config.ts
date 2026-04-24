@@ -15,6 +15,9 @@
  * Network Blocking:
  * - globalSetup.ts launches a browser and applies route blocking globally
  * - Blocked: fonts.googleapis.com, google-analytics.com, facebook.net, etc.
+ *
+ * Rollback / Feature Flag:
+ * - E2E_SKIP_NEW_TESTS=true: pula todos os testes exceto auth.spec (minimal set)
  */
 import { defineConfig, devices } from '@playwright/test'
 import path from 'path'
@@ -25,6 +28,8 @@ const isCI = process.env.CI === 'true'
 const shardMatch = process.env.SHARD?.match(/^(\d+)\/(\d+)$/)
 const shardCurrent = shardMatch ? Number(shardMatch[1]) : 1
 const shardTotal = shardMatch ? Number(shardMatch[2]) : isCI ? 4 : 1
+// Rollback: pula testes novos, roda apenas auth.spec
+const skipNewTests = process.env.E2E_SKIP_NEW_TESTS === 'true'
 
 export default defineConfig({
   testDir: './tests',
@@ -51,7 +56,8 @@ export default defineConfig({
     {
       name: 'chromium-headless',
       use: { ...devices['Desktop Chrome'], headless: true },
-      // Omit grep/grepInvert so this project runs all tests by default locally
+      grep: skipNewTests ? /auth\.spec\.ts/ : undefined,
+      grepInvert: skipNewTests ? undefined : undefined,
     },
 
     // ─── CI-only cross-browser / cross-device matrix ───────────────────────

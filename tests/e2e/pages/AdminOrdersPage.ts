@@ -43,14 +43,21 @@ export class AdminOrdersPage {
     return this.ordersList.count()
   }
 
-  async filterByStatus(status: AdminOrderStatus): Promise<void> {
-    await this.filterStatusSelect.selectOption(status)
-    await this.page.waitForResponse(/\/api\/admin\/orders/)
+  async getError(): Promise<string> {
+    const errorLocator = this.page.locator('[data-testid="error-message"]')
+    return errorLocator.textContent() ?? ''
   }
 
-  async searchByCustomerEmail(email: string): Promise<void> {
+  async filterByStatus(status: AdminOrderStatus): Promise<number> {
+    await this.filterStatusSelect.selectOption(status)
+    await this.page.waitForResponse(/\/api\/admin\/orders/)
+    return this.ordersList.count()
+  }
+
+  async searchByCustomerEmail(email: string): Promise<number> {
     await this.searchInput.fill(email)
     await this.page.waitForResponse(/\/api\/admin\/orders/)
+    return this.ordersList.count()
   }
 
   async viewOrderDetails(orderId: string): Promise<void> {
