@@ -53,5 +53,8 @@ tests/e2e/scripts/.seed-result.json
 # Supabase
 .supabase/
 
+# Cartography
+.lite/
+
 # OS
 Thumbs.db
