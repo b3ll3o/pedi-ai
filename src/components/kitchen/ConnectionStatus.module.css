@@ -12,11 +12,11 @@
 }
 
 .connected .dot {
-  background: #10b981;
+  background: var(--color-success);
 }
 
 .disconnected .dot {
-  background: #ef4444;
+  background: var(--color-error);
 }
 
 .text {
@@ -24,11 +24,11 @@
 }
 
 .connected .text {
-  color: #065f46;
+  color: var(--color-success);
 }
 
 .disconnected .text {
-  color: #991b1b;
+  color: var(--color-error);
 }
 
 .badge {
@@ -41,13 +41,13 @@
 }
 
 .connected.badge {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--color-success-subtle);
+  color: var(--color-success);
 }
 
 .disconnected.badge {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--color-error-subtle);
+  color: var(--color-error);
 }
 
 .banner {
@@ -61,13 +61,13 @@
 }
 
 .connected.banner {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--color-success-subtle);
+  color: var(--color-success);
 }
 
 .disconnected.banner {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--color-error-subtle);
+  color: var(--color-error);
 }
 
 .bannerIcon {

@@ -1,7 +1,7 @@
 .container {
   min-height: 100vh;
   padding: 16px;
-  background: #f3f4f6;
+  background: var(--color-background);
 }
 
 .header {
@@ -15,7 +15,7 @@
   margin: 0;
   font-size: 28px;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-text-primary);
 }
 
 .connectionStatus {
@@ -52,7 +52,7 @@
 .column {
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: var(--color-surface);
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   overflow: hidden;
@@ -66,9 +66,9 @@
   padding: 16px;
   font-size: 18px;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-text-primary);
   background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .count {
@@ -78,10 +78,10 @@
   min-width: 24px;
   height: 24px;
   padding: 0 8px;
-  background: #e5e7eb;
+  background: var(--color-border);
   border-radius: 12px;
   font-size: 12px;
-  color: #374151;
+  color: var(--color-text-secondary);
 }
 
 .orderList {
@@ -99,14 +99,14 @@
   justify-content: center;
   height: 100%;
   min-height: 100px;
-  color: #9ca3af;
+  color: var(--color-text-secondary);
   font-size: 14px;
 }
 
 .orderCard {
   padding: 12px;
-  background: #fff;
-  border: 2px solid #e5e7eb;
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.15s;
@@ -132,14 +132,14 @@
 .orderId {
   font-size: 14px;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-text-primary);
   font-family: monospace;
 }
 
 .tableName {
   font-size: 14px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--color-text-secondary);
 }
 
 .items {
@@ -147,8 +147,8 @@
   flex-direction: column;
   gap: 4px;
   padding: 8px 0;
-  border-top: 1px solid #f3f4f6;
-  border-bottom: 1px solid #f3f4f6;
+  border-top: 1px solid var(--color-background);
+  border-bottom: 1px solid var(--color-background);
 }
 
 .item {
@@ -166,12 +166,12 @@
 
 .itemName {
   font-size: 14px;
-  color: #111827;
+  color: var(--color-text-primary);
 }
 
 .moreItems {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   font-style: italic;
 }
 
@@ -184,7 +184,7 @@
 
 .age {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
 }
 
 .ageStale {
@@ -200,7 +200,7 @@
 .acceptBtn {
   padding: 6px 12px;
   background: #10b981;
-  color: #fff;
+  color: var(--color-surface);
   border: none;
   border-radius: 6px;
   font-size: 12px;
@@ -216,7 +216,7 @@
 .readyBtn {
   padding: 6px 12px;
   background: #2563eb;
-  color: #fff;
+  color: var(--color-surface);
   border: none;
   border-radius: 6px;
   font-size: 12px;

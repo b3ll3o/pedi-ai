@@ -23,6 +23,7 @@ export default function CombosPage() {
   // Modal state
   const [showModal, setShowModal] = useState(false);
   const [editingCombo, setEditingCombo] = useState<ComboWithItems | null>(null);
+  const [_isSubmitting, setIsSubmitting] = useState(false);
 
 
   useEffect(() => {

@@ -21,19 +21,19 @@
   margin: 0;
   font-size: 20px;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-text-primary);
 }
 
 .subtitle {
   margin: 0;
   font-size: 14px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
 }
 
 .inviteButton {
   padding: 10px 16px;
   background: #2563eb;
-  color: #fff;
+  color: var(--color-surface);
   border: none;
   border-radius: 8px;
   font-size: 14px;
@@ -53,8 +53,8 @@
   justify-content: center;
   padding: 48px;
   text-align: center;
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
 }
 
@@ -65,7 +65,7 @@
 
 .empty p {
   margin: 0 0 16px 0;
-  color: #6b7280;
+  color: var(--color-text-secondary);
 }
 
 .userList {
@@ -79,8 +79,8 @@
   align-items: center;
   gap: 16px;
   padding: 16px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   transition: box-shadow 0.15s;
 }
@@ -96,7 +96,7 @@
   align-items: center;
   justify-content: center;
   background: #2563eb;
-  color: #fff;
+  color: var(--color-surface);
   border-radius: 50%;
   font-size: 18px;
   font-weight: 600;
@@ -113,12 +113,12 @@
 .userName {
   font-size: 15px;
   font-weight: 500;
-  color: #111827;
+  color: var(--color-text-primary);
 }
 
 .userEmail {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -129,7 +129,7 @@
   border-radius: 9999px;
   font-size: 12px;
   font-weight: 500;
-  color: #fff;
+  color: var(--color-surface);
   white-space: nowrap;
 }
 
@@ -150,7 +150,7 @@
 }
 
 .editButton:hover {
-  background: #f3f4f6;
+  background: var(--color-background);
 }
 
 .deleteButton:hover {

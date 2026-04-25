@@ -1390,3 +1390,253 @@
   font-size: 0.8rem;
   color: var(--color-text-muted);
 }
+
+/* ----------------------------------------
+   Dark Mode - Landing Page
+   ---------------------------------------- */
+@media (prefers-color-scheme: dark) {
+  .page {
+    --color-text: #FAFAF9;
+    --color-text-muted: #A8A29E;
+    --color-background: #1C1917;
+    --color-surface: #292524;
+    --color-border: #44403C;
+    --color-gray: #292524;
+  }
+
+  .nav {
+    background: rgba(41, 37, 36, 0.92);
+    border-bottom: 1px solid rgba(68, 64, 60, 0.8);
+  }
+
+  .navLink {
+    color: #A8A29E;
+  }
+
+  .navLink:hover {
+    color: #FAFAF9;
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .logoText {
+    color: #FAFAF9;
+  }
+
+  .hero {
+    background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-background) 70%);
+  }
+
+  .heroTitle {
+    color: #FAFAF9;
+  }
+
+  .heroSubtitle {
+    color: #A8A29E;
+  }
+
+  .heroTag {
+    background: var(--color-surface);
+    color: #A8A29E;
+    border: 1px solid var(--color-border);
+  }
+
+  .ctaSecondary {
+    background: var(--color-surface);
+    color: #FAFAF9;
+    border: 2px solid var(--color-border);
+  }
+
+  .ctaSecondary:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+
+  .heroStats {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+  }
+
+  .statLabel {
+    color: #A8A29E;
+  }
+
+  .socialProof {
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .socialProofLogo {
+    background: rgba(255, 255, 255, 0.05);
+    color: #A8A29E;
+  }
+
+  .socialProofLogo:hover {
+    background: var(--color-primary);
+    color: white;
+  }
+
+  .howItWorks {
+    background: linear-gradient(180deg, var(--color-background) 0%, var(--color-surface) 100%);
+  }
+
+  .stepCard {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+  }
+
+  .stepTitle {
+    color: #FAFAF9;
+  }
+
+  .stepText {
+    color: #A8A29E;
+  }
+
+  .stepConnector {
+    background: linear-gradient(90deg, var(--color-border) 0%, var(--color-primary) 50%, var(--color-border) 100%);
+  }
+
+  .problems {
+    background: var(--color-surface);
+  }
+
+  .problemCard {
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+  }
+
+  .problemTitle {
+    color: #FAFAF9;
+  }
+
+  .problemText {
+    color: #A8A29E;
+  }
+
+  .features {
+    background: var(--color-background);
+  }
+
+  .featureCard {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+  }
+
+  .featureTitle {
+    color: #FAFAF9;
+  }
+
+  .featureText {
+    color: #A8A29E;
+  }
+
+  .testimonials {
+    background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-background) 100%);
+  }
+
+  .testimonialCard {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+  }
+
+  .testimonialText {
+    color: #FAFAF9;
+  }
+
+  .testimonialName {
+    color: #FAFAF9;
+  }
+
+  .testimonialRole {
+    color: #A8A29E;
+  }
+
+  .pricing {
+    background: var(--color-background);
+  }
+
+  .pricingSubtitle {
+    color: #A8A29E;
+  }
+
+  .pricingCard {
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+  }
+
+  .pricingCardHighlight {
+    background: linear-gradient(180deg, var(--color-surface) 0%, rgba(230, 126, 34, 0.05) 100%);
+  }
+
+  .pricingCardTitle {
+    color: #FAFAF9;
+  }
+
+  .pricingCardDescription {
+    color: #A8A29E;
+  }
+
+  .pricingCurrency {
+    color: #A8A29E;
+  }
+
+  .pricingPeriod {
+    color: #A8A29E;
+  }
+
+  .pricingCardNote {
+    color: #A8A29E;
+  }
+
+  .pricingFeatures li {
+    color: #FAFAF9;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .pricingDisclaimer {
+    color: #A8A29E;
+  }
+
+  .faq {
+    background: var(--color-surface);
+  }
+
+  .faqItem {
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+  }
+
+  .faqQuestion {
+    color: #FAFAF9;
+  }
+
+  .faqAnswer {
+    color: #A8A29E;
+  }
+
+  .footer {
+    background: #0C0A09;
+  }
+
+  .footerTagline {
+    color: #A8A29E;
+  }
+
+  .footerLink {
+    color: #A8A29E;
+  }
+
+  .footerLink:hover {
+    color: #FAFAF9;
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .footerBottom {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .footerBottom p {
+    color: #78716C;
+  }
+}

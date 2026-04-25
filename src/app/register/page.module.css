@@ -20,7 +20,7 @@
   gap: 28px;
   width: 100%;
   max-width: 400px;
-  background: #ffffff;
+  background: var(--color-surface);
   border-radius: 16px;
   padding: 36px 32px;
   box-shadow:
@@ -39,13 +39,13 @@
 .title {
   font-size: 28px;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-text-primary);
   margin: 0;
 }
 
 .subtitle {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   margin: 0;
 }
 
@@ -55,7 +55,7 @@
 
 .footer p {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   margin: 0;
 }
 
@@ -79,7 +79,7 @@
   width: 40px;
   height: 40px;
   border: 3px solid rgba(255, 255, 255, 0.3);
-  border-top-color: #ffffff;
+  border-top-color: var(--color-surface);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -97,7 +97,7 @@
   }
 
   .card {
-    background: #1a1a1a;
+    background: var(--color-text-primary);
     box-shadow:
       0 4px 6px -1px rgba(0, 0, 0, 0.3),
       0 2px 4px -1px rgba(0, 0, 0, 0.2),
@@ -109,11 +109,11 @@
   }
 
   .subtitle {
-    color: #9ca3af;
+    color: var(--color-text-secondary);
   }
 
   .footer p {
-    color: #9ca3af;
+    color: var(--color-text-secondary);
   }
 
   .link {

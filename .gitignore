@@ -24,6 +24,12 @@
 .DS_Store
 *.pem
 
+# OpenCode Agent
+.opencode/
+
+# Test Results (root level)
+test-results/
+
 # debug
 npm-debug.log*
 yarn-debug.log*
@@ -46,6 +52,7 @@ tests/e2e/playwright-report/
 tests/e2e/playwright-results.json
 tests/e2e/.playwright/
 tests/e2e/scripts/.seed-result.json
+tests/e2e/node_modules
 
 # Playwright
 /.playwright/

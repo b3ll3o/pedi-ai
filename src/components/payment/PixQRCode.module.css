@@ -4,7 +4,7 @@
   align-items: center;
   gap: 16px;
   padding: 24px;
-  background: #ffffff;
+  background: var(--color-surface);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
@@ -21,7 +21,7 @@
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #e5e7eb;
+  border: 3px solid var(--color-border);
   border-top-color: #2563eb;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -35,7 +35,7 @@
 
 .loadingText {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
 }
 
 /* Paid State */
@@ -55,7 +55,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: var(--color-surface);
 }
 
 .checkmark svg {
@@ -66,12 +66,12 @@
 .paidText {
   font-size: 18px;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-text-primary);
 }
 
 .paidSubtext {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   text-align: center;
 }
 
@@ -79,9 +79,9 @@
 .qrWrapper {
   position: relative;
   padding: 16px;
-  background: #ffffff;
+  background: var(--color-surface);
   border-radius: 12px;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--color-border);
 }
 
 .qrImage {
@@ -158,19 +158,19 @@
   gap: 8px;
   width: 100%;
   padding: 12px 16px;
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-text-secondary);
   cursor: pointer;
   transition: background 0.2s ease, border-color 0.2s ease;
 }
 
 .copyButton:hover {
-  background: #e5e7eb;
-  border-color: #d1d5db;
+  background: var(--color-border);
+  border-color: var(--color-border);
 }
 
 .copyButton:active {
@@ -194,10 +194,10 @@
 
 .expiredMessage span {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
 }
 
 .expiredMessage span:first-child {
   font-weight: 500;
-  color: #374151;
+  color: var(--color-text-secondary);
 }

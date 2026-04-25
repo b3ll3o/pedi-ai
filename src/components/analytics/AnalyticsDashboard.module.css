@@ -16,7 +16,7 @@
   margin: 0;
   font-size: 24px;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-text-primary);
 }
 
 .dateRangeSelector {
@@ -27,18 +27,18 @@
 
 .presetBtn {
   padding: 8px 14px;
-  background: #fff;
-  border: 1px solid #d1d5db;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   font-size: 13px;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-text-secondary);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .presetBtn:hover {
-  background: #f3f4f6;
+  background: var(--color-background);
   border-color: #2563eb;
   color: #2563eb;
 }
@@ -54,20 +54,20 @@
   flex-direction: column;
   gap: 8px;
   padding: 20px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
 }
 
 .summaryLabel {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
 }
 
 .summaryValue {
   font-size: 28px;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-text-primary);
 }
 
 .summaryValue.revenue {
@@ -81,7 +81,7 @@
 .tabs {
   display: flex;
   gap: 4px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .tab {
@@ -91,13 +91,13 @@
   border-bottom: 2px solid transparent;
   font-size: 14px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .tab:hover {
-  color: #111827;
+  color: var(--color-text-primary);
 }
 
 .activeTab {
@@ -117,8 +117,8 @@
 
 .chartCard {
   padding: 20px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
 }
 
@@ -126,7 +126,7 @@
   margin: 0 0 16px 0;
   font-size: 16px;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-text-primary);
 }
 
 .statusList {
@@ -140,7 +140,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 8px 0;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--color-background);
 }
 
 .statusRow:last-child {
@@ -149,13 +149,13 @@
 
 .statusName {
   font-size: 14px;
-  color: #374151;
+  color: var(--color-text-secondary);
 }
 
 .statusCount {
   font-size: 14px;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-text-primary);
 }
 
 .chartContainer {
@@ -169,7 +169,7 @@
   align-items: center;
   justify-content: center;
   height: 150px;
-  color: #9ca3af;
+  color: var(--color-text-secondary);
 }
 
 .placeholderIcon {
@@ -196,13 +196,13 @@
 .hourLabel {
   min-width: 50px;
   font-size: 13px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
 }
 
 .hourBar {
   flex: 1;
   height: 20px;
-  background: #f3f4f6;
+  background: var(--color-background);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -218,7 +218,7 @@
   min-width: 40px;
   font-size: 13px;
   font-weight: 500;
-  color: #111827;
+  color: var(--color-text-primary);
   text-align: right;
 }
 
@@ -235,19 +235,19 @@
 .table td {
   padding: 12px 16px;
   text-align: left;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .table th {
   font-size: 13px;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   background: #f9fafb;
 }
 
 .table td {
   font-size: 14px;
-  color: #111827;
+  color: var(--color-text-primary);
 }
 
 .table td.revenue {
@@ -258,5 +258,5 @@
 .noData {
   text-align: center;
   padding: 48px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
 }

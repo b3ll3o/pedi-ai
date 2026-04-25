@@ -14,10 +14,10 @@
   flex: 1;
   min-width: 200px;
   padding: 10px 14px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   font-size: 14px;
-  background: #fff;
+  background: var(--color-surface);
 }
 
 .search:focus {
@@ -28,10 +28,10 @@
 
 .filter {
   padding: 10px 14px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   font-size: 14px;
-  background: #fff;
+  background: var(--color-surface);
   cursor: pointer;
 }
 
@@ -47,7 +47,7 @@
   justify-content: center;
   padding: 48px 16px;
   text-align: center;
-  color: #6b7280;
+  color: var(--color-text-secondary);
 }
 
 .emptyIcon {
@@ -66,8 +66,8 @@
   flex-direction: column;
   gap: 8px;
   padding: 16px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   transition: box-shadow 0.15s;
 }
@@ -90,17 +90,17 @@
 .tableNumber {
   font-size: 18px;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-text-primary);
 }
 
 .tableName {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
 }
 
 .capacity {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
 }
 
 .badge {
@@ -126,7 +126,7 @@
   gap: 4px;
   margin-top: 8px;
   padding-top: 8px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-border);
 }
 
 .btnIcon {
@@ -140,7 +140,7 @@
 }
 
 .btnIcon:hover {
-  background: #f3f4f6;
+  background: var(--color-background);
 }
 
 .btnDelete:hover {
@@ -150,6 +150,6 @@
 .summary {
   padding: 12px 0;
   font-size: 14px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   text-align: center;
 }

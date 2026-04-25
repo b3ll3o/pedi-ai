@@ -12,7 +12,7 @@
   width: 100%;
   max-width: 480px;
   padding: 24px;
-  background: #fff;
+  background: var(--color-surface);
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
@@ -21,7 +21,7 @@
   margin: 0 0 24px 0;
   font-size: 20px;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-text-primary);
 }
 
 .form {
@@ -48,12 +48,12 @@
 .label {
   font-size: 14px;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-text-secondary);
 }
 
 .input {
   padding: 10px 14px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   font-size: 14px;
   transition: border-color 0.15s;
@@ -72,7 +72,7 @@
 
 .hint {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
 }
 
 .roleList {
@@ -86,7 +86,7 @@
   align-items: flex-start;
   gap: 12px;
   padding: 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.15s;
@@ -115,12 +115,12 @@
 .roleLabel {
   font-size: 14px;
   font-weight: 500;
-  color: #111827;
+  color: var(--color-text-primary);
 }
 
 .roleDescription {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
 }
 
 .actions {
@@ -132,9 +132,9 @@
 
 .cancelButton {
   padding: 10px 16px;
-  background: #fff;
-  color: #374151;
-  border: 1px solid #d1d5db;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   font-size: 14px;
   font-weight: 500;
@@ -143,7 +143,7 @@
 }
 
 .cancelButton:hover:not(:disabled) {
-  background: #f3f4f6;
+  background: var(--color-background);
 }
 
 .cancelButton:disabled {
@@ -154,7 +154,7 @@
 .submitButton {
   padding: 10px 20px;
   background: #2563eb;
-  color: #fff;
+  color: var(--color-surface);
   border: none;
   border-radius: 6px;
   font-size: 14px;

@@ -4,7 +4,7 @@
  * @module tests/shared/fixtures/realOrder.fixture
  */
 
-import { test as base, APIRequestContext } from '@playwright/test'
+import { APIRequestContext } from '@playwright/test'
 import * as fs from 'fs'
 import * as path from 'path'
 import {
@@ -13,6 +13,7 @@ import {
   OrderCreationResult,
   CreateTestOrderParams,
 } from '../helpers/orderUtils'
+import { test as authBase } from './index'
 
 // Caminho para o resultado do seed
 const SEED_RESULT_PATH = path.join(__dirname, '..', '..', '..', 'scripts', '.seed-result.json')
@@ -64,7 +65,7 @@ function loadSeedData(): SeedData {
  * })
  * ```
  */
-export const realOrderFixture = base.extend<{ realOrder: RealOrderResult }>({
+export const realOrderFixture = authBase.extend<{ realOrder: RealOrderResult }>({
   realOrder: async ({ request }: { request: APIRequestContext }, fixtureUse) => {
     const seed = loadSeedData()
     const _sessionId = generateUUID()
@@ -101,5 +102,3 @@ export const realOrderFixture = base.extend<{ realOrder: RealOrderResult }>({
     await fixtureUse(result)
   },
 })
-
-export const test = realOrderFixture

@@ -21,6 +21,7 @@ export default function ModifiersPage() {
   // Modal state
   const [showModal, setShowModal] = useState(false);
   const [editingGroup, setEditingGroup] = useState<ModifierGroupWithValues | null>(null);
+  const [_isSubmitting, setIsSubmitting] = useState(false);
 
 
   const fetchModifierGroups = useCallback(async () => {
