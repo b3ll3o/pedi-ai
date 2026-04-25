@@ -15,7 +15,7 @@ test.describe('Admin Authentication', () => {
     await expect(loginPage.loginButton).toBeVisible()
   })
 
-  test('should login with valid admin credentials', { tag: ['@smoke', '@critical'] }, async ({ page: _page, seedData }) => {
+  test('should login with valid admin credentials', { tag: ['@smoke', '@critical'] }, async ({ page, seedData }) => {
     await loginPage.login(seedData.admin.email, seedData.admin.password)
     await loginPage.waitForDashboard()
     await expect(page).toHaveURL('/admin/dashboard')
@@ -33,7 +33,7 @@ test.describe('Admin Authentication', () => {
   })
 
   test('should logout and redirect to login', { tag: ['@smoke', '@critical'] }, async ({ admin }) => {
-    await admin.locator('[data-testid="logout-button"]').click()
+    await admin.locator('[data-testid="admin-logout-button"]').click()
     await expect(admin).toHaveURL('/admin/login')
   })
 

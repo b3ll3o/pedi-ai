@@ -25,8 +25,7 @@ export class AdminOrdersPage {
     this.page = page
     this.ordersList = page.locator('[data-testid="admin-order-item"]')
     this.orderCard = page.locator('[data-testid="order-card"]')
-    // OrderList.tsx não tem data-testids nos selects de filtro - usar aria-label
-    this.filterStatusSelect = page.locator('select[aria-label="Filtrar por status"]')
+    this.filterStatusSelect = page.locator('[data-testid="filter-status-select"]')
     this.filterDateInput = page.locator('[data-testid="filter-date-input"]')
     // OrderList.tsx usa input[type="search"] sem data-testid - buscar pelo placeholder
     this.searchInput = page.locator('input[placeholder*="Buscar"]')

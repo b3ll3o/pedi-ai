@@ -202,6 +202,13 @@ export const test = base.extend<Fixtures, { reuse: boolean }>({
 
     if (reuse && isStorageValid(email)) {
       await loadStorageState(page, email, '/menu')
+      // Verifica se sessão ainda é válida - se não, faz login novamente
+      const isLoggedIn = await page.evaluate(() => {
+        return !window.location.href.includes('/login')
+      })
+      if (!isLoggedIn) {
+        await performLogin(page, email, password, '/login', /\/menu/)
+      }
     } else {
       await performLogin(page, email, password, '/login', /\/menu/)
     }
@@ -214,6 +221,13 @@ export const test = base.extend<Fixtures, { reuse: boolean }>({
 
     if (reuse && isStorageValid(email)) {
       await loadStorageState(page, email, '/admin/dashboard')
+      // Verifica se sessão ainda é válida - se não, faz login novamente
+      const isLoggedIn = await page.evaluate(() => {
+        return !window.location.href.includes('/login')
+      })
+      if (!isLoggedIn) {
+        await performLogin(page, email, password, '/admin/login', /\/admin\/dashboard/)
+      }
     } else {
       await performLogin(page, email, password, '/admin/login', /\/admin\/dashboard/)
     }
@@ -226,6 +240,13 @@ export const test = base.extend<Fixtures, { reuse: boolean }>({
 
     if (reuse && isStorageValid(email)) {
       await loadStorageState(page, email, '/admin/dashboard')
+      // Verifica se sessão ainda é válida - se não, faz login novamente
+      const isLoggedIn = await page.evaluate(() => {
+        return !window.location.href.includes('/login')
+      })
+      if (!isLoggedIn) {
+        await performLogin(page, email, password, '/admin/login', /\/admin\/dashboard/)
+      }
     } else {
       await performLogin(page, email, password, '/admin/login', /\/admin\/dashboard/)
     }

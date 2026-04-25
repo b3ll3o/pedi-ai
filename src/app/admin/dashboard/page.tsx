@@ -36,7 +36,7 @@ export default function AdminDashboard() {
     <div className={styles.container}>
       <header className={styles.header}>
         <h1 className={styles.title}>Dashboard</h1>
-        <button onClick={handleLogout} data-testid="logout-button" className={styles.logoutButton}>
+        <button onClick={handleLogout} data-testid="admin-logout-button" className={styles.logoutButton}>
           Sair
         </button>
       </header>
