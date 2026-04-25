@@ -36,6 +36,7 @@
   --color-text-tertiary: #A8A29E;
   --color-border: #E7E5E4;
   --color-border-strong: #D6D3D1;
+  --color-gray: #F5F5F4;
 
   /* ============================================
      CORES SEMÂNTICAS
@@ -58,6 +59,47 @@
   --color-focus-ring: rgba(232, 93, 4, 0.4);
   --gradient-primary: linear-gradient(135deg, #E85D04 0%, #F48C06 100%);
   --gradient-warm: linear-gradient(135deg, #F48C06 0%, #DC2626 100%);
+
+  /* ============================================
+     ESPAÇAMENTOS - Base: 1rem = 16px
+     ============================================ */
+  --spacing-xs: 0.25rem;   /* 4px */
+  --spacing-sm: 0.5rem;    /* 8px */
+  --spacing-md: 1rem;      /* 16px */
+  --spacing-lg: 1.5rem;     /* 24px */
+  --spacing-xl: 2rem;       /* 32px */
+  --spacing-2xl: 3rem;      /* 48px */
+  --spacing-3xl: 4rem;      /* 64px */
+
+  /* ============================================
+     BORDAS ARREDONDADAS
+     ============================================ */
+  --border-radius-sm: 0.25rem;  /* 4px */
+  --border-radius: 0.5rem;     /* 8px */
+  --border-radius-lg: 0.75rem;  /* 12px */
+  --border-radius-xl: 1rem;     /* 16px */
+  --border-radius-full: 9999px;
+
+  /* ============================================
+     SOMBRAS
+     ============================================ */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --shadow-primary: 0 4px 14px 0 rgba(232, 93, 4, 0.35);
+  --shadow-primary-lg: 0 8px 20px 0 rgba(232, 93, 4, 0.45);
+
+  /* ============================================
+     TRANSIÇÕES
+     ============================================ */
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+
+  /* ============================================
+     ALINHAMENTOS DE TEXTO (para compatibilidade)
+     ============================================ */
+  --color-text: var(--color-text-primary);
+  --color-text-muted: var(--color-text-tertiary);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -72,6 +114,7 @@
     --color-text-tertiary: #78716C;
     --color-border: #44403C;
     --color-border-strong: #57534E;
+    --color-gray: #292524;
     
     /* Inverted semantics for dark mode */
     --color-error-light: #450a0a;
@@ -92,6 +135,7 @@
   --color-text-tertiary: #78716C;
   --color-border: #44403C;
   --color-border-strong: #57534E;
+  --color-gray: #292524;
   
   --color-error-light: #450a0a;
   --color-warning-light: #451a0a;
