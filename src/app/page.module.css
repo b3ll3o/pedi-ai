@@ -720,7 +720,7 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, #ef4444 0%, #f87171 100%);
+  background: linear-gradient(90deg, var(--color-error, #ef4444) 0%, var(--color-error-light, #f87171) 100%);
   transform: scaleX(0);
   transform-origin: left;
   transition: var(--transition-normal);
@@ -731,7 +731,7 @@
 }
 
 .problemCard:hover {
-  border-color: #ef4444;
+  border-color: var(--color-error, #ef4444);
   box-shadow: var(--shadow-md);
 }
 
@@ -742,7 +742,7 @@
   width: 56px;
   height: 56px;
   background: linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(248, 113, 113, 0.08) 100%);
-  color: #ef4444;
+  color: var(--color-error, #ef4444);
   border-radius: var(--border-radius);
   margin-bottom: var(--spacing-md);
 }
@@ -1220,7 +1220,7 @@
 .finalCta {
   position: relative;
   padding: var(--spacing-3xl) var(--spacing-md);
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 50%, #c0392b 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 50%, var(--color-error, #c0392b) 100%);
   text-align: center;
   overflow: hidden;
 }

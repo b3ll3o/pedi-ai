@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import styles from "./page.module.css";
+import Navbar from './components/Navbar';
 import {
   Smartphone,
   WifiOff,
@@ -45,25 +46,7 @@ export default function Home() {
   return (
     <div className={styles.page}>
       {/* Navigation */}
-      <header>
-        <nav aria-label="Navegação principal" className={styles.nav}>
-          <div className={styles.navContainer}>
-            <span className={styles.logo}>
-              <Link href="/" aria-label="Página inicial Pedi-AI">
-                <UtensilsCrossed size={28} className={styles.logoIcon} aria-hidden="true" />
-                <span className={styles.logoText}>Pedi-AI</span>
-              </Link>
-            </span>
-            <ul className={styles.navLinks}>
-              <li><a href="#features" className={styles.navLink}>Funcionalidades</a></li>
-              <li><a href="#pricing" className={styles.navLink}>Preços</a></li>
-            </ul>
-            <a href="/register" className={styles.navCta}>
-              Começar Agora
-            </a>
-          </div>
-        </nav>
-      </header>
+      <Navbar />
 
       {/* Hero Section */}
       <section aria-labelledby="hero-title" className={styles.hero}>
