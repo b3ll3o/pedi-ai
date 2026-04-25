@@ -6,7 +6,7 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ orderId: string }> }
 ) {
-  const { orderId } = await params;
+  await params;
 
   // In demo mode, always return confirmed status
   if (isDemoMode) {

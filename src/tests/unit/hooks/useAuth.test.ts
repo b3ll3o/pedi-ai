@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
-import React from 'react';
 
 import { useAuth } from '@/hooks/useAuth';
 import type { Session, User, AuthResponse } from '@supabase/supabase-js';

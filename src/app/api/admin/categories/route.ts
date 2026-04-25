@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
 
     const restaurantId = getRestaurantId(authUser)
     const body = await request.json()
-    const { name, description, sort_order } = body
+    const { name, sort_order } = body
 
     // Validações
     if (!name || typeof name !== 'string' || name.trim() === '') {

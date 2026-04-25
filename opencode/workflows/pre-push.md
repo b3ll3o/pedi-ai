@@ -24,7 +24,7 @@ Execute este workflow antes de cada `git push` para garantir que o código está
 - [ ] Executar `pnpm lint`
 - [ ] Se houver errors: corrigir manualmente
 - [ ] Se houver warnings auto-fixable: executar `pnpm lint --fix`
-- [ ] Se warnings persistirem (ex: unused vars com `_` prefix): corrigir manualmente
+- [ ] Se warnings persistirem (unused vars, imports não utilizados, etc): **delegar ao agente IA para correção automática** — não deixar para correção manual
 
 ### Fase 5: Verificação Final
 - [ ] Executar `pnpm lint` novamente para confirmar 0 errors
@@ -46,10 +46,11 @@ Execute este workflow antes de cada `git push` para garantir que o código está
 - **E2E flaky**: Investigar se é problema de timing (aumentar timeout) ou bug real
 - **Seed falha**: Verificar `SUPABASE_SERVICE_ROLE_KEY` no `.env.local`
 
-### Linter errors
+### Linter warnings (corrição automática pelo agente)
 - **`<a>` vs `<Link>`**: Sempre usar `next/link`
-- **Unused vars**: Remover ou prefixar com `_`
+- **Unused vars**: Remover se claramente dispensável; prefixar com `_` se potencialmente útil
 - **Imports não utilizados**: Remover
+- **Após correção**: rodar `pnpm lint` novamente para confirmar 0 warnings (ou no mínimo 0 errors)
 
 ### Warnings persistentes
 - Se ESLint sinalizar `_var` como unused: configurar `.eslintrc` com `varsIgnorePattern: "^_"`
@@ -68,7 +69,9 @@ pnpm test && pnpm test:e2e:seed && pnpm test:e2e && pnpm lint --fix && git add -
 ## Critério de Sucesso
 
 Push só acontece se:
-- ✅ 0 erros de lint
+- ✅ 0 erros de lint (warnings são desejáveis mas não bloqueiam se correção automática não for viável)
 - ✅ Todos os unit tests passando
 - ✅ Seed executa sem erro (mesmo se testes E2E falhem por dados)
 - ✅ Commits limpos com mensagens descritivas
+
+> **Nota**: Warnings de lint (unused vars, imports não utilizados) DEVEM ser corrigidos pelo agente de IA automaticamente antes do push. Apenas se a correção requerer decisão de negócio ou risco de breaking change, escalar para o usuário via `question`.

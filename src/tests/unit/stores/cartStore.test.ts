@@ -33,7 +33,7 @@ vi.mock('@/lib/broadcast-channel', () => ({
   }),
 }));
 
-import { useCartStore, CartItem, SelectedModifier, getTotalItems, getTotalPrice, getSubtotal, CartStore } from '@/stores/cartStore';
+import { useCartStore, CartItem, SelectedModifier, getTotalItems, getTotalPrice, getSubtotal } from '@/stores/cartStore';
 import { db } from '@/lib/offline/db';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

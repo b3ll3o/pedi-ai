@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
 import { useRole } from '@/hooks/useRole';
-import type { Enum_user_role, users_profiles } from '@/lib/supabase/types';
+import type { users_profiles } from '@/lib/supabase/types';
 
 // Mock the Supabase client
 const mockSupabaseClient = {

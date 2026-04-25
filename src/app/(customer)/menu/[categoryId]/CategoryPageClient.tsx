@@ -57,8 +57,6 @@ export default function CategoryPageClient({ categoryId }: CategoryPageClientPro
   const setProducts = useMenuStore((state) => state.setProducts);
   const setIsLoading = useMenuStore((state) => state.setIsLoading);
   const setError = useMenuStore((state) => state.setError);
-  const setSearchQuery = useMenuStore((state) => state.setSearchQuery);
-
   // Fetch menu data on mount - always fetch to ensure we have latest data
   useEffect(() => {
     async function fetchMenuData() {

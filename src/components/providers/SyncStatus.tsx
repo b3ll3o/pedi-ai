@@ -13,7 +13,7 @@ interface SyncStatusData {
 
 export function SyncStatus() {
   const [status, setStatus] = useState<SyncStatusData | null>(null);
-  const [failedItems, setFailedItems] = useState<PendingSync[]>([]);
+  const [, setFailedItems] = useState<PendingSync[]>([]);
   const [pendingItems, setPendingItems] = useState<PendingSync[]>([]);
   const [retrying, setRetrying] = useState(false);
 

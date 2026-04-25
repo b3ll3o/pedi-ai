@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { invalidateMenuCache } from '@/lib/offline/cache'
 import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin'
-import type { modifier_groups, modifier_values } from '@/lib/supabase/types'
+import type { modifier_values } from '@/lib/supabase/types'
 
 /**
  * GET /api/admin/modifiers
  * Lista todos os modifier groups do restaurante com seus valores.
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const authUser = await requireAuth()
     requireRole(authUser, ['owner', 'manager'])

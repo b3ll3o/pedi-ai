@@ -21,7 +21,7 @@ export default function ModifiersPage() {
   // Modal state
   const [showModal, setShowModal] = useState(false);
   const [editingGroup, setEditingGroup] = useState<ModifierGroupWithValues | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
 
   const fetchModifierGroups = useCallback(async () => {
     setIsLoading(true);
@@ -96,7 +96,7 @@ export default function ModifiersPage() {
   }, []);
 
   // Helper to sync modifier values (for edit mode)
-  const syncModifierValues = async (groupId: string, newValues: ModifierValueInput[]) => {
+  const syncModifierValues = useCallback(async (groupId: string, newValues: ModifierValueInput[]) => {
     const existingValues = editingGroup?.modifier_values || [];
 
     // Delete values that are no longer present
@@ -131,7 +131,7 @@ export default function ModifiersPage() {
         });
       }
     }
-  };
+  }, [editingGroup]);
 
   const handleSubmit = useCallback(async (data: ModifierGroupInput) => {
     setIsSubmitting(true);
@@ -202,7 +202,7 @@ export default function ModifiersPage() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [editingGroup, handleCloseModal, fetchModifierGroups]);
+  }, [editingGroup, handleCloseModal, fetchModifierGroups, syncModifierValues]);
 
   return (
     <AdminLayout>

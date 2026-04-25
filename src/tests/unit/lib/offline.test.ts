@@ -415,7 +415,7 @@ describe('IndexedDB Operations', () => {
       };
 
       const id = await db.pending_sync.add(order);
-      const item = await db.pending_sync.get(id);
+      await db.pending_sync.get(id);
 
       // Simulate retries - get fresh reference each time
       for (let i = 0; i < 3; i++) {

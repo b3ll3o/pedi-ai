@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import type { categories, products, modifier_groups, modifier_values } from '@/lib/supabase/types'
 
 type ModifierGroupWithValues = {
   id: string

@@ -561,7 +561,7 @@ describe('comboService', () => {
         [{ product_id: 'prod-old-1', quantity: 1 }]
       );
 
-      const updated = await comboService.updateCombo(
+      await comboService.updateCombo(
         created.id,
         {},
         [{ product_id: 'prod-new-1', quantity: 2 }, { product_id: 'prod-new-2', quantity: 1 }]

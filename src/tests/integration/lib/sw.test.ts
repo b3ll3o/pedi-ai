@@ -9,7 +9,7 @@
  * and cache operations work correctly.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock service worker global scope
 const mockCache = {
@@ -29,7 +29,7 @@ const mockCaches = {
   has: vi.fn().mockResolvedValue(false),
 };
 
-const mockRegistration = {
+const _mockRegistration = {
   installing: null,
   waiting: null,
   active: null,
@@ -39,7 +39,7 @@ const mockRegistration = {
   addEventListener: vi.fn(),
 };
 
-const mockServiceWorker = {
+const _mockServiceWorker = {
   postMessage: vi.fn(),
   state: 'installed',
   addEventListener: vi.fn(),

@@ -2,7 +2,7 @@ import { chromium } from '@playwright/test'
 import { enableDemoMode } from './support/demo-mode'
 import { mockPaymentHandlers } from './support/mock-payment'
 
-export default async () => {
+const globalSetup = async () => {
   const browser = await chromium.launch()
   const context = await browser.newContext()
   const page = await context.newPage()
@@ -19,3 +19,5 @@ export default async () => {
     await browser.close()
   }
 }
+
+export default globalSetup

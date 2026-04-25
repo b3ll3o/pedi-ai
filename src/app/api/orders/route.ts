@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import type { orders, order_items } from '@/lib/supabase/types'
+import type { order_items } from '@/lib/supabase/types'
 
 // GET /api/orders - Fetch orders for a customer
 export async function GET(request: NextRequest) {

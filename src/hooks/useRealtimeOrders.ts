@@ -31,7 +31,8 @@ export function useRealtimeOrders({
 }: UseRealtimeOrdersOptions): UseRealtimeOrdersResult {
   const queryClient = useQueryClient()
   const [isConnected, setIsConnected] = useState(false)
-  const [error, setError] = useState<Error | null>(null)
+  const [error, _setError] = useState<Error | null>(null)
+
   const pollingRef = useRef<NodeJS.Timeout | null>(null)
 
   // Query for orders
@@ -91,7 +92,7 @@ export function useRealtimeOrders({
           table: 'orders',
           filter: `restaurant_id=eq.${restaurantId}`,
         },
-        /* istanbul ignore next */ (payload) => {
+        /* istanbul ignore next */ (_payload) => {
           // Invalidate and refetch on any change
           queryClient.invalidateQueries({ queryKey: ['admin-orders', restaurantId] })
           setIsConnected(true)
@@ -104,7 +105,7 @@ export function useRealtimeOrders({
           schema: 'public',
           table: 'order_items',
         },
-        /* istanbul ignore next */ (payload) => {
+        /* istanbul ignore next */ (_payload) => {
           // Also refetch if order items change
           queryClient.invalidateQueries({ queryKey: ['admin-orders', restaurantId] })
         }

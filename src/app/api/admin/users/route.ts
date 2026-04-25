@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin'
 
 // GET /api/admin/users - List users for a restaurant
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const authUser = await requireAuth()
     requireRole(authUser, ['owner'])

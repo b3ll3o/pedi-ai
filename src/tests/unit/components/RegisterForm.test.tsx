@@ -15,34 +15,6 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockRouterPush, replace: vi.fn(), back: vi.fn(), forward: vi.fn(), refresh: vi.fn(), prefetch: vi.fn() }),
 }));
 
-// ── Helpers ─────────────────────────────────────────────────
-
-function getForm(container: HTMLElement) {
-  const { getByTestId } = render(React.createElement('div', { container }));
-  return {
-    nameInput: getByTestId('name-input'),
-    emailInput: getByTestId('email-input'),
-    passwordInput: getByTestId('password-input'),
-    confirmPasswordInput: getByTestId('confirm-password-input'),
-    registerButton: getByTestId('register-button'),
-  };
-}
-
-function getFieldErrors(container: HTMLElement) {
-  const { queryAllByTestId } = render(React.createElement('div', { container }));
-  return queryAllByTestId('field-error');
-}
-
-function getErrorMessage(container: HTMLElement) {
-  const { queryByTestId } = render(React.createElement('div', { container }));
-  return queryByTestId('error-message');
-}
-
-async function submitForm(container: HTMLElement) {
-  const { registerButton } = getForm(container);
-  fireEvent.click(registerButton);
-}
-
 // ── Tests ─────────────────────────────────────────────────
 
 describe('RegisterForm', () => {

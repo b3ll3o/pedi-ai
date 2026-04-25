@@ -28,7 +28,7 @@ describe('QR Generator', () => {
       const timestamp = 1713542400000; // fixed timestamp
 
       const message = `${restaurantId}:${tableId}:${timestamp}`;
-      const expectedSig = createHmac('sha256', secret).update(message).digest('hex');
+      createHmac('sha256', secret).update(message).digest('hex');
 
       // Since we can't control timestamp from outside, we verify the signature
       // computation uses the correct HMAC-SHA256 by checking format

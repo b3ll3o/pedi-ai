@@ -11,8 +11,8 @@ function createHmacSignature(payload: string, secret: string): string {
   // Simple HMAC-SHA256 simulation for testing
   // In production, use crypto.createHmac('sha256', secret)
   const encoder = new TextEncoder()
-  const key = encoder.encode(secret)
-  const data = encoder.encode(payload)
+  encoder.encode(secret)
+  encoder.encode(payload)
 
   // Use Web Crypto API for HMAC-SHA256
   return 'mock_hmac_signature_' + Buffer.from(payload).toString('base64')

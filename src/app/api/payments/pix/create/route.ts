@@ -30,7 +30,7 @@ interface PixPaymentResponse {
 export async function POST(request: NextRequest) {
   // DEMO MODE: Return mock PIX data
   if (isDemoMode) {
-    const body = await request.json().catch(() => ({ order_id: 'demo' }))
+    await request.json().catch(() => ({ order_id: 'demo' }))
     const expiresAt = new Date()
     expiresAt.setMinutes(expiresAt.getMinutes() + 30)
 

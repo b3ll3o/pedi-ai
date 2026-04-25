@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import Image from 'next/image'
-import type { combos, combo_items, products } from '@/lib/supabase/types'
+import type { combos, combo_items } from '@/lib/supabase/types'
 import { uploadProductImage, deleteProductImage } from '@/lib/supabase/storage'
 import styles from './ComboForm.module.css'
 

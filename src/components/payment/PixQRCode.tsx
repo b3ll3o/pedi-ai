@@ -26,7 +26,7 @@ const TIMEOUT_SECONDS = 60;
 export function PixQRCode({
   qrCode,
   qrCodeBase64,
-  expiresAt,
+  expiresAt: _expiresAt,
   onPaymentConfirmed,
   onExpired,
 }: PixQRCodeProps) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useCallback } from 'react';
+import { useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useMenu } from '@/hooks/useMenu';
 import { useMenuStore } from '@/stores/menuStore';
@@ -39,7 +39,7 @@ export default function MenuPageClient() {
   const searchQuery = useMenuStore((state) => state.searchQuery);
   const setCategories = useMenuStore((state) => state.setCategories);
   const setProducts = useMenuStore((state) => state.setProducts);
-  const setSearchQuery = useMenuStore((state) => state.setSearchQuery);
+  const _setSearchQuery = useMenuStore((state) => state.setSearchQuery);
 
   // Transform categories to expected type
   const transformedCategories = useMemo(() => {
@@ -77,10 +77,6 @@ export default function MenuPageClient() {
   const handleProductClick = (productId: string) => {
     window.location.href = `/product/${productId}`;
   };
-
-  const handleSearchChange = useCallback((query: string) => {
-    setSearchQuery(query);
-  }, [setSearchQuery]);
 
   const isSearching = searchQuery.trim() !== '';
 

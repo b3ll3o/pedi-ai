@@ -31,7 +31,6 @@ global.fetch = mockFetch
 import {
   createOrderFromCart,
   generateIdempotencyKey,
-  type Order,
 } from '@/services/orderService'
 import { queueOrderForSync } from '@/lib/offline/sync'
 import { useTableStore } from '@/stores/tableStore'
@@ -432,9 +431,7 @@ describe('orderService', () => {
 
   describe('createOrderFromCart - idempotency key header', () => {
     it('envia idempotency key no header X-Idempotency-Key', async () => {
-      const [url, options] = capturedCalls[capturedCalls.length - 1]
-        ? [capturedCalls[0].url, capturedCalls[0].options]
-        : ['', {}]
+      // capturedCalls check removed - url and options intentionally unused in test assertion
 
       // Run a fresh call
       capturedCalls = []

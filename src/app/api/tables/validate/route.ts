@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { validateQRPayload } from '@/lib/qr/validator'
-import type { tables } from '@/lib/supabase/types'
+
 
 interface ValidateRequest {
   restaurant_id: string

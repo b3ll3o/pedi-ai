@@ -24,7 +24,7 @@ interface AnalyticsDashboardProps {
 
 export function AnalyticsDashboard({
   data,
-  dateRange,
+  dateRange: _dateRange,
   onDateRangeChange,
 }: AnalyticsDashboardProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'tables'>('overview')

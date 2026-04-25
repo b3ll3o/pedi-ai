@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin'
 import { generateQRPayload } from '@/lib/qr/generator'
 import { validateQRPayload } from '@/lib/qr/validator'
-import type { tables } from '@/lib/supabase/types'
+
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -97,8 +97,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const authUser = await requireAuth()
     requireRole(authUser, ['owner', 'manager'])
 
-    const { id } = await params
-    const restaurantId = getRestaurantId(authUser)
+    const _id = (await params).id // params.id intentionally unused - we validate via body
+    const _restaurantId = getRestaurantId(authUser) // auth verified but not used in validation
 
     const secretKey = process.env.QR_SECRET_KEY
     if (!secretKey) {

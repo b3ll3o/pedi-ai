@@ -36,16 +36,16 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient()
 
     // Determine date trunc interval based on period
-    let dateTruncInterval: string
+    let _dateTruncInterval: string
     switch (period) {
       case 'week':
-        dateTruncInterval = 'week'
+        _dateTruncInterval = 'week'
         break
       case 'month':
-        dateTruncInterval = 'month'
+        _dateTruncInterval = 'month'
         break
       default:
-        dateTruncInterval = 'day'
+        // _dateTruncInterval = 'day'
     }
 
     // Query orders grouped by period using date_trunc

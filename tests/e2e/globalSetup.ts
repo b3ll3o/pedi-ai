@@ -9,7 +9,7 @@
 import { chromium } from '@playwright/test'
 import { setupNetworkBlocking } from './tests/shared/helpers/network-block'
 
-export default async () => {
+const globalSetup = async () => {
   const browser = await chromium.launch()
   const context = await browser.newContext()
   const page = await context.newPage()
@@ -23,3 +23,5 @@ export default async () => {
     await browser.close()
   }
 }
+
+export default globalSetup

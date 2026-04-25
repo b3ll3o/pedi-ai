@@ -6,7 +6,7 @@ import { KitchenDisplay } from './KitchenDisplay'
 import { OrderNotification } from './OrderNotification'
 import { ConnectionStatus } from './ConnectionStatus'
 import { useKitchenOrders } from '@/hooks/useKitchenOrders'
-import { updateOrderStatus, type OrderStatus } from '@/services/adminOrderService'
+import { updateOrderStatus } from '@/services/adminOrderService'
 import styles from './WaiterDashboard.module.css'
 
 interface WaiterDashboardProps {
@@ -19,8 +19,6 @@ export function WaiterDashboard({ restaurantId }: WaiterDashboardProps) {
     pendingOrders,
     preparingOrders,
     readyOrders,
-    isLoading,
-    error,
     isConnected,
     refetch,
   } = useKitchenOrders({
@@ -73,7 +71,7 @@ export function WaiterDashboard({ restaurantId }: WaiterDashboardProps) {
     }
   }
 
-  const handleViewDetails = (orderId: string) => {
+  const handleViewDetails = (_orderId: string) => {
     // Could open a modal or navigate to details page
   }
 
