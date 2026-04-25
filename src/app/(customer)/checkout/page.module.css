@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: #f5f5f5;
+  background-color: var(--color-background);
 }
 
 .header {
@@ -10,8 +10,8 @@
   align-items: center;
   gap: 12px;
   padding: 16px 20px;
-  background: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -28,20 +28,20 @@
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  color: #374151;
+  color: var(--color-text-secondary);
   transition: background-color 0.15s ease;
 }
 
 .backButton:hover {
-  background-color: #f3f4f6;
+  background-color: var(--color-hover);
 }
 
 .backButton:active {
-  background-color: #e5e7eb;
+  background-color: var(--color-border);
 }
 
 .backButton:focus-visible {
-  outline: 2px solid #667eea;
+  outline: 2px solid var(--color-focus);
   outline-offset: 1px;
 }
 
@@ -54,7 +54,7 @@
   flex: 1;
   font-size: 20px;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-text-primary);
   margin: 0;
 }
 
@@ -73,16 +73,16 @@
 }
 
 .section {
-  background: #ffffff;
+  background: var(--color-surface);
   border-radius: 12px;
   padding: 16px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
 }
 
 .sectionTitle {
   font-size: 16px;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-text-primary);
   margin: 0 0 16px 0;
 }
 
@@ -90,7 +90,7 @@
   display: flex;
   justify-content: space-between;
   font-size: 14px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   margin-bottom: 8px;
 }
 
@@ -101,14 +101,14 @@
 .summaryRow.total {
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-border);
   font-size: 16px;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-text-primary);
 }
 
 .error {
-  color: #dc2626;
+  color: var(--color-error);
   font-size: 14px;
   text-align: center;
   margin: 0;
@@ -116,8 +116,8 @@
 
 .submitButton {
   padding: 16px;
-  background: #2563eb;
-  color: white;
+  background: var(--color-primary);
+  color: var(--color-surface);
   font-size: 16px;
   font-weight: 600;
   border: none;
@@ -127,7 +127,7 @@
 }
 
 .submitButton:hover {
-  background: #1d4ed8;
+  background: var(--color-primary-hover);
 }
 
 .submitButton:active {
@@ -135,12 +135,12 @@
 }
 
 .submitButton:focus-visible {
-  outline: 2px solid #667eea;
+  outline: 2px solid var(--color-focus);
   outline-offset: 2px;
 }
 
 .submitButton:disabled {
-  background: #9ca3af;
+  background: var(--color-disabled);
   cursor: not-allowed;
 }
 
@@ -150,7 +150,7 @@
   justify-content: center;
   flex: 1;
   font-size: 16px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
 }
 
 .errorContainer {
@@ -166,20 +166,20 @@
 .errorTitle {
   font-size: 20px;
   font-weight: 600;
-  color: #374151;
+  color: var(--color-text-secondary);
   margin: 0 0 8px 0;
 }
 
 .errorMessage {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   margin: 0 0 24px 0;
 }
 
 .backButtonBottom {
   padding: 14px 28px;
-  background: #2563eb;
-  color: white;
+  background: var(--color-primary);
+  color: var(--color-surface);
   font-size: 16px;
   font-weight: 600;
   border: none;
@@ -189,59 +189,59 @@
 }
 
 .backButtonBottom:hover {
-  background: #1d4ed8;
+  background: var(--color-primary-hover);
 }
 
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
   .container {
-    background-color: #0f0f0f;
+    background-color: var(--color-dark-bg);
   }
 
   .header {
-    background: #1a1a1a;
-    border-bottom-color: #333;
+    background: var(--color-dark-surface);
+    border-bottom-color: var(--color-dark-border);
   }
 
   .backButton {
-    color: #ededed;
+    color: var(--color-dark-text);
   }
 
   .backButton:hover {
-    background-color: #2a2a2a;
+    background-color: var(--color-dark-hover);
   }
 
   .backButton:active {
-    background-color: #333;
+    background-color: var(--color-dark-border);
   }
 
   .title {
-    color: #ededed;
+    color: var(--color-dark-text);
   }
 
   .section {
-    background: #1a1a1a;
-    border-color: #333;
+    background: var(--color-dark-surface);
+    border-color: var(--color-dark-border);
   }
 
   .sectionTitle {
-    color: #ededed;
+    color: var(--color-dark-text);
   }
 
   .summaryRow {
-    color: #9ca3af;
+    color: var(--color-dark-text-secondary);
   }
 
   .summaryRow.total {
-    border-top-color: #333;
-    color: #ededed;
+    border-top-color: var(--color-dark-border);
+    color: var(--color-dark-text);
   }
 
   .errorTitle {
-    color: #ededed;
+    color: var(--color-dark-text);
   }
 
   .errorMessage {
-    color: #9ca3af;
+    color: var(--color-dark-text-secondary);
   }
 }

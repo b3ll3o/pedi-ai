@@ -70,10 +70,10 @@
   transform: scale(0.97);
 }
 
-.chip.active {
-  background-color: var(--filter-color);
-  color: #ffffff;
-}
+  .chip.active {
+    background-color: var(--filter-color);
+    color: var(--color-surface);
+  }
 
 .chip.active:hover {
   background-color: var(--filter-color);

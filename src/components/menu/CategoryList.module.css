@@ -65,12 +65,12 @@
   justify-content: center;
   padding: 48px 16px;
   text-align: center;
-  color: var(--text-secondary, #666);
+  color: var(--color-text-secondary, #666);
   font-size: 16px;
 }
 
 .categoryCard {
-  background: var(--card-background, #fff);
+  background: var(--color-surface, #fff);
   border-radius: 12px;
   padding: 20px;
   min-height: 140px;
@@ -105,7 +105,7 @@
   }
 
   .categoryCard {
-    background: var(--card-background, #1a1a1a);
+    background: var(--color-text-primary, #1a1a1a);
     border-color: var(--border-color, #333);
   }
 

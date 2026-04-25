@@ -29,6 +29,7 @@
      ============================================ */
   --color-background: #FFFBF5;
   --color-surface: #FFFFFF;
+  --color-surface-rgb: 255, 255, 255;
   --color-surface-elevated: #FFF8F0;
   --color-text-primary: #1C1917;
   --color-text-secondary: #57534E;
@@ -64,6 +65,7 @@
     /* Dark mode overrides - warm dark tones */
     --color-background: #1C1917;
     --color-surface: #292524;
+    --color-surface-rgb: 41, 37, 36;
     --color-surface-elevated: #44403C;
     --color-text-primary: #FAFAF9;
     --color-text-secondary: #D6D3D1;
@@ -83,6 +85,7 @@
 [data-theme="dark"] {
   --color-background: #1C1917;
   --color-surface: #292524;
+  --color-surface-rgb: 41, 37, 36;
   --color-surface-elevated: #44403C;
   --color-text-primary: #FAFAF9;
   --color-text-secondary: #D6D3D1;

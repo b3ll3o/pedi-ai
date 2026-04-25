@@ -8,7 +8,7 @@
   align-items: center;
   justify-content: center;
   min-height: 300px;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
   font-size: 16px;
 }
 
@@ -24,12 +24,12 @@
 
 .error h2 {
   margin: 0;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   font-size: 20px;
 }
 
 .backLink {
-  color: var(--primary);
+  color: var(--color-primary);
   text-decoration: none;
   font-size: 14px;
 }
@@ -52,9 +52,9 @@
   width: 40px;
   height: 40px;
   border: none;
-  background-color: var(--bg-primary);
+  background-color: var(--color-background);
   border-radius: 8px;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   font-size: 20px;
   cursor: pointer;
   text-decoration: none;
@@ -62,18 +62,18 @@
 }
 
 .backButton:hover {
-  background-color: var(--bg-secondary);
+  background-color: var(--color-surface);
 }
 
 .title {
   margin: 0;
   font-size: 24px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
 }
 
 .main {
-  background-color: var(--bg-primary);
+  background-color: var(--color-background);
   border-radius: 12px;
   padding: 24px;
   box-shadow: var(--shadow);

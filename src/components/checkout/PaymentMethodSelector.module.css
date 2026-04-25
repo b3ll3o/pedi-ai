@@ -22,8 +22,8 @@
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
-  background: #ffffff;
-  border: 2px solid #e5e7eb;
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
   border-radius: 10px;
   cursor: pointer;
   text-align: left;

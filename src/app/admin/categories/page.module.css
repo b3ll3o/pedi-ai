@@ -13,7 +13,7 @@
   margin: 0;
   font-size: 24px;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-text-primary);
 }
 
 .actions {
@@ -24,7 +24,7 @@
 .addButton {
   padding: 8px 16px;
   background: #16a34a;
-  color: #fff;
+  color: var(--color-surface);
   border: none;
   border-radius: 6px;
   font-weight: 500;
@@ -39,10 +39,10 @@
 .placeholder {
   padding: 48px;
   text-align: center;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   background: #f9fafb;
   border-radius: 8px;
-  border: 2px dashed #d1d5db;
+  border: 2px dashed var(--color-border);
 }
 
 .modal {
@@ -59,7 +59,7 @@
 }
 
 .modal > div {
-  background: #fff;
+  background: var(--color-surface);
   padding: 24px;
   border-radius: 8px;
   min-width: 320px;
@@ -71,7 +71,7 @@
 .modal input,
 .modal select {
   padding: 8px 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   font-size: 14px;
 }
@@ -86,26 +86,26 @@
 .modal button[data-testid="save-button"],
 .modal button:first-of-type:not([data-testid]) {
   background: #16a34a;
-  color: #fff;
+  color: var(--color-surface);
   border: none;
 }
 
 .modal button[data-testid="cancel-button"] {
-  background: #fff;
-  color: #374151;
-  border: 1px solid #d1d5db;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
 }
 
 .modal button[data-testid="confirm-delete-button"] {
   background: #dc2626;
-  color: #fff;
+  color: var(--color-surface);
   border: none;
 }
 
 .modal button[data-testid="cancel-delete-button"] {
-  background: #fff;
-  color: #374151;
-  border: 1px solid #d1d5db;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
 }
 
 /* Toast notifications */
@@ -147,7 +147,7 @@
 
 /* Modal content */
 .modalContent {
-  background: #fff;
+  background: var(--color-surface);
   padding: 24px;
   border-radius: 12px;
   min-width: 400px;
@@ -162,13 +162,13 @@
   margin: 0 0 8px 0;
   font-size: 18px;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-text-primary);
 }
 
 .deleteText {
   margin: 0 0 20px 0;
   font-size: 14px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
 }
 
 .deleteActions {
@@ -179,9 +179,9 @@
 
 .cancelButton {
   padding: 10px 20px;
-  background: #fff;
-  color: #374151;
-  border: 1px solid #d1d5db;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   font-weight: 500;
   cursor: pointer;
@@ -189,7 +189,7 @@
 }
 
 .cancelButton:hover:not(:disabled) {
-  background: #f3f4f6;
+  background: var(--color-background);
 }
 
 .cancelButton:disabled {
@@ -200,7 +200,7 @@
 .confirmDeleteButton {
   padding: 10px 20px;
   background: #dc2626;
-  color: #fff;
+  color: var(--color-surface);
   border: none;
   border-radius: 6px;
   font-weight: 500;
@@ -234,7 +234,7 @@
 .retryButton {
   padding: 8px 16px;
   background: #dc2626;
-  color: #fff;
+  color: var(--color-surface);
   border: none;
   border-radius: 6px;
   font-weight: 500;

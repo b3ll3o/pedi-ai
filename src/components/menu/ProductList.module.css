@@ -65,12 +65,12 @@
   justify-content: center;
   padding: 48px 16px;
   text-align: center;
-  color: var(--text-secondary, #666);
+  color: var(--color-text-secondary);
   font-size: 16px;
 }
 
 .productCard {
-  background: var(--card-background, #fff);
+  background: var(--color-surface);
   border-radius: 12px;
   padding: 16px;
   min-height: 160px;
@@ -104,12 +104,12 @@
   font-size: 16px;
   font-weight: 600;
   margin: 0 0 8px 0;
-  color: var(--text-primary, #1a1a1a);
+  color: var(--color-text-primary);
 }
 
 .productDescription {
   font-size: 14px;
-  color: var(--text-secondary, #666);
+  color: var(--color-text-secondary);
   margin: 0 0 12px 0;
   flex-grow: 1;
   overflow: hidden;
@@ -165,7 +165,7 @@
   }
 
   .productCard {
-    background: var(--card-background, #1a1a1a);
+    background: var(--color-text-primary);
     border-color: var(--border-color, #333);
   }
 

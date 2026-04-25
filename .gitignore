@@ -58,3 +58,5 @@ tests/e2e/scripts/.seed-result.json
 
 # OS
 Thumbs.db
+
+.playwright-mcp

@@ -24,14 +24,14 @@
   margin: 0;
   font-size: 24px;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-text-primary);
 }
 
 .loading {
   display: flex;
   justify-content: center;
   padding: 48px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
 }
 
 .error {
@@ -53,8 +53,8 @@
   flex-direction: column;
   gap: 20px;
   padding: 24px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
 }
 
@@ -67,12 +67,12 @@
 .field label {
   font-size: 14px;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-text-secondary);
 }
 
 .field input {
   padding: 10px 14px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   font-size: 14px;
 }
@@ -97,7 +97,7 @@
 
 .checkboxField span {
   font-size: 14px;
-  color: #374151;
+  color: var(--color-text-secondary);
 }
 
 .errorMessage {
@@ -118,9 +118,9 @@
 
 .cancelButton {
   padding: 10px 16px;
-  background: #fff;
-  color: #374151;
-  border: 1px solid #d1d5db;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   font-size: 14px;
   font-weight: 500;
@@ -129,13 +129,13 @@
 }
 
 .cancelButton:hover {
-  background: #f3f4f6;
+  background: var(--color-background);
 }
 
 .saveButton {
   padding: 10px 20px;
   background: #2563eb;
-  color: #fff;
+  color: var(--color-surface);
   border: none;
   border-radius: 6px;
   font-size: 14px;

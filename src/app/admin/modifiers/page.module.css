@@ -20,13 +20,13 @@
 .title {
   font-size: 24px;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-text-primary);
   margin: 0;
 }
 
 .subtitle {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   margin: 0;
 }
 
@@ -36,7 +36,7 @@
   gap: 8px;
   padding: 10px 16px;
   background: #2563eb;
-  color: #fff;
+  color: var(--color-surface);
   font-size: 14px;
   font-weight: 500;
   border: none;
@@ -59,7 +59,7 @@
 .spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid #e5e7eb;
+  border: 3px solid var(--color-border);
   border-top-color: #2563eb;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -74,14 +74,14 @@
 .empty {
   text-align: center;
   padding: 48px 16px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
 }
 
 .emptyButton {
   margin-top: 16px;
   padding: 10px 16px;
   background: #2563eb;
-  color: #fff;
+  color: var(--color-surface);
   font-size: 14px;
   font-weight: 500;
   border: none;
@@ -94,8 +94,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   gap: 16px;
 }
@@ -109,13 +109,13 @@
 .itemName {
   font-size: 16px;
   font-weight: 500;
-  color: #111827;
+  color: var(--color-text-primary);
   margin: 0;
 }
 
 .itemMeta {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   margin: 0;
 }
 
@@ -126,7 +126,7 @@
 
 .editButton {
   padding: 8px 12px;
-  background: #fff;
+  background: var(--color-surface);
   color: #2563eb;
   font-size: 14px;
   font-weight: 500;
@@ -142,7 +142,7 @@
 
 .deleteButton {
   padding: 8px 12px;
-  background: #fff;
+  background: var(--color-surface);
   color: #dc2626;
   font-size: 14px;
   font-weight: 500;
@@ -177,7 +177,7 @@
 }
 
 .modalContent {
-  background: #fff;
+  background: var(--color-surface);
   border-radius: 12px;
   max-width: 600px;
   width: 100%;
