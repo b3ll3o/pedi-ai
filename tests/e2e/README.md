@@ -6,11 +6,11 @@ Cobertura de testes end-to-end usando [Playwright](https://playwright.dev/).
 
 | Persona | Arquivos de Teste | Fluxos |
 |---------|------------------|--------|
-| Cliente | 9 specs | auth, menu, cart, checkout, order, payment, offline, combos, modifier-groups |
+| Cliente | 11 specs | auth, register, menu, cart, checkout, order, payment, offline, combos, modifier-groups |
 | Administrador | 6 specs | auth, categories, products, orders, table-qr, combos-admin |
 | Realtime | 2 specs | realtime-updates, kitchen |
 
-**Total: 17 spec files cobrindo 17 fluxos**
+**Total: 19 spec files cobrindo 19 fluxos**
 
 ---
 
@@ -21,6 +21,7 @@ Cobertura de testes end-to-end usando [Playwright](https://playwright.dev/).
 | Fluxo | Spec File | Tags | Status |
 |-------|-----------|------|--------|
 | auth | `tests/customer/auth.spec.ts` | @smoke, @critical | ✅ |
+| register | `tests/customer/register.spec.ts` | @smoke | ✅ |
 | menu | `tests/customer/menu.spec.ts` | — | ✅ |
 | cart | `tests/customer/cart.spec.ts` | — | ✅ |
 | checkout | `tests/customer/checkout.spec.ts` | @smoke, @slow | ✅ |
@@ -48,23 +49,23 @@ Cobertura de testes end-to-end usando [Playwright](https://playwright.dev/).
 | realtime-updates | `tests/admin/realtime-updates.spec.ts` | — | ✅ |
 | kitchen | `tests/waiter/kitchen.spec.ts` | @slow | ✅ |
 
+### Landing Page
+
+| Fluxo | Spec File | Tags | Status |
+|-------|-----------|------|--------|
+| landing | `tests/landing/landing.spec.ts` | @smoke | ✅ |
+
 ---
 
 ## Tags
 
 | Tag | Descrição | Testes |
 |-----|-----------|--------|
-| `@smoke` | Testes essenciais de sanidade | auth, checkout, admin auth |
+| `@smoke` | Testes essenciais de sanidade | auth, register, checkout, admin auth, landing |
 | `@critical` | Fluxos críticos para negócio | auth, checkout, admin auth |
 | `@slow` | Testes que levam >30s | checkout, order, payment, kitchen |
 
-### Comandos por Tag
-
-```bash
-pnpm test:e2e:smoke    # Apenas @smoke
-pnpm test:e2e:slow     # Apenas @slow
-pnpm test:e2e:fast     # Exclui @slow
-```
+> **Nota**: Scripts `test:e2e:smoke` e `test:e2e:slow` ainda não existem em `package.json`. Para executar por tag, use: `pnpm test:e2e --grep "@smoke"`
 
 ---
 

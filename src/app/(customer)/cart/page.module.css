@@ -28,12 +28,12 @@
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  color: #374151;
+  color: var(--color-text-secondary);
   transition: background-color 0.15s ease;
 }
 
 .backButton:hover {
-  background-color: #f3f4f6;
+  background-color: var(--color-background);
 }
 
 .backButton:active {
@@ -41,7 +41,7 @@
 }
 
 .backButton:focus-visible {
-  outline: 2px solid #667eea;
+  outline: 2px solid var(--color-primary);
   outline-offset: 1px;
 }
 
@@ -54,7 +54,7 @@
   flex: 1;
   font-size: 20px;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-text-primary);
   margin: 0;
 }
 
@@ -66,20 +66,20 @@
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
-  color: #dc2626;
+  color: var(--color-error);
   transition: background-color 0.15s ease;
 }
 
 .clearButton:hover {
-  background-color: #fee2e2;
+  background-color: var(--color-error-light);
 }
 
 .clearButton:active {
-  background-color: #fecaca;
+  background-color: var(--color-error);
 }
 
 .clearButton:focus-visible {
-  outline: 2px solid #667eea;
+  outline: 2px solid var(--color-primary);
   outline-offset: 1px;
 }
 
@@ -123,9 +123,9 @@
   width: 80px;
   height: 80px;
   margin-bottom: 20px;
-  background-color: #f3f4f6;
+  background-color: var(--color-background);
   border-radius: 50%;
-  color: #9ca3af;
+  color: var(--color-text-tertiary);
 }
 
 .emptyIcon svg {
@@ -136,19 +136,19 @@
 .emptyTitle {
   font-size: 20px;
   font-weight: 600;
-  color: #374151;
+  color: var(--color-text-secondary);
   margin: 0 0 8px 0;
 }
 
 .emptyText {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   margin: 0 0 24px 0;
 }
 
 .emptyButton {
   padding: 14px 28px;
-  background: #2563eb;
+  background: var(--color-primary);
   color: white;
   font-size: 16px;
   font-weight: 600;
@@ -159,7 +159,7 @@
 }
 
 .emptyButton:hover {
-  background: #1d4ed8;
+  background: var(--color-primary-dark);
 }
 
 .emptyButton:active {
@@ -167,35 +167,35 @@
 }
 
 .emptyButton:focus-visible {
-  outline: 2px solid #667eea;
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
   .container {
-    background-color: #0f0f0f;
+    background-color: var(--color-background);
   }
 
   .header {
-    background: var(--color-text-primary);
-    border-bottom-color: #333;
+    background: var(--color-surface);
+    border-bottom-color: var(--color-border);
   }
 
   .backButton {
-    color: #ededed;
+    color: var(--color-text-primary);
   }
 
   .backButton:hover {
-    background-color: #2a2a2a;
+    background-color: var(--color-surface-elevated);
   }
 
   .backButton:active {
-    background-color: #333;
+    background-color: var(--color-border);
   }
 
   .title {
-    color: #ededed;
+    color: var(--color-text-primary);
   }
 
   .clearButton:hover {
@@ -203,15 +203,15 @@
   }
 
   .emptyIcon {
-    background-color: var(--color-text-primary);
-    color: #6b7280;
+    background-color: var(--color-surface);
+    color: var(--color-text-tertiary);
   }
 
   .emptyTitle {
-    color: #ededed;
+    color: var(--color-text-primary);
   }
 
   .emptyText {
-    color: #9ca3af;
+    color: var(--color-text-tertiary);
   }
 }

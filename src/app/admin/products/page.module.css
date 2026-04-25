@@ -1,5 +1,5 @@
 .container {
-  padding: 24px;
+  padding: 1.5rem;
 }
 
 .header {
@@ -11,19 +11,19 @@
 
 .title {
   margin: 0;
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--color-text-primary);
 }
 
 .actions {
   display: flex;
-  gap: 8px;
+  gap: 0.5rem;
 }
 
 .addButton {
   padding: 8px 16px;
-  background: #16a34a;
+  background: var(--color-success);
   color: var(--color-surface);
   border: none;
   border-radius: 6px;
@@ -33,7 +33,7 @@
 }
 
 .addButton:hover {
-  background: #15803d;
+  background: var(--color-success-dark);
 }
 
 .toolbar {
@@ -60,7 +60,7 @@
 }
 
 .loading {
-  padding: 48px;
+  padding: 3rem;
   text-align: center;
   color: var(--color-text-secondary);
 }
@@ -79,15 +79,15 @@
 }
 
 .toastSuccess {
-  background: #dcfce7;
-  color: #166534;
-  border: 1px solid #86efac;
+  background: var(--color-success-light);
+  color: var(--color-success-dark);
+  border: 1px solid var(--color-success);
 }
 
 .toastError {
-  background: #fee2e2;
-  color: #991b1b;
-  border: 1px solid #fca5a5;
+  background: var(--color-error-light);
+  color: var(--color-error-dark);
+  border: 1px solid var(--color-error);
 }
 
 /* Modal overlay */
@@ -102,7 +102,7 @@
   align-items: flex-start;
   justify-content: center;
   z-index: 1000;
-  padding: 40px 16px;
+  padding: 2.5rem 1rem;
   overflow-y: auto;
 }
 
@@ -146,7 +146,7 @@
 }
 
 .cancelButton:hover:not(:disabled) {
-  background: #f9fafb;
+  background: var(--color-background);
 }
 
 .cancelButton:disabled {
@@ -156,7 +156,7 @@
 
 .deleteButton {
   padding: 8px 16px;
-  background: #dc2626;
+  background: var(--color-error);
   color: var(--color-surface);
   border: none;
   border-radius: 6px;
@@ -166,7 +166,7 @@
 }
 
 .deleteButton:hover:not(:disabled) {
-  background: #b91c1c;
+  background: var(--color-error-dark);
 }
 
 .deleteButton:disabled {

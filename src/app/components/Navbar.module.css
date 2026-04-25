@@ -70,7 +70,7 @@
   padding: 0;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 48em) {
   .navLinks {
     display: flex;
   }
@@ -142,7 +142,7 @@
   min-width: 44px;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 48em) {
   .navCta {
     display: inline-flex;
   }
@@ -180,7 +180,7 @@
   outline-offset: 2px;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 48em) {
   .menuButton {
     display: none;
   }

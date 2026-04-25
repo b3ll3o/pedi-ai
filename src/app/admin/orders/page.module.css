@@ -1,5 +1,5 @@
 .container {
-  padding: 24px;
+  padding: 1.5rem;
 }
 
 .header {
@@ -11,7 +11,7 @@
 
 .title {
   margin: 0;
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--color-text-primary);
 }
@@ -23,11 +23,11 @@
 }
 
 .searchInput {
-  padding: 8px 12px;
+  padding: 0.5rem 0.75rem;
   border: 1px solid var(--color-border);
-  border-radius: 6px;
-  font-size: 14px;
-  min-width: 250px;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  min-width: 15.625rem;
 }
 
 .filterSelect {
@@ -39,11 +39,11 @@
 }
 
 .placeholder {
-  padding: 48px;
+  padding: 3rem;
   text-align: center;
   color: var(--color-text-secondary);
   background: var(--color-background);
-  border-radius: 8px;
+  border-radius: 0.5rem;
   border: 2px dashed var(--color-border);
 }
 
@@ -74,14 +74,14 @@
 }
 
 .modal button {
-  padding: 8px 16px;
-  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
   font-weight: 500;
   cursor: pointer;
 }
 
 .modal button[data-testid="confirm-status-update"] {
-  background: #16a34a;
+  background: var(--color-success);
   color: var(--color-surface);
   border: none;
 }

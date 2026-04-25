@@ -1,0 +1,143 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <!-- Gradiente de fundo -->
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#E85D04"/>
+      <stop offset="100%" style="stop-color:#F48C06"/>
+    </linearGradient>
+    <!-- Gradiente para elementos -->
+    <linearGradient id="accentGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#F48C06"/>
+      <stop offset="100%" style="stop-color:#DC2626"/>
+    </linearGradient>
+    <!-- Sombra suave -->
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000000" flood-opacity="0.15"/>
+    </filter>
+    <!-- Brilho interno -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGradient)"/>
+
+  <!-- Padrão de pontos sutis (grid de cardápio) -->
+  <g opacity="0.1">
+    <circle cx="50" cy="50" r="3" fill="#fff"/>
+    <circle cx="100" cy="50" r="3" fill="#fff"/>
+    <circle cx="150" cy="50" r="3" fill="#fff"/>
+    <circle cx="50" cy="100" r="3" fill="#fff"/>
+    <circle cx="100" cy="100" r="3" fill="#fff"/>
+    <circle cx="150" cy="100" r="3" fill="#fff"/>
+    <circle cx="1050" cy="530" r="3" fill="#fff"/>
+    <circle cx="1100" cy="530" r="3" fill="#fff"/>
+    <circle cx="1150" cy="530" r="3" fill="#fff"/>
+    <circle cx="1050" cy="580" r="3" fill="#fff"/>
+    <circle cx="1100" cy="580" r="3" fill="#fff"/>
+    <circle cx="1150" cy="580" r="3" fill="#fff"/>
+  </g>
+
+  <!-- Elemento decorativo: prato circular (esquerda) -->
+  <g transform="translate(180, 315)" filter="url(#shadow)">
+    <ellipse rx="140" ry="30" fill="#fff" opacity="0.2"/>
+    <ellipse rx="120" ry="25" fill="none" stroke="#fff" stroke-width="3" opacity="0.4"/>
+    <ellipse rx="90" ry="18" fill="none" stroke="#fff" stroke-width="2" opacity="0.3"/>
+    <!-- Talheres estilizados -->
+    <line x1="-60" y1="-50" x2="-60" y2="30" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
+    <line x1="-45" y1="-50" x2="-45" y2="20" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
+    <line x1="60" y1="-50" x2="60" y2="30" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
+    <path d="M 45 30 Q 60 50 75 30" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
+  </g>
+
+  <!-- Elemento decorativo: QR Code estilizado (direita) -->
+  <g transform="translate(1020, 315)" filter="url(#shadow)">
+    <rect x="-80" y="-80" width="160" height="160" rx="16" fill="#fff" opacity="0.95"/>
+    <!-- QR modules simplificados -->
+    <rect x="-65" y="-65" width="25" height="25" rx="4" fill="#E85D04"/>
+    <rect x="-30" y="-65" width="10" height="10" rx="2" fill="#E85D04"/>
+    <rect x="-10" y="-65" width="10" height="10" rx="2" fill="#E85D04"/>
+    <rect x="10" y="-65" width="10" height="10" rx="2" fill="#E85D04"/>
+    <rect x="30" y="-65" width="10" height="10" rx="2" fill="#E85D04"/>
+    <rect x="-65" y="-30" width="10" height="10" rx="2" fill="#E85D04"/>
+    <rect x="-45" y="-30" width="10" height="10" rx="2" fill="#E85D04"/>
+    <rect x="-25" y="-30" width="10" height="10" rx="2" fill="#E85D04"/>
+    <rect x="10" y="-30" width="10" height="10" rx="2" fill="#E85D04"/>
+    <rect x="30" y="-30" width="10" height="10" rx="2" fill="#E85D04"/>
+    <rect x="-65" y="-10" width="10" height="10" rx="2" fill="#E85D04"/>
+    <rect x="-35" y="-10" width="10" height="10" rx="2" fill="#E85D04"/>
+    <rect x="-15" y="-10" width="10" height="10" rx="2" fill="#E85D04"/>
+    <rect x="5" y="-10" width="10" height="10" rx="2" fill="#E85D04"/>
+    <rect x="25" y="-10" width="10" height="10" rx="2" fill="#E85D04"/>
+    <rect x="45" y="-10" width="10" height="10" rx="2" fill="#E85D04"/>
+    <!-- Centro do QR com logo -->
+    <rect x="-15" y="15" width="30" height="30" rx="6" fill="#E85D04"/>
+    <text x="0" y="35" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#fff" text-anchor="middle">AI</text>
+    <rect x="-65" y="15" width="10" height="10" rx="2" fill="#E85D04"/>
+    <rect x="-45" y="15" width="10" height="10" rx="2" fill="#E85D04"/>
+    <rect x="-25" y="15" width="10" height="10" rx="2" fill="#E85D04"/>
+    <rect x="10" y="15" width="10" height="10" rx="2" fill="#E85D04"/>
+    <rect x="30" y="15" width="10" height="10" rx="2" fill="#E85D04"/>
+    <rect x="-65" y="35" width="10" height="10" rx="2" fill="#E85D04"/>
+    <rect x="-45" y="35" width="10" height="10" rx="2" fill="#E85D04"/>
+    <rect x="10" y="35" width="10" height="10" rx="2" fill="#E85D04"/>
+    <rect x="30" y="35" width="10" height="10" rx="2" fill="#E85D04"/>
+    <rect x="-65" y="55" width="25" height="25" rx="4" fill="#E85D04"/>
+    <rect x="-30" y="55" width="10" height="10" rx="2" fill="#E85D04"/>
+    <rect x="-10" y="55" width="10" height="10" rx="2" fill="#E85D04"/>
+    <rect x="10" y="55" width="10" height="10" rx="2" fill="#E85D04"/>
+    <rect x="30" y="55" width="10" height="10" rx="2" fill="#E85D04"/>
+  </g>
+
+  <!-- Card central com logo -->
+  <g transform="translate(600, 280)" filter="url(#shadow)">
+    <!-- Fundo do card -->
+    <rect x="-280" y="-180" width="560" height="360" rx="24" fill="#fff"/>
+
+    <!-- Borda superior colorida -->
+    <rect x="-280" y="-180" width="560" height="8" rx="4" fill="url(#bgGradient)"/>
+
+    <!-- Logo "Pedi" em laranja -->
+    <text x="-180" y="-80" font-family="Arial, sans-serif" font-size="72" font-weight="bold" fill="#E85D04">Pedi</text>
+    <!-- "AI" com gradiente -->
+    <text x="-30" y="-80" font-family="Arial, sans-serif" font-size="72" font-weight="bold" fill="url(#accentGradient)">AI</text>
+
+    <!-- Subtítulo -->
+    <text x="-200" y="-30" font-family="Arial, sans-serif" font-size="28" fill="#57534E">Cardápio Digital</text>
+
+    <!-- Linha divisória -->
+    <line x1="-200" y1="10" x2="200" y2="10" stroke="#E7E5E4" stroke-width="2"/>
+
+    <!-- Tagline principal -->
+    <text x="0" y="60" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#1C1917" text-anchor="middle">Funciona Offline</text>
+
+    <!-- Indicadores de feature -->
+    <g transform="translate(-180, 100)">
+      <!-- Indicador 1: Offline -->
+      <circle cx="0" cy="0" r="16" fill="#E85D04" opacity="0.1"/>
+      <circle cx="0" cy="0" r="10" fill="#E85D04"/>
+      <path d="M -4 0 L -1 3 L 5 -3" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="30" y="6" font-family="Arial, sans-serif" font-size="16" fill="#57534E">Offline</text>
+    </g>
+
+    <g transform="translate(-40, 100)">
+      <!-- Indicador 2: QR Code -->
+      <circle cx="0" cy="0" r="16" fill="#E85D04" opacity="0.1"/>
+      <rect x="-6" y="-6" width="12" height="12" rx="2" fill="#E85D04"/>
+      <text x="30" y="6" font-family="Arial, sans-serif" font-size="16" fill="#57534E">QR Code</text>
+    </g>
+
+    <g transform="translate(100, 100)">
+      <!-- Indicador 3: Tempo Real -->
+      <circle cx="0" cy="0" r="16" fill="#588157" opacity="0.1"/>
+      <circle cx="0" cy="0" r="10" fill="#588157"/>
+      <circle cx="0" cy="0" r="4" fill="#fff"/>
+      <text x="30" y="6" font-family="Arial, sans-serif" font-size="16" fill="#57534E">Tempo Real</text>
+    </g>
+  </g>
+
+  <!-- Texto inferior: URL -->
+  <text x="600" y="580" font-family="Arial, sans-serif" font-size="20" fill="#fff" opacity="0.8" text-anchor="middle">pedi-ai.com</text>
+</svg>

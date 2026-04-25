@@ -196,6 +196,65 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **CI/CD**: Pipeline E2E deve bloquear merge se testes falharem
 - **Cobertura de fluxos**: Manter inventário atualizado de fluxos cobertos em `tests/e2e/README.md`
 
+## Arquitetura DDD (Domain-Driven Design)
+
+### Regras Obrigatórias
+
+- **TODAS** as funcionalidades do projeto **DEVEM** seguir arquitetura DDD
+- O domínio (**domain/**) **DEVE** ser independente de frameworks — sem imports de Next.js, React, ou bibliotecas de infra
+- Entidades, value objects, aggregates e events são pura lógica de negócio em TypeScript
+- Casos de uso no **application/** orchestrating domínio e infra
+- **presentation/** (Next.js) **SÓ** faz renderização e coleta input do usuário
+
+### Estrutura de Diretórios
+
+```
+src/
+├── domain/                    # REGRAS DE NEGÓCIO - puro, testável, sem deps
+│   ├── [bounded-context]/    # ex: pedido/, cardapio/, mesa/
+│   │   ├── entities/         # Entidades com identity
+│   │   ├── value-objects/    # Value objects imutáveis
+│   │   ├── aggregates/        # Aggregate roots
+│   │   ├── events/            # Domain events
+│   │   ├── services/          # Regras que não pertencem a uma entidade
+│   │   └── repositories/       # Interfaces (contratos, não implementations)
+│   └── shared/                # Tipos, utils, events compartilhados
+├── application/               # CASOS DE USO - orquestração
+│   └── [bounded-context]/
+│       └── services/          # Application services (use cases)
+├── infrastructure/            # IMPLEMENTAÇÕES - adapters, repos, APIs
+│   ├── persistence/           # Dexie/IndexedDB implementations
+│   ├── external/              # APIs externas
+│   └── repositories/          # Repository implementations
+└── presentation/              # NEXT.JS - UI, API routes, web-only
+    ├── pages/
+    ├── components/
+    └── hooks/
+```
+
+### O que vai em cada camada
+
+| Camada | Responsabilidade | Dependências |
+|--------|------------------|--------------|
+| **domain/** | Entidades, regras, validações, eventos | Nenhuma (puro) |
+| **application/** | Casos de uso, coordena domain + infra | domain, interfaces da infra |
+| **infrastructure/** | Implementações concretas | domain, libraries externas |
+| **presentation/** | UI, input do usuário, API routes | application, components |
+
+### Regras de Dependência
+
+- **domain/** não pode importar de **application/**, **infrastructure/**, ou **presentation/**
+- **application/** só importa de **domain/** e interfaces (não implementations)
+- **infrastructure/** implementa interfaces definidas em **domain/**
+- **presentation/** depende de **application/** — nunca acessa **domain/** diretamente
+
+### Naming
+
+- Entidades: `Pedido`, `ItemCardapio`, `Mesa` (substantivos de negócio)
+- Value Objects: `Dinheiro`, `Quantidade`, `Endereco` (características imutáveis)
+- Events: `PedidoCriado`, `ItemAdicionadoAoCarrinho` (verbo no passado)
+- Use Cases: `CriarPedido`, `AdicionarItemAoCarrinho` (verbo + substantivo)
+
 <!-- END:pedi-ai-rules -->
 
 ## Repository Map

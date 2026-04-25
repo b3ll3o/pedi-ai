@@ -67,7 +67,7 @@ export function SyncStatus() {
   return (
     <div className='sync-status' data-testid='offline-sync-status'>
       {hasQueue && (
-        <div className='sync-queue' data-testid='offline-queue'>
+        <div className='sync-queue' data-testid='offline-queue-indicator'>
           {pendingItems.map((item) => (
             <div
               key={item.id}
@@ -96,6 +96,9 @@ export function SyncStatus() {
             {retrying ? 'Reintentando...' : 'Tentar novamente'}
           </button>
         </>
+      )}
+      {!hasQueue && !hasFailures && status.completed > 0 && (
+        <span className='sync-success' data-testid='sync-success'>Sincronizado</span>
       )}
       <style jsx>{`
         .sync-status {

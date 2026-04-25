@@ -36,7 +36,7 @@ export function CheckoutForm({
   const [customerPhone, setCustomerPhone] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'credit' | 'debit'>('pix');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<{ name?: string; phone?: string }>({});
+  const [errors, setErrors] = useState<{ name?: string; phone?: string; offline?: string }>({});
 
   const validateForm = (): boolean => {
     const newErrors: { name?: string; phone?: string } = {};
@@ -61,8 +61,14 @@ export function CheckoutForm({
     if (!validateForm()) return;
 
     setIsSubmitting(true);
+    setErrors((prev) => ({ ...prev, offline: undefined }));
     try {
       await onSubmit({ customerName, customerPhone, paymentMethod });
+    } catch (error) {
+      if (navigator.onLine === false || (error instanceof Error && error.message.includes('offline'))) {
+        setErrors((prev) => ({ ...prev, offline: 'Você está offline. O pedido será enviado quando a conexão for restaurada.' }));
+      }
+      throw error;
     } finally {
       setIsSubmitting(false);
     }
@@ -213,11 +219,17 @@ export function CheckoutForm({
         <div className={styles.paymentTimeoutMessage} data-testid="payment-timeout-message" />
       </div>
 
+      {errors.offline && (
+        <div className={styles.offlineError} data-testid="offline-error">
+          {errors.offline}
+        </div>
+      )}
+
       <button
         type="submit"
         className={styles.submitButton}
         disabled={isSubmitting || items.length === 0}
-        data-testid="checkout-submit"
+        data-testid="checkout-submit submit-order-button"
       >
         {isSubmitting ? 'Processando...' : 'Finalizar Pagamento'}
       </button>

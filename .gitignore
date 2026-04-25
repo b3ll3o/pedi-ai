@@ -67,3 +67,5 @@ tests/e2e/node_modules
 Thumbs.db
 
 .playwright-mcp
+supabase/.temp
+pnpm-lock.yaml

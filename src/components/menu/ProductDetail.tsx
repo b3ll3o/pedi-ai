@@ -31,15 +31,15 @@ interface ProductResponse {
 // ── Constants ────────────────────────────────────────────────────
 
 const DIETARY_LABELS: Record<string, { color: string; bg: string; label: string }> = {
-  vegan: { color: '#16a34a', bg: '#dcfce7', label: 'Vegano' },
-  vegetarian: { color: '#16a34a', bg: '#dcfce7', label: 'Vegetariano' },
-  'gluten-free': { color: '#d97706', bg: '#fef3c7', label: 'Sem Glúten' },
-  'lactose-free': { color: '#3b82f6', bg: '#dbeafe', label: 'Sem Lactose' },
-  'egg-free': { color: '#d97706', bg: '#fef3c7', label: 'Sem Ovo' },
-  'dairy-free': { color: '#3b82f6', bg: '#dbeafe', label: 'Sem Laticínios' },
-  'sugar-free': { color: '#8b5cf6', bg: '#ede9fe', label: 'Sem Açúcar' },
-  organic: { color: '#16a34a', bg: '#dcfce7', label: 'Orgânico' },
-  spicy: { color: '#dc2626', bg: '#fee2e2', label: 'Picante' },
+  vegan: { color: 'var(--color-success)', bg: 'var(--color-success-light)', label: 'Vegano' },
+  vegetarian: { color: 'var(--color-success)', bg: 'var(--color-success-light)', label: 'Vegetariano' },
+  'gluten-free': { color: 'var(--color-warning)', bg: 'var(--color-warning-light)', label: 'Sem Glúten' },
+  'lactose-free': { color: 'var(--color-secondary)', bg: 'var(--color-secondary-light)', label: 'Sem Lactose' },
+  'egg-free': { color: 'var(--color-warning)', bg: 'var(--color-warning-light)', label: 'Sem Ovo' },
+  'dairy-free': { color: 'var(--color-secondary)', bg: 'var(--color-secondary-light)', label: 'Sem Laticínios' },
+  'sugar-free': { color: 'var(--color-secondary)', bg: 'var(--color-secondary-light)', label: 'Sem Açúcar' },
+  organic: { color: 'var(--color-success)', bg: 'var(--color-success-light)', label: 'Orgânico' },
+  spicy: { color: 'var(--color-error)', bg: 'var(--color-error-light)', label: 'Picante' },
 };
 
 // ── Helpers ────────────────────────────────────────────────────
@@ -53,9 +53,8 @@ function formatPrice(price: number): string {
 
 function getGradientPlaceholder(name: string): string {
   const gradients = [
-    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+    'var(--gradient-primary)',
+    'var(--gradient-warm)',
     'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
     'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
     'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',

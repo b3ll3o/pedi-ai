@@ -59,7 +59,7 @@ export default function AnalyticsPage() {
   if (!authChecked || isLoading) {
     return (
       <AdminLayout>
-        <div style={{ padding: 48, textAlign: 'center', color: '#6b7280' }}>
+        <div style={{ padding: 48, textAlign: 'center', color: 'var(--color-text-secondary)' }}>
           Carregando analytics...
         </div>
       </AdminLayout>
@@ -70,7 +70,7 @@ export default function AnalyticsPage() {
     return (
       <AdminLayout>
         <div style={{ padding: 48, textAlign: 'center' }}>
-          <h2 style={{ color: '#ef4444' }}>Erro ao carregar analytics</h2>
+          <h2 style={{ color: 'var(--color-error)' }}>Erro ao carregar analytics</h2>
         </div>
       </AdminLayout>
     )

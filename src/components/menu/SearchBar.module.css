@@ -1,5 +1,5 @@
 .container {
-  padding: 16px;
+  padding: 1rem;
   width: 100%;
 }
 
@@ -12,7 +12,7 @@
 
 .searchIcon {
   position: absolute;
-  left: 14px;
+  left: 0.875rem;
   color: var(--color-text-secondary);
   pointer-events: none;
   flex-shrink: 0;
@@ -20,10 +20,9 @@
 
 .input {
   width: 100%;
-  padding: 12px 40px 12px 44px;
-  font-size: 16px;
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
+  padding: 0.75rem 2.5rem 0.75rem 2.75rem;
+  font-size: 1rem;
+  border-radius: 0.75rem;
   background: var(--color-surface);
   color: var(--color-text-primary);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -35,18 +34,18 @@
 
 .input:focus {
   outline: none;
-  border-color: var(--focus-ring, #0066cc);
+  border-color: var(--focus-ring, var(--color-primary));
   box-shadow: 0 0 0 3px var(--focus-ring-light, rgba(0, 102, 204, 0.1));
 }
 
 .clearButton {
   position: absolute;
-  right: 10px;
+  right: 0.625rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 1.75rem;
+  height: 1.75rem;
   padding: 0;
   border: none;
   border-radius: 50%;
@@ -63,7 +62,7 @@
 
 .clearButton:focus {
   outline: none;
-  box-shadow: 0 0 0 2px var(--focus-ring, #0066cc);
+  box-shadow: 0 0 0 2px var(--focus-ring, var(--color-primary));
 }
 
 @media (prefers-color-scheme: dark) {
@@ -72,8 +71,8 @@
   }
 
   .input {
-    background: var(--card-background, #1a1a1a);
-    border-color: var(--border-color, #333);
+    background: var(--card-background, var(--color-surface));
+    border-color: var(--border-color, var(--color-border));
     color: var(--color-background);
   }
 
@@ -82,7 +81,7 @@
   }
 
   .clearButton:hover {
-    background: var(--bg-hover, #2a2a2a);
+    background: var(--bg-hover, var(--color-surface-elevated));
     color: var(--color-background);
   }
 }

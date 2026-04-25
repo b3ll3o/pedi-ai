@@ -116,12 +116,12 @@ export default function UsersPage() {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '48px',
+          padding: '3rem',
           textAlign: 'center',
         }}>
-          <span style={{ fontSize: '48px', marginBottom: '16px' }}>🔒</span>
-          <h2 style={{ margin: '0 0 8px 0', color: '#111827' }}>Acesso Negado</h2>
-          <p style={{ margin: 0, color: '#6b7280' }}>
+          <span style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔒</span>
+          <h2 style={{ margin: '0 0 0.5rem 0', color: 'var(--color-text-primary)' }}>Acesso Negado</h2>
+          <p style={{ margin: 0, color: 'var(--color-text-secondary)' }}>
             Apenas o proprietário pode gerenciar usuários.
           </p>
         </div>
@@ -132,7 +132,7 @@ export default function UsersPage() {
   if (isLoading) {
     return (
       <AdminLayout>
-        <div style={{ padding: 48, textAlign: 'center', color: '#6b7280' }}>
+        <div style={{ padding: 48, textAlign: 'center', color: 'var(--color-text-secondary)' }}>
           Carregando...
         </div>
       </AdminLayout>
@@ -146,10 +146,10 @@ export default function UsersPage() {
           <div style={{
             padding: 12,
             marginBottom: 16,
-            background: '#fef2f2',
-            border: '1px solid #fecaca',
+            background: 'var(--color-error-light)',
+            border: '1px solid var(--color-error)',
             borderRadius: 6,
-            color: '#991b1b'
+            color: 'var(--color-error-dark)'
           }}>
             {error}
           </div>

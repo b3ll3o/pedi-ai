@@ -25,7 +25,7 @@ import { test, expect } from '../shared/fixtures'
  * - order-status (OrderStatus.tsx line 107)
  * - checkout-button (CartSummary.tsx line 57)
  */
-test.describe.skip('Offline Functionality - SKIPPED: data-testids não implementados', () => {
+test.describe('Offline Functionality', () => {
   test('should display offline indicator when network is down', async ({ guest }) => {
     // First load the page, then go offline
     await guest.goto('/menu')

@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#E85D04"/>
+      <stop offset="100%" style="stop-color:#F48C06"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#F48C06"/>
+      <stop offset="100%" style="stop-color:#DC2626"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+
+  <!-- Fundo circular com gradiente -->
+  <circle cx="256" cy="256" r="240" fill="url(#grad)"/>
+
+  <!-- Elemento decorativo: prato estilizado -->
+  <g transform="translate(256, 280)">
+    <ellipse rx="120" ry="25" fill="#fff" opacity="0.15"/>
+    <ellipse rx="100" ry="20" fill="none" stroke="#fff" stroke-width="3" opacity="0.25"/>
+    <ellipse rx="70" ry="14" fill="none" stroke="#fff" stroke-width="2" opacity="0.2"/>
+  </g>
+
+  <!-- Logo textual -->
+  <g transform="translate(256, 220)" filter="url(#shadow)">
+    <!-- Fundo do card -->
+    <rect x="-200" y="-80" width="400" height="160" rx="20" fill="#fff"/>
+
+    <!-- Borda superior -->
+    <rect x="-200" y="-80" width="400" height="6" rx="3" fill="url(#grad)"/>
+
+    <!-- Texto "Pedi" -->
+    <text x="-130" y="30" font-family="Arial, Helvetica, sans-serif" font-size="80" font-weight="bold" fill="#E85D04">Pedi</text>
+
+    <!-- Texto "AI" com gradiente -->
+    <text x="50" y="30" font-family="Arial, Helvetica, sans-serif" font-size="80" font-weight="bold" fill="url(#accentGrad)">AI</text>
+  </g>
+
+  <!-- Indicadores de feature -->
+  <g transform="translate(256, 400)">
+    <!-- Offline badge -->
+    <g transform="translate(-80, 0)">
+      <circle cx="0" cy="0" r="24" fill="#fff" opacity="0.9"/>
+      <circle cx="0" cy="0" r="16" fill="#E85D04"/>
+      <path d="M -7 0 L -2 5 L 8 -5" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+
+    <!-- QR badge -->
+    <g transform="translate(0, 0)">
+      <circle cx="0" cy="0" r="24" fill="#fff" opacity="0.9"/>
+      <rect x="-10" y="-10" width="20" height="20" rx="3" fill="#E85D04"/>
+      <rect x="-6" y="-6" width="5" height="5" rx="1" fill="#fff"/>
+      <rect x="1" y="-6" width="5" height="5" rx="1" fill="#fff"/>
+      <rect x="-6" y="1" width="5" height="5" rx="1" fill="#fff"/>
+    </g>
+
+    <!-- Tempo Real badge -->
+    <g transform="translate(80, 0)">
+      <circle cx="0" cy="0" r="24" fill="#fff" opacity="0.9"/>
+      <circle cx="0" cy="0" r="16" fill="#22C55E"/>
+      <circle cx="0" cy="0" r="6" fill="#fff"/>
+    </g>
+  </g>
+</svg>

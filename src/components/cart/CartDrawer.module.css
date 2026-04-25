@@ -278,7 +278,7 @@
   border-color: #fca5a5;
 }
 
-@media (min-width: 481px) {
+@media (min-width: 30em) {
   .drawer {
     max-width: 420px;
   }

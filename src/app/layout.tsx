@@ -84,6 +84,10 @@ export const metadata: Metadata = {
     google: 'google-site-verification-code',
   },
   manifest: '/manifest.json',
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+  },
 };
 
 export const viewport = {

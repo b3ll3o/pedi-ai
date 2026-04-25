@@ -12,7 +12,7 @@ export default function WaiterDashboardPage() {
 
   if (!restaurantId) {
     return (
-      <div style={{ padding: 48, textAlign: 'center', color: '#6b7280' }}>
+      <div style={{ padding: 48, textAlign: 'center', color: 'var(--color-text-secondary)' }}>
         Carregando...
       </div>
     )

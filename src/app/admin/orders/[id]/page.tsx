@@ -83,7 +83,7 @@ export default function OrderDetailPage() {
 
   if (!authChecked || isLoading) {
     return (
-      <div style={{ padding: 48, textAlign: 'center', color: '#6b7280' }}>
+      <div style={{ padding: 48, textAlign: 'center', color: 'var(--color-text-secondary)' }}>
         Carregando...
       </div>
     )
@@ -92,7 +92,7 @@ export default function OrderDetailPage() {
   if (error || !order) {
     return (
       <div style={{ padding: 48, textAlign: 'center' }}>
-        <h2 style={{ color: '#ef4444' }}>{error || 'Pedido não encontrado'}</h2>
+        <h2 style={{ color: 'var(--color-error)' }}>{error || 'Pedido não encontrado'}</h2>
       </div>
     )
   }

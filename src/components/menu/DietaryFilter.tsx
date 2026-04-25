@@ -10,12 +10,12 @@ interface DietaryFilterProps {
 }
 
 const DIETARY_CONFIG: Record<DietaryLabel, { label: string; color: string }> = {
-  vegetarian: { label: 'Vegetariano', color: '#22c55e' },
-  vegan: { label: 'Vegano', color: '#16a34a' },
-  'gluten-free': { label: 'Sem Glúten', color: '#eab308' },
-  'lactose-free': { label: 'Sem Lactose', color: '#3b82f6' },
-  'sugar-free': { label: 'Sem Açúcar', color: '#f97316' },
-  organic: { label: 'Orgânico', color: '#84cc16' },
+  vegetarian: { label: 'Vegetariano', color: 'var(--color-success)' },
+  vegan: { label: 'Vegano', color: 'var(--color-success)' },
+  'gluten-free': { label: 'Sem Glúten', color: 'var(--color-warning)' },
+  'lactose-free': { label: 'Sem Lactose', color: 'var(--color-secondary)' },
+  'sugar-free': { label: 'Sem Açúcar', color: 'var(--color-secondary)' },
+  organic: { label: 'Orgânico', color: 'var(--color-success)' },
 };
 
 const ALL_DIETARY_LABELS: DietaryLabel[] = [

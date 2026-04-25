@@ -36,6 +36,7 @@ export default defineConfig({
         'src/app/kitchen/**',
         // Componentes UI
         'src/components/**',
+        'src/app/components/**',
         // Webhooks
         'src/app/api/webhooks/**',
         // Arquivos de configuração

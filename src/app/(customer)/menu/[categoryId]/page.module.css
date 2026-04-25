@@ -232,7 +232,7 @@
 }
 
 /* Responsive */
-@media (min-width: 640px) {
+@media (min-width: 40em) {
   .header {
     padding: 32px 24px;
   }
@@ -255,7 +255,7 @@
   }
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 64em) {
   .header {
     padding: 40px;
   }

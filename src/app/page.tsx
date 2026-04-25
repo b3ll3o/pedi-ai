@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import styles from "./page.module.css";
 import Navbar from './components/Navbar';
 import Logo from './components/Logo';
+import FAQItem from './components/FAQItem';
 import {
   Smartphone,
   WifiOff,
@@ -27,6 +28,29 @@ import {
   Utensils,
   AlertCircle,
 } from "lucide-react";
+
+const faqData = [
+  {
+    question: 'Preciso de internet para usar?',
+    answer: 'Não! O Pedi-AI funciona completamente offline. O cliente pode navegar pelo cardápio e fazer o pedido mesmo sem internet. Quando a conexão voltar, tudo é sincronizado automaticamente.',
+  },
+  {
+    question: 'Como os pedidos chegam na cozinha?',
+    answer: 'Os pedidos aparecem em tempo real no Kitchen Display, uma tela que pode ser usada em tablet ou TV. Você também recebe notificações sonoras para cada novo pedido.',
+  },
+  {
+    question: 'Posso personalizar o cardápio?',
+    answer: 'Sim! Você pode adicionar fotos, descrições, valores, opções de personalização (como adicionais e removidos), e organizar por categorias. Tudo pelo painel admin.',
+  },
+  {
+    question: 'Funciona com meu sistema de delivery?',
+    answer: 'No plano Profissional e Enterprise, oferecemos integração com as principais plataformas de delivery. Também temos API para automações personalizadas.',
+  },
+  {
+    question: 'Como funciona o suporte?',
+    answer: 'Oferecemos suporte por chat em todos os planos. O plano Profissional tem suporte prioritário, e o Enterprise conta com gerente de conta dedicado.',
+  },
+];
 
 export const metadata: Metadata = {
   title: 'Cardápio Digital Restaurantes | Pedi-AI - Funciona Offline',
@@ -509,53 +533,11 @@ export default function Home() {
           <h2 id="faq-title" className={styles.sectionTitle}>
             Perguntas Frequentes
           </h2>
-          <div className={styles.faqList}>
-            <div className={styles.faqItem}>
-              <h3 className={styles.faqQuestion}>
-                <HelpCircle aria-hidden="true" size={20} />
-                <span>Preciso de internet para usar?</span>
-              </h3>
-              <p className={styles.faqAnswer}>
-                Não! O Pedi-AI funciona completamente offline. O cliente pode navegar pelo cardápio e fazer o pedido mesmo sem internet. Quando a conexão voltar, tudo é sincronizado automaticamente.
-              </p>
-            </div>
-            <div className={styles.faqItem}>
-              <h3 className={styles.faqQuestion}>
-                <HelpCircle aria-hidden="true" size={20} />
-                <span>Como os pedidos chegam na cozinha?</span>
-              </h3>
-              <p className={styles.faqAnswer}>
-                Os pedidos aparecem em tempo real no Kitchen Display, uma tela que pode ser usada em tablet ou TV. Você também recebe notificações sonoras para cada novo pedido.
-              </p>
-            </div>
-            <div className={styles.faqItem}>
-              <h3 className={styles.faqQuestion}>
-                <HelpCircle aria-hidden="true" size={20} />
-                <span>Posso personalizar o cardápio?</span>
-              </h3>
-              <p className={styles.faqAnswer}>
-                Sim! Você pode adicionar fotos, descrições, valores, opções de personalização (como adicionais e removidos), e organizar por categorias. Tudo pelo painel admin.
-              </p>
-            </div>
-            <div className={styles.faqItem}>
-              <h3 className={styles.faqQuestion}>
-                <HelpCircle aria-hidden="true" size={20} />
-                <span>Funciona com meu sistema de delivery?</span>
-              </h3>
-              <p className={styles.faqAnswer}>
-                No plano Profissional e Enterprise, oferecemos integração com as principais plataformas de delivery. Também temos API para automações personalizadas.
-              </p>
-            </div>
-            <div className={styles.faqItem}>
-              <h3 className={styles.faqQuestion}>
-                <HelpCircle aria-hidden="true" size={20} />
-                <span>Como funciona o suporte?</span>
-              </h3>
-              <p className={styles.faqAnswer}>
-                Oferecemos suporte por chat em todos os planos. O plano Profissional tem suporte prioritário, e o Enterprise conta com gerente de conta dedicado.
-              </p>
-            </div>
-          </div>
+          <dl className={styles.faqList}>
+            {faqData.map((faq, index) => (
+              <FAQItem key={index} question={faq.question} answer={faq.answer} />
+            ))}
+          </dl>
         </div>
       </section>
 

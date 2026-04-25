@@ -187,30 +187,30 @@ export function AnalyticsDashboard({
                       }))}
                       margin={{ top: 5, right: 5, left: -20, bottom: 5 }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                       <XAxis
                         dataKey="date"
-                        tick={{ fontSize: 11, fill: '#6b7280' }}
+                        tick={{ fontSize: 11, fill: 'var(--color-text-secondary)' }}
                         tickLine={false}
-                        axisLine={{ stroke: '#e5e7eb' }}
+                        axisLine={{ stroke: 'var(--color-border)' }}
                       />
                       <YAxis
-                        tick={{ fontSize: 11, fill: '#6b7280' }}
+                        tick={{ fontSize: 11, fill: 'var(--color-text-secondary)' }}
                         tickLine={false}
-                        axisLine={{ stroke: '#e5e7eb' }}
+                        axisLine={{ stroke: 'var(--color-border)' }}
                         allowDecimals={false}
                       />
                       <Tooltip
                         contentStyle={{
-                          background: '#fff',
-                          border: '1px solid #e5e7eb',
+                          background: 'var(--color-surface)',
+                          border: '1px solid var(--color-border)',
                           borderRadius: 6,
                           fontSize: 12,
                         }}
-                        labelStyle={{ color: '#111827', fontWeight: 600 }}
+                        labelStyle={{ color: 'var(--color-text-primary)', fontWeight: 600 }}
                         formatter={(value) => [Number(value) || 0, 'Pedidos']}
                       />
-                      <Bar dataKey="pedidos" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="pedidos" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
@@ -235,35 +235,35 @@ export function AnalyticsDashboard({
                       }))}
                       margin={{ top: 5, right: 5, left: -20, bottom: 5 }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                       <XAxis
                         dataKey="date"
-                        tick={{ fontSize: 11, fill: '#6b7280' }}
+                        tick={{ fontSize: 11, fill: 'var(--color-text-secondary)' }}
                         tickLine={false}
-                        axisLine={{ stroke: '#e5e7eb' }}
+                        axisLine={{ stroke: 'var(--color-border)' }}
                       />
                       <YAxis
-                        tick={{ fontSize: 11, fill: '#6b7280' }}
+                        tick={{ fontSize: 11, fill: 'var(--color-text-secondary)' }}
                         tickLine={false}
-                        axisLine={{ stroke: '#e5e7eb' }}
+                        axisLine={{ stroke: 'var(--color-border)' }}
                         tickFormatter={(value) => `R$ ${value}`}
                       />
                       <Tooltip
                         contentStyle={{
-                          background: '#fff',
-                          border: '1px solid #e5e7eb',
+                          background: 'var(--color-surface)',
+                          border: '1px solid var(--color-border)',
                           borderRadius: 6,
                           fontSize: 12,
                         }}
-                        labelStyle={{ color: '#111827', fontWeight: 600 }}
+                        labelStyle={{ color: 'var(--color-text-primary)', fontWeight: 600 }}
                         formatter={(value) => [formatCurrency(Number(value) || 0), 'Receita']}
                       />
                       <Line
                         type="monotone"
                         dataKey="receita"
-                        stroke="#059669"
+                        stroke="var(--color-success)"
                         strokeWidth={2}
-                        dot={{ fill: '#059669', strokeWidth: 0, r: 3 }}
+                        dot={{ fill: 'var(--color-success)', strokeWidth: 0, r: 3 }}
                         activeDot={{ r: 5 }}
                       />
                     </LineChart>

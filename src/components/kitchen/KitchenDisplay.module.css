@@ -42,7 +42,7 @@
   height: auto;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 64em) {
   .columns {
     grid-template-columns: repeat(3, 1fr);
     height: calc(100vh - 100px);

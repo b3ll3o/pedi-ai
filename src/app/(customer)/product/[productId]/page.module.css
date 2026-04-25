@@ -1,6 +1,6 @@
 .container {
   min-height: 100vh;
-  background-color: #fafafa;
+  background-color: var(--color-background);
 }
 
 .header {
@@ -9,7 +9,7 @@
   justify-content: space-between;
   padding: 1rem;
   background-color: var(--color-surface);
-  border-bottom: 1px solid #e5e5e5;
+  border-bottom: 1px solid var(--color-border);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -25,19 +25,19 @@
   border: none;
   border-radius: 50%;
   font-size: 1.5rem;
-  color: #333;
+  color: var(--color-text-primary);
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
 .backButton:hover {
-  background-color: #f0f0f0;
+  background-color: var(--color-background);
 }
 
 .title {
   font-size: 1rem;
   font-weight: 600;
-  color: #333;
+  color: var(--color-text-primary);
   margin: 0;
 }
 
@@ -65,7 +65,7 @@
   font-size: 0.75rem;
   font-weight: 700;
   color: var(--color-surface);
-  background-color: #dc2626;
+  background-color: var(--color-error);
   border-radius: 9px;
   display: flex;
   align-items: center;
@@ -97,7 +97,7 @@
 
 .error h2 {
   font-size: 1.25rem;
-  color: #333;
+  color: var(--color-text-primary);
   margin-bottom: 0.5rem;
 }
 
@@ -126,12 +126,12 @@
 }
 
 .toast.success {
-  background-color: #16a34a;
+  background-color: var(--color-success);
   color: var(--color-surface);
 }
 
 .toast.error {
-  background-color: #dc2626;
+  background-color: var(--color-error);
   color: var(--color-surface);
 }
 
@@ -186,7 +186,7 @@
 .modalTitle {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #16a34a;
+  color: var(--color-success);
   margin: 0 0 0.5rem;
 }
 
@@ -214,23 +214,23 @@
 }
 
 .modalButtonPrimary {
-  background-color: #16a34a;
+  background-color: var(--color-success);
   color: var(--color-surface);
   border: none;
 }
 
 .modalButtonPrimary:hover {
-  background-color: #15803d;
+  background-color: var(--color-success-dark);
 }
 
 .modalButtonSecondary {
   background-color: var(--color-surface);
-  color: #333;
-  border: 1px solid #d1d5db;
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
 }
 
 .modalButtonSecondary:hover {
-  background-color: #f3f4f6;
+  background-color: var(--color-background);
 }
 
 @keyframes fadeIn {

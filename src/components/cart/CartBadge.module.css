@@ -63,7 +63,7 @@
   border-radius: 10px;
 }
 
-@media (min-width: 481px) {
+@media (min-width: 30em) {
   .badge {
     bottom: 16px;
     right: 16px;
