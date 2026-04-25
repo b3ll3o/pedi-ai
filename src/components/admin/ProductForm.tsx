@@ -157,6 +157,7 @@ export function ProductForm({ product, categories, onSubmit, onCancel }: Product
         </label>
         <select
           id="category"
+          data-testid="product-category-select"
           className={`${styles.select} ${errors.category ? styles.inputError : ''}`}
           value={categoryId}
           onChange={(e) => setCategoryId(e.target.value)}
@@ -177,6 +178,7 @@ export function ProductForm({ product, categories, onSubmit, onCancel }: Product
         <input
           id="name"
           type="text"
+          data-testid="product-name-input"
           className={`${styles.input} ${errors.name ? styles.inputError : ''}`}
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -192,6 +194,7 @@ export function ProductForm({ product, categories, onSubmit, onCancel }: Product
         </label>
         <textarea
           id="description"
+          data-testid="product-description-input"
           className={styles.textarea}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
@@ -210,6 +213,7 @@ export function ProductForm({ product, categories, onSubmit, onCancel }: Product
           type="number"
           step="0.01"
           min="0"
+          data-testid="product-price-input"
           className={`${styles.input} ${errors.price ? styles.inputError : ''}`}
           value={price}
           onChange={(e) => setPrice(e.target.value)}
@@ -247,6 +251,7 @@ export function ProductForm({ product, categories, onSubmit, onCancel }: Product
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
+                data-testid="product-image-input"
                 onChange={handleImageChange}
                 className={styles.fileInput}
                 disabled={isSubmitting}
@@ -311,6 +316,7 @@ export function ProductForm({ product, categories, onSubmit, onCancel }: Product
         </button>
         <button
           type="submit"
+          data-testid="save-button"
           className={styles.submitButton}
           disabled={isSubmitting}
         >

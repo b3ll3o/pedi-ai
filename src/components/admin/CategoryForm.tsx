@@ -96,6 +96,7 @@ export function CategoryForm({ category, onSubmit, onCancel }: CategoryFormProps
         <input
           id="name"
           type="text"
+          data-testid="category-name-input"
           className={`${styles.input} ${errors.name ? styles.inputError : ''}`}
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -111,6 +112,7 @@ export function CategoryForm({ category, onSubmit, onCancel }: CategoryFormProps
         </label>
         <textarea
           id="description"
+          data-testid="category-description-input"
           className={styles.textarea}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
@@ -171,6 +173,7 @@ export function CategoryForm({ category, onSubmit, onCancel }: CategoryFormProps
         </button>
         <button
           type="submit"
+          data-testid="save-button"
           className={styles.submitButton}
           disabled={isSubmitting}
         >

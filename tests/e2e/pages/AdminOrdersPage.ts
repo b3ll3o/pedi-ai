@@ -25,11 +25,14 @@ export class AdminOrdersPage {
     this.page = page
     this.ordersList = page.locator('[data-testid="admin-order-item"]')
     this.orderCard = page.locator('[data-testid="order-card"]')
-    this.filterStatusSelect = page.locator('[data-testid="filter-status-select"]')
+    // OrderList.tsx não tem data-testids nos selects de filtro - usar aria-label
+    this.filterStatusSelect = page.locator('select[aria-label="Filtrar por status"]')
     this.filterDateInput = page.locator('[data-testid="filter-date-input"]')
-    this.searchInput = page.locator('[data-testid="search-orders-input"]')
+    // OrderList.tsx usa input[type="search"] sem data-testid - buscar pelo placeholder
+    this.searchInput = page.locator('input[placeholder*="Buscar"]')
     this.updateStatusButton = page.locator('[data-testid="update-status-button"]')
     this.viewDetailsButton = page.locator('[data-testid="view-details-button"]')
+    // Cancelamento é feito via select de status (não há botão cancel-order-button)
     this.cancelOrderButton = page.locator('[data-testid="cancel-order-button"]')
     this.orderModal = page.locator('[data-testid="order-details-modal"]')
     this.orderStatusSelect = page.locator('[data-testid="order-status-select"]')
@@ -68,15 +71,15 @@ export class AdminOrdersPage {
 
   async updateOrderStatus(orderId: string, newStatus: AdminOrderStatus): Promise<void> {
     const order = this.ordersList.filter({ hasText: orderId })
-    await order.locator('[data-testid="update-status-button"]').click()
-    await this.orderStatusSelect.selectOption(newStatus)
-    await this.page.locator('[data-testid="confirm-status-update"]').click()
+    // O select de status já está dentro do update-status-button span
+    await order.locator('[data-testid="order-status-select"]').selectOption(newStatus)
+    // Não há botão de confirmação - o select já dispara a atualização
   }
 
   async cancelOrder(orderId: string): Promise<void> {
     const order = this.ordersList.filter({ hasText: orderId })
-    await order.locator('[data-testid="cancel-order-button"]').click()
-    await this.page.locator('[data-testid="confirm-cancel-button"]').click()
+    // Cancelamento é feito via select de status com valor "cancelled"
+    await order.locator('[data-testid="order-status-select"]').selectOption('cancelled')
   }
 
   async getOrderStatus(orderId: string): Promise<AdminOrderStatus> {

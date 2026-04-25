@@ -9,7 +9,8 @@ export class MenuPage {
   constructor(page: Page) {
     this.page = page
     this.categoryTabs = page.locator('[data-testid^="menu-category-card-"]')
-    this.productCards = page.locator('[data-testid="product-card"]')
+    // ProductList uses menu-product-card-{id} and menu-add-to-cart-{id}
+    this.productCards = page.locator('[data-testid^="menu-product-card-"]')
     this.searchInput = page.locator('[data-testid="search-input"]')
   }
 
@@ -19,12 +20,14 @@ export class MenuPage {
   }
 
   async selectCategory(categoryName: string): Promise<void> {
-    await this.categoryTabs.filter({ hasText: categoryName }).click()
+    // Filter by exact text match on the category tab element
+    await this.categoryTabs.filter({ hasText: categoryName, exact: true }).click()
   }
 
   async addProductToCart(productName: string): Promise<void> {
+    // Find product card by name text, then click its add-to-cart button
     const productCard = this.productCards.filter({ hasText: productName })
-    await productCard.locator('[data-testid="add-to-cart-button"]').click()
+    await productCard.locator('[data-testid^="menu-add-to-cart-"]').click()
   }
 
   async viewProduct(productName: string): Promise<void> {

@@ -75,10 +75,12 @@ export function RegisterForm({ onSubmit }: RegisterFormProps) {
           throw new Error(signUpError.message);
         }
       }
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        setError(message || 'Erro ao criar conta');
-      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      setError(message || 'Erro ao criar conta');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

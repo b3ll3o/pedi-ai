@@ -20,7 +20,7 @@ export class AdminDashboardPage {
     this.categoriesLink = page.locator('[data-testid="nav-categories"]')
     this.productsLink = page.locator('[data-testid="nav-products"]')
     this.ordersLink = page.locator('[data-testid="nav-orders"]')
-    this.logoutButton = page.locator('[data-testid="logout-button"]')
+    this.logoutButton = page.locator('[data-testid="admin-logout-button"]')
   }
 
   async goto(): Promise<void> {
