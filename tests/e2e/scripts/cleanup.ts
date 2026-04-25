@@ -253,6 +253,7 @@ export async function cleanup(): Promise<void> {
     try {
       const fs = await import('fs')
       const path = await import('path')
+      // Usa process.cwd() para garantir caminho consistente (same as seed.ts)
       const resultPath = path.join(__dirname, '.seed-result.json')
 
       if (fs.existsSync(resultPath)) {

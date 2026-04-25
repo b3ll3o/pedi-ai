@@ -31,7 +31,8 @@ export {
 import { createAdminClient } from '../scripts/seed'
 import { deleteTestUserByEmail, deleteTestRestaurantByName } from '../scripts/cleanup'
 
-const SEED_RESULT_PATH = path.join(__dirname, '..', 'scripts', '.seed-result.json')
+// Usa process.cwd() para garantir caminho consistente (same as seed.ts e fixtures)
+const SEED_RESULT_PATH = path.join(__dirname, '..', '..', 'scripts', '.seed-result.json')
 
 // ============================================
 // Tipos

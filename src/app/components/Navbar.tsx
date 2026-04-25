@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
-import { UtensilsCrossed, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import styles from './Navbar.module.css';
+import Logo from './Logo';
 
 const navLinks = [
   { href: '#features', label: 'Funcionalidades' },
@@ -85,12 +85,7 @@ export default function Navbar() {
       <nav aria-label="Navegação principal" className={styles.nav}>
         <div className={styles.navContainer}>
           {/* Logo */}
-          <span className={styles.logo}>
-            <Link href="/" aria-label="Página inicial Pedi-AI">
-              <UtensilsCrossed size={28} className={styles.logoIcon} aria-hidden="true" />
-              <span className={styles.logoText}>Pedi-AI</span>
-            </Link>
-          </span>
+          <Logo size={28} className={styles.logo} />
 
           {/* Desktop Navigation Links */}
           <ul className={styles.navLinks}>

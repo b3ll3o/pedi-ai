@@ -825,8 +825,8 @@ export async function seed(): Promise<SeedResult> {
   console.log('\n💾 Dados salvos em: tests/e2e/scripts/.seed-result.json')
 
   // Salvar resultado em arquivo para uso pelos testes
+  // Usa __dirname para garantir caminho sempre relativo ao diretório do script
   const fs = await import('fs')
-  const path = await import('path')
   const resultPath = path.join(__dirname, '.seed-result.json')
   fs.writeFileSync(resultPath, JSON.stringify(result, null, 2))
 

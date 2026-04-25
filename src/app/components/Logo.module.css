@@ -1,0 +1,12 @@
+.logoIcon {
+  color: var(--color-primary);
+}
+
+.logoText {
+  font-weight: 700;
+  font-size: 1.25rem;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}

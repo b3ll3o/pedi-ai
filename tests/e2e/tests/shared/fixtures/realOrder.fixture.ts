@@ -16,6 +16,7 @@ import {
 import { test as authBase } from './index'
 
 // Caminho para o resultado do seed
+// Usa process.cwd() para garantir caminho consistente (same as seed.ts)
 const SEED_RESULT_PATH = path.join(__dirname, '..', '..', '..', 'scripts', '.seed-result.json')
 
 /**

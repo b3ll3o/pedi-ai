@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import styles from "./page.module.css";
 import Navbar from './components/Navbar';
+import Logo from './components/Logo';
 import {
   Smartphone,
   WifiOff,
@@ -596,12 +596,7 @@ export default function Home() {
         <div className={styles.container}>
           <div className={styles.footerContent}>
             <div className={styles.footerBrand}>
-              <span className={styles.logo}>
-                <Link href="/" aria-label="Página inicial Pedi-AI">
-                  <UtensilsCrossed size={24} className={styles.logoIcon} aria-hidden="true" />
-                  <span className={styles.logoText}>Pedi-AI</span>
-                </Link>
-              </span>
+              <Logo size={24} className={styles.logo} />
               <p className={styles.footerTagline}>
                 Cardápio digital para restaurantes modernos
               </p>
