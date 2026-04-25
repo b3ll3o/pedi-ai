@@ -35,14 +35,20 @@ Pedi-AI é uma plataforma de cardápio digital que permite restaurantes gerencia
 
 ## Directory Map
 
-| Directory | Responsabilidade | Mapa Detalhado |
-|-----------|-----------------|----------------|
-| `src/app/` | Next.js App Router — todas as rotas, layouts, API routes | [Ver Map](src/app/codemap.md) |
-| `src/components/` | Componentes React organizados por domínio (UI layer) | [Ver Map](src/components/codemap.md) |
-| `src/hooks/` | Custom React hooks — auth, menu, realtime, table, role | [Ver Map](src/hooks/codemap.md) |
-| `src/lib/` | Módulos reutilizáveis — auth, offline (Dexie), QR, Supabase client, SW | [Ver Map](src/lib/codemap.md) |
-| `src/services/` | Business logic layer — orders, users, tables, analytics | [Ver Map](src/services/codemap.md) |
-| `src/stores/` | Zustand state management — menu, cart, table com persistência offline | [Ver Map](src/stores/codemap.md) |
+| Directory | Responsabilidade | Status | Mapa Detalhado |
+|-----------|-----------------|--------|----------------|
+| `src/app/` | Next.js App Router — todas as rotas, layouts, API routes | ✅ Atual | [Ver Map](src/app/codemap.md) |
+| `src/components/` | Componentes React organizados por domínio (UI layer) | ✅ Atual | [Ver Map](src/components/codemap.md) |
+| `src/hooks/` | Custom React hooks — auth, menu, realtime, table, role | ✅ Atual | [Ver Map](src/hooks/codemap.md) |
+| `src/lib/` | Módulos reutilizáveis — auth, offline (Dexie), QR, Supabase client, SW | ✅ Atual | [Ver Map](src/lib/codemap.md) |
+| `src/services/` | Business logic layer — orders, users, tables, analytics | ✅ Atual | [Ver Map](src/services/codemap.md) |
+| `src/stores/` | Zustand state management — menu, cart, table com persistência offline | ✅ Atual | [Ver Map](src/stores/codemap.md) |
+| `src/domain/` | REGRAS DE NEGÓCIO - pure TypeScript, sem deps de framework | 🚧 Planejado | [Ver Mapa](openspec/changes/implantacao-ddd/design.md) |
+| `src/application/` | CASOS DE USO - orquestração | 🚧 Planejado | [Ver Mapa](openspec/changes/implantacao-ddd/design.md) |
+| `src/infrastructure/` | IMPLEMENTAÇÕES - adapters, repos | 🚧 Planejado | [Ver Mapa](openspec/changes/implantacao-ddd/design.md) |
+| `src/presentation/` | NEXT.JS - UI, API routes | 🚧 Planejado | [Ver Mapa](openspec/changes/implantacao-ddd/design.md) |
+
+> **Nota**: A estrutura DDD (`domain/`, `application/`, `infrastructure/`, `presentation/`) está **planejada** mas **não foi implementada**. Voir `openspec/changes/implantacao-ddd/` para o plano de migração.
 
 ---
 

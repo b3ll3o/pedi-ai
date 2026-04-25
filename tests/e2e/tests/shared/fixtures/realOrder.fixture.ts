@@ -90,6 +90,7 @@ export const realOrderFixture = authBase.extend<{ realOrder: RealOrderResult }>(
     const order = await createTestOrder(request, {
       restaurantId,
       tableId,
+      customerId: generateUUID(), // API requer customer_id
       items,
     })
 

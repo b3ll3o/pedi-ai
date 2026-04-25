@@ -9,6 +9,8 @@ RETURNS UUID AS $$
 DECLARE
   restaurant_uuid UUID;
 BEGIN
+  -- Prevent search path hijacking in SECURITY DEFINER function
+  PERFORM set_config('search_path', 'pg_catalog, public', true);
   BEGIN
     restaurant_uuid := NULLIF(current_setting('app.current_restaurant_id', true), '')::UUID;
     IF restaurant_uuid IS NULL THEN
@@ -28,6 +30,8 @@ $$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
 CREATE OR REPLACE FUNCTION set_current_restaurant_id(restaurant_uuid UUID)
 RETURNS VOID AS $$
 BEGIN
+  -- Prevent search path hijacking in SECURITY DEFINER function
+  PERFORM set_config('search_path', 'pg_catalog, public', true);
   PERFORM set_config('app.current_restaurant_id', restaurant_uuid::text, true);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -83,4 +87,16 @@ CREATE POLICY "Users can read orders of their restaurant"
   ON orders FOR SELECT
   USING (
     restaurant_id = get_current_restaurant_id()
+  );
+
+-- Modifier values table (MISSING - needs to be added)
+DROP POLICY IF EXISTS "Users can read modifier values of their restaurant" ON modifier_values;
+CREATE POLICY "Users can read modifier values of their restaurant"
+  ON modifier_values FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM modifier_groups
+      WHERE modifier_groups.id = modifier_values.modifier_group_id
+      AND modifier_groups.restaurant_id = get_current_restaurant_id()
+    )
   );

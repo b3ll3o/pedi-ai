@@ -16,6 +16,7 @@ import type { APIRequestContext } from '@playwright/test'
 export interface OrderItemInput {
   productId: string
   quantity: number
+  unitPrice?: number
   modifiers?: Array<{ name: string; price?: number }>
 }
 
@@ -85,25 +86,22 @@ export async function createTestOrder(
 ): Promise<OrderCreationResult> {
   const idempotencyKey = generateUUID()
 
+  // API requires: customer_id, items (with product_id, quantity, unit_price), payment_method, idempotency_key
   const payload: Record<string, unknown> = {
-    restaurantId: params.restaurantId,
-    tableId: params.tableId,
+    customer_id: params.customerId,
+    table_id: params.tableId,
+    payment_method: 'pix',
+    idempotency_key: idempotencyKey,
     items: params.items.map((item) => ({
-      productId: item.productId,
+      product_id: item.productId,
       quantity: item.quantity,
+      unit_price: item.unitPrice ?? 0,
       ...(item.modifiers && { modifiers: item.modifiers }),
     })),
   }
 
-  if (params.customerId) {
-    payload.customerId = params.customerId
-  }
-
   const response = await api.post('/api/orders', {
     data: payload,
-    headers: {
-      'X-Idempotency-Key': idempotencyKey,
-    },
   })
 
   if (!response.ok()) {

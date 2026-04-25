@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getSession } from '@/lib/supabase/auth';
 import { TableManagement } from '@/components/admin/TableManagement';
 import { TableQRCode } from '@/components/admin/TableQRCode';
+import { useListarMesas } from '@/hooks/useMesa';
 import type { tables } from '@/lib/supabase/types';
 import styles from './page.module.css';
 
@@ -14,6 +15,9 @@ interface TableFormData {
   capacity: string;
   generateQr: boolean;
 }
+
+// Restaurante padrão para admin - em produção viria da sessão do usuário
+const DEFAULT_RESTAURANTE_ID = 'default-restaurant';
 
 export default function TablesPage() {
   const router = useRouter();
@@ -33,6 +37,20 @@ export default function TablesPage() {
     generateQr: true,
   });
 
+  // Hook para listar mesas usando ListarMesasUseCase
+  const { data: mesasData, isLoading: isLoadingMesas, error: mesasError, refetch } = useListarMesas(DEFAULT_RESTAURANTE_ID);
+
+  // Sincronizar dados do hook com o estado local
+  useEffect(() => {
+    if (mesasData) {
+      setTables(mesasData);
+    }
+    if (mesasError) {
+      setError('Erro ao carregar mesas');
+    }
+  }, [mesasData, mesasError]);
+
+  // Fetch tables via API (para operações de criação/atualização/exclusão)
   const fetchTables = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/tables');
@@ -55,7 +73,7 @@ export default function TablesPage() {
           router.replace('/admin/login');
           return;
         }
-        await fetchTables();
+        // Tables will be loaded by the hook via useListarMesas
         setLoading(false);
       } catch (err) {
         console.error('Auth check failed:', err);
@@ -63,7 +81,7 @@ export default function TablesPage() {
       }
     };
     checkAuth();
-  }, [router, fetchTables]);
+  }, [router]);
 
   const showSuccess = useCallback((message: string) => {
     setSuccess(message);
@@ -280,7 +298,7 @@ export default function TablesPage() {
     resetForm();
   }, [resetForm]);
 
-  if (loading) {
+  if (loading || isLoadingMesas) {
     return (
       <div className={styles.container}>
         <div className={styles.loading}>Carregando...</div>

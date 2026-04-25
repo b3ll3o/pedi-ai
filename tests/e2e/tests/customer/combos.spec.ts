@@ -6,9 +6,9 @@ test.describe('Combos', () => {
   let menuPage: MenuPage
   let cartPage: CartPage
 
-  test.beforeEach(async ({ guest }) => {
-    menuPage = new MenuPage(guest)
-    cartPage = new CartPage(guest)
+  test.beforeEach(async ({ authenticated }) => {
+    menuPage = new MenuPage(authenticated)
+    cartPage = new CartPage(authenticated)
     await menuPage.goto()
   })
 
@@ -18,7 +18,7 @@ test.describe('Combos', () => {
     await cartPage.clearCart()
   })
 
-  test('should add combo to cart from menu', async ({ guest: _guest }) => {
+  test('should add combo to cart from menu', async ({ authenticated: _authenticated }) => {
     // Combo deve aparecer no cardápio com badge "Combo"
     const comboCard = menuPage.productCards.filter({ hasText: 'Combo' }).first()
     await expect(comboCard).toBeVisible()
@@ -31,12 +31,12 @@ test.describe('Combos', () => {
     await expect(cartPage.cartItems.first()).toBeVisible()
   })
 
-  test('should display bundle price instead of sum', async ({ guest }) => {
+  test('should display bundle price instead of sum', async ({ authenticated }) => {
     // Acessar produto combo
     await menuPage.viewProduct('Combo')
 
     // Verificar que preço exibido é o bundle_price, não a soma dos itens
-    const bundlePriceLocator = guest.locator('[data-testid="bundle-price"], [data-testid="product-price"]')
+    const bundlePriceLocator = authenticated.locator('[data-testid="bundle-price"], [data-testid="product-price"]')
     await expect(bundlePriceLocator).toBeVisible()
 
     const bundlePriceText = await bundlePriceLocator.textContent()
@@ -47,7 +47,7 @@ test.describe('Combos', () => {
     expect(bundlePrice).toBeGreaterThan(0)
   })
 
-  test('should use bundle price in cart total', async ({ guest: _guest }) => {
+  test('should use bundle price in cart total', async ({ authenticated: _authenticated }) => {
     // Adicionar combo ao carrinho
     const comboCard = menuPage.productCards.filter({ hasText: 'Combo' }).first()
     await comboCard.locator('[data-testid^="menu-add-to-cart-"]').click()
@@ -67,7 +67,7 @@ test.describe('Combos', () => {
     expect(total).toBe(itemPrice)
   })
 
-  test('should show combo in order details with bundle price', async ({ guest }) => {
+  test('should show combo in order details with bundle price', async ({ authenticated }) => {
     // Adicionar combo ao carrinho
     const comboCard = menuPage.productCards.filter({ hasText: 'Combo' }).first()
     await comboCard.locator('[data-testid^="menu-add-to-cart-"]').click()
@@ -77,17 +77,17 @@ test.describe('Combos', () => {
     await cartPage.proceedToCheckout()
 
     // Preencher dados e finalizar pedido
-    await guest.fill('[data-testid="customer-name"]', 'Cliente Teste Combo')
-    await guest.fill('[data-testid="customer-phone"]', '11999999999')
+    await authenticated.fill('[data-testid="customer-name"]', 'Cliente Teste Combo')
+    await authenticated.fill('[data-testid="customer-phone"]', '11999999999')
 
     // Submeter pedido
-    await guest.click('[data-testid="submit-order"]')
+    await authenticated.click('[data-testid="submit-order"]')
 
     // Aguardar redirect para página de confirmação
-    await guest.waitForURL(/\/order\//)
+    await authenticated.waitForURL(/\/order\//)
 
     // Verificar que pedido contém combo com preço bundle
-    const orderDetails = guest.locator('[data-testid="order-details"]')
+    const orderDetails = authenticated.locator('[data-testid="order-details"]')
     await expect(orderDetails).toBeVisible()
 
     // Verificar que combo aparece com seu preço (bundle)

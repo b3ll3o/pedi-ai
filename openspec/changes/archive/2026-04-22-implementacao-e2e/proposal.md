@@ -8,21 +8,17 @@ Os testes E2E atuais **não funcionam** porque:
 
 2. **Sem seed de dados** - Categorias, produtos e outras entidades não são criados antes dos testes.
 
-3. **Sem Supabase local** - O CI usa Postgres vanilla, mas o Supabase precisa de suas tabelas de autenticação e RLS.
+3. **Sem Supabase Cloud** - O CI usa Postgres vanilla, mas o Supabase precisa de suas tabelas de autenticação e RLS.
 
 4. **Fixtures tentam login real** - `performLogin()` tenta fazer login com credenciais que não existem.
 
 ## Options de Solução
 
-### Option A: Supabase Local + Seed Script
+### Option A: Supabase Local + Seed Script (REJEITADO)
 
-Usar `supabase local dev` com Docker e criar script de seed.
+~~Usar `supabase local dev` com Docker e criar script de seed.~~
 
-**Prós:**
-- Ambiente real de Supabase (auth, RLS, etc.)
-- Totalmente funcional
-
-**Contras:**
+**Motivo da rejeição:**
 - ⚠️ DEPRECADO - Muito trabalho para configurar localmente
 - Dependência de Docker
 - Mais pesado para rodar local

@@ -1,7 +1,19 @@
+/**
+ * useAuth Hook
+ * Hook para gerenciamento de estado de autenticação.
+ * Usa AutenticarUsuarioUseCase e RegistrarUsuarioUseCase do application layer.
+ */
+
 import { useCallback, useEffect, useState } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
-import { signIn, signOut, getSession, getUser, onAuthStateChange } from '@/lib/supabase/auth';
+import { signIn as supabaseSignIn, signOut as supabaseSignOut, getSession, getUser, onAuthStateChange } from '@/lib/supabase/auth';
+import { AutenticarUsuarioUseCase, type AutenticarInput } from '@/application/autenticacao/services/AutenticarUsuarioUseCase';
+import { RegistrarUsuarioUseCase, type RegistrarUsuarioInput } from '@/application/autenticacao/services/RegistrarUsuarioUseCase';
+import { SupabaseAuthAdapter } from '@/infrastructure/external/SupabaseAuthAdapter';
+import { UsuarioRepository } from '@/infrastructure/persistence/autenticacao/UsuarioRepository';
+import { SessaoRepository } from '@/infrastructure/persistence/autenticacao/SessaoRepository';
+import { db } from '@/infrastructure/persistence/database';
 
 export interface UseAuthReturn {
   user: User | null;
@@ -10,16 +22,18 @@ export interface UseAuthReturn {
   isAuthenticated: boolean;
   error: string | null;
   signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, papel?: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
 /**
  * React hook for managing authentication state.
  * Provides user session, loading states, and auth actions.
+ * Usa use cases do application layer para operações de autenticação.
  *
  * @example
  * ```tsx
- * const { user, isLoading, isAuthenticated, signIn, signOut, error } = useAuth();
+ * const { user, isLoading, isAuthenticated, signIn, signUp, signOut, error } = useAuth();
  * ```
  */
 export function useAuth(): UseAuthReturn {
@@ -43,7 +57,7 @@ export function useAuth(): UseAuthReturn {
         }
       } catch (err) {
         if (isMounted) {
-          setError(err instanceof Error ? err.message : 'Failed to initialize auth');
+          setError(err instanceof Error ? err.message : 'Falha ao inicializar autenticação');
         }
       } finally {
         /* istanbul ignore if */ if (isMounted) {
@@ -66,7 +80,7 @@ export function useAuth(): UseAuthReturn {
         // Session expired or user signed out - redirect to login
         setSession(null);
         setUser(null);
-        router.push('/admin/login');
+        router.push('/login');
       } else if (event === 'TOKEN_REFRESHED' && session) {
         // Token refreshed - update session
         setSession(session);
@@ -82,35 +96,77 @@ export function useAuth(): UseAuthReturn {
     };
   }, [router]);
 
+  /**
+   * Autentica usuário usando AutenticarUsuarioUseCase.
+   */
   const handleSignIn = useCallback(async (email: string, password: string) => {
     setIsLoading(true);
     setError(null);
     try {
-      const { data, error: authError } = await signIn(email, password);
-      if (authError) {
-        setError(authError.message);
-        return;
-      }
-      if (data) {
-        setSession(data.session);
-        setUser(data.user);
-      }
+      // Instanciar adapters e repositories
+      const authAdapter = new SupabaseAuthAdapter();
+      const sessaoRepo = new SessaoRepository(db);
+
+      // Executar use case
+      const autenticarUseCase = new AutenticarUsuarioUseCase(authAdapter, sessaoRepo);
+      const input: AutenticarInput = {
+        email,
+        senha: password,
+        dispositivo: typeof window !== 'undefined' ? window.navigator.userAgent : 'unknown',
+      };
+
+      await autenticarUseCase.execute(input);
+
+      // Atualizar estado após autenticação bem-sucedida
+      const [sessionResult, userResult] = await Promise.all([getSession(), getUser()]);
+      setSession(sessionResult);
+      setUser(userResult);
     } catch (err) {
-      /* istanbul ignore next */ setError(err instanceof Error ? err.message : 'Sign in failed');
+      setError(err instanceof Error ? err.message : 'Falha na autenticação');
     } finally {
       setIsLoading(false);
     }
   }, []);
 
+  /**
+   * Registra novo usuário usando RegistrarUsuarioUseCase.
+   */
+  const handleSignUp = useCallback(async (email: string, password: string, papel: string = 'cliente') => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      // Instanciar adapters e repositories
+      const authAdapter = new SupabaseAuthAdapter();
+      const usuarioRepo = new UsuarioRepository(db);
+
+      // Executar use case
+      const registrarUseCase = new RegistrarUsuarioUseCase(usuarioRepo, authAdapter);
+      const input: RegistrarUsuarioInput = {
+        email,
+        senha: password,
+        papel: papel as RegistrarUsuarioInput['papel'],
+      };
+
+      await registrarUseCase.execute(input);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Falha no registro');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  /**
+   * Realiza logout usando Supabase diretamente (limpa sessão local).
+   */
   const handleSignOut = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      await signOut();
+      await supabaseSignOut();
       setSession(null);
       setUser(null);
     } catch (err) {
-      /* istanbul ignore next */ setError(err instanceof Error ? err.message : 'Sign out failed');
+      /* istanbul ignore next */ setError(err instanceof Error ? err.message : 'Falha ao sair');
     } finally {
       setIsLoading(false);
     }
@@ -123,6 +179,7 @@ export function useAuth(): UseAuthReturn {
     isAuthenticated: !!session && !!user,
     error,
     signIn: handleSignIn,
+    signUp: handleSignUp,
     signOut: handleSignOut,
   };
 }

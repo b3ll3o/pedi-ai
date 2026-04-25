@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSession, signIn } from '@/lib/supabase/auth';
+import { getSession } from '@/lib/supabase/auth';
+import { useAuth } from '@/hooks/useAuth';
 import { LoginForm } from '@/components/auth/LoginForm';
 import styles from './page.module.css';
 
 export default function CustomerLoginPage() {
   const router = useRouter();
   const [isCheckingSession, setIsCheckingSession] = useState(true);
+  const { signIn, isAuthenticated } = useAuth();
 
   useEffect(() => {
     const checkSession = async () => {
@@ -27,12 +29,15 @@ export default function CustomerLoginPage() {
     checkSession();
   }, [router]);
 
-  const handleLogin = async (email: string, password: string) => {
-    const { error } = await signIn(email, password);
-    if (error) {
-      throw new Error(error.message);
+  // Redirecionar após autenticação bem-sucedida
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/menu');
     }
-    router.push('/menu');
+  }, [isAuthenticated, router]);
+
+  const handleLogin = async (email: string, password: string) => {
+    await signIn(email, password);
   };
 
   if (isCheckingSession) {

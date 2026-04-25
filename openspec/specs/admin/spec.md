@@ -168,6 +168,76 @@ The system SHALL provide basic analytics for restaurant operations.
 - THEN the system SHALL display the top 10 products by order frequency
 - AND the data SHALL cover the selected time period
 
+### Requirement: Admin Dashboard Color Consistency
+The admin dashboard MUST use the official color palette defined in the design system.
+
+#### Scenario: Admin Sidebar Colors
+- GIVEN an admin user is logged in
+- WHEN the sidebar navigation is rendered
+- THEN sidebar background MUST use `--color-surface`
+- AND active nav item MUST use `--color-primary` background with contrast text
+- AND inactive nav items MUST use `--color-text-secondary`
+- AND sidebar borders MUST use `--color-border`
+
+#### Scenario: Admin Data Table Colors
+- GIVEN an admin views a data table (orders, products, categories)
+- WHEN the table is rendered
+- THEN table headers MUST use `--color-surface-elevated`
+- AND table borders MUST use `--color-border`
+- AND alternating rows MAY use `--color-surface` and `--color-surface-elevated`
+- AND text MUST use `--color-text-primary` and `--color-text-secondary`
+- AND action buttons MUST use semantic colors (edit: `--color-info`, delete: `--color-error`)
+
+#### Scenario: Admin Form Colors
+- GIVEN an admin is filling out a form
+- WHEN form fields are rendered
+- THEN input backgrounds MUST use `--color-surface`
+- AND input borders MUST use `--color-border`
+- AND focus state MUST show `--color-focus-ring`
+- AND labels MUST use `--color-text-primary`
+- AND helper text MUST use `--color-text-secondary`
+- AND error states MUST use `--color-error`
+
+#### Scenario: Admin Stat Cards Colors
+- GIVEN an admin views dashboard stat cards
+- WHEN stat cards are rendered
+- THEN card backgrounds MUST use `--color-surface`
+- AND card borders MUST use `--color-border`
+- AND primary stats MAY use `--color-primary`
+- AND secondary stats MUST use `--color-text-secondary`
+
+#### Scenario: Admin Status Badge Colors
+- GIVEN an admin views order or product status badges
+- WHEN badges are rendered
+- THEN status colors MUST use semantic tokens:
+  - Pending: `--color-warning`
+  - Active/Complete: `--color-success`
+  - Cancelled/Error: `--color-error`
+  - In Progress: `--color-info`
+
+#### Scenario: Admin Dark Mode
+- GIVEN an admin has enabled dark mode
+- WHEN the admin dashboard is rendered
+- THEN sidebar MUST use dark theme `--color-surface`
+- AND tables MUST use dark theme backgrounds
+- AND forms MUST use dark theme inputs
+- AND text MUST use dark theme `--color-text-primary` and `--color-text-secondary`
+- AND status badges MUST remain visible with proper contrast
+
+#### Scenario: Admin Primary Action Buttons
+- GIVEN an admin clicks a primary action button (Save, Create, Update)
+- WHEN the button is rendered
+- THEN the button background MUST use `--color-primary` or `--gradient-primary`
+- AND button text MUST be white or have sufficient contrast
+- AND hover state MUST be visually distinct
+
+#### Scenario: Admin Destructive Action Buttons
+- GIVEN an admin clicks a destructive action button (Delete)
+- WHEN the button is rendered
+- THEN the button background SHOULD use `--color-error`
+- AND the button text MUST be white with sufficient contrast
+- AND a confirmation dialog SHOULD appear before action execution
+
 ---
 
 ## MODIFIED Requirements
@@ -179,3 +249,144 @@ None.
 ## REMOVED Requirements
 
 None.
+
+---
+
+## DDD Architecture Requirements (from implantacao-ddd)
+
+### Requirement: Admin Domain Layer — Entities
+The domain layer MUST contain administrative entities.
+
+#### Scenario: Restaurante Entity Exists
+- GIVEN the `src/domain/admin/entities/` directory
+- WHEN the codebase is inspected
+- THEN a `Restaurante.ts` entity MUST exist with properties: `id`, `nome`, `cnpj`, `endereco`, `configuracoes`, `criadoEm`
+- AND the entity MUST NOT import from Next.js, React, or infrastructure layers
+
+### Requirement: Admin Domain Layer — Value Objects
+The domain layer MUST contain value objects.
+
+#### Scenario: ConfiguracoesRestaurante Value Object Exists
+- GIVEN the `src/domain/admin/value-objects/` directory
+- WHEN the codebase is inspected
+- THEN a `ConfiguracoesRestaurante.ts` value object MUST exist with settings properties
+
+#### Scenario: Estatisticas Value Object Exists
+- GIVEN the `src/domain/admin/value-objects/` directory
+- WHEN the codebase is inspected
+- THEN an `Estatisticas.ts` value object MUST exist for analytics data
+
+### Requirement: Admin Domain Layer — Aggregates
+The domain layer MUST contain aggregate roots.
+
+#### Scenario: AdminAggregate Exists
+- GIVEN the `src/domain/admin/aggregates/` directory
+- WHEN the codebase is inspected
+- THEN an `AdminAggregate.ts` aggregate root MUST exist
+- AND it MUST encapsulate restaurant administration logic
+- AND it MUST coordinate across other bounded contexts for admin operations
+
+### Requirement: Admin Domain Layer — Repository Interfaces
+The domain layer MUST define repository interfaces.
+
+#### Scenario: IRestauranteRepository Interface Exists
+- GIVEN the `src/domain/admin/repositories/` directory
+- WHEN the codebase is inspected
+- THEN an `IRestauranteRepository.ts` interface MUST exist with methods: `findById(id)`, `save(restaurante)`, `update(restaurante)`
+
+#### Scenario: IEstatisticasRepository Interface Exists
+- GIVEN the `src/domain/admin/repositories/` directory
+- WHEN the codebase is inspected
+- THEN an `IEstatisticasRepository.ts` interface MUST exist with methods: `obterPedidosPorPeriodo(inicio, fim)`, `obterItensPopulares(inicio, fim)`, `obterReceitaTotal(inicio, fim)`
+
+### Requirement: Admin Domain Layer — Domain Events
+The domain layer MUST define domain events.
+
+#### Scenario: Domain Events Exist
+- GIVEN the `src/domain/admin/events/` directory
+- WHEN the codebase is inspected
+- THEN `RestauranteAtualizadoEvent.ts` event class MUST exist
+
+### Requirement: Admin Application Layer — Use Cases
+The application layer MUST contain use case services.
+
+#### Scenario: GerenciarCategoriaUseCase Exists
+- GIVEN the `src/application/admin/services/` directory
+- WHEN the codebase is inspected
+- THEN a `GerenciarCategoriaUseCase.ts` class MUST exist
+- AND it MUST delegate category CRUD to cardapio bounded context
+
+#### Scenario: GerenciarProdutoUseCase Exists
+- GIVEN the `src/application/admin/services/` directory
+- WHEN the codebase is inspected
+- THEN a `GerenciarProdutoUseCase.ts` class MUST exist
+- AND it MUST delegate product CRUD to cardapio bounded context
+
+#### Scenario: GerenciarMesaUseCase Exists
+- GIVEN the `src/application/admin/services/` directory
+- WHEN the codebase is inspected
+- THEN a `GerenciarMesaUseCase.ts` class MUST exist
+- AND it MUST delegate mesa operations to mesa bounded context
+
+#### Scenario: ObterEstatisticasUseCase Exists
+- GIVEN the `src/application/admin/services/` directory
+- WHEN the codebase is inspected
+- THEN an `ObterEstatisticasUseCase.ts` class MUST exist
+- AND it MUST aggregate statistics from pedido and pagamento bounded contexts
+
+#### Scenario: GerenciarPedidosAdminUseCase Exists
+- GIVEN the `src/application/admin/services/` directory
+- WHEN the codebase is inspected
+- THEN a `GerenciarPedidosAdminUseCase.ts` class MUST exist
+- AND it MUST delegate order management to pedido bounded context
+
+### Requirement: Admin Infrastructure Layer — Persistence
+The infrastructure layer MUST implement repository interfaces.
+
+#### Scenario: RestauranteRepository Implementation Exists
+- GIVEN the `src/infrastructure/persistence/admin/` directory
+- WHEN the codebase is inspected
+- THEN a `RestauranteRepository.ts` class MUST exist implementing `IRestauranteRepository`
+- AND it MUST use Dexie for local caching
+
+#### Scenario: EstatisticasRepository Implementation Exists
+- GIVEN the `src/infrastructure/persistence/admin/` directory
+- WHEN the codebase is inspected
+- THEN an `EstatisticasRepository.ts` class MUST exist implementing `IEstatisticasRepository`
+- AND it MUST aggregate data from other repository implementations
+
+### Requirement: Admin Presentation Layer — Boundaries
+The presentation layer MUST only contain UI rendering and input collection.
+
+#### Scenario: Admin Pages Delegate to Application Layer
+- GIVEN `src/presentation/pages/admin/` contains admin pages
+- WHEN the pages are inspected
+- THEN they MUST NOT contain business logic
+- AND all CRUD operations MUST delegate to application use cases
+
+#### Scenario: Admin Components Are Thin
+- GIVEN any component in `src/presentation/components/admin/`
+- WHEN the component is inspected
+- THEN it MUST only handle UI state and user input
+- AND data operations MUST delegate to application layer
+
+#### Scenario: Dashboard Uses Statistics Use Cases
+- GIVEN the admin dashboard displays analytics
+- WHEN the data is fetched
+- THEN the dashboard MUST call `ObterEstatisticasUseCase`
+- AND the dashboard MUST NOT directly query repositories
+
+### Requirement: Admin Dependency Rules
+The system MUST enforce unidirectional dependency flow between layers.
+
+#### Scenario: Admin Uses Other Bounded Contexts
+- GIVEN admin bounded context needs to manage entities from other contexts
+- WHEN the admin context is inspected
+- THEN it MUST use application layer use cases from other bounded contexts
+- AND it MUST NOT directly access other bounded contexts repositories
+
+#### Scenario: Admin Domain Is Coordinator
+- GIVEN the `src/domain/admin/` directory
+- WHEN the domain is inspected
+- THEN it MUST act as a thin coordinator with minimal logic
+- AND most admin logic MUST live in `src/application/admin/services/`

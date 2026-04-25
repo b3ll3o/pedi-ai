@@ -13,6 +13,26 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  // DDD Domain Layer Rules - Block cross-layer imports
+  {
+    name: 'ddd/domain-layer-rules',
+    files: ['src/domain/**/*.ts'],
+    rules: {
+      'no-restricted-imports': ['warn', {
+        patterns: [
+          'react',
+          'next',
+          '@/infrastructure/**',
+          '@/presentation/**',
+          '@/components/**',
+          '@/hooks/**',
+          '@/lib/**',
+          '@/services/**',
+          '@/stores/**',
+        ]
+      }]
+    },
+  },
   {
     rules: {
       // Ignore unused vars that start with underscore

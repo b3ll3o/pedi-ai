@@ -8,18 +8,18 @@ test.describe('Payment', () => {
   let checkoutPage: CheckoutPage
   let orderPage: OrderPage
 
-  test.beforeEach(async ({ guest }) => {
-    menuPage = new MenuPage(guest)
-    checkoutPage = new CheckoutPage(guest)
-    orderPage = new OrderPage(guest)
+  test.beforeEach(async ({ authenticated }) => {
+    menuPage = new MenuPage(authenticated)
+    checkoutPage = new CheckoutPage(authenticated)
+    orderPage = new OrderPage(authenticated)
 
     // Create order
     await menuPage.goto()
     await menuPage.addProductToCart('Picanha')
   })
 
-  test('should process PIX payment', async ({ guest, seedData }) => {
-    await guest.goto('/checkout')
+  test('should process PIX payment', async ({ authenticated, seedData }) => {
+    await authenticated.goto('/checkout')
     await checkoutPage.fillCustomerInfo({
       name: 'Maria Santos',
       email: 'maria@example.com',
@@ -30,12 +30,12 @@ test.describe('Payment', () => {
     await checkoutPage.submitOrder()
 
     // Should show PIX QR code
-    await expect(guest.locator('[data-testid="pix-qr-code"]')).toBeVisible()
+    await expect(authenticated.locator('[data-testid="pix-qr-code"]')).toBeVisible()
   })
 
-  test('should wait for PIX payment confirmation', { tag: '@slow' }, async ({ guest, seedData, admin }) => {
+  test('should wait for PIX payment confirmation', { tag: '@slow' }, async ({ authenticated, seedData, admin }) => {
     // Create PIX order via checkout
-    await guest.goto('/checkout')
+    await authenticated.goto('/checkout')
     await checkoutPage.fillCustomerInfo({
       name: 'Maria Santos',
       email: 'maria@example.com',
@@ -45,7 +45,7 @@ test.describe('Payment', () => {
     await checkoutPage.selectPaymentMethod('pix')
     await checkoutPage.submitOrder()
 
-    const orderUrl = guest.url()
+    const orderUrl = authenticated.url()
     const orderId = orderUrl.split('/order/')[1]
 
     await orderPage.goto(orderId)
@@ -64,15 +64,15 @@ test.describe('Payment', () => {
     }, orderId)
 
     // Recarregar pagina e verificar status
-    await guest.reload()
+    await authenticated.reload()
     await orderPage.waitForStatus('confirmed', 120_000)
     await expect(orderPage.paymentStatus).toContainText(/confirmado|pago/i)
   })
 
-  test('should display payment error for failed transaction', async ({ guest, seedData }) => {
+  test('should display payment error for failed transaction', async ({ authenticated, seedData }) => {
     // Teste de cartao de credito - apenas verifica que o formulario aparece
     // Falhas de pagamento sao tratadas pelo gateway, nao pelo frontend
-    await guest.goto('/checkout')
+    await authenticated.goto('/checkout')
     await checkoutPage.fillCustomerInfo({
       name: 'Test User',
       email: 'test@example.com',
@@ -83,11 +83,11 @@ test.describe('Payment', () => {
     await checkoutPage.submitOrder()
 
     // Payment form should appear
-    await expect(guest.locator('[data-testid="credit-card-form"]')).toBeVisible()
+    await expect(authenticated.locator('[data-testid="credit-card-form"]')).toBeVisible()
   })
 
-  test('should handle payment timeout', { tag: '@slow' }, async ({ guest, seedData }) => {
-    await guest.goto('/checkout')
+  test('should handle payment timeout', { tag: '@slow' }, async ({ authenticated, seedData }) => {
+    await authenticated.goto('/checkout')
     await checkoutPage.fillCustomerInfo({
       name: 'Timeout User',
       email: 'timeout@example.com',
@@ -98,6 +98,6 @@ test.describe('Payment', () => {
     await checkoutPage.submitOrder()
 
     // Aguardar mensagem de timeout (120 segundos conforme requisito 1.4.4)
-    await expect(guest.locator('[data-testid="payment-timeout-message"]')).toBeVisible({ timeout: 120_000 })
+    await expect(authenticated.locator('[data-testid="payment-timeout-message"]')).toBeVisible({ timeout: 120_000 })
   })
 })

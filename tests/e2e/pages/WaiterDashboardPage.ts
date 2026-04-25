@@ -30,12 +30,14 @@ export class WaiterDashboardPage {
   }
 
   async goto(): Promise<void> {
-    await this.page.goto('/admin/dashboard')
-    // Waiter dashboard is typically the same as admin dashboard
-    // but with kitchen-focused view
+    // Waiter dashboard is at /dashboard (route group), not /admin/dashboard
+    await this.page.goto('/dashboard')
   }
 
   async navigateToKitchen(): Promise<void> {
+    // First navigate to /dashboard, then click nav-kitchen link
+    await this.page.goto('/dashboard')
+    await this.page.waitForSelector('[data-testid="nav-kitchen"]')
     await this.page.locator('[data-testid="nav-kitchen"]').click()
     await this.page.waitForURL(/\/kitchen/)
   }

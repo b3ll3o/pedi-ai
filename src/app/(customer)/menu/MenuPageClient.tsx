@@ -2,22 +2,23 @@
 
 import { useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { useMenu } from '@/hooks/useMenu';
+import { useCardapio } from '@/hooks/useCardapio';
 import { useMenuStore } from '@/stores/menuStore';
 import { SearchBar } from '@/components/menu/SearchBar';
 import { CategoryList } from '@/components/menu/CategoryList';
 import { ProductList } from '@/components/menu/ProductList';
 import type { Category } from '@/components/menu/CategoryList';
+import type { MenuResponse } from '@/hooks/useCardapio';
 import styles from './page.module.css';
 
 // Fixed UUID to match E2E seed data - in production this would come from table context
 const DEMO_RESTAURANT_ID = '00000000-0000-0000-0000-000000000001';
 
-// Transform database categories to Category type expected by CategoryList
+// Transform domain categories to Category type expected by CategoryList
 function transformCategories(
-  dbCategories: import('@/lib/supabase/types').categories[]
+  categoriesFromHook: MenuResponse['categories']
 ): Category[] {
-  return dbCategories.map((c) => ({
+  return categoriesFromHook.map((c) => ({
     id: c.id,
     name: c.name,
     description: c.description ?? undefined,
@@ -25,15 +26,8 @@ function transformCategories(
   }));
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type MenuApiResponse = any;
-
 export default function MenuPageClient() {
-  const { data, isLoading, error } = useMenu(DEMO_RESTAURANT_ID) as {
-    data: MenuApiResponse;
-    isLoading: boolean;
-    error: Error | null;
-  };
+  const { data, isLoading, error } = useCardapio(DEMO_RESTAURANT_ID);
 
   const products = useMenuStore((state) => state.products);
   const searchQuery = useMenuStore((state) => state.searchQuery);
@@ -56,10 +50,12 @@ export default function MenuPageClient() {
   }, [data?.categories, setCategories]);
 
   useEffect(() => {
-    if (data?.products) {
-      setProducts(data.products);
+    if (data?.categories) {
+      // Extrair todos os produtos de todas as categorias para o store
+      const allProducts = data.categories.flatMap((cat) => cat.products);
+      setProducts(allProducts);
     }
-  }, [data?.products, setProducts]);
+  }, [data?.categories, setProducts]);
 
   // Filter products by search query (global search across all categories)
   const filteredProducts = useMemo(() => {

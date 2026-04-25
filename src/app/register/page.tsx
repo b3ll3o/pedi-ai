@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSession, signUp } from '@/lib/supabase/auth';
+import { getSession } from '@/lib/supabase/auth';
+import { useAuth } from '@/hooks/useAuth';
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import styles from './page.module.css';
 
 export default function CustomerRegisterPage() {
   const router = useRouter();
   const [isCheckingSession, setIsCheckingSession] = useState(true);
+  const { signUp, isAuthenticated } = useAuth();
 
   useEffect(() => {
     const checkSession = async () => {
@@ -27,11 +29,15 @@ export default function CustomerRegisterPage() {
     checkSession();
   }, [router]);
 
-  const handleRegister = async (email: string, password: string) => {
-    const { error } = await signUp(email, password);
-    if (error) {
-      throw new Error(error.message);
+  // Redirecionar após autenticação bem-sucedida
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/menu');
     }
+  }, [isAuthenticated, router]);
+
+  const handleRegister = async (email: string, password: string) => {
+    await signUp(email, password);
     router.push('/login?registered=true');
   };
 

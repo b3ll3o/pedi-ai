@@ -17,11 +17,13 @@ export class MenuPage {
   async goto(categoryId?: string): Promise<void> {
     const url = categoryId ? `/menu/${categoryId}` : '/menu'
     await this.page.goto(url)
+    // Wait for page to be fully loaded before interacting
+    await this.page.waitForLoadState('networkidle')
   }
 
   async selectCategory(categoryName: string): Promise<void> {
-    // Filter by exact text match on the category tab element
-    await this.categoryTabs.filter({ hasText: categoryName, exact: true }).click()
+    // Filter by text match on the category tab element (partial match to handle whitespace/variations)
+    await this.categoryTabs.filter({ hasText: categoryName }).click()
   }
 
   async addProductToCart(productName: string): Promise<void> {

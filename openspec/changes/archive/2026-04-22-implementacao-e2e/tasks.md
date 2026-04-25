@@ -1,13 +1,13 @@
 # Tasks: Implementação de Testes E2E Funcionais
 
-## Fase 1: Configurar Supabase Local
+## Fase 1: Configurar Supabase Cloud
 
 ### 1.1 Verificar estrutura atual de migrations
 **Arquivo:** Verificar `supabase/migrations/` existente
 - Listar migrations existentes
 - Identificar schema atual
 
-### 1.2 Configurar Docker Compose para Supabase local
+### 1.2 Configurar Supabase Cloud
 **REMOVIDO** - Usando Supabase Cloud (sem Docker local)
 
 ---

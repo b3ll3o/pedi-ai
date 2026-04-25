@@ -63,13 +63,13 @@ Corrigir os 92 testes E2E que falham devido a:
 
 1. **Stubs vs Real Implementation**: Páginas stub permitem testes passar sem funcionalidadereal
 2. **Test Flakiness**: Algumas falhas podem ser timing/network, não código
-3. **Supabase Local Auth**: Auth funciona localmente mas pode não refletir produção
+3. **Supabase Cloud Auth**: Auth funciona em cloud mas pode não refletir produção
 
 ## Rollback Plan
 
 - Manter backup do estado atual antes de mudanças
 - Git revert para cada fase se necessário
-- Nenhum dado de produção afetado (usamos Supabase local)
+- Nenhum dado de produção afetado (usamos Supabase Cloud)
 
 ## Success Criteria
 

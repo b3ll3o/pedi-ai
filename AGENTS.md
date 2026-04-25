@@ -196,7 +196,11 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **CI/CD**: Pipeline E2E deve bloquear merge se testes falharem
 - **Cobertura de fluxos**: Manter inventário atualizado de fluxos cobertos em `tests/e2e/README.md`
 
-## Arquitetura DDD (Domain-Driven Design)
+## Arquitetura DDD (Domain-Driven Design) - MIGRAÇÃO FUTURA
+
+> ⚠️ **STATUS**: A arquitetura DDD está **planejada** mas **não foi implementada ainda**.
+> A estrutura atual do projeto é a arquitetura tradicional (veja abaixo).
+> Ver: `openspec/changes/implantacao-ddd/` para o plano de migração.
 
 ### Regras Obrigatórias
 
@@ -254,6 +258,35 @@ src/
 - Value Objects: `Dinheiro`, `Quantidade`, `Endereco` (características imutáveis)
 - Events: `PedidoCriado`, `ItemAdicionadoAoCarrinho` (verbo no passado)
 - Use Cases: `CriarPedido`, `AdicionarItemAoCarrinho` (verbo + substantivo)
+
+---
+
+## Arquitetura Atual do Projeto
+
+O projeto atualmente segue uma arquitetura **tradicional em camadas**:
+
+```
+src/
+├── app/                    # Next.js App Router - páginas e API routes
+├── components/             # Componentes React organizados por domínio
+├── hooks/                  # Custom React hooks
+├── lib/                    # Módulos reutilizáveis (auth, offline, QR, supabase)
+├── services/               # Lógica de negócio (services)
+└── stores/                # Zustand stores (estado global)
+```
+
+| Camada | Responsabilidade |
+|--------|-----------------|
+| `app/` | Rotas, layouts, API routes |
+| `components/` | Componentes UI |
+| `hooks/` | Lógica de interface (React hooks) |
+| `lib/` | Utilitários e integrações (auth, supabase, offline) |
+| `services/` | Regras de negócio |
+| `stores/` | Estado global (Zustand) |
+
+### Migration Plan for DDD
+
+The migration to DDD is planned but not started. See `openspec/changes/implantacao-ddd/design.md` for the full migration plan.
 
 <!-- END:pedi-ai-rules -->
 
