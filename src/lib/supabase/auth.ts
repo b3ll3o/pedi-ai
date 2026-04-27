@@ -33,24 +33,36 @@ async function signOut(): Promise<void> {
 
 /**
  * Get the current session
+ * Includes a timeout to prevent hanging in E2E/test environments.
  */
 async function getSession(): Promise<Session | null> {
-  const supabase = createClient()
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-  return session
+  const TIMEOUT_MS = 30_000;
+
+  const timeoutPromise = new Promise<null>((resolve) =>
+    setTimeout(() => resolve(null), TIMEOUT_MS)
+  );
+
+  const supabase = createClient();
+  const sessionPromise = supabase.auth.getSession().then(({ data }) => data.session);
+
+  return Promise.race([sessionPromise, timeoutPromise]);
 }
 
 /**
  * Get the current user
+ * Includes a timeout to prevent hanging in E2E/test environments.
  */
 async function getUser(): Promise<User | null> {
-  const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  return user
+  const TIMEOUT_MS = 30_000;
+
+  const timeoutPromise = new Promise<User | null>((resolve) =>
+    setTimeout(() => resolve(null), TIMEOUT_MS)
+  );
+
+  const supabase = createClient();
+  const userPromise = supabase.auth.getUser().then(({ data }) => data.user);
+
+  return Promise.race([userPromise, timeoutPromise]);
 }
 
 /**

@@ -74,6 +74,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       try {
         const session = await getSession();
         if (!session) {
+          setLoading(false);
           router.replace('/admin/login');
           return;
         }
@@ -84,6 +85,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         setLoading(false);
       } catch (error) {
         console.error('Auth check failed:', error);
+        setLoading(false);
         router.replace('/admin/login');
       }
     };
