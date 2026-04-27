@@ -40,6 +40,19 @@ export default function EditRestaurantPage() {
           return;
         }
 
+        if (res.status === 401) {
+          router.replace('/admin/login');
+          return;
+        }
+
+        if (res.status === 403) {
+          if (!cancelled) {
+            setError('Você não tem permissão para acessar este restaurante.');
+            setLoading(false);
+          }
+          return;
+        }
+
         if (!res.ok) {
           throw new Error('Erro ao carregar restaurante');
         }

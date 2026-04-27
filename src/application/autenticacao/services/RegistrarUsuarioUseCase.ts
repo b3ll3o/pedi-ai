@@ -12,7 +12,7 @@ export interface RegistrarUsuarioInput {
   restauranteId?: string;
 }
 
-export type PapelValue = 'owner' | 'manager' | 'staff' | 'cliente';
+export type PapelValue = 'dono' | 'gerente' | 'atendente' | 'cliente';
 
 /**
  * Output após registrar usuário

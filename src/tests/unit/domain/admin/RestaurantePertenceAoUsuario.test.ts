@@ -29,7 +29,7 @@ describe('Restaurante.pertenceAoUsuario', () => {
     const vinculo = UsuarioRestaurante.criar({
       usuarioId: 'usuario-1',
       restauranteId: restaurante.id,
-      papel: 'owner',
+      papel: 'dono',
     });
 
     mockRepository.findByUsuarioIdAndRestauranteId = vi.fn().mockResolvedValue(vinculo);
@@ -77,7 +77,7 @@ describe('Restaurante.pertenceAoUsuario', () => {
     const vinculo = UsuarioRestaurante.criar({
       usuarioId: 'usuario-1',
       restauranteId: restaurante.id,
-      papel: 'manager',
+      papel: 'gerente',
     });
 
     mockRepository.findByUsuarioIdAndRestauranteId = vi.fn().mockResolvedValue(vinculo);
@@ -100,7 +100,7 @@ describe('Restaurante.pertenceAoUsuario', () => {
     const vinculo = UsuarioRestaurante.criar({
       usuarioId: 'usuario-1',
       restauranteId: restaurante.id,
-      papel: 'staff',
+      papel: 'atendente',
     });
 
     mockRepository.findByUsuarioIdAndRestauranteId = vi.fn().mockResolvedValue(vinculo);

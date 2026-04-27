@@ -56,7 +56,7 @@ describe('ObterCardapioCompletoUseCase', () => {
   describe('execute', () => {
     it('deve obter cardápio completo quando usuário tem acesso', async () => {
       mockUsuarioRestauranteRepo.findByUsuarioIdAndRestauranteId.mockResolvedValueOnce(
-        UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'restaurante-id', papel: 'owner' })
+        UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'restaurante-id', papel: 'dono' })
       );
       mockCategoriaRepo.buscarAtivas.mockResolvedValueOnce([
         { id: 'cat-1', nome: 'Bebidas', descricao: '', ordem: 1, ativa: true, restauranteId: 'restaurante-id', criadoEm: new Date(), atualizadoEm: new Date() } as unknown as CategoriaProps,
@@ -114,7 +114,7 @@ describe('ObterCardapioCompletoUseCase', () => {
 
     it('deve buscar todos os dados do cardápio', async () => {
       mockUsuarioRestauranteRepo.findByUsuarioIdAndRestauranteId.mockResolvedValueOnce(
-        UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'restaurante-id', papel: 'owner' })
+        UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'restaurante-id', papel: 'dono' })
       );
       mockCategoriaRepo.buscarAtivas.mockResolvedValueOnce([]);
       mockProdutoRepo.buscarPorRestaurante.mockResolvedValueOnce([]);

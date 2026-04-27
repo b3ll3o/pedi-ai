@@ -40,21 +40,21 @@ describe('VincularUsuarioRestauranteUseCase', () => {
     it('deve vincular usuário manager quando solicitante é owner', async () => {
       mockUsuarioRestauranteRepo.findByUsuarioIdAndRestauranteId
         .mockResolvedValueOnce(
-          UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'restaurante-id', papel: 'owner' })
+          UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'restaurante-id', papel: 'dono' })
         )
         .mockResolvedValueOnce(null);
 
       const input: VincularUsuarioRestauranteInput = {
         restauranteId: 'restaurante-id',
         usuarioId: 'novo-manager-id',
-        papel: 'manager',
+        papel: 'gerente',
         solicitanteId: 'owner-id',
       };
 
       const resultado = await useCase.execute(input);
 
       expect(resultado.sucesso).toBe(true);
-      expect(resultado.vinculo.papel).toBe('manager');
+      expect(resultado.vinculo.papel).toBe('gerente');
       expect(resultado.vinculo.usuarioId).toBe('novo-manager-id');
       expect(mockEventEmitter).toHaveBeenCalledTimes(1);
     });
@@ -62,21 +62,21 @@ describe('VincularUsuarioRestauranteUseCase', () => {
     it('deve vincular usuário staff quando solicitante é manager', async () => {
       mockUsuarioRestauranteRepo.findByUsuarioIdAndRestauranteId
         .mockResolvedValueOnce(
-          UsuarioRestaurante.criar({ usuarioId: 'manager-id', restauranteId: 'restaurante-id', papel: 'manager' })
+          UsuarioRestaurante.criar({ usuarioId: 'manager-id', restauranteId: 'restaurante-id', papel: 'gerente' })
         )
         .mockResolvedValueOnce(null);
 
       const input: VincularUsuarioRestauranteInput = {
         restauranteId: 'restaurante-id',
         usuarioId: 'novo-staff-id',
-        papel: 'staff',
+        papel: 'atendente',
         solicitanteId: 'manager-id',
       };
 
       const resultado = await useCase.execute(input);
 
       expect(resultado.sucesso).toBe(true);
-      expect(resultado.vinculo.papel).toBe('staff');
+      expect(resultado.vinculo.papel).toBe('atendente');
     });
 
     it('deve lançar erro quando multi-restaurant desativado', async () => {
@@ -85,7 +85,7 @@ describe('VincularUsuarioRestauranteUseCase', () => {
       const input: VincularUsuarioRestauranteInput = {
         restauranteId: 'restaurante-id',
         usuarioId: 'novo-usuario-id',
-        papel: 'staff',
+        papel: 'atendente',
         solicitanteId: 'owner-id',
       };
 
@@ -100,7 +100,7 @@ describe('VincularUsuarioRestauranteUseCase', () => {
       const input: VincularUsuarioRestauranteInput = {
         restauranteId: 'restaurante-id',
         usuarioId: 'novo-usuario-id',
-        papel: 'staff',
+        papel: 'atendente',
         solicitanteId: 'usuario-sem-acesso',
       };
 
@@ -111,13 +111,13 @@ describe('VincularUsuarioRestauranteUseCase', () => {
 
     it('deve lançar erro quando solicitante é staff', async () => {
       mockUsuarioRestauranteRepo.findByUsuarioIdAndRestauranteId.mockResolvedValueOnce(
-        UsuarioRestaurante.criar({ usuarioId: 'staff-id', restauranteId: 'restaurante-id', papel: 'staff' })
+        UsuarioRestaurante.criar({ usuarioId: 'staff-id', restauranteId: 'restaurante-id', papel: 'atendente' })
       );
 
       const input: VincularUsuarioRestauranteInput = {
         restauranteId: 'restaurante-id',
         usuarioId: 'outro-usuario-id',
-        papel: 'staff',
+        papel: 'atendente',
         solicitanteId: 'staff-id',
       };
 
@@ -129,16 +129,16 @@ describe('VincularUsuarioRestauranteUseCase', () => {
     it('deve lançar erro quando usuário já está vinculado', async () => {
       mockUsuarioRestauranteRepo.findByUsuarioIdAndRestauranteId
         .mockResolvedValueOnce(
-          UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'restaurante-id', papel: 'owner' })
+          UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'restaurante-id', papel: 'dono' })
         )
         .mockResolvedValueOnce(
-          UsuarioRestaurante.criar({ usuarioId: 'ja-vinculado-id', restauranteId: 'restaurante-id', papel: 'staff' })
+          UsuarioRestaurante.criar({ usuarioId: 'ja-vinculado-id', restauranteId: 'restaurante-id', papel: 'atendente' })
         );
 
       const input: VincularUsuarioRestauranteInput = {
         restauranteId: 'restaurante-id',
         usuarioId: 'ja-vinculado-id',
-        papel: 'manager',
+        papel: 'gerente',
         solicitanteId: 'owner-id',
       };
 

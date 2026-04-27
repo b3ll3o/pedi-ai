@@ -4,7 +4,7 @@ export interface UsuarioRestauranteProps {
   id: string;
   usuarioId: string;
   restauranteId: string;
-  papel: 'owner' | 'manager' | 'staff';
+  papel: 'dono' | 'gerente' | 'atendente';
   criadoEm: Date;
 }
 
@@ -17,7 +17,7 @@ export class UsuarioRestaurante extends EntityClass<UsuarioRestauranteProps> {
     return this.props.restauranteId;
   }
 
-  get papel(): 'owner' | 'manager' | 'staff' {
+  get papel(): 'dono' | 'gerente' | 'atendente' {
     return this.props.papel;
   }
 
@@ -26,15 +26,15 @@ export class UsuarioRestaurante extends EntityClass<UsuarioRestauranteProps> {
   }
 
   eDono(): boolean {
-    return this.props.papel === 'owner';
+    return this.props.papel === 'dono';
   }
 
   eGerente(): boolean {
-    return this.props.papel === 'manager';
+    return this.props.papel === 'gerente';
   }
 
   eFuncionario(): boolean {
-    return this.props.papel === 'staff';
+    return this.props.papel === 'atendente';
   }
 
   static criar(props: Omit<UsuarioRestauranteProps, 'id' | 'criadoEm'>): UsuarioRestaurante {

@@ -44,7 +44,7 @@ describe('DesvincularUsuarioRestauranteUseCase', () => {
           UsuarioRestaurante.criar({
             usuarioId: 'owner-id',
             restauranteId: 'restaurante-id',
-            papel: 'owner',
+            papel: 'dono',
           })
         )
         // Mock do vínculo do usuário a ser removido (staff)
@@ -52,7 +52,7 @@ describe('DesvincularUsuarioRestauranteUseCase', () => {
           UsuarioRestaurante.criar({
             usuarioId: 'staff-id',
             restauranteId: 'restaurante-id',
-            papel: 'staff',
+            papel: 'atendente',
           })
         );
 
@@ -75,14 +75,14 @@ describe('DesvincularUsuarioRestauranteUseCase', () => {
           UsuarioRestaurante.criar({
             usuarioId: 'owner-id',
             restauranteId: 'restaurante-id',
-            papel: 'owner',
+            papel: 'dono',
           })
         )
         .mockResolvedValueOnce(
           UsuarioRestaurante.criar({
             usuarioId: 'manager-id',
             restauranteId: 'restaurante-id',
-            papel: 'manager',
+            papel: 'gerente',
           })
         );
 
@@ -104,14 +104,14 @@ describe('DesvincularUsuarioRestauranteUseCase', () => {
           UsuarioRestaurante.criar({
             usuarioId: 'owner-id',
             restauranteId: 'restaurante-id',
-            papel: 'owner',
+            papel: 'dono',
           })
         )
         .mockResolvedValueOnce(
           UsuarioRestaurante.criar({
             usuarioId: 'outro-owner-id',
             restauranteId: 'restaurante-id',
-            papel: 'owner',
+            papel: 'dono',
           })
         );
 
@@ -160,7 +160,7 @@ describe('DesvincularUsuarioRestauranteUseCase', () => {
         UsuarioRestaurante.criar({
           usuarioId: 'staff-id',
           restauranteId: 'restaurante-id',
-          papel: 'staff',
+          papel: 'atendente',
         })
       );
 
@@ -181,7 +181,7 @@ describe('DesvincularUsuarioRestauranteUseCase', () => {
           UsuarioRestaurante.criar({
             usuarioId: 'owner-id',
             restauranteId: 'restaurante-id',
-            papel: 'owner',
+            papel: 'dono',
           })
         )
         .mockResolvedValueOnce(null);

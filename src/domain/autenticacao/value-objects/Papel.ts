@@ -1,11 +1,11 @@
 import { ValueObjectClass } from '@/domain/shared';
 
-export type PapelValue = 'owner' | 'manager' | 'staff' | 'cliente';
+export type PapelValue = 'dono' | 'gerente' | 'atendente' | 'cliente';
 
 export class Papel extends ValueObjectClass<PapelValue> {
-  static readonly OWNER = new Papel('owner');
-  static readonly MANAGER = new Papel('manager');
-  static readonly STAFF = new Papel('staff');
+  static readonly DONO = new Papel('dono');
+  static readonly GERENTE = new Papel('gerente');
+  static readonly ATENDENTE = new Papel('atendente');
   static readonly CLIENTE = new Papel('cliente');
 
   private constructor(value: PapelValue) {
@@ -24,16 +24,16 @@ export class Papel extends ValueObjectClass<PapelValue> {
     return papel;
   }
 
-  static isOwner(papel: Papel): boolean {
-    return papel.props === 'owner';
+  static isDono(papel: Papel): boolean {
+    return papel.props === 'dono';
   }
 
-  static isManager(papel: Papel): boolean {
-    return papel.props === 'manager';
+  static isGerente(papel: Papel): boolean {
+    return papel.props === 'gerente';
   }
 
-  static isStaff(papel: Papel): boolean {
-    return papel.props === 'staff';
+  static isAtendente(papel: Papel): boolean {
+    return papel.props === 'atendente';
   }
 
   static isCliente(papel: Papel): boolean {
@@ -51,8 +51,8 @@ export class Papel extends ValueObjectClass<PapelValue> {
 }
 
 const ALL_PAPEIS: Papel[] = [
-  Papel.OWNER,
-  Papel.MANAGER,
-  Papel.STAFF,
+  Papel.DONO,
+  Papel.GERENTE,
+  Papel.ATENDENTE,
   Papel.CLIENTE,
 ];

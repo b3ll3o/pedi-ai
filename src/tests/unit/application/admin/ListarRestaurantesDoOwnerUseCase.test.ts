@@ -44,8 +44,8 @@ describe('ListarRestaurantesDoOwnerUseCase', () => {
   describe('execute', () => {
     it('deve listar restaurantes do owner via junction table quando multi-restaurant ativo', async () => {
       mockUsuarioRestauranteRepo.findByUsuarioId.mockResolvedValueOnce([
-        UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'rest-1', papel: 'owner' }),
-        UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'rest-2', papel: 'owner' }),
+        UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'rest-1', papel: 'dono' }),
+        UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'rest-2', papel: 'dono' }),
       ]);
       mockRestauranteRepo.findById
         .mockResolvedValueOnce(Restaurante.criar({ nome: 'Restaurante 1', cnpj: '11.111.111/0001-11', endereco: '', ativo: true }))
@@ -57,8 +57,8 @@ describe('ListarRestaurantesDoOwnerUseCase', () => {
 
       expect(resultado.sucesso).toBe(true);
       expect(resultado.restaurantes).toHaveLength(2);
-      expect(resultado.restaurantes[0].papel).toBe('owner');
-      expect(resultado.restaurantes[1].papel).toBe('owner');
+      expect(resultado.restaurantes[0].papel).toBe('dono');
+      expect(resultado.restaurantes[1].papel).toBe('dono');
     });
 
     it('deve retornar array vazio quando owner não tem restaurantes', async () => {
@@ -85,12 +85,12 @@ describe('ListarRestaurantesDoOwnerUseCase', () => {
       expect(resultado.sucesso).toBe(true);
       expect(resultado.restaurantes).toHaveLength(1);
       expect(resultado.restaurantes[0].restaurante.nome).toBe('Restaurante Legacy');
-      expect(resultado.restaurantes[0].papel).toBe('owner');
+      expect(resultado.restaurantes[0].papel).toBe('dono');
     });
 
     it('deve buscar restaurante mesmo quando vínculo existe mas restaurante foi removido', async () => {
       mockUsuarioRestauranteRepo.findByUsuarioId.mockResolvedValueOnce([
-        UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'rest-deletado', papel: 'owner' }),
+        UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'rest-deletado', papel: 'dono' }),
       ]);
       mockRestauranteRepo.findById.mockResolvedValueOnce(null);
 

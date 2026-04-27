@@ -7,7 +7,7 @@ import { isMultiRestaurantEnabled } from '@/lib/feature-flags';
 /**
  * Papéis possíveis de um usuário em um restaurante
  */
-export type PapelRestaurante = 'owner' | 'manager' | 'staff';
+export type PapelRestaurante = 'dono' | 'gerente' | 'atendente';
 
 /**
  * Input para listar restaurantes do owner
@@ -59,7 +59,7 @@ export class ListarRestaurantesDoOwnerUseCase
       }
 
       return {
-        restaurantes: [{ restaurante, papel: 'owner' as PapelRestaurante }],
+        restaurantes: [{ restaurante, papel: 'dono' as PapelRestaurante }],
         sucesso: true,
       };
     }

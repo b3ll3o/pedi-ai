@@ -172,7 +172,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         .from('users_profiles')
         .select('id')
         .eq('restaurant_id', existingUser.restaurant_id as string)
-        .eq('role', 'owner')
+        .eq('role', 'dono')
 
       if (ownersError) {
         console.error('Error checking owners:', ownersError)

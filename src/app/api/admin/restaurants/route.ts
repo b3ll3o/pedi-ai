@@ -178,7 +178,7 @@ export async function POST(request: NextRequest) {
       .insert({
         user_id: user.id,
         restaurant_id: restaurant.id,
-        role: 'owner',
+        role: 'dono',
         name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
         email: user.email,
       });

@@ -68,7 +68,7 @@ describe('CriarRestauranteUseCase', () => {
 
       expect(resultado.restaurante).toBeDefined();
       expect(resultado.restaurante.nome).toBe('Novo Restaurante');
-      expect(resultado.vinculo.papel).toBe('owner');
+      expect(resultado.vinculo.papel).toBe('dono');
       expect(resultado.vinculo.usuarioId).toBe('owner-novo-id');
       expect(mockRestauranteRepo.create).toHaveBeenCalledTimes(1);
       expect(mockUsuarioRestauranteRepo.save).toHaveBeenCalledTimes(1);
@@ -127,7 +127,7 @@ describe('CriarRestauranteUseCase', () => {
     it('deve lançar erro quando owner já tem restaurante e multi-restaurant desativado', async () => {
       mockIsMultiRestaurantEnabled.mockReturnValue(false);
       mockUsuarioRestauranteRepo.findByUsuarioId.mockResolvedValue([
-        { id: 'vinculo-legacy', usuarioId: 'owner-id', restauranteId: 'rest-legacy', papel: 'owner', criadoEm: new Date() } as unknown as UsuarioRestauranteProps,
+        { id: 'vinculo-legacy', usuarioId: 'owner-id', restauranteId: 'rest-legacy', papel: 'dono', criadoEm: new Date() } as unknown as UsuarioRestauranteProps,
       ]);
 
       const input: CriarRestauranteInput = {
@@ -159,7 +159,7 @@ describe('CriarRestauranteUseCase', () => {
 
       expect(resultado.vinculo).toBeDefined();
       expect(resultado.vinculo.usuarioId).toBe('usuario-owner');
-      expect(resultado.vinculo.papel).toBe('owner');
+      expect(resultado.vinculo.papel).toBe('dono');
     });
 
     it('deve emitir evento RestauranteCriadoEvent após criar', async () => {

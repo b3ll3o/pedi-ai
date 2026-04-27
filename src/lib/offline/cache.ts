@@ -37,26 +37,23 @@ export async function getCachedMenu(restaurantId: string): Promise<CachedMenu | 
 }
 
 export async function setCachedMenu(menu: CachedMenu): Promise<void> {
-  // Limpar cache antigo do restaurante antes de adicionar novo
+  // Buscar entrada existente pelo restaurantId para usar a mesma chave
   const existing = await db.menu_cache
     .where('restaurantId')
     .equals(menu.restaurantId)
-    .toArray();
-  
-  for (const entry of existing) {
-    if (entry.id !== undefined) {
-      await db.menu_cache.delete(entry.id);
-    }
-  }
+    .first();
 
   const entry: MenuCache = {
+    id: existing?.id, // Manter o mesmo ID se existir (para fazer upsert)
     restaurantId: menu.restaurantId,
     categories: menu.categories,
     products: menu.products,
     modifiers: menu.modifiers,
     timestamp: new Date(menu.timestamp),
   };
-  await db.menu_cache.add(entry);
+
+  // put() faz insert-or-update, não dá erro de chave duplicada
+  await db.menu_cache.put(entry);
 }
 
 export async function invalidateMenuCache(restaurantId?: string): Promise<void> {

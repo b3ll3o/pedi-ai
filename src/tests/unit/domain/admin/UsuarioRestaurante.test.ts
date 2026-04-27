@@ -3,11 +3,11 @@ import { UsuarioRestaurante, UsuarioRestauranteProps } from '@/domain/admin/enti
 
 describe('UsuarioRestaurante', () => {
   describe('eDono', () => {
-    it('deve retornar true quando papel é owner', () => {
+    it('deve retornar true quando papel é dono', () => {
       const props: Omit<UsuarioRestauranteProps, 'id' | 'criadoEm'> = {
         usuarioId: 'usuario-1',
         restauranteId: 'restaurante-1',
-        papel: 'owner',
+        papel: 'dono',
       };
 
       const usuarioRestaurante = UsuarioRestaurante.criar(props);
@@ -15,11 +15,11 @@ describe('UsuarioRestaurante', () => {
       expect(usuarioRestaurante.eDono()).toBe(true);
     });
 
-    it('deve retornar false quando papel não é owner', () => {
+    it('deve retornar false quando papel não é dono', () => {
       const props: Omit<UsuarioRestauranteProps, 'id' | 'criadoEm'> = {
         usuarioId: 'usuario-1',
         restauranteId: 'restaurante-1',
-        papel: 'manager',
+        papel: 'gerente',
       };
 
       const usuarioRestaurante = UsuarioRestaurante.criar(props);
@@ -29,11 +29,11 @@ describe('UsuarioRestaurante', () => {
   });
 
   describe('eGerente', () => {
-    it('deve retornar true quando papel é manager', () => {
+    it('deve retornar true quando papel é gerente', () => {
       const props: Omit<UsuarioRestauranteProps, 'id' | 'criadoEm'> = {
         usuarioId: 'usuario-1',
         restauranteId: 'restaurante-1',
-        papel: 'manager',
+        papel: 'gerente',
       };
 
       const usuarioRestaurante = UsuarioRestaurante.criar(props);
@@ -41,11 +41,11 @@ describe('UsuarioRestaurante', () => {
       expect(usuarioRestaurante.eGerente()).toBe(true);
     });
 
-    it('deve retornar false quando papel não é manager', () => {
+    it('deve retornar false quando papel não é gerente', () => {
       const props: Omit<UsuarioRestauranteProps, 'id' | 'criadoEm'> = {
         usuarioId: 'usuario-1',
         restauranteId: 'restaurante-1',
-        papel: 'staff',
+        papel: 'atendente',
       };
 
       const usuarioRestaurante = UsuarioRestaurante.criar(props);
@@ -55,11 +55,11 @@ describe('UsuarioRestaurante', () => {
   });
 
   describe('eFuncionario', () => {
-    it('deve retornar true quando papel é staff', () => {
+    it('deve retornar true quando papel é atendente', () => {
       const props: Omit<UsuarioRestauranteProps, 'id' | 'criadoEm'> = {
         usuarioId: 'usuario-1',
         restauranteId: 'restaurante-1',
-        papel: 'staff',
+        papel: 'atendente',
       };
 
       const usuarioRestaurante = UsuarioRestaurante.criar(props);
@@ -67,11 +67,11 @@ describe('UsuarioRestaurante', () => {
       expect(usuarioRestaurante.eFuncionario()).toBe(true);
     });
 
-    it('deve retornar false quando papel não é staff', () => {
+    it('deve retornar false quando papel não é atendente', () => {
       const props: Omit<UsuarioRestauranteProps, 'id' | 'criadoEm'> = {
         usuarioId: 'usuario-1',
         restauranteId: 'restaurante-1',
-        papel: 'owner',
+        papel: 'dono',
       };
 
       const usuarioRestaurante = UsuarioRestaurante.criar(props);
@@ -85,7 +85,7 @@ describe('UsuarioRestaurante', () => {
       const props: Omit<UsuarioRestauranteProps, 'id' | 'criadoEm'> = {
         usuarioId: 'usuario-1',
         restauranteId: 'restaurante-1',
-        papel: 'owner',
+        papel: 'dono',
       };
 
       const usuarioRestaurante = UsuarioRestaurante.criar(props);
@@ -93,7 +93,7 @@ describe('UsuarioRestaurante', () => {
       expect(usuarioRestaurante.id).toBeDefined();
       expect(usuarioRestaurante.usuarioId).toBe('usuario-1');
       expect(usuarioRestaurante.restauranteId).toBe('restaurante-1');
-      expect(usuarioRestaurante.papel).toBe('owner');
+      expect(usuarioRestaurante.papel).toBe('dono');
       expect(usuarioRestaurante.criadoEm).toBeInstanceOf(Date);
     });
   });
@@ -104,7 +104,7 @@ describe('UsuarioRestaurante', () => {
         id: 'vinculo-1',
         usuarioId: 'usuario-1',
         restauranteId: 'restaurante-1',
-        papel: 'manager',
+        papel: 'gerente',
         criadoEm: new Date('2024-01-01'),
       };
 
@@ -113,7 +113,7 @@ describe('UsuarioRestaurante', () => {
       expect(usuarioRestaurante.id).toBe('vinculo-1');
       expect(usuarioRestaurante.usuarioId).toBe('usuario-1');
       expect(usuarioRestaurante.restauranteId).toBe('restaurante-1');
-      expect(usuarioRestaurante.papel).toBe('manager');
+      expect(usuarioRestaurante.papel).toBe('gerente');
       expect(usuarioRestaurante.criadoEm).toEqual(new Date('2024-01-01'));
     });
   });

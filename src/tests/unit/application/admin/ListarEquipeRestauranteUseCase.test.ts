@@ -33,12 +33,12 @@ describe('ListarEquipeRestauranteUseCase', () => {
   describe('execute', () => {
     it('deve listar equipe com owner e managers quando solicitante é owner', async () => {
       mockUsuarioRestauranteRepo.findByUsuarioIdAndRestauranteId.mockResolvedValueOnce(
-        UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'restaurante-id', papel: 'owner' })
+        UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'restaurante-id', papel: 'dono' })
       );
       mockUsuarioRestauranteRepo.findByRestauranteId.mockResolvedValueOnce([
-        UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'restaurante-id', papel: 'owner' }),
-        UsuarioRestaurante.criar({ usuarioId: 'manager-1', restauranteId: 'restaurante-id', papel: 'manager' }),
-        UsuarioRestaurante.criar({ usuarioId: 'staff-1', restauranteId: 'restaurante-id', papel: 'staff' }),
+        UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'restaurante-id', papel: 'dono' }),
+        UsuarioRestaurante.criar({ usuarioId: 'manager-1', restauranteId: 'restaurante-id', papel: 'gerente' }),
+        UsuarioRestaurante.criar({ usuarioId: 'staff-1', restauranteId: 'restaurante-id', papel: 'atendente' }),
       ]);
 
       const input: ListarEquipeRestauranteInput = {
@@ -50,18 +50,18 @@ describe('ListarEquipeRestauranteUseCase', () => {
 
       expect(resultado.sucesso).toBe(true);
       expect(resultado.membros).toHaveLength(3);
-      expect(resultado.membros.some(m => m.papel === 'owner')).toBe(true);
-      expect(resultado.membros.some(m => m.papel === 'manager')).toBe(true);
-      expect(resultado.membros.some(m => m.papel === 'staff')).toBe(true);
+      expect(resultado.membros.some(m => m.papel === 'dono')).toBe(true);
+      expect(resultado.membros.some(m => m.papel === 'gerente')).toBe(true);
+      expect(resultado.membros.some(m => m.papel === 'atendente')).toBe(true);
     });
 
     it('deve listar equipe quando solicitante é manager', async () => {
       mockUsuarioRestauranteRepo.findByUsuarioIdAndRestauranteId.mockResolvedValueOnce(
-        UsuarioRestaurante.criar({ usuarioId: 'manager-id', restauranteId: 'restaurante-id', papel: 'manager' })
+        UsuarioRestaurante.criar({ usuarioId: 'manager-id', restauranteId: 'restaurante-id', papel: 'gerente' })
       );
       mockUsuarioRestauranteRepo.findByRestauranteId.mockResolvedValueOnce([
-        UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'restaurante-id', papel: 'owner' }),
-        UsuarioRestaurante.criar({ usuarioId: 'manager-id', restauranteId: 'restaurante-id', papel: 'manager' }),
+        UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'restaurante-id', papel: 'dono' }),
+        UsuarioRestaurante.criar({ usuarioId: 'manager-id', restauranteId: 'restaurante-id', papel: 'gerente' }),
       ]);
 
       const input: ListarEquipeRestauranteInput = {
@@ -103,7 +103,7 @@ describe('ListarEquipeRestauranteUseCase', () => {
 
     it('deve lançar erro quando staff tenta listar equipe', async () => {
       mockUsuarioRestauranteRepo.findByUsuarioIdAndRestauranteId.mockResolvedValueOnce(
-        UsuarioRestaurante.criar({ usuarioId: 'staff-id', restauranteId: 'restaurante-id', papel: 'staff' })
+        UsuarioRestaurante.criar({ usuarioId: 'staff-id', restauranteId: 'restaurante-id', papel: 'atendente' })
       );
 
       const input: ListarEquipeRestauranteInput = {

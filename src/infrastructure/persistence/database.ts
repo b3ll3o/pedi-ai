@@ -153,7 +153,7 @@ export interface UsuarioRestauranteRecord {
   id?: number;
   user_id: string;
   restaurant_id: string;
-  role: 'owner' | 'manager' | 'staff';
+  role: 'dono' | 'gerente' | 'atendente';
   created_at: string;
 }
 

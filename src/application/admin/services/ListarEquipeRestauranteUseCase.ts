@@ -15,7 +15,7 @@ export interface ListarEquipeRestauranteInput {
  */
 export interface MembroEquipe {
   usuarioId: string;
-  papel: 'owner' | 'manager' | 'staff';
+  papel: 'dono' | 'gerente' | 'atendente';
   vinculadoEm: Date;
 }
 

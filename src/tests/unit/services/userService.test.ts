@@ -22,8 +22,8 @@ describe('userService', () => {
   describe('getUsers', () => {
     it('fetches users successfully', async () => {
       const mockUsers = [
-        { id: '1', name: 'Owner', email: 'owner@test.com', role: 'owner' },
-        { id: '2', name: 'Staff', email: 'staff@test.com', role: 'staff' },
+        { id: '1', name: 'Dono', email: 'dono@test.com', role: 'dono' },
+        { id: '2', name: 'Atendente', email: 'atendente@test.com', role: 'atendente' },
       ]
 
       mockFetch.mockResolvedValueOnce({
@@ -69,7 +69,7 @@ describe('userService', () => {
 
   describe('getUser', () => {
     it('fetches single user successfully', async () => {
-      const mockUser = { id: '1', name: 'Owner', email: 'owner@test.com', role: 'owner' }
+      const mockUser = { id: '1', name: 'Dono', email: 'dono@test.com', role: 'dono' }
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -116,7 +116,7 @@ describe('userService', () => {
         restaurant_id: 'rest-1',
         email: 'new@test.com',
         name: 'New User',
-        role: 'staff' as const,
+        role: 'atendente' as const,
       }
 
       mockFetch.mockResolvedValueOnce({
@@ -146,7 +146,7 @@ describe('userService', () => {
           restaurant_id: 'rest-1',
           email: 'existing@test.com',
           name: 'Existing',
-          role: 'staff',
+          role: 'atendente',
         })
       ).rejects.toThrow('User already exists')
     })
@@ -162,7 +162,7 @@ describe('userService', () => {
           restaurant_id: 'rest-1',
           email: 'test@test.com',
           name: 'Test',
-          role: 'staff',
+          role: 'atendente',
         })
       ).rejects.toThrow('Failed to invite user')
     })
@@ -178,7 +178,7 @@ describe('userService', () => {
           restaurant_id: 'rest-1',
           email: 'test@test.com',
           name: 'Test',
-          role: 'staff',
+          role: 'atendente',
         })
       ).rejects.toThrow('Failed to invite user')
     })
@@ -186,7 +186,7 @@ describe('userService', () => {
 
   describe('updateUser', () => {
     it('updates user successfully', async () => {
-      const updates = { name: 'Updated Name', role: 'manager' as const }
+      const updates = { name: 'Updated Name', role: 'gerente' as const }
       const mockUpdated = { id: '1', ...updates }
 
       mockFetch.mockResolvedValueOnce({
@@ -197,7 +197,7 @@ describe('userService', () => {
       const result = await updateUser('1', updates)
 
       expect(result.name).toBe('Updated Name')
-      expect(result.role).toBe('manager')
+      expect(result.role).toBe('gerente')
     })
 
     it('throws error on failed update', async () => {
@@ -271,30 +271,30 @@ describe('userService', () => {
   })
 
   describe('canManageRole', () => {
-    it('owner can manage all roles', () => {
-      expect(canManageRole('owner', 'staff')).toBe(true)
-      expect(canManageRole('owner', 'manager')).toBe(true)
-      expect(canManageRole('owner', 'owner')).toBe(false) // Cannot manage self at same level
+    it('dono can manage all roles', () => {
+      expect(canManageRole('dono', 'atendente')).toBe(true)
+      expect(canManageRole('dono', 'gerente')).toBe(true)
+      expect(canManageRole('dono', 'dono')).toBe(false) // Cannot manage self at same level
     })
 
-    it('manager can manage staff but not owner', () => {
-      expect(canManageRole('manager', 'staff')).toBe(true)
-      expect(canManageRole('manager', 'owner')).toBe(false)
-      expect(canManageRole('manager', 'manager')).toBe(false)
+    it('gerente can manage staff but not dono', () => {
+      expect(canManageRole('gerente', 'atendente')).toBe(true)
+      expect(canManageRole('gerente', 'dono')).toBe(false)
+      expect(canManageRole('gerente', 'gerente')).toBe(false)
     })
 
-    it('staff cannot manage anyone', () => {
-      expect(canManageRole('staff', 'staff')).toBe(false)
-      expect(canManageRole('staff', 'manager')).toBe(false)
-      expect(canManageRole('staff', 'owner')).toBe(false)
+    it('atendente cannot manage anyone', () => {
+      expect(canManageRole('atendente', 'atendente')).toBe(false)
+      expect(canManageRole('atendente', 'gerente')).toBe(false)
+      expect(canManageRole('atendente', 'dono')).toBe(false)
     })
   })
 
   describe('getRoleLabel', () => {
     it('returns correct labels', () => {
-      expect(getRoleLabel('owner')).toBe('Proprietário')
-      expect(getRoleLabel('manager')).toBe('Gerente')
-      expect(getRoleLabel('staff')).toBe('Funcionário')
+      expect(getRoleLabel('dono')).toBe('Proprietário')
+      expect(getRoleLabel('gerente')).toBe('Gerente')
+      expect(getRoleLabel('atendente')).toBe('Funcionário')
     })
 
     it('returns role itself for unknown role', () => {
@@ -305,9 +305,9 @@ describe('userService', () => {
 
   describe('getRoleColor', () => {
     it('returns correct colors', () => {
-      expect(getRoleColor('owner')).toBe('#dc2626')
-      expect(getRoleColor('manager')).toBe('#d97706')
-      expect(getRoleColor('staff')).toBe('#2563eb')
+      expect(getRoleColor('dono')).toBe('#dc2626')
+      expect(getRoleColor('gerente')).toBe('#d97706')
+      expect(getRoleColor('atendente')).toBe('#2563eb')
     })
 
     it('returns default color for unknown role', () => {

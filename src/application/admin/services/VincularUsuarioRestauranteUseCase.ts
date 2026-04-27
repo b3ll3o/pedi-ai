@@ -10,7 +10,7 @@ import { UsuarioVinculadoRestauranteEvent } from '@/domain/admin/events/UsuarioV
 export interface VincularUsuarioRestauranteInput {
   restauranteId: string;
   usuarioId: string;
-  papel: 'manager' | 'staff';
+  papel: 'gerente' | 'atendente';
   solicitanteId: string;
 }
 
@@ -26,7 +26,7 @@ export interface VincularUsuarioRestauranteOutput {
  * Use Case para vincular um usuário a um restaurante com um papel
  * 
  * Regras:
- * - O vínculo 'owner' não pode ser criado via este use case (é criado automaticamente)
+ * - O vínculo 'dono' não pode ser criado via este use case (é criado automaticamente)
  * - Apenas owner ou manager do restaurante podem vincular novos membros
  * - O usuário não pode ter vínculo existente com o restaurante
  */

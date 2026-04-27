@@ -46,13 +46,13 @@ export class GerenciarProdutoUseCase implements UseCase<ProdutoInput, ProdutoOut
       buscarPorId(id: string): Promise<{ id: string; restauranteId?: string } | null>;
     },
     private usuarioRestauranteRepo?: {
-      findByUsuarioIdAndRestauranteId(usuarioId: string, restauranteId: string): Promise<{ id: string; papel: 'owner' | 'manager' | 'staff' } | null>;
+      findByUsuarioIdAndRestauranteId(usuarioId: string, restauranteId: string): Promise<{ id: string; papel: 'dono' | 'gerente' | 'atendente' } | null>;
     }
   ) {}
 
   /**
    * Valida se o usuário tem acesso ao restaurante (quando multi-restaurant está ativo)
-   * Apenas usuários com papel 'owner' ou 'manager' podem gerenciar produtos
+   * Apenas usuários com papel 'dono' ou 'gerente' podem gerenciar produtos
    */
   private async validarAcessoRestaurante(usuarioId: string | undefined, restauranteId: string | undefined): Promise<void> {
     if (!isMultiRestaurantEnabled()) {
@@ -72,7 +72,7 @@ export class GerenciarProdutoUseCase implements UseCase<ProdutoInput, ProdutoOut
       throw new Error('Usuário não tem vínculo com este restaurante');
     }
 
-    if (vinculo.papel !== 'owner' && vinculo.papel !== 'manager') {
+    if (vinculo.papel !== 'dono' && vinculo.papel !== 'gerente') {
       throw new Error('Apenas proprietários e gerentes podem gerenciar produtos');
     }
   }

@@ -74,7 +74,7 @@ export class UsuarioRepository implements IUsuarioRepository {
     return Usuario.reconstruir({
       id: record.id,
       email: record.email,
-      papel: Papel.fromValue(record.papel as 'owner' | 'manager' | 'staff' | 'cliente'),
+      papel: Papel.fromValue(record.papel as 'dono' | 'gerente' | 'atendente' | 'cliente'),
       restauranteId: record.restauranteId,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,

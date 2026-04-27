@@ -3,7 +3,7 @@ import { DomainEvent } from '@/domain/shared';
 export interface UsuarioVinculadoRestauranteEventProps {
   usuarioId: string;
   restauranteId: string;
-  papel: 'owner' | 'manager' | 'staff';
+  papel: 'dono' | 'gerente' | 'atendente';
 }
 
 export class UsuarioVinculadoRestauranteEvent implements DomainEvent {

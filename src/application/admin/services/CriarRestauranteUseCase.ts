@@ -94,7 +94,7 @@ export class CriarRestauranteUseCase implements UseCase<CriarRestauranteInput, C
     const vinculoOwner = UsuarioRestaurante.criar({
       usuarioId: input.ownerId,
       restauranteId: restaurantePersistido.id,
-      papel: 'owner',
+      papel: 'dono',
     });
 
     await this.usuarioRestauranteRepo.save(vinculoOwner);
