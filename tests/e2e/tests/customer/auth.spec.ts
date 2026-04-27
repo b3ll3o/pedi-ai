@@ -58,6 +58,15 @@ test.describe('Autenticação do Cliente', () => {
     await expect(authenticated).toHaveURL('/menu')
   })
 
+  test('admin logado via /login deve ir para /admin/dashboard', async ({ page, seedData }) => {
+    const loginPage = new CustomerLoginPage(page)
+    await loginPage.goto()
+    await loginPage.login(seedData.admin.email, seedData.admin.password)
+    // Aguarda redirect para admin
+    await page.waitForURL('/admin/dashboard', { timeout: 30_000 })
+    await expect(page).toHaveURL('/admin/dashboard')
+  })
+
   test('deve solicitar recuperação de senha', async ({ page: _page, seedData }) => {
     await loginPage.forgotPassword(seedData.customer.email)
     await expect(loginPage.forgotPasswordSuccessMessage).toBeVisible()

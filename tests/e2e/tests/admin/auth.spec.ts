@@ -53,6 +53,19 @@ test.describe('Admin Authentication', () => {
     await expect(loginPage.forgotPasswordSuccessMessage).toBeVisible()
   })
 
+  test('admin logado acessando /login diretamente deve ir para /admin/dashboard',
+    async ({ page, seedData }) => {
+      // Primeiro faz login via admin/login
+      const loginPage = new AdminLoginPage(page)
+      await loginPage.goto()
+      await loginPage.login(seedData.admin.email, seedData.admin.password)
+      // Depois tenta acessar /login diretamente
+      await page.goto('/login')
+      // Deve redirecionar para /admin/dashboard
+      await expect(page).toHaveURL('/admin/dashboard')
+    }
+  )
+
   test('should show success for password reset request', async ({ page: _page }) => {
     // Supabase always returns success for password reset (security - never reveals if email exists)
     await loginPage.forgotPassword('nonexistent@test.com')
