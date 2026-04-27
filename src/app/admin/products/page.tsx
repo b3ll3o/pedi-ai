@@ -13,7 +13,8 @@ type ToastType = 'success' | 'error' | null;
 
 export default function ProductsPage() {
   const router = useRouter();
-  const { restauranteSelecionado, selectedRestaurantId } = useRestaurantStore();
+  const { restauranteSelecionado } = useRestaurantStore();
+  const selectedRestaurantId = restauranteSelecionado?.id ?? null;
 
   // Auth & loading
   const [loading, setLoading] = useState(true);
