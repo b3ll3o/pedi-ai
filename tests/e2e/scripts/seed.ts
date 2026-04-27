@@ -719,7 +719,7 @@ async function createUserProfiles(
       user_id: users.customer.id,
       email: users.customer.email,
       name: 'Cliente Teste',
-      role: 'staff' as const,
+      role: 'cliente' as const,
     },
     {
       user_id: users.admin.id,
