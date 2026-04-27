@@ -1,6 +1,6 @@
 import Dexie, { type Table } from 'dexie';
 import type { CartItem, MenuCache, PendingSync, TableInfo } from '@/lib/offline/types';
-import type { UsuarioProps } from '@/domain/autenticacao/entities/Usuario';
+import type { UsuarioProps as _UsuarioProps } from '@/domain/autenticacao/entities/Usuario';
 import type { SessaoProps } from '@/domain/autenticacao/entities/Sessao';
 import type { RestauranteProps } from '@/domain/admin/entities/Restaurante';
 

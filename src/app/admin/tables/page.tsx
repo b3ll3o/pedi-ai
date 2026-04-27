@@ -38,20 +38,13 @@ export default function TablesPage() {
   });
 
   // Hook para listar mesas usando ListarMesasUseCase
-  const { data: mesasData, isLoading: isLoadingMesas, error: mesasError, refetch } = useListarMesas(DEFAULT_RESTAURANTE_ID);
+  const { data: mesasData, isLoading: isLoadingMesas, error: _mesasError, refetch: _refetch } = useListarMesas(DEFAULT_RESTAURANTE_ID);
 
-  // Sincronizar dados do hook com o estado local
-  useEffect(() => {
-    if (mesasData) {
-      setTables(mesasData);
-    }
-    if (mesasError) {
-      setError('Erro ao carregar mesas');
-    }
-  }, [mesasData, mesasError]);
+  // Usar dados do hook diretamente (evita set-state-in-effect)
+  const tables = mesasData || [];
 
   // Fetch tables via API (para operações de criação/atualização/exclusão)
-  const fetchTables = useCallback(async () => {
+  const _fetchTables = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/tables');
       if (!response.ok) {

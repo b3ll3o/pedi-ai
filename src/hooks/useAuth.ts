@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
-import { signIn as supabaseSignIn, signOut as supabaseSignOut, getSession, getUser, onAuthStateChange } from '@/lib/supabase/auth';
+import { signIn as _supabaseSignIn, signOut as supabaseSignOut, getSession, getUser, onAuthStateChange } from '@/lib/supabase/auth';
 import { AutenticarUsuarioUseCase, type AutenticarInput } from '@/application/autenticacao/services/AutenticarUsuarioUseCase';
 import { RegistrarUsuarioUseCase, type RegistrarUsuarioInput } from '@/application/autenticacao/services/RegistrarUsuarioUseCase';
 import { SupabaseAuthAdapter } from '@/infrastructure/external/SupabaseAuthAdapter';

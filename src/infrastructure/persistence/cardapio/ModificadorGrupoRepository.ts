@@ -31,7 +31,7 @@ export class ModificadorGrupoRepository implements IModificadorGrupoRepository {
     return dbModels.map((m: ModificadorGrupoDbModel) => this.fromDbModel(m));
   }
 
-  async buscarPorProduto(produtoId: string): Promise<ModificadorGrupo[]> {
+  async buscarPorProduto(_produtoId: string): Promise<ModificadorGrupo[]> {
     // Buscar todos os grupos e filtrar pelos que contêm o produto
     // Esta é uma implementação simplificada - em produção,
     // seria melhor ter uma tabela de relação

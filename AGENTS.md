@@ -196,11 +196,10 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **CI/CD**: Pipeline E2E deve bloquear merge se testes falharem
 - **Cobertura de fluxos**: Manter inventário atualizado de fluxos cobertos em `tests/e2e/README.md`
 
-## Arquitetura DDD (Domain-Driven Design) - MIGRAÇÃO FUTURA
+## Arquitetura DDD (Domain-Driven Design) - MIGRAÇÃO EM ANDAMENTO
 
-> ⚠️ **STATUS**: A arquitetura DDD está **planejada** mas **não foi implementada ainda**.
-> A estrutura atual do projeto é a arquitetura tradicional (veja abaixo).
-> Ver: `openspec/changes/implantacao-ddd/` para o plano de migração.
+> ⚠️ **STATUS**: A arquitetura DDD está **em implementação**. A estrutura DDD existe parcialmente em `src/domain/`, `src/application/`, e `src/infrastructure/`.
+> A estrutura tradicional coexiste com a DDD. Ver: `openspec/changes/implantacao-ddd/` para o plano de migração completo.
 
 ### Regras Obrigatórias
 
@@ -286,7 +285,7 @@ src/
 
 ### Migration Plan for DDD
 
-The migration to DDD is planned but not started. See `openspec/changes/implantacao-ddd/design.md` for the full migration plan.
+> ⚠️ **ATUALIZADO**: A estrutura DDD JÁ ESTÁ IMPLEMENTADA em `src/domain/`, `src/application/`, `src/infrastructure/`. A migração está em andamento. Voir `openspec/changes/implantacao-ddd/design.md` para o estado atual.
 
 <!-- END:pedi-ai-rules -->
 

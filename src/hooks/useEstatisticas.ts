@@ -11,7 +11,7 @@ import { PagamentoRepository } from '@/infrastructure/persistence/pagamento/Paga
 import { ObterEstatisticasUseCase, type Periodo, type Estatisticas } from '@/application/admin/services/ObterEstatisticasUseCase';
 
 // Instanciar repositories
-const estatisticasRepo = new EstatisticasRepository(db);
+const _estatisticasRepo = new EstatisticasRepository(db);
 const pedidoRepo = new PedidoRepository(db);
 const pagamentoRepo = new PagamentoRepository(db);
 

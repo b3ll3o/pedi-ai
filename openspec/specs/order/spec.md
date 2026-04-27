@@ -84,6 +84,57 @@ The system SHALL provide a kitchen display view for pending orders.
 - THEN the system SHALL update the order status to `ready`
 - AND the kitchen display SHALL remove the order from the active list
 
+### Requirement: Order Status State Machine (FSM)
+O sistema DEVE implementar uma máquina de estados finitos para controlar transições de status de pedidos, garantindo que apenas transições válidas sejam permitidas.
+
+#### Scenario: Valid Status Transition Flow
+- GIVEN um pedido está em qualquer status válido
+- WHEN uma transição de status é solicitada
+- THEN o sistema SHALL validar a transição contra o mapa de transições permitidas
+- AND apenas transições definidas no mapa são aceitas
+
+O fluxo principal de status é:
+```
+pending → confirmed → preparing → ready → delivered
+```
+
+Cancelamento pode ocorrer a partir de `pending`, `confirmed`, `preparing`, ou `ready`:
+```
+pending → cancelled
+confirmed → cancelled
+preparing → cancelled
+ready → cancelled
+```
+
+#### Scenario: Invalid Status Transition Rejected
+- GIVEN um pedido está no status `delivered` ou `cancelled`
+- WHEN qualquer tentativa de mudança de status é feita
+- THEN o sistema SHALL rejeitar a transição
+- AND retornar `false` para transições inválidas
+
+#### Scenario: Get Allowed Transitions
+- GIVEN o sistema precisa exibir as opções de status disponíveis
+- WHEN uma consulta é feita para um status específico
+- THEN o sistema SHALL retornar lista de status destino válidos
+- AND `delivered` e `cancelled` retornam lista vazia (estados terminais)
+
+#### Scenario: Order Age Detection for Kitchen Display
+- GIVEN a cozinha precisa identificar pedidos que estão há muito tempo em preparo
+- WHEN um pedido está em `received` ou `preparing` por mais de 5 minutos
+- THEN o sistema SHALL marcar o pedido como `stale` (estale)
+- AND o sistema SHALL exibir alerta visual de tempo excedido
+
+#### Funções Relacionadas (Implementação em `src/services/adminOrderService.ts`)
+
+| Função | Descrição |
+|--------|-----------|
+| `VALID_STATUS_TRANSITIONS` | Mapa de transições válidas: `{ pending: ['confirmed', 'cancelled'], confirmed: ['preparing', 'cancelled'], preparing: ['ready', 'cancelled'], ready: ['delivered', 'cancelled'], delivered: [], cancelled: [] }` |
+| `isValidStatusTransition(currentStatus, newStatus)` | Retorna `true` se a transição de `currentStatus` para `newStatus` é válida |
+| `getAllowedTransitions(currentStatus)` | Retorna array de status destino permitidos a partir do status atual |
+| `getOrderAge(order)` | Retorna idade do pedido em segundos desde a criação |
+| `getOrderAgeDisplay(seconds)` | Formata segundos em string legível: `Xs`, `Xm Ys`, `Xh Ym` |
+| `isOrderStale(order, thresholdSeconds=300)` | Retorna `true` se pedido excedeu o limiar de tempo (padrão: 300s = 5min) |
+
 ### Requirement: Waiter Order Notifications
 The system SHALL provide real-time notifications to waiters for new orders.
 

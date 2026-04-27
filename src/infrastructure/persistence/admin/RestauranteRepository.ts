@@ -1,7 +1,7 @@
 import { PediDatabase, RestauranteRecord } from '../database';
 import { IRestauranteRepository } from '@/domain/admin/repositories/IRestauranteRepository';
 import { Restaurante } from '@/domain/admin/entities/Restaurante';
-import { ConfiguracoesRestaurante, ConfiguracoesRestauranteProps } from '@/domain/admin/value-objects/ConfiguracoesRestaurante';
+import { ConfiguracoesRestaurante } from '@/domain/admin/value-objects/ConfiguracoesRestaurante';
 
 /**
  * Implementação do repositório de restaurantes usando Dexie (IndexedDB)

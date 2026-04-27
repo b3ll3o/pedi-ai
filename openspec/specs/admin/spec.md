@@ -45,6 +45,49 @@ The system SHALL enforce role-based permissions for admin operations.
 - THEN the system SHALL grant access to orders only
 - AND the system SHALL deny access to menu management, tables, and settings
 
+#### Scenario: Role Hierarchy Enforcement
+- GIVEN a user with a specific role attempts to manage another user
+- WHEN the system evaluates permission to modify the target user's role
+- THEN the system SHALL enforce the following hierarchy: owner > manager > staff
+- AND a user SHALL only be able to manage roles strictly lower than their own
+- AND `canManageRole(currentRole, targetRole)` SHALL return true only when currentRole is higher in hierarchy
+
+#### Scenario: Role Label Display
+- GIVEN a user role is retrieved for display
+- WHEN the role needs to be shown to an admin user
+- THEN the system SHALL return localized labels:
+  - `owner` → "Proprietário"
+  - `manager` → "Gerente"
+  - `staff` → "Funcionário"
+- AND the function `getRoleLabel(role)` SHALL be used for all role display
+
+#### Scenario: Role Color Coding
+- GIVEN a user role is displayed in the admin interface
+- WHEN the role badge is rendered
+- THEN the system SHALL use semantic colors:
+  - `owner` → `#dc2626` (red)
+  - `manager` → `#d97706` (amber)
+  - `staff` → `#2563eb` (blue)
+- AND the function `getRoleColor(role)` SHALL be used for all role color styling
+
+#### Scenario: API Staff Restrictions
+- GIVEN a user with the "staff" role makes an API request
+- WHEN the staff user attempts to access restricted admin endpoints
+- THEN the system SHALL deny access to:
+  - QR code generation endpoints (403 Forbidden)
+  - User management endpoints (create, update, delete users)
+  - Restaurant settings endpoints
+  - Analytics endpoints
+- AND the `requireRole()` function SHALL throw a 403 error for unauthorized role access
+- AND the error message SHALL be "Acesso negado"
+
+#### Scenario: API Role Hierarchy in Endpoints
+- GIVEN an API endpoint has role restrictions
+- WHEN a request is made with insufficient role level
+- THEN the system SHALL deny access based on the role hierarchy
+- AND only users with roles higher in the hierarchy SHALL be granted access
+- AND staff users SHALL be blocked from all user management operations
+
 ### Requirement: Category CRUD
 The system SHALL provide full CRUD operations for menu categories.
 

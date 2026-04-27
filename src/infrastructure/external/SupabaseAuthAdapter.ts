@@ -1,7 +1,7 @@
 import { signUp, signIn, resetPassword } from '@/lib/supabase/auth';
 import { createClient } from '@/lib/supabase/client';
 import { IAuthAdapter } from '@/application/autenticacao/services/RegistrarUsuarioUseCase';
-import type { User } from '@supabase/supabase-js';
+import type { User as _User } from '@supabase/supabase-js';
 
 /**
  * Implementação do adapter de autenticação usando Supabase Auth

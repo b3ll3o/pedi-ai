@@ -1,4 +1,4 @@
-import Dexie, { type Table } from 'dexie';
+import { type Table } from 'dexie';
 import type { CartItem, MenuCache, PendingSync, TableInfo } from '@/lib/offline/types';
 
 export interface DDPersistenceSchema {

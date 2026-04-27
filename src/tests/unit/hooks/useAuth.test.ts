@@ -23,6 +23,22 @@ vi.mock('@/lib/supabase/auth', () => {
   };
 });
 
+// Mock AutenticarUsuarioUseCase
+const { mockExecute } = vi.hoisted(() => ({
+  mockExecute: vi.fn()
+}));
+
+vi.mock('@/application/autenticacao/services/AutenticarUsuarioUseCase', () => {
+  function MockAutenticarUsuarioUseCase() {
+    return { execute: mockExecute };
+  }
+  return {
+    AutenticarUsuarioUseCase: vi.fn(MockAutenticarUsuarioUseCase),
+  };
+});
+
+export { mockExecute };
+
 // Mock useRouter
 const mockPush = vi.fn();
 vi.mock('next/navigation', () => ({
@@ -55,7 +71,7 @@ vi.mock('next/navigation', () => ({
 
 export { mockPush };
 
-import { signIn, signOut, getSession, getUser, onAuthStateChange, _mockUnsubscribe } from '@/lib/supabase/auth';
+import { _signIn, signOut, getSession, getUser, onAuthStateChange, _mockUnsubscribe } from '@/lib/supabase/auth';
 
 const mockUser: User = {
   id: 'user-123',
@@ -173,13 +189,15 @@ describe('useAuth hook', () => {
   });
 
   describe('2. Sign in', () => {
-    it('signIn calls supabase signIn with correct params', async () => {
+    beforeEach(() => {
+      // Reset mockExecute for each test
+      mockExecute.mockReset();
+    });
+
+    it('signIn calls AutenticarUsuarioUseCase with correct params', async () => {
       (getSession as ReturnType<typeof vi.fn>).mockResolvedValue(null);
       (getUser as ReturnType<typeof vi.fn>).mockResolvedValue(null);
-      (signIn as ReturnType<typeof vi.fn>).mockResolvedValue({
-        data: { session: mockSession, user: mockUser },
-        error: null,
-      } as AuthResponse);
+      mockExecute.mockResolvedValue(undefined);
 
       const { result } = renderHook(() => useAuth());
 
@@ -189,16 +207,28 @@ describe('useAuth hook', () => {
 
       await result.current.signIn('admin@test.com', 'password123');
 
-      expect(signIn).toHaveBeenCalledWith('admin@test.com', 'password123');
+      expect(mockExecute).toHaveBeenCalled();
     });
 
     it('signIn updates user and session on success', async () => {
+      // Mock getSession and getUser for initial state
       (getSession as ReturnType<typeof vi.fn>).mockResolvedValue(null);
       (getUser as ReturnType<typeof vi.fn>).mockResolvedValue(null);
-      (signIn as ReturnType<typeof vi.fn>).mockResolvedValue({
-        data: { session: mockSession, user: mockUser },
-        error: null,
-      } as AuthResponse);
+      mockExecute.mockResolvedValue(undefined);
+
+      // Mock getSession and getUser to return valid session after signIn
+      let sessionCallCount = 0;
+      (getSession as ReturnType<typeof vi.fn>).mockImplementation(() => {
+        sessionCallCount++;
+        return sessionCallCount > 1
+          ? Promise.resolve(mockSession)
+          : Promise.resolve(null);
+      });
+      (getUser as ReturnType<typeof vi.fn>).mockImplementation(() => {
+        return sessionCallCount > 1
+          ? Promise.resolve(mockUser)
+          : Promise.resolve(null);
+      });
 
       const { result } = renderHook(() => useAuth());
 
@@ -219,10 +249,8 @@ describe('useAuth hook', () => {
     it('signIn sets error on auth failure', async () => {
       (getSession as ReturnType<typeof vi.fn>).mockResolvedValue(null);
       (getUser as ReturnType<typeof vi.fn>).mockResolvedValue(null);
-      (signIn as ReturnType<typeof vi.fn>).mockResolvedValue({
-        data: { session: null, user: null },
-        error: { message: 'Invalid credentials', status: 400 },
-      } as AuthResponse);
+      // UseCase throws error with English message (matches real Supabase behavior)
+      mockExecute.mockRejectedValue(new Error('Invalid credentials'));
 
       const { result } = renderHook(() => useAuth());
 
@@ -242,8 +270,8 @@ describe('useAuth hook', () => {
     it('signIn sets generic error when signIn throws non-Error exception', async () => {
       (getSession as ReturnType<typeof vi.fn>).mockResolvedValue(null);
       (getUser as ReturnType<typeof vi.fn>).mockResolvedValue(null);
-      // signIn throws a string instead of an Error object
-      (signIn as ReturnType<typeof vi.fn>).mockRejectedValue('Network failure');
+      // UseCase throws a string instead of an Error object
+      mockExecute.mockRejectedValue('Network failure');
 
       const { result } = renderHook(() => useAuth());
 
@@ -255,14 +283,14 @@ describe('useAuth hook', () => {
         await result.current.signIn('admin@test.com', 'password123');
       });
 
-      expect(result.current.error).toBe('Sign in failed');
+      expect(result.current.error).toBe('Falha na autenticação');
     });
 
     it('signIn sets generic error when signIn throws object without message', async () => {
       (getSession as ReturnType<typeof vi.fn>).mockResolvedValue(null);
       (getUser as ReturnType<typeof vi.fn>).mockResolvedValue(null);
-      // signIn throws an object that is not an Error instance
-      (signIn as ReturnType<typeof vi.fn>).mockRejectedValue({ code: 'ERR_NETWORK', status: 500 });
+      // UseCase throws an object that is not an Error instance
+      mockExecute.mockRejectedValue({ code: 'ERR_NETWORK', status: 500 });
 
       const { result } = renderHook(() => useAuth());
 
@@ -274,18 +302,19 @@ describe('useAuth hook', () => {
         await result.current.signIn('admin@test.com', 'password123');
       });
 
-      expect(result.current.error).toBe('Sign in failed');
+      expect(result.current.error).toBe('Falha na autenticação');
     });
 
     it('isLoading is true during signIn', async () => {
       (getSession as ReturnType<typeof vi.fn>).mockResolvedValue(null);
       (getUser as ReturnType<typeof vi.fn>).mockResolvedValue(null);
 
-      let resolveSignIn: (value: AuthResponse) => void;
-      const signInPromise = new Promise<AuthResponse>((resolve) => {
+      // Create a promise that never resolves to simulate ongoing operation
+      let resolveSignIn: () => void;
+      const signInPromise = new Promise<void>((resolve) => {
         resolveSignIn = resolve;
       });
-      (signIn as ReturnType<typeof vi.fn>).mockReturnValue(signInPromise);
+      mockExecute.mockReturnValue(signInPromise);
 
       const { result } = renderHook(() => useAuth());
 
@@ -298,13 +327,10 @@ describe('useAuth hook', () => {
         result.current.signIn('admin@test.com', 'password123');
       });
 
-      // Hook should be loading during signIn (since signIn mock never resolves in this test)
+      // Hook should be loading during signIn (since mockExecute never resolves in this test)
       expect(result.current.isLoading).toBe(true);
 
-      resolveSignIn!({
-        data: { session: mockSession, user: mockUser },
-        error: null,
-      } as AuthResponse);
+      resolveSignIn!();
     });
   });
 
@@ -402,7 +428,7 @@ describe('useAuth hook', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      expect(result.current.error).toBe('Failed to initialize auth');
+      expect(result.current.error).toBe('Falha ao inicializar autenticação');
     });
 
     it('sets error when initAuth catches object without message', async () => {
@@ -416,7 +442,7 @@ describe('useAuth hook', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      expect(result.current.error).toBe('Failed to initialize auth');
+      expect(result.current.error).toBe('Falha ao inicializar autenticação');
     });
   });
 
@@ -526,7 +552,7 @@ describe('useAuth hook', () => {
       });
 
       // Router.push should have been called to redirect to login
-      expect(mockPush).toHaveBeenCalledWith('/admin/login');
+      expect(mockPush).toHaveBeenCalledWith('/login');
     });
 
     it('handles SIGNED_OUT with null session (session expiry)', async () => {

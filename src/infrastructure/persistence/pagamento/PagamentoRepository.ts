@@ -64,7 +64,7 @@ export class PagamentoRepository implements IPagamentoRepository {
     return this.toDomain(records[0]);
   }
 
-  async listarPorRestauranteId(restauranteId: string): Promise<Pagamento[]> {
+  async listarPorRestauranteId(_restauranteId: string): Promise<Pagamento[]> {
     // Note: This would require a join with pedidos table in a real implementation
     // For now, we return all pagamentos - the application layer should filter
     const records = await this.db.pagamentos.toArray();

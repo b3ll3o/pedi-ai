@@ -2,7 +2,7 @@
 
 > Cardápio Digital para Restaurantes (offline-first, multi-tenant)
 >
-> **Versão:** 1.0.0 | **Atualizado em:** 2026-04-24
+> **Versão:** 1.0.0 | **Atualizado em:** 2026-04-27
 
 ## Project Responsibility
 
@@ -16,7 +16,7 @@ Pedi-AI é uma plataforma de cardápio digital que permite restaurantes gerencia
 | Backend | Supabase (Auth, Database, Realtime, Storage) |
 | Offline | Service Worker (Workbox) + IndexedDB (Dexie) |
 | Estado | Zustand + React Query |
-| Testes | Vitest (607 testes, 97.91% cobertura) + Playwright (17 specs E2E) |
+| Testes | Vitest (517 testes, 97%+ cobertura) + Playwright (19 specs E2E) |
 
 ---
 
@@ -43,12 +43,12 @@ Pedi-AI é uma plataforma de cardápio digital que permite restaurantes gerencia
 | `src/lib/` | Módulos reutilizáveis — auth, offline (Dexie), QR, Supabase client, SW | ✅ Atual | [Ver Map](src/lib/codemap.md) |
 | `src/services/` | Business logic layer — orders, users, tables, analytics | ✅ Atual | [Ver Map](src/services/codemap.md) |
 | `src/stores/` | Zustand state management — menu, cart, table com persistência offline | ✅ Atual | [Ver Map](src/stores/codemap.md) |
-| `src/domain/` | REGRAS DE NEGÓCIO - pure TypeScript, sem deps de framework | 🚧 Planejado | [Ver Mapa](openspec/changes/implantacao-ddd/design.md) |
-| `src/application/` | CASOS DE USO - orquestração | 🚧 Planejado | [Ver Mapa](openspec/changes/implantacao-ddd/design.md) |
-| `src/infrastructure/` | IMPLEMENTAÇÕES - adapters, repos | 🚧 Planejado | [Ver Mapa](openspec/changes/implantacao-ddd/design.md) |
-| `src/presentation/` | NEXT.JS - UI, API routes | 🚧 Planejado | [Ver Mapa](openspec/changes/implantacao-ddd/design.md) |
+| `src/domain/` | REGRAS DE NEGÓCIO - pure TypeScript, sem deps de framework | ✅ Implementado | Entidades, Value Objects, Aggregates, Events, Services, Repository interfaces |
+| `src/application/` | CASOS DE USO - orquestração | ✅ Implementado | Application services que coordinam domain + infrastructure |
+| `src/infrastructure/` | IMPLEMENTAÇÕES - adapters, repos | ✅ Implementado | Repository implementations, Supabase adapter, QR code crypto |
+| `src/presentation/` | NEXT.JS - UI, API routes | ⚠️ Parcial | Camada de apresentação (Next.js), mas domain/application são accessed diretamente |
 
-> **Nota**: A estrutura DDD (`domain/`, `application/`, `infrastructure/`, `presentation/`) está **planejada** mas **não foi implementada**. Voir `openspec/changes/implantacao-ddd/` para o plano de migração.
+> **Nota**: A estrutura DDD **JÁ ESTÁ IMPLEMENTADA** em `src/domain/`, `src/application/`, `src/infrastructure/`. O `presentation/` coexiste com a estrutura tradicional. Voir `openspec/changes/implantacao-ddd/` para o plano de migração completo (em progresso).
 
 ---
 

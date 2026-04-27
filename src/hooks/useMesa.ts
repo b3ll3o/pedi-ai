@@ -19,7 +19,7 @@ import { db } from '@/infrastructure/persistence/database';
 import type { tables } from '@/lib/supabase/types';
 
 // Transformação de domain Mesa para formato Supabase (compatibilidade com a interface existente)
-function transformarMesa(mesa: { id: string; restauranteId: string; label: string; ativo: boolean }): tables {
+function _transformarMesa(mesa: { id: string; restauranteId: string; label: string; ativo: boolean }): tables {
   return {
     id: mesa.id,
     restaurant_id: mesa.restauranteId,

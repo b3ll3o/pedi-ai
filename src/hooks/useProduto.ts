@@ -74,7 +74,7 @@ function transformarProdutoDetalhe(detalhe: ProdutoDetalhe) {
  * @param restauranteId - ID do restaurante (para validação)
  * @returns UseQueryResult com detalhes do produto
  */
-export function useProduto(produtoId: string, restauranteId?: string) {
+export function useProduto(produtoId: string, _restauranteId?: string) {
   return useQuery<ProdutoDetalheResponse>({
     queryKey: ['produto', produtoId],
     queryFn: async () => {

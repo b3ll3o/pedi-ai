@@ -1,4 +1,4 @@
-import { ItemCardapio, ItemCardapioProps } from '../entities/ItemCardapio';
+import { ItemCardapio } from '../entities/ItemCardapio';
 
 export interface IItemCardapioRepository {
   buscarPorId(id: string): Promise<ItemCardapio | null>;

@@ -19,9 +19,60 @@ Aplicação de **Cardápio Digital** para restaurantes com foco em **mobile-firs
 - **Backend**: Supabase (Auth, Database, Realtime, Storage)
 - **Offline**: Service Worker (Workbox) + IndexedDB (Dexie)
 - **Estado**: Zustand + React Query
-- **Testes Unitários**: Vitest (607 testes, 97%+ cobertura)
-- **Testes E2E**: Playwright (17 specs)
+- **Testes Unitários**: Vitest (517 testes, 97%+ cobertura)
+- **Testes E2E**: Playwright (19 specs)
 - **Pagamentos**: Mercado Pago (Pix) + Stripe (Cartão)
+
+## Feature Flags
+
+O projeto possui um sistema de **feature flags** que permite ativar/desativar funcionalidades de forma granular via variáveis de ambiente. Isso é útil para:
+
+- **Desenvolvimento**: Ativar apenas funcionalidades em desenvolvimento sem afetar outras áreas
+- **Testes**: Testar funcionalidades específicas isoladamente
+- **Rollout gradual**: Liberar funcionalidades para um subconjunto de usuários ou ambientes
+- **Produção**: Desabilitar funcionalidades problemáticas sem fazer deploy
+
+### Flags Disponíveis
+
+| Flag | Descrição |
+|------|-----------|
+| `NEXT_PUBLIC_FEATURE_OFFLINE_ENABLED` | Modo offline com service worker e cache local |
+| `NEXT_PUBLIC_FEATURE_PIX_ENABLED` | Pagamento via Pix (Mercado Pago) |
+| `NEXT_PUBLIC_FEATURE_STRIPE_ENABLED` | Pagamento via Cartão (Stripe) |
+| `NEXT_PUBLIC_FEATURE_WAITER_MODE` | Modo garçom/chamada de atendimento |
+| `NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED` | Leitura e geração de QR codes para mesas |
+| `NEXT_PUBLIC_FEATURE_COMBOS_ENABLED` | Sistema de combos/meal deals |
+| `NEXT_PUBLIC_FEATURE_ANALYTICS_ENABLED` | Dashboard de analytics e rastreamento de eventos |
+| `NEXT_PUBLIC_FEATURE_CASHBACK_ENABLED` | Sistema de cashback/recompensas |
+
+### Configuração
+
+Adicione ao seu `.env.local`:
+
+```env
+# Feature Flags (valores padrão: false)
+NEXT_PUBLIC_FEATURE_OFFLINE_ENABLED=true
+NEXT_PUBLIC_FEATURE_PIX_ENABLED=true
+NEXT_PUBLIC_FEATURE_STRIPE_ENABLED=true
+NEXT_PUBLIC_FEATURE_WAITER_MODE=false
+NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED=true
+NEXT_PUBLIC_FEATURE_COMBOS_ENABLED=false
+NEXT_PUBLIC_FEATURE_ANALYTICS_ENABLED=false
+NEXT_PUBLIC_FEATURE_CASHBACK_ENABLED=false
+```
+
+### Uso no Código
+
+```typescript
+import { isPixEnabled, isOfflineEnabled } from '@/lib/feature-flags';
+
+// Verificar se uma flag está ativa
+if (isPixEnabled()) {
+  // Mostrar opção de pagamento Pix
+}
+```
+
+Todas as flags são **client-side** (prefixadas com `NEXT_PUBLIC_`) e podem ser verificadas em qualquer componente ou hook React.
 
 ## Getting Started
 
@@ -170,6 +221,7 @@ O banco de dados possui as seguintes tabelas:
 - `order_status_history` — Histórico de status
 - `users_profiles` — Perfis de usuário (owner/manager/staff)
 - `webhook_events` — Eventos de webhook (idempotência)
+- `combo_products` — Associação de produtos a combos
 
 ## PWA
 
@@ -190,10 +242,10 @@ A aplicação é um **Progressive Web App** com:
 ## Testes
 
 ```bash
-# Unit tests (607 testes)
+# Unit tests (517 testes)
 pnpm test
 
-# E2E tests (17 specs) — requer Supabase Cloud configurado em .env.e2e
+# E2E tests (19 specs) — requer Supabase Cloud configurado em .env.e2e
 pnpm test:e2e:seed    # Popula dados de teste
 pnpm test:e2e         # Executa testes E2E
 ```

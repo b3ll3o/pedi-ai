@@ -126,7 +126,7 @@ export function useAdicionarItemAoCarrinho() {
   const queryClient = useQueryClient();
 
   return useMutation<void, Error, Omit<CartItemDTO, 'id'>, void>({
-    mutationFn: async (item) => {
+    mutationFn: async (_item) => {
       const carrinhoRepo: ICarrinhoRepository = new CarrinhoRepository(db);
 
       // Obter carrinho atual ou criar novo

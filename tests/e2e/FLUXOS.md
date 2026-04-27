@@ -157,7 +157,7 @@ Documentação detalhada de todos os fluxos de teste end-to-end.
 | realtime-updates | `tests/admin/realtime-updates.spec.ts` | — | ~50s |
 | kitchen | `tests/waiter/kitchen.spec.ts` | @slow | ~70s |
 
-**Total: 17 fluxos | ~590s (~10 min)**
+**Total: 19 fluxos | ~660s (~11 min)**
 
 ---
 

@@ -1,5 +1,5 @@
 import { UseCase } from '@/application/shared';
-import { Categoria, CategoriaProps } from '@/domain/cardapio/entities/Categoria';
+import { Categoria } from '@/domain/cardapio/entities/Categoria';
 
 /**
  * Input para gerenciar categoria

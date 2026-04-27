@@ -1,4 +1,4 @@
-import { PediDatabase, PedidoRecord } from '../database';
+import { PediDatabase } from '../database';
 import { Dinheiro } from '@/domain/pedido/value-objects/Dinheiro';
 import { StatusPedido } from '@/domain/pedido/value-objects/StatusPedido';
 

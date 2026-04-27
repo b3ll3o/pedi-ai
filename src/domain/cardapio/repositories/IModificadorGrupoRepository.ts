@@ -1,4 +1,4 @@
-import { ModificadorGrupo, ModificadorGrupoProps } from '../entities/ModificadorGrupo';
+import { ModificadorGrupo } from '../entities/ModificadorGrupo';
 
 export interface IModificadorGrupoRepository {
   buscarPorId(id: string): Promise<ModificadorGrupo | null>;

@@ -6,9 +6,10 @@ Cobertura de testes end-to-end usando [Playwright](https://playwright.dev/).
 
 | Persona | Arquivos de Teste | Fluxos |
 |---------|------------------|--------|
-| Cliente | 11 specs | auth, register, menu, cart, checkout, order, payment, offline, combos, modifier-groups |
-| Administrador | 6 specs | auth, categories, products, orders, table-qr, combos-admin |
-| Realtime | 2 specs | realtime-updates, kitchen |
+| Cliente | 10 specs | auth, register, menu, cart, checkout, order, payment, offline, combos, modifier-groups |
+| Administrador | 7 specs | auth, categories, products, orders, table-qr, combos-admin, realtime-updates |
+| Garçom | 1 spec | kitchen |
+| Landing | 1 spec | landing |
 
 **Total: 19 spec files cobrindo 19 fluxos**
 
@@ -120,13 +121,8 @@ pnpm test:e2e
 # Executar com interface visual (debug)
 pnpm test:e2e:ui
 
-# Executar em modo headed (ver navegador)
-pnpm test:e2e:headed
-
-# Executar em um navegador específico
-pnpm test:e2e:chromium
-pnpm test:e2e:firefox
-pnpm test:e2e:webkit
+# Executar em todos os browsers
+pnpm test:e2e:all
 
 # Executar com apenas 1 worker (para depuração)
 pnpm test:e2e:worker

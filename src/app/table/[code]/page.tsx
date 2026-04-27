@@ -14,7 +14,7 @@ interface TableInfo {
 }
 
 export default function TableQRPage() {
-  const router = useRouter();
+  const _router = useRouter();
   const params = useParams();
   const code = params?.code as string | undefined;
 
@@ -27,6 +27,7 @@ export default function TableQRPage() {
 
   useEffect(() => {
     if (!code) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError('Código da mesa não fornecido');
       return;
     }

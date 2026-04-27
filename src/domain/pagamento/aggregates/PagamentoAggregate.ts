@@ -1,9 +1,7 @@
 import { AggregateRootClass } from '@/domain/shared';
 import { Dinheiro } from '@/domain/pedido/value-objects/Dinheiro';
-import { Pagamento, PagamentoProps } from '../entities/Pagamento';
-import { Transacao, TransacaoProps } from '../entities/Transacao';
-import { StatusPagamento } from '../value-objects/StatusPagamento';
-import { MetodoPagamento } from '../value-objects/MetodoPagamento';
+import { Pagamento } from '../entities/Pagamento';
+import { Transacao } from '../entities/Transacao';
 import { PagamentoConfirmadoEvent } from '../events/PagamentoConfirmadoEvent';
 import { PagamentoFalhouEvent } from '../events/PagamentoFalhouEvent';
 import { ReembolsoIniciadoEvent } from '../events/ReembolsoIniciadoEvent';
