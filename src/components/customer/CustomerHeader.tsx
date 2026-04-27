@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { DoorOpen, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import Logo from '@/app/components/Logo';
 import styles from './CustomerHeader.module.css';
 
 export function CustomerHeader() {
@@ -34,6 +35,7 @@ export function CustomerHeader() {
   return (
     <header className={styles.header} data-testid="customer-header">
       <div className={styles.container}>
+        <Logo size={20} />
         <button
           type="button"
           onClick={handleLogout}

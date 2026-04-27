@@ -14,6 +14,7 @@ import {
   ChevronRight,
   LogOut,
 } from 'lucide-react';
+import Logo from '@/app/components/Logo';
 import styles from './AdminLayout.module.css';
 
 interface NavItem {
@@ -50,7 +51,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     <div className={styles.layout}>
       <aside className={styles.sidebar}>
         <div className={styles.sidebarHeader}>
-          <h1 className={styles.logo}>Pedi.ai</h1>
+          <Logo size={20} />
           <span className={styles.badge}>Admin</span>
         </div>
 

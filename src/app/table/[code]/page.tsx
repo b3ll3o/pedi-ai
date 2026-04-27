@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useValidarQRCode } from '@/hooks/useMesa';
 import { useTableStore } from '@/stores/tableStore';
+import Logo from '@/app/components/Logo';
 import styles from './page.module.css';
 
 interface TableInfo {
@@ -70,6 +71,9 @@ export default function TableQRPage() {
   if (isValidating) {
     return (
       <div className={styles.container}>
+        <header style={{ padding: '1rem', display: 'flex', justifyContent: 'center' }}>
+          <Logo size={24} />
+        </header>
         <h1 data-testid="page-title">Mesa</h1>
         <div className={styles.content}>
           <div className={styles.loading}>Validando QR Code...</div>
@@ -81,6 +85,9 @@ export default function TableQRPage() {
   if (error) {
     return (
       <div className={styles.container}>
+        <header style={{ padding: '1rem', display: 'flex', justifyContent: 'center' }}>
+          <Logo size={24} />
+        </header>
         <h1 data-testid="page-title">Mesa</h1>
         <div className={styles.content}>
           <p data-testid="error-message" className={styles.error}>{error}</p>
@@ -98,6 +105,9 @@ export default function TableQRPage() {
   if (!tableInfo) {
     return (
       <div className={styles.container}>
+        <header style={{ padding: '1rem', display: 'flex', justifyContent: 'center' }}>
+          <Logo size={24} />
+        </header>
         <h1 data-testid="page-title">Mesa</h1>
         <div className={styles.content}>
           <div className={styles.loading}>Carregando...</div>
@@ -108,6 +118,9 @@ export default function TableQRPage() {
 
   return (
     <div className={styles.container}>
+      <header style={{ padding: '1rem', display: 'flex', justifyContent: 'center' }}>
+        <Logo size={24} />
+      </header>
       <h1 data-testid="page-title">Mesa</h1>
       <div className={styles.content}>
         <div data-testid="table-qr-code" className={styles.qrCode}>
