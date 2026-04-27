@@ -12,7 +12,7 @@ export default function CustomerLoginPage() {
   const router = useRouter();
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const { signIn, isAuthenticated, session } = useAuth();
-  const { destination } = useRedirectByRole(session?.user?.id);
+  const { destination } = useRedirectByRole(session?.user?.id ?? null);
 
   useEffect(() => {
     const checkSession = async () => {
