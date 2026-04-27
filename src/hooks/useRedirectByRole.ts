@@ -2,7 +2,8 @@
  * useRedirectByRole Hook
  * Hook para redirecionamento baseado no papel do usuário após login.
  * Consulta users_profiles via SERVICE_ROLE_KEY e determina destino:
- * - owner|manager|staff → /admin/dashboard
+ * - dono|gerente|atendente sem restaurante → /admin/restaurants/new
+ * - dono|gerente|atendente com restaurante → /admin/dashboard
  * - demais perfis ou erro → /menu
  */
 
@@ -11,15 +12,15 @@ import { createClient } from '@supabase/supabase-js';
 import type { users_profiles } from '@/lib/supabase/types';
 
 export interface UseRedirectByRoleResult {
-  destination: '/admin/dashboard' | '/menu';
+  destination: '/admin/dashboard' | '/admin/restaurants/new' | '/menu';
   isLoading: boolean;
   role: string | null;
 }
 
-const ADMIN_ROLES = ['owner', 'manager', 'staff'] as const;
+const ADMIN_ROLES = ['dono', 'gerente', 'atendente'] as const;
 
 export function useRedirectByRole(userId: string | null): UseRedirectByRoleResult {
-  const [destination, setDestination] = useState<'/admin/dashboard' | '/menu'>('/menu');
+  const [destination, setDestination] = useState<'/admin/dashboard' | '/admin/restaurants/new' | '/menu'>('/menu');
   const [role, setRole] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -40,7 +41,7 @@ export function useRedirectByRole(userId: string | null): UseRedirectByRoleResul
 
         const { data: profile, error } = await supabaseAdmin
           .from('users_profiles')
-          .select('role')
+          .select('role, restaurant_id')
           .eq('user_id', userId)
           .single();
 
@@ -56,7 +57,11 @@ export function useRedirectByRole(userId: string | null): UseRedirectByRoleResul
         setRole(userRole);
 
         if (ADMIN_ROLES.includes(userRole as typeof ADMIN_ROLES[number])) {
-          setDestination('/admin/dashboard');
+          if (userRole === 'dono' && !typedProfile.restaurant_id) {
+            setDestination('/admin/restaurants/new');
+          } else {
+            setDestination('/admin/dashboard');
+          }
         } else {
           setDestination('/menu');
         }

@@ -6,7 +6,7 @@ import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin'
 export async function GET(request: NextRequest) {
   try {
     const authUser = await requireAuth()
-    requireRole(authUser, ['owner', 'manager'])
+    requireRole(authUser, ['dono', 'gerente'])
 
     const restaurantId = getRestaurantId(authUser)
     const { searchParams } = new URL(request.url)
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const authUser = await requireAuth()
-    requireRole(authUser, ['owner', 'manager'])
+    requireRole(authUser, ['dono', 'gerente'])
 
     const restaurantId = getRestaurantId(authUser)
     const body = await request.json()

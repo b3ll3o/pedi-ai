@@ -6,7 +6,7 @@ import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin'
 export async function GET(request: NextRequest) {
   try {
     const authUser = await requireAuth()
-    requireRole(authUser, ['owner', 'manager', 'staff'])
+    requireRole(authUser, ['dono', 'gerente', 'atendente'])
 
     const restaurantId = getRestaurantId(authUser)
     const { searchParams } = new URL(request.url)

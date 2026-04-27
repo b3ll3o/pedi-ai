@@ -99,11 +99,11 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
 
 function getRedirectPath(role: UserRole | null): string {
   switch (role) {
-    case 'owner':
+    case 'dono':
       return '/admin/owner';
-    case 'manager':
+    case 'gerente':
       return '/admin/manager';
-    case 'staff':
+    case 'atendente':
       return '/admin/staff';
     default:
       return '/';

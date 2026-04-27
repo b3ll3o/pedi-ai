@@ -12,17 +12,17 @@ interface UserFormProps {
 
 const ROLES: Array<{ value: Enum_user_role; label: string; description: string }> = [
   {
-    value: 'staff',
+    value: 'atendente',
     label: 'Funcionário',
     description: 'Pode visualizar pedidos e atualizar status',
   },
   {
-    value: 'manager',
+    value: 'gerente',
     label: 'Gerente',
     description: 'Pode gerenciar cardápio, mesas e pedidos',
   },
   {
-    value: 'owner',
+    value: 'dono',
     label: 'Proprietário',
     description: 'Acesso completo ao sistema',
   },
@@ -31,7 +31,7 @@ const ROLES: Array<{ value: Enum_user_role; label: string; description: string }
 export function UserForm({ user, onSubmit, onCancel }: UserFormProps) {
   const [email, setEmail] = useState(user?.email || '')
   const [name, setName] = useState(user?.name || '')
-  const [role, setRole] = useState<Enum_user_role>(user?.role || 'staff')
+  const [role, setRole] = useState<Enum_user_role>(user?.role || 'atendente')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 

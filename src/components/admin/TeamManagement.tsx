@@ -31,24 +31,25 @@ export function TeamManagement({
   // New member form
   const [newMemberName, setNewMemberName] = useState('');
   const [newMemberEmail, setNewMemberEmail] = useState('');
-  const [newMemberRole, setNewMemberRole] = useState<Enum_user_role>('staff');
+  const [newMemberRole, setNewMemberRole] = useState<Enum_user_role>('atendente');
 
   // Editing state
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editingRole, setEditingRole] = useState<Enum_user_role | null>(null);
 
   const canManage = (userRole: Enum_user_role): boolean => {
-    const hierarchy: Record<Enum_user_role, number> = {
-      staff: 1,
-      manager: 2,
-      owner: 3,
+    const hierarchy: Record<'dono' | 'gerente' | 'atendente' | 'cliente', number> = {
+      cliente: 0,
+      atendente: 1,
+      gerente: 2,
+      dono: 3,
     };
     return hierarchy[currentUserRole] > hierarchy[userRole];
   };
 
   const canEditRole = (userRole: Enum_user_role): boolean => {
     // Can't change owner role, and can only change roles lower than current user
-    return userRole !== 'owner' && canManage(userRole);
+    return userRole !== 'dono' && canManage(userRole);
   };
 
   const formatDate = (dateString: string): string => {
@@ -68,7 +69,7 @@ export function TeamManagement({
   const handleOpenModal = () => {
     setNewMemberName('');
     setNewMemberEmail('');
-    setNewMemberRole('staff');
+    setNewMemberRole('atendente');
     setIsModalOpen(true);
   };
 
@@ -76,7 +77,7 @@ export function TeamManagement({
     setIsModalOpen(false);
     setNewMemberName('');
     setNewMemberEmail('');
-    setNewMemberRole('staff');
+    setNewMemberRole('atendente');
   };
 
   const handleInvite = async () => {
@@ -120,7 +121,7 @@ export function TeamManagement({
           <h2 className={styles.title}>Equipe</h2>
           <p className={styles.subtitle}>Gerencie os membros da equipe deste restaurante</p>
         </div>
-        {currentUserRole === 'owner' && (
+        {currentUserRole === 'dono' && (
           <button type="button" className={styles.inviteButton} onClick={handleOpenModal}>
             + Convidar Membro
           </button>
@@ -149,7 +150,7 @@ export function TeamManagement({
               ? 'Nenhum membro encontrado para a busca'
               : 'Nenhum membro da equipe encontrado'}
           </p>
-          {currentUserRole === 'owner' && !searchEmail && (
+          {currentUserRole === 'dono' && !searchEmail && (
             <button type="button" className={styles.inviteButton} onClick={handleOpenModal}>
               Convidar primeiro membro
             </button>
@@ -181,9 +182,9 @@ export function TeamManagement({
                   onChange={(e) => setEditingRole(e.target.value as Enum_user_role)}
                   disabled={isSubmitting}
                 >
-                  <option value="staff">Funcionário</option>
-                  <option value="manager">Gerente</option>
-                  {user.role === 'owner' && <option value="owner">Proprietário</option>}
+                  <option value="atendente">Funcionário</option>
+                  <option value="gerente">Gerente</option>
+                  {user.role === 'dono' && <option value="dono">Proprietário</option>}
                 </select>
               ) : (
                 <span
@@ -232,7 +233,7 @@ export function TeamManagement({
                         ✏️
                       </button>
                     )}
-                    {user.role !== 'owner' ? (
+                    {user.role !== 'dono' ? (
                       user.id !== currentUserId ? (
                         <button
                           type="button"
@@ -310,8 +311,8 @@ export function TeamManagement({
                 value={newMemberRole}
                 onChange={(e) => setNewMemberRole(e.target.value as Enum_user_role)}
               >
-                <option value="staff">Funcionário</option>
-                <option value="manager">Gerente</option>
+                <option value="atendente">Funcionário</option>
+                <option value="gerente">Gerente</option>
               </select>
             </div>
 

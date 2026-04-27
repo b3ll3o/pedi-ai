@@ -107,7 +107,7 @@ export async function PUT(
       .eq('restaurant_id', restaurantId)
       .single();
 
-    if (!profile || (profile.role !== 'owner' && profile.role !== 'manager')) {
+    if (!profile || (profile.role !== 'dono' && profile.role !== 'gerente')) {
       return NextResponse.json(
         { error: 'Permissão insuficiente' },
         { status: 403 }
@@ -174,7 +174,7 @@ export async function DELETE(
       .eq('restaurant_id', restaurantId)
       .single();
 
-    if (!profile || profile.role !== 'owner') {
+    if (!profile || profile.role !== 'dono') {
       return NextResponse.json(
         { error: 'Apenas o proprietário pode excluir um restaurante' },
         { status: 403 }

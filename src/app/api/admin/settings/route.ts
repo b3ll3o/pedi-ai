@@ -18,7 +18,7 @@ export interface RestaurantSettings {
 export async function GET(_request: NextRequest) {
   try {
     const authUser = await requireAuth()
-    requireRole(authUser, ['owner'])
+    requireRole(authUser, ['dono'])
 
     const restaurantId = getRestaurantId(authUser)
     const supabase = await createClient()
@@ -82,7 +82,7 @@ export async function GET(_request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const authUser = await requireAuth()
-    requireRole(authUser, ['owner'])
+    requireRole(authUser, ['dono'])
 
     const restaurantId = getRestaurantId(authUser)
     const body = await request.json()

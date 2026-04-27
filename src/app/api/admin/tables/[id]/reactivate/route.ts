@@ -10,7 +10,7 @@ interface RouteParams {
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const authUser = await requireAuth()
-    requireRole(authUser, ['owner', 'manager'])
+    requireRole(authUser, ['dono', 'gerente'])
 
     const { id } = await params
     const restaurantId = getRestaurantId(authUser)

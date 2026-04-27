@@ -9,7 +9,7 @@ export async function GET(
 ) {
   try {
     const authUser = await requireAuth()
-    requireRole(authUser, ['owner', 'manager'])
+    requireRole(authUser, ['dono', 'gerente'])
 
     const restaurantId = getRestaurantId(authUser)
     const { id } = await params
@@ -57,7 +57,7 @@ export async function PUT(
 ) {
   try {
     const authUser = await requireAuth()
-    requireRole(authUser, ['owner', 'manager'])
+    requireRole(authUser, ['dono', 'gerente'])
 
     const restaurantId = getRestaurantId(authUser)
     const { id } = await params
@@ -176,7 +176,7 @@ export async function DELETE(
 ) {
   try {
     const authUser = await requireAuth()
-    requireRole(authUser, ['owner', 'manager'])
+    requireRole(authUser, ['dono', 'gerente'])
 
     const restaurantId = getRestaurantId(authUser)
     const { id } = await params

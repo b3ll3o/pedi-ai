@@ -13,7 +13,7 @@ export async function POST(
 ) {
   try {
     const authUser = await requireAuth()
-    requireRole(authUser, ['owner', 'manager'])
+    requireRole(authUser, ['dono', 'gerente'])
 
     const restaurantId = getRestaurantId(authUser)
     const { id: modifierGroupId } = await params

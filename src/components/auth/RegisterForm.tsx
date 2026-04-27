@@ -4,8 +4,10 @@ import { useState, FormEvent } from 'react';
 import styles from './RegisterForm.module.css';
 import { signUp as signUpAuth } from '@/lib/supabase/auth';
 
+type Intent = 'gerenciar_restaurante' | 'fazer_pedidos';
+
 interface RegisterFormProps {
-  onSubmit?: (email: string, password: string) => Promise<void> | void;
+  onSubmit?: (email: string, password: string, intent: Intent) => Promise<void> | void;
 }
 
 export function RegisterForm({ onSubmit }: RegisterFormProps) {
@@ -19,6 +21,7 @@ export function RegisterForm({ onSubmit }: RegisterFormProps) {
   const [passwordError, setPasswordError] = useState('');
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [intent, setIntent] = useState<Intent | null>(null);
 
   const validateEmail = (value: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -64,11 +67,16 @@ export function RegisterForm({ onSubmit }: RegisterFormProps) {
       return;
     }
 
+    if (!intent) {
+      setError('Por favor, selecione uma intenção');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       if (onSubmit) {
-        await onSubmit(email, password);
+        await onSubmit(email, password, intent!);
       } else {
         const { error: signUpError } = await signUpAuth(email, password);
         if (signUpError) {
@@ -171,6 +179,25 @@ export function RegisterForm({ onSubmit }: RegisterFormProps) {
             {confirmPasswordError}
           </span>
         )}
+      </div>
+
+      <div className={styles.intentSelection}>
+        <button
+          type="button"
+          onClick={() => setIntent('gerenciar_restaurante')}
+          className={intent === 'gerenciar_restaurante' ? styles.selected : ''}
+          disabled={isLoading}
+        >
+          🏪 Quero gerenciar meu restaurante
+        </button>
+        <button
+          type="button"
+          onClick={() => setIntent('fazer_pedidos')}
+          className={intent === 'fazer_pedidos' ? styles.selected : ''}
+          disabled={isLoading}
+        >
+          🍽️ Quero fazer pedidos
+        </button>
       </div>
 
       {error && (

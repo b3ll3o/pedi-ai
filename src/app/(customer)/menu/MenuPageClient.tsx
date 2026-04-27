@@ -80,12 +80,13 @@ export default function MenuPageClient() {
   return (
     <div className={styles.container}>
       <CustomerHeader />
-      <header className={styles.header}>
+
+      <div className={styles.pageHeader}>
         <h1 className={styles.title} data-testid="page-title">Cardápio</h1>
         <p className={styles.subtitle}>
           {isLoading ? 'Carregando...' : `${transformedCategories.length} categorias`}
         </p>
-      </header>
+      </div>
 
       <div className={styles.searchContainer}>
         <SearchBar />

@@ -20,10 +20,11 @@ export function UserManagement({
   onInvite,
 }: UserManagementProps) {
   const canManage = (userRole: Enum_user_role) => {
-    const hierarchy: Record<Enum_user_role, number> = {
-      staff: 1,
-      manager: 2,
-      owner: 3,
+    const hierarchy: Record<'dono' | 'gerente' | 'atendente' | 'cliente', number> = {
+      cliente: 0,
+      atendente: 1,
+      gerente: 2,
+      dono: 3,
     }
     return hierarchy[currentUserRole] > hierarchy[userRole]
   }
@@ -44,7 +45,7 @@ export function UserManagement({
           <h2 className={styles.title}>Equipe</h2>
           <p className={styles.subtitle}>Gerencie os membros da equipe</p>
         </div>
-        {currentUserRole === 'owner' && (
+        {currentUserRole === 'dono' && (
           <button type="button" className={styles.inviteButton} onClick={onInvite}>
             + Convidar Membro
           </button>
@@ -55,7 +56,7 @@ export function UserManagement({
         <div className={styles.empty}>
           <span className={styles.emptyIcon}>👥</span>
           <p>Nenhum membro da equipe encontrado</p>
-          {currentUserRole === 'owner' && (
+          {currentUserRole === 'dono' && (
             <button type="button" className={styles.inviteButton} onClick={onInvite}>
               Convidar primeiro membro
             </button>
@@ -91,7 +92,7 @@ export function UserManagement({
                   >
                     ✏️
                   </button>
-                  {user.role !== 'owner' && (
+                  {user.role !== 'dono' && (
                     <button
                       type="button"
                       className={styles.deleteButton}

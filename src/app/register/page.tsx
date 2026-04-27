@@ -63,9 +63,14 @@ export default function CustomerRegisterPage() {
     }
   }, [isAuthenticated, router]);
 
-  const handleRegister = async (email: string, password: string) => {
+  const handleRegister = async (email: string, password: string, intent: 'gerenciar_restaurante' | 'fazer_pedidos') => {
     await signUp(email, password);
-    router.push('/login?registered=true');
+    await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, intent })
+    });
+    router.push(`/login?registered=true&intent=${intent}`);
   };
 
   if (isCheckingSession) {

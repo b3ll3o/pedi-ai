@@ -23,7 +23,7 @@ export default function TeamPage() {
   const [restaurant, setRestaurant] = useState<restaurants | null>(null);
   const [users, setUsers] = useState<users_profiles[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>('');
-  const [currentUserRole, setCurrentUserRole] = useState<Enum_user_role>('staff');
+  const [currentUserRole, setCurrentUserRole] = useState<Enum_user_role>('atendente');
   const [notFound, setNotFound] = useState(false);
   const [toast, setToast] = useState<{ type: ToastType; message: string }>({ type: null, message: '' });
 

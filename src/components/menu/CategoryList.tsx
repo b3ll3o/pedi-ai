@@ -34,7 +34,25 @@ export function CategoryList({
   if (categories.length === 0) {
     return (
       <div className={styles.empty} data-testid="menu-categories">
+        <div className={styles.emptyIcon}>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M3 3h18v18H3z" />
+            <path d="M3 9h18" />
+            <path d="M9 21V9" />
+          </svg>
+        </div>
         <p>Nenhuma categoria disponível</p>
+        <p className={styles.emptyHint}>
+          No momento, não há categorias no cardápio. Volte em breve!
+        </p>
       </div>
     );
   }
@@ -47,7 +65,6 @@ export function CategoryList({
           className={styles.item}
           style={{ animationDelay: `${index * 50}ms` }}
         >
-          {/* CategoryCard will be imported here in task 2.1.4 */}
           <div
             className={styles.categoryCard}
             onClick={() => onCategoryClick?.(category.id)}
@@ -60,7 +77,22 @@ export function CategoryList({
             }}
             data-testid={`menu-category-card-${category.id}`}
           >
-            {category.name}
+            <div className={styles.categoryIcon} aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 3h18v18H3z" />
+                <path d="M3 9h18" />
+                <path d="M9 21V9" />
+              </svg>
+            </div>
+            <h3 className={styles.categoryName}>{category.name}</h3>
+            {category.description && (
+              <p className={styles.categoryDescription}>{category.description}</p>
+            )}
+            <div className={styles.categoryArrow} aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </div>
           </div>
         </div>
       ))}

@@ -51,7 +51,7 @@ export async function POST(
       .eq('restaurant_id', restaurantId)
       .single();
 
-    if (!profile || profile.role !== 'owner') {
+    if (!profile || profile.role !== 'dono') {
       return NextResponse.json(
         { error: 'Apenas o proprietário pode desativar um restaurante' },
         { status: 403 }

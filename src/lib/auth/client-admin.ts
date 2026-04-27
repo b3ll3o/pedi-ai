@@ -8,7 +8,7 @@ import { createBrowserClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
 import type { Enum_user_role, users_profiles } from '@/lib/supabase/types'
 
-export type Role = Extract<Enum_user_role, 'owner' | 'manager' | 'staff'>
+export type Role = Extract<Enum_user_role, 'dono' | 'gerente' | 'atendente'>
 
 export interface AuthUser {
   id: string

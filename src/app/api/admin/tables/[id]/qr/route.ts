@@ -13,7 +13,7 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const authUser = await requireAuth()
-    requireRole(authUser, ['owner', 'manager'])
+    requireRole(authUser, ['dono', 'gerente'])
 
     const { id } = await params
     const restaurantId = getRestaurantId(authUser)
@@ -95,7 +95,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const authUser = await requireAuth()
-    requireRole(authUser, ['owner', 'manager'])
+    requireRole(authUser, ['dono', 'gerente'])
 
     const _id = (await params).id // params.id intentionally unused - we validate via body
     const _restaurantId = getRestaurantId(authUser) // auth verified but not used in validation

@@ -10,7 +10,7 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const authUser = await requireAuth()
-    requireRole(authUser, ['owner'])
+    requireRole(authUser, ['dono'])
 
     const { id } = await params
     const restaurantId = getRestaurantId(authUser)
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     const authUser = await requireAuth()
-    requireRole(authUser, ['owner'])
+    requireRole(authUser, ['dono'])
 
     const { id } = await params
     const restaurantId = getRestaurantId(authUser)
@@ -78,7 +78,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     // Validate role if provided
     if (role !== undefined) {
-      const validRoles = ['owner', 'manager', 'staff']
+      const validRoles = ['dono', 'gerente', 'atendente']
       if (!validRoles.includes(role)) {
         return NextResponse.json(
           { error: `role must be one of: ${validRoles.join(', ')}` },
@@ -87,12 +87,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       }
 
       // Prevent changing the last owner's role
-      if (existingUser.role === 'owner' && role !== 'owner') {
+      if (existingUser.role === 'dono' && role !== 'dono') {
         const { data: owners, error: ownersError } = await supabase
           .from('users_profiles')
           .select('id')
           .eq('restaurant_id', existingUser.restaurant_id as string)
-          .eq('role', 'owner')
+          .eq('role', 'dono')
 
         if (ownersError) {
           console.error('Error checking owners:', ownersError)
@@ -145,7 +145,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const authUser = await requireAuth()
-    requireRole(authUser, ['owner'])
+    requireRole(authUser, ['dono'])
 
     const { id } = await params
     const restaurantId = getRestaurantId(authUser)
@@ -167,7 +167,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Prevent deleting the last owner
-    if (existingUser.role === 'owner') {
+    if (existingUser.role === 'dono') {
       const { data: owners, error: ownersError } = await supabase
         .from('users_profiles')
         .select('id')

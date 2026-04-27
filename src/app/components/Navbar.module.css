@@ -37,6 +37,30 @@
   justify-content: space-between;
   align-items: center;
   gap: var(--spacing-lg);
+  position: relative;
+}
+
+/* Desktop: logo centralizado */
+@media (min-width: 40em) {
+  .logo {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .navLinks {
+    position: absolute;
+    left: 1rem;
+  }
+
+  .navCta {
+    position: absolute;
+    right: 1rem;
+  }
+
+  .menuButton {
+    display: none;
+  }
 }
 
 /* ----------------------------------------

@@ -725,13 +725,13 @@ async function createUserProfiles(
       user_id: users.admin.id,
       email: users.admin.email,
       name: 'Admin Teste',
-      role: 'owner' as const,
+      role: 'dono' as const,
     },
     {
       user_id: users.waiter.id,
       email: users.waiter.email,
       name: 'Garçom Teste',
-      role: 'staff' as const,
+      role: 'atendente' as const,
     },
   ]
 

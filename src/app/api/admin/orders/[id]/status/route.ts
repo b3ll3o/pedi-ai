@@ -23,7 +23,7 @@ const VALID_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const authUser = await requireAuth()
-    requireRole(authUser, ['owner', 'manager'])
+    requireRole(authUser, ['dono', 'gerente'])
 
     const { id } = await params
     const body = await request.json()

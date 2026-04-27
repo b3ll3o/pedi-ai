@@ -7,7 +7,7 @@
 export type Enum_order_status = 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
 export type Enum_payment_method = 'cash' | 'credit_card' | 'debit_card' | 'pix' | 'other';
 export type Enum_payment_status = 'pending' | 'paid' | 'refunded' | 'failed';
-export type Enum_user_role = 'owner' | 'manager' | 'staff';
+export type Enum_user_role = 'dono' | 'gerente' | 'atendente' | 'cliente';
 
 // ── Tables ────────────────────────────────────────────────────
 

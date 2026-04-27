@@ -6,7 +6,7 @@ import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin'
 export async function GET(_request: NextRequest) {
   try {
     const authUser = await requireAuth()
-    requireRole(authUser, ['owner'])
+    requireRole(authUser, ['dono'])
 
     const restaurantId = getRestaurantId(authUser)
     const supabase = await createClient()
@@ -39,7 +39,7 @@ export async function GET(_request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const authUser = await requireAuth()
-    requireRole(authUser, ['owner'])
+    requireRole(authUser, ['dono'])
 
     const restaurantId = getRestaurantId(authUser)
     const body = await request.json()
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate role
-    const validRoles = ['owner', 'manager', 'staff']
+    const validRoles = ['dono', 'gerente', 'atendente']
     if (!validRoles.includes(role)) {
       return NextResponse.json(
         { error: `role must be one of: ${validRoles.join(', ')}` },

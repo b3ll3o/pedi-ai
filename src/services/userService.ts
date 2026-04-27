@@ -106,27 +106,30 @@ export async function deleteUser(userId: string): Promise<void> {
 
 export function canManageRole(currentRole: UserRole, targetRole: UserRole): boolean {
   const roleHierarchy: Record<UserRole, number> = {
-    staff: 1,
-    manager: 2,
-    owner: 3,
+    cliente: 0,
+    atendente: 1,
+    gerente: 2,
+    dono: 3,
   }
   return roleHierarchy[currentRole] > roleHierarchy[targetRole]
 }
 
 export function getRoleLabel(role: UserRole): string {
   const labels: Record<UserRole, string> = {
-    owner: 'Proprietário',
-    manager: 'Gerente',
-    staff: 'Funcionário',
+    dono: 'Proprietário',
+    gerente: 'Gerente',
+    atendente: 'Funcionário',
+    cliente: 'Cliente',
   }
   return labels[role] || role
 }
 
 export function getRoleColor(role: UserRole): string {
   const colors: Record<UserRole, string> = {
-    owner: '#dc2626',
-    manager: '#d97706',
-    staff: '#2563eb',
+    dono: '#dc2626',
+    gerente: '#d97706',
+    atendente: '#2563eb',
+    cliente: '#6b7280',
   }
   return colors[role] || '#6b7280'
 }

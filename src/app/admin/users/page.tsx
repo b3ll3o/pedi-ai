@@ -12,7 +12,7 @@ import type { users_profiles } from '@/lib/supabase/types'
 export default function UsersPage() {
   const router = useRouter()
   const [users, setUsers] = useState<users_profiles[]>([])
-  const [currentUserRole, setCurrentUserRole] = useState<UserRole>('owner')
+  const [currentUserRole, setCurrentUserRole] = useState<UserRole>('dono')
   const [isLoading, setIsLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingUser, setEditingUser] = useState<users_profiles | null>(null)
@@ -108,7 +108,7 @@ export default function UsersPage() {
   }, [])
 
   // Role protection: only owner can manage users
-  if (authChecked && authUser && authUser.role !== 'owner') {
+  if (authChecked && authUser && authUser.role !== 'dono') {
     return (
       <AdminLayout>
         <div style={{

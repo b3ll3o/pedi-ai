@@ -1,15 +1,38 @@
 .header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   padding: 0.75rem 1rem;
-  background-color: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  transition: var(--transition-fast);
 }
 
 .container {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  justify-content: space-between;
+  width: 100%;
+  gap: 1rem;
+  position: relative;
+}
+
+/* Desktop: logo centralizado */
+@media (min-width: 40em) {
+  .container {
+    justify-content: center;
+  }
+
+  .logoutButton {
+    position: absolute;
+    right: 0;
+  }
 }
 
 .logoutButton {
@@ -17,23 +40,23 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.5rem;
-  min-width: 2.75rem;
+  padding: 0.5rem 1rem;
   min-height: 2.75rem;
-  border: 1px solid var(--color-border);
-  background-color: var(--color-surface);
-  border-radius: 0.5rem;
+  border: none;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  border-radius: var(--border-radius-sm);
   font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--color-text-secondary);
+  font-weight: 600;
+  color: white;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: var(--transition-fast);
+  box-shadow: var(--shadow-primary);
 }
 
 .logoutButton:hover:not(:disabled) {
-  background-color: var(--color-error-light);
-  border-color: var(--color-error);
-  color: var(--color-error);
+  background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-primary-lg);
 }
 
 .logoutButton:active:not(:disabled) {
@@ -71,4 +94,24 @@
 .errorMessage {
   font-size: 0.75rem;
   color: var(--color-error);
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .header {
+    background: rgba(31, 41, 55, 0.95);
+    border-bottom-color: rgba(55, 65, 81, 0.8);
+  }
+
+  .logoutButton {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  }
+
+  .logoutButton:hover:not(:disabled) {
+    background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%);
+  }
+
+  .errorMessage {
+    color: var(--color-error-light);
+  }
 }

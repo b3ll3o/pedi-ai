@@ -1,103 +1,142 @@
 .container {
   min-height: 100vh;
+  padding-top: 4rem; /* espaço para o CustomerHeader fixo */
   background: var(--color-background, #f5f5f5);
 }
 
-/* Header */
-.header {
-  padding: 24px 16px 16px;
-  background: var(--color-surface, #fff);
-  border-bottom: 1px solid var(--color-border, #e5e7eb);
+/* Page Header - abaixo do CustomerHeader */
+.pageHeader {
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: rgba(var(--color-surface-rgb), 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(var(--color-border), 0.6);
   text-align: center;
+  position: relative;
+}
+
+.pageHeader::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-primary-light), transparent);
+  opacity: 0.5;
 }
 
 .title {
-  font-size: 28px;
-  font-weight: 700;
-  margin: 0 0 4px 0;
-  color: var(--color-text-primary, #1a1a1a);
+  font-size: clamp(1.5rem, 5vw, 2rem);
+  font-weight: 800;
+  margin: 0 0 var(--spacing-xs) 0;
+  color: var(--color-text-primary);
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--color-text-primary) 0%, var(--color-primary-dark) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .subtitle {
-  font-size: 16px;
-  color: var(--color-text-secondary, #666);
+  font-size: 0.9375rem;
+  color: var(--color-text-secondary);
   margin: 0;
 }
 
 /* Search Container */
 .searchContainer {
-  padding: 16px;
-  background: var(--color-surface, #fff);
-  border-bottom: 1px solid var(--color-border, #e5e7eb);
+  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
+  background: rgba(var(--color-surface-rgb), 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(var(--color-border), 0.5);
   position: sticky;
-  top: 0;
-  z-index: 10;
+  top: 7rem; /* altura do CustomerHeader + pageHeader */
+  z-index: 90;
 }
 
 /* Main */
 .main {
-  padding: 16px;
+  padding: var(--spacing-md);
+  min-height: 60vh;
 }
 
 /* Section Title */
 .sectionTitle {
-  font-size: 20px;
-  font-weight: 600;
-  margin: 0 0 16px 0;
-  color: var(--color-text-primary, #1a1a1a);
+  font-size: clamp(1.125rem, 3vw, 1.375rem);
+  font-weight: 700;
+  margin: 0 0 var(--spacing-md) 0;
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
 }
 
 /* Search Results Header */
 .searchResultsHeader {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-bottom: 16px;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
 }
 
 .resultCount {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--color-text-secondary, #666);
 }
 
 /* No Results */
 .noResults {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-2xl) var(--spacing-md);
   text-align: center;
-  padding: 48px 24px;
-  background: var(--color-surface, #fff);
-  border-radius: 12px;
-  border: 1px solid var(--color-border, #e5e7eb);
+  background: rgba(var(--color-surface-rgb), 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(var(--color-border), 0.5);
+  border-radius: var(--border-radius-xl);
 }
 
 .noResults p {
-  margin: 0 0 8px 0;
-  font-size: 16px;
-  color: var(--color-text-primary, #1a1a1a);
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
 }
 
 .noResultsHint {
-  font-size: 14px !important;
-  color: var(--color-text-secondary, #666) !important;
+  font-size: 0.875rem !important;
+  color: var(--color-text-secondary) !important;
 }
 
 .clearLink {
-  color: var(--color-primary, #0066cc);
+  color: var(--color-primary);
   text-decoration: none;
-  font-weight: 500;
+  font-weight: 600;
+  transition: color var(--transition-fast);
 }
 
 .clearLink:hover {
+  color: var(--color-primary-dark);
   text-decoration: underline;
 }
 
 /* Error */
 .error {
-  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-lg);
   text-align: center;
-  color: var(--error, #dc2626);
-  background: var(--color-error-light, #fef2f2);
-  border-radius: 8px;
-  margin: 16px;
+  color: var(--color-error);
+  background: var(--color-error-light);
+  border: 1px solid rgba(var(--color-error), 0.2);
+  border-radius: var(--border-radius-lg);
+  margin: var(--spacing-md);
 }
 
 .error p {
@@ -106,47 +145,50 @@
 
 /* Dark mode */
 @media (prefers-color-scheme: dark) {
-  .header {
-    background: var(--card-background-dark, #1f2937);
-    border-bottom-color: var(--border-color-dark, #374151);
+  .pageHeader {
+    background: rgba(var(--color-surface-rgb), 0.75);
+    border-bottom-color: rgba(var(--color-border), 0.4);
   }
 
   .title {
-    color: var(--text-primary-dark, #f9fafb);
+    background: linear-gradient(135deg, var(--color-text-primary) 0%, var(--color-primary-light) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
   .subtitle {
-    color: var(--text-secondary-dark, #9ca3af);
+    color: var(--color-text-secondary);
   }
 
   .searchContainer {
-    background: var(--card-background-dark, #1f2937);
-    border-bottom-color: var(--border-color-dark, #374151);
+    background: rgba(var(--color-surface-rgb), 0.65);
+    border-bottom-color: rgba(var(--color-border), 0.35);
   }
 
   .sectionTitle {
-    color: var(--text-primary-dark, #f9fafb);
+    color: var(--color-text-primary);
   }
 
   .resultCount {
-    color: var(--text-secondary-dark, #9ca3af);
+    color: var(--color-text-secondary);
   }
 
   .noResults {
-    background: var(--card-background-dark, #1f2937);
-    border-color: var(--border-color-dark, #374151);
+    background: rgba(var(--color-surface-rgb), 0.7);
+    border-color: rgba(var(--color-border), 0.4);
   }
 
   .noResults p {
-    color: var(--text-primary-dark, #f9fafb);
+    color: var(--color-text-primary);
   }
 
   .noResultsHint {
-    color: var(--text-secondary-dark, #9ca3af) !important;
+    color: var(--color-text-secondary) !important;
   }
 
   .error {
-    color: var(--error, #f87171);
-    background: var(--error-light, #2a1a1a);
+    color: var(--color-error);
+    background: var(--color-error-light);
   }
 }
