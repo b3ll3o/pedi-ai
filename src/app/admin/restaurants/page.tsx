@@ -93,31 +93,33 @@ export default function RestaurantsPage() {
   if (loading) {
     return (
       <div className={styles.container}>
-        <header className={styles.header}>
+        <header className={styles.pageHeader}>
           <h1 className={styles.title}>Meus Restaurantes</h1>
           <Link href="/admin/restaurants/new" className={styles.addButton} aria-disabled="true">
             <Plus aria-hidden="true" />
             <span>Novo Restaurante</span>
           </Link>
         </header>
-        <div className={styles.grid} aria-label="Carregando restaurantes">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className={styles.skeletonCard}>
-              <div className={styles.skeletonHeader}>
-                <div className={styles.skeletonTitle} />
-                <div className={styles.skeletonBadge} />
+        <main>
+          <div className={styles.grid} aria-label="Carregando restaurantes">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className={styles.skeletonCard}>
+                <div className={styles.skeletonHeader}>
+                  <div className={styles.skeletonTitle} />
+                  <div className={styles.skeletonBadge} />
+                </div>
+                <div className={styles.skeletonCnpj} />
+                <div className={styles.skeletonAddress} />
+                <div className={styles.skeletonTeam} />
+                <div className={styles.skeletonActions}>
+                  <div className={styles.skeletonButton} />
+                  <div className={styles.skeletonButton} />
+                  <div className={styles.skeletonButton} />
+                </div>
               </div>
-              <div className={styles.skeletonCnpj} />
-              <div className={styles.skeletonAddress} />
-              <div className={styles.skeletonTeam} />
-              <div className={styles.skeletonActions}>
-                <div className={styles.skeletonButton} />
-                <div className={styles.skeletonButton} />
-                <div className={styles.skeletonButton} />
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </main>
       </div>
     );
   }
@@ -125,28 +127,30 @@ export default function RestaurantsPage() {
   if (error) {
     return (
       <div className={styles.container}>
-        <header className={styles.header}>
+        <header className={styles.pageHeader}>
           <h1 className={styles.title}>Meus Restaurantes</h1>
           <Link href="/admin/restaurants/new" className={styles.addButton}>
             <Plus aria-hidden="true" />
             <span>Novo Restaurante</span>
           </Link>
         </header>
-        <div className={styles.error} role="alert">
-          <AlertCircle aria-hidden="true" className={styles.errorIcon} />
-          <h2 className={styles.errorTitle}>Erro ao carregar restaurantes</h2>
-          <p className={styles.errorMessage}>{error}</p>
-          <button type="button" onClick={loadRestaurants} className={styles.retryButton}>
-            Tentar novamente
-          </button>
-        </div>
+        <main>
+          <div className={styles.error} role="alert">
+            <AlertCircle aria-hidden="true" className={styles.errorIcon} />
+            <h2 className={styles.errorTitle}>Erro ao carregar restaurantes</h2>
+            <p className={styles.errorMessage}>{error}</p>
+            <button type="button" onClick={loadRestaurants} className={styles.retryButton}>
+              Tentar novamente
+            </button>
+          </div>
+        </main>
       </div>
     );
   }
 
   return (
     <div className={styles.container}>
-      <header className={styles.header}>
+      <header className={styles.pageHeader}>
         <h1 className={styles.title}>Meus Restaurantes</h1>
         <Link href="/admin/restaurants/new" className={styles.addButton}>
           <Plus aria-hidden="true" />
@@ -154,37 +158,39 @@ export default function RestaurantsPage() {
         </Link>
       </header>
 
-      {restaurants.length === 0 ? (
-        <div className={styles.empty}>
-          <Store aria-hidden="true" className={styles.emptyIcon} />
-          <h2 className={styles.emptyTitle}>Nenhum restaurante encontrado</h2>
-          <p className={styles.emptyText}>
-            Crie seu primeiro restaurante para começar a gerenciar seu negócio
-          </p>
-          <Link href="/admin/restaurants/new" className={styles.addButton}>
-            <Plus aria-hidden="true" />
-            <span>Criar Restaurante</span>
-          </Link>
-        </div>
-      ) : (
-        <section aria-labelledby="restaurants-heading">
-          <h2 id="restaurants-heading" className="sr-only">
-            Lista de restaurantes
-          </h2>
-          <div className={styles.grid}>
-            {restaurants.map(({ restaurante, teamMemberCount }) => (
-              <RestaurantCard
-                key={restaurante.id}
-                restaurante={restaurante}
-                teamMemberCount={teamMemberCount}
-                onEdit={handleEdit}
-                onManageTeam={handleManageTeam}
-                onViewMenu={handleViewMenu}
-              />
-            ))}
+      <main>
+        {restaurants.length === 0 ? (
+          <div className={styles.empty}>
+            <Store aria-hidden="true" className={styles.emptyIcon} />
+            <h2 className={styles.emptyTitle}>Nenhum restaurante encontrado</h2>
+            <p className={styles.emptyText}>
+              Crie seu primeiro restaurante para começar a gerenciar seu negócio
+            </p>
+            <Link href="/admin/restaurants/new" className={styles.addButton}>
+              <Plus aria-hidden="true" />
+              <span>Criar Restaurante</span>
+            </Link>
           </div>
-        </section>
-      )}
+        ) : (
+          <section aria-labelledby="restaurants-heading">
+            <h2 id="restaurants-heading" className={styles.srOnly}>
+              Lista de restaurantes
+            </h2>
+            <div className={styles.grid}>
+              {restaurants.map(({ restaurante, teamMemberCount }) => (
+                <RestaurantCard
+                  key={restaurante.id}
+                  restaurante={restaurante}
+                  teamMemberCount={teamMemberCount}
+                  onEdit={handleEdit}
+                  onManageTeam={handleManageTeam}
+                  onViewMenu={handleViewMenu}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+      </main>
     </div>
   );
 }

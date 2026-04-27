@@ -5,18 +5,19 @@
   margin: 0 auto;
 }
 
-.header {
+.pageHeader {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
 }
 
 @media (min-width: 40em) {
-  .header {
+  .pageHeader {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
+    gap: var(--spacing-xl);
   }
 }
 
@@ -28,7 +29,8 @@
 }
 
 .addButton {
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  min-height: 2.75rem; /* 44px touch-friendly minimum */
   background: var(--color-success);
   color: white;
   border: none;
@@ -40,7 +42,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-sm);
   text-decoration: none;
 }
 
@@ -62,7 +64,7 @@
 .grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: var(--spacing-md);
+  gap: var(--spacing-lg);
 }
 
 @media (min-width: 40em) {
@@ -74,7 +76,7 @@
 @media (min-width: 64em) {
   .grid {
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: var(--spacing-lg);
+    gap: var(--spacing-xl);
   }
 }
 
