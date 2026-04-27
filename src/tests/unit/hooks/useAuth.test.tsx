@@ -106,6 +106,7 @@ const mockSession: Session = {
 describe('useAuth timeout', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
@@ -114,8 +115,7 @@ describe('useAuth timeout', () => {
 
   describe('timeout behavior', () => {
     it('isLoading becomes false after timeout when getSession is slow', async () => {
-      // Create a promise that resolves after 10 seconds (simulating slow network)
-      // The timeout in useAuth is 5 seconds, so it should trigger first
+      // Mock getSession to resolve after 10 seconds (slower than 5s timeout)
       (getSession as ReturnType<typeof vi.fn>).mockImplementation(
         () => new Promise((resolve) => setTimeout(() => resolve(mockSession), 10000))
       );
@@ -123,89 +123,66 @@ describe('useAuth timeout', () => {
 
       const { result } = renderHook(() => useAuth());
 
-      // Should be loading initially
       expect(result.current.isLoading).toBe(true);
 
-      // Wait for the timeout to trigger (5 seconds + buffer)
+      // Advance time past the 5s AUTH_INIT_TIMEOUT_MS
       await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 5500));
+        vi.advanceTimersByTimeAsync(5500);
       });
 
-      // After timeout, isLoading should be false
       expect(result.current.isLoading).toBe(false);
     });
 
     it('isAuthenticated is false after timeout', async () => {
       // Promise that never resolves
       (getSession as ReturnType<typeof vi.fn>).mockImplementation(
-        () => new Promise(() => {
-          // Never resolves - simulating very slow network
-        })
+        () => new Promise(() => {})
       );
       (getUser as ReturnType<typeof vi.fn>).mockImplementation(
-        () => new Promise(() => {
-          // Never resolves
-        })
+        () => new Promise(() => {})
       );
 
       const { result } = renderHook(() => useAuth());
 
       await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 5500));
+        vi.advanceTimersByTimeAsync(5500);
       });
 
       expect(result.current.isLoading).toBe(false);
-      // After timeout, isAuthenticated should be false
       expect(result.current.isAuthenticated).toBe(false);
     });
 
     it('component does not stay in infinite loading after timeout', async () => {
-      // Promise that never resolves
       (getSession as ReturnType<typeof vi.fn>).mockImplementation(
-        () => new Promise(() => {
-          // Never resolves
-        })
+        () => new Promise(() => {})
       );
       (getUser as ReturnType<typeof vi.fn>).mockImplementation(
-        () => new Promise(() => {
-          // Never resolves
-        })
+        () => new Promise(() => {})
       );
 
       const { result } = renderHook(() => useAuth());
 
-      // Initially loading
       expect(result.current.isLoading).toBe(true);
 
-      // Wait well past the 5 second timeout
       await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 6000));
+        vi.advanceTimersByTimeAsync(6000);
       });
 
-      // Should NOT be loading anymore
-      expect(result.current.isLoading).toBe(false);
-
-      // Verify it stayed false (no re-triggering of loading)
       expect(result.current.isLoading).toBe(false);
     });
 
     it('user and session are null after timeout', async () => {
-      // Promise that never resolves
       (getSession as ReturnType<typeof vi.fn>).mockImplementation(
-        () => new Promise(() => {
-          // Never resolves
-        })
+        () => new Promise(() => {})
       );
       (getUser as ReturnType<typeof vi.fn>).mockImplementation(
-        () => new Promise(() => {
-          // Never resolves
-        })
+        () => new Promise(() => {})
       );
 
       const { result } = renderHook(() => useAuth());
 
       await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 5500));
+        vi.advanceTimersByTimeAsync(5500);
       });
 
       expect(result.current.isLoading).toBe(false);
@@ -214,7 +191,8 @@ describe('useAuth timeout', () => {
     });
 
     it('successful auth completes before timeout', async () => {
-      // Fast resolve before timeout
+      vi.useRealTimers(); // Need real timers for this test
+
       (getSession as ReturnType<typeof vi.fn>).mockResolvedValue(mockSession);
       (getUser as ReturnType<typeof vi.fn>).mockResolvedValue(mockUser);
 
@@ -230,7 +208,8 @@ describe('useAuth timeout', () => {
     });
 
     it('auth fails fast with error, isLoading becomes false', async () => {
-      // Fast reject
+      vi.useRealTimers();
+
       (getSession as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Network error'));
       (getUser as ReturnType<typeof vi.fn>).mockResolvedValue(null);
 

@@ -96,7 +96,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       const first = restaurants[0];
       setRestaurante(first.id, first.name);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, restaurants, selectedRestaurantId, setRestaurante]);
 
   const handleLogout = async () => {

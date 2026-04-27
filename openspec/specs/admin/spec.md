@@ -88,6 +88,44 @@ The system SHALL enforce role-based permissions for admin operations.
 - AND only users with roles higher in the hierarchy SHALL be granted access
 - AND staff users SHALL be blocked from all user management operations
 
+### Requirement: Restaurant CRUD
+The system SHALL provide full CRUD operations for restaurants.
+
+#### Scenario: List Restaurants
+- GIVEN a user with owner role is logged in
+- WHEN the user navigates to the restaurants management section
+- THEN the system SHALL display all restaurants the user owns or manages via user_restaurants junction
+
+#### Scenario: Create Restaurant
+- GIVEN a user is in the restaurants management section
+- WHEN the user creates a new restaurant with name, description, address, and phone
+- THEN the system SHALL create the restaurant record
+- AND the system SHALL create a user_restaurants junction entry linking the user as owner
+
+#### Scenario: Edit Restaurant
+- GIVEN a user is editing an existing restaurant
+- WHEN the user modifies restaurant fields and saves
+- THEN the system SHALL update the restaurant record
+- AND changes SHALL be reflected immediately
+
+#### Scenario: Delete Restaurant
+- GIVEN a user is deleting an existing restaurant
+- WHEN the user confirms the deletion
+- THEN the system SHALL soft-delete the restaurant (mark as inactive)
+- AND all related data SHALL be preserved for historical integrity
+
+#### Scenario: Manage Restaurant Team
+- GIVEN a user with owner/manager role is viewing restaurant settings
+- WHEN the user navigates to team management
+- THEN the system SHALL display all users linked via user_restaurants
+- AND the user SHALL be able to invite/remove team members
+
+#### Scenario: Switch Active Restaurant
+- GIVEN a user has access to multiple restaurants
+- WHEN the user selects a different restaurant in the admin panel
+- THEN the system SHALL filter all subsequent operations by the selected restaurant
+- AND the restaurant selector SHALL show the currently active restaurant
+
 ### Requirement: Category CRUD
 The system SHALL provide full CRUD operations for menu categories.
 

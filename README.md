@@ -44,6 +44,7 @@ O projeto possui um sistema de **feature flags** que permite ativar/desativar fu
 | `NEXT_PUBLIC_FEATURE_COMBOS_ENABLED` | Sistema de combos/meal deals |
 | `NEXT_PUBLIC_FEATURE_ANALYTICS_ENABLED` | Dashboard de analytics e rastreamento de eventos |
 | `NEXT_PUBLIC_FEATURE_CASHBACK_ENABLED` | Sistema de cashback/recompensas |
+| `NEXT_PUBLIC_ENABLE_MULTI_RESTAURANT` | Suporte multi-restaurante (relação N:N usuário-restaurante) |
 
 ### Configuração
 
@@ -59,6 +60,7 @@ NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED=true
 NEXT_PUBLIC_FEATURE_COMBOS_ENABLED=false
 NEXT_PUBLIC_FEATURE_ANALYTICS_ENABLED=false
 NEXT_PUBLIC_FEATURE_CASHBACK_ENABLED=false
+NEXT_PUBLIC_ENABLE_MULTI_RESTAURANT=false
 ```
 
 ### Uso no Código
@@ -186,6 +188,7 @@ src/
 │   │   ├── modifiers/   # CRUD modificadores
 │   │   ├── orders/      # Gestão pedidos
 │   │   ├── products/    # CRUD produtos
+│   │   ├── restaurants/  # CRUD restaurantes (multi-tenant)
 │   │   ├── tables/      # CRUD mesas/QR
 │   │   └── users/       # Gestão usuários
 │   ├── api/              # API routes
@@ -209,6 +212,7 @@ src/
 O banco de dados possui as seguintes tabelas:
 
 - `restaurants` — Restaurantes (multi-tenant)
+- `user_restaurants` — Junction table N:N (usuários com múltiplos restaurantes)
 - `tables` — Mesas com QR Code
 - `categories` — Categorias do cardápio
 - `products` — Produtos com modifiers

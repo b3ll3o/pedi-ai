@@ -27,6 +27,7 @@ Pedi-AI é uma plataforma de cardápio digital que permite restaurantes gerencia
 | `src/app/page.tsx` | Landing page (marketing) |
 | `src/app/(customer)/menu/page.tsx` | Cardápio digital (cliente) |
 | `src/app/admin/dashboard/page.tsx` | Painel administrativo |
+| `src/app/admin/restaurants/page.tsx` | Gestão de restaurantes (multi-tenant) |
 | `src/app/kitchen/page.tsx` | Display de cozinha |
 | `src/app/(waiter)/dashboard/page.tsx` | Dashboard garçom |
 | `src/middleware.ts` | Auth middleware — protege rotas admin |
