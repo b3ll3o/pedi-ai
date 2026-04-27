@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { getSession } from '@/lib/supabase/auth';
 import { TeamManagement } from '@/components/admin/TeamManagement';
 import { useRestaurantStore } from '@/stores/restaurantStore';
+import { Restaurante, type RestauranteProps } from '@/domain/admin/entities/Restaurante';
 import type { restaurants, users_profiles, Enum_user_role } from '@/lib/supabase/types';
 import styles from './page.module.css';
 
@@ -48,7 +49,10 @@ export default function TeamPage() {
       setRestaurant(restaurantData.restaurant);
 
       // Set restaurant in store
-      setRestaurante(restaurantId, restaurantData.restaurant.name);
+      const restaurantEntity = Restaurante.reconstruir(
+        restaurantData.restaurant as unknown as RestauranteProps
+      );
+      setRestaurante(restaurantEntity);
 
       // Fetch users for this restaurant
       const usersRes = await fetch(`/api/admin/users?restaurant_id=${restaurantId}`);
