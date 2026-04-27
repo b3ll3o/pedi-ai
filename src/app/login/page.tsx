@@ -4,20 +4,22 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSession } from '@/lib/supabase/auth';
 import { useAuth } from '@/hooks/useAuth';
+import { useRedirectByRole } from '@/hooks/useRedirectByRole';
 import { LoginForm } from '@/components/auth/LoginForm';
 import styles from './page.module.css';
 
 export default function CustomerLoginPage() {
   const router = useRouter();
   const [isCheckingSession, setIsCheckingSession] = useState(true);
-  const { signIn, isAuthenticated } = useAuth();
+  const { signIn, isAuthenticated, session } = useAuth();
+  const { destination } = useRedirectByRole(session?.user?.id);
 
   useEffect(() => {
     const checkSession = async () => {
       try {
         const session = await getSession();
         if (session?.user) {
-          router.replace('/menu');
+          router.replace(destination);
           return;
         }
       } catch (error) {
@@ -32,9 +34,9 @@ export default function CustomerLoginPage() {
   // Redirecionar após autenticação bem-sucedida
   useEffect(() => {
     if (isAuthenticated) {
-      router.push('/menu');
+      router.push(destination);
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, router, destination]);
 
   const handleLogin = async (email: string, password: string) => {
     await signIn(email, password);
