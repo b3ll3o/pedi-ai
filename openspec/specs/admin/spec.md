@@ -249,6 +249,116 @@ The system SHALL provide basic analytics for restaurant operations.
 - THEN the system SHALL display the top 10 products by order frequency
 - AND the data SHALL cover the selected time period
 
+### Requirement: N:N Usuario-Restaurante Relationship
+The system MUST support a many-to-many relationship between users and restaurants, replacing the previous one-to-one relationship.
+
+#### Scenario: Migrate Existing 1:1 to N:N
+- GIVEN an existing user has a `restauranteId` set
+- WHEN the migration script runs
+- THEN the system SHALL create a record in `usuario_restaurantes` with `papel='owner'`
+- AND the user's `restauranteId` column SHALL be removed
+- AND all existing menu items SHALL be updated with the restaurant's ID
+
+#### Scenario: Owner Creates New Restaurant
+- GIVEN an authenticated owner navigates to the restaurant creation page
+- WHEN the owner submits valid restaurant data (nome, CNPJ, endereço, telefone)
+- THEN the system SHALL create a new `Restaurante` record with `ativo=true`
+- AND the system SHALL create a `UsuarioRestaurante` junction record with `papel='owner'`
+- AND the system SHALL emit `RestauranteCriadoEvent`
+
+#### Scenario: Owner Lists Their Restaurants
+- GIVEN an authenticated owner is logged in
+- WHEN the owner navigates to the restaurant list page
+- THEN the system SHALL return all restaurants where the user has a `UsuarioRestaurante` record
+- AND each restaurant SHALL include the user's role (owner, manager, staff) in that restaurant
+
+#### Scenario: User Has No Restaurant Access
+- GIVEN an authenticated user has no `UsuarioRestaurante` records
+- WHEN the user attempts to access any restaurant-scoped admin page
+- THEN the system SHALL return 403 Forbidden
+- AND the system SHALL display an error message "Você não tem acesso a este restaurante"
+
+### Requirement: User-Restaurant Linking
+The system SHALL allow owners and managers to link and unlink users to restaurants.
+
+#### Scenario: Link User to Restaurant
+- GIVEN an owner or manager is on the team management page
+- WHEN the admin searches for a user by email and selects a role
+- THEN the system SHALL create a `UsuarioRestaurante` record
+- AND the system SHALL emit `UsuarioVinculadoRestauranteEvent`
+- AND the user SHALL immediately see the restaurant in their selector
+
+#### Scenario: Unlink User from Restaurant
+- GIVEN an owner or manager is on the team management page
+- WHEN the admin removes a user from the team
+- THEN the system SHALL delete the `UsuarioRestaurante` record
+- AND the system SHALL emit `UsuarioDesvinculadoRestauranteEvent`
+- AND the user SHALL lose access to that restaurant immediately
+
+#### Scenario: Prevent Owner Self-Removal
+- GIVEN an owner is on the team management page
+- WHEN the owner attempts to remove their own owner linkage
+- THEN the system SHALL prevent the action
+- AND the system SHALL display an error "Não é possível remover o proprietário do restaurante"
+- AND the `UsuarioRestaurante` record SHALL remain unchanged
+
+### Requirement: Restaurant Selector in Admin UI
+The admin UI MUST provide a mechanism to switch between restaurants.
+
+#### Scenario: Display Restaurant Selector
+- GIVEN an admin user has access to multiple restaurants
+- WHEN the admin UI renders
+- THEN a restaurant selector SHALL be visible in the sidebar or header
+- AND the selector SHALL show the current restaurant name
+- AND the selector SHALL allow switching between accessible restaurants
+
+#### Scenario: Switch Restaurant Context
+- GIVEN an admin is viewing the admin panel for Restaurant A
+- WHEN the admin selects Restaurant B from the selector
+- THEN the system SHALL update the current context to Restaurant B
+- AND all subsequent admin actions SHALL be scoped to Restaurant B
+- AND the URL MAY reflect the restaurant ID
+- AND the UI SHALL display Restaurant B's data
+
+#### Scenario: Filter Menu Management by Restaurant
+- GIVEN an admin is on the products, categories, or modifiers page
+- WHEN the page loads
+- THEN the system SHALL automatically filter results to the currently selected restaurant
+- AND no data from other restaurants SHALL be displayed
+
+#### Scenario: User Without Restaurant Access
+- GIVEN a user is authenticated but has no `UsuarioRestaurante` records
+- WHEN the user attempts to access any admin page
+- THEN the system SHALL redirect to a "Nenhum restaurante" page
+- AND the system SHALL prompt the user to contact an administrator
+
+### Requirement: Offline Sync Scoped by Restaurant
+The system SHALL maintain separate offline caches for each restaurant's menu.
+
+#### Scenario: Cache Menu Per Restaurant
+- GIVEN a user has selected Restaurant A
+- WHEN the menu data is fetched
+- THEN the system SHALL cache the data in IndexedDB with key prefix `restaurant_${restauranteId}_`
+- AND Restaurant B's menu data SHALL be stored separately
+
+#### Scenario: Offline Access Shows Correct Restaurant Menu
+- GIVEN a user is offline and previously accessed Restaurant A's menu
+- WHEN the user opens the application offline
+- THEN the system SHALL load Restaurant A's cached menu
+- AND the user SHALL NOT see Restaurant B's menu data
+
+#### Scenario: Sync Queue Per Restaurant
+- GIVEN a user makes offline changes for Restaurant A
+- WHEN the device comes online
+- THEN the system SHALL sync Restaurant A's changes separately from Restaurant B's
+- AND each restaurant's offline queue SHALL be processed independently
+
+#### Scenario: Offline Orders Linked to Correct Restaurant
+- GIVEN a user is offline and places an order
+- WHEN the order is created
+- THEN the order SHALL include the current `restauranteId`
+- AND when online, the order SHALL sync to the correct restaurant
+
 ### Requirement: Admin Dashboard Color Consistency
 The admin dashboard MUST use the official color palette defined in the design system.
 
@@ -323,13 +433,66 @@ The admin dashboard MUST use the official color palette defined in the design sy
 
 ## MODIFIED Requirements
 
-None.
+### Requirement: Category CRUD (Modified — Restaurant Scoped)
+The system SHALL provide full CRUD operations for menu categories scoped to a restaurant.
+
+#### Scenario: Create Category (Modified)
+- GIVEN an admin is in the categories management section for a specific restaurant
+- WHEN the admin creates a new category with name, description, and display order
+- THEN the system SHALL create the category record with `restauranteId` set
+- AND the category SHALL be available in the customer menu of that restaurant only
+
+#### Scenario: Delete Category (Modified)
+- GIVEN an admin is editing an existing category
+- WHEN the admin deletes the category
+- THEN the system SHALL soft-delete the category scoped to its restaurant
+- AND products in the category SHALL be hidden from that restaurant's customer menu
+- AND the category record SHALL be preserved for historical orders
+
+### Requirement: Product CRUD (Modified — Restaurant Scoped)
+The system SHALL provide full CRUD operations for menu products scoped to a restaurant.
+
+#### Scenario: Create Product (Modified)
+- GIVEN an admin is in the products management section for a specific restaurant
+- WHEN the admin creates a product with name, description, price, category, and image
+- THEN the system SHALL create the product record with `restauranteId` set
+- AND the product SHALL be associated with the selected category within that restaurant
+
+#### Scenario: Delete Product (Modified)
+- GIVEN an admin is deleting an existing product
+- WHEN the admin confirms the deletion
+- THEN the system SHALL soft-delete the product scoped to its restaurant
+- AND the product SHALL be hidden from that restaurant's customer menu
+- AND existing orders containing the product SHALL be preserved
+
+### Requirement: Offline Menu Access (Modified — Restaurant Scoped)
+The system SHALL cache menu data per restaurant to enable offline browsing.
+
+#### Scenario: Access Menu While Offline (Modified)
+- GIVEN the customer has previously loaded Restaurant A's menu while online
+- WHEN the customer opens the application while offline
+- THEN the system SHALL load Restaurant A's cached menu from the restaurant-specific IndexedDB key
+- AND the system SHALL NOT load menu data from other restaurants
+
+#### Scenario: Menu Data Sync on Reconnect (Modified)
+- GIVEN the customer is online and has stale cached menu data for Restaurant A
+- WHEN the application detects network connectivity
+- THEN the system SHALL fetch updated menu data for Restaurant A from Supabase
+- AND the system SHALL update only the Restaurant A IndexedDB cache
+- AND other restaurants' caches SHALL NOT be affected
 
 ---
 
 ## REMOVED Requirements
 
-None.
+### Requirement: Usuario.restauranteId Unique Constraint (REMOVED)
+The system SHALL NOT enforce a single `restauranteId` on the `Usuario` table.
+
+#### Scenario: User Without Single Restaurant (REMOVED)
+- GIVEN the previous requirement where a user had exactly one `restauranteId`
+- WHEN this requirement is removed
+- THEN the `restauranteId` column SHALL be removed from `usuarios`
+- AND users SHALL access restaurants through `usuario_restaurantes` junction table only
 
 ---
 

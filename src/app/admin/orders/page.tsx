@@ -8,7 +8,7 @@ import styles from './page.module.css';
 
 export default function OrdersPage() {
   const router = useRouter();
-  const { selectedRestaurantId } = useRestaurantStore();
+  const { restauranteSelecionado } = useRestaurantStore();
   const [loading, setLoading] = useState(true);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
@@ -29,12 +29,12 @@ export default function OrdersPage() {
     checkAuth();
   }, [router]);
 
-  // Redirect to restaurants if no restaurant selected
+  // TODO: Quando API de pedidos estiver implementada, filtrar por restauranteSelecionado.id
   useEffect(() => {
-    if (!loading && !selectedRestaurantId) {
-      router.replace('/admin/restaurants');
+    if (restauranteSelecionado) {
+      console.log('[Orders] Filtrando pedidos para restaurante:', restauranteSelecionado.id);
     }
-  }, [loading, selectedRestaurantId, router]);
+  }, [restauranteSelecionado]);
 
   if (loading) {
     return (
@@ -44,10 +44,22 @@ export default function OrdersPage() {
     );
   }
 
-  if (!selectedRestaurantId) {
+  if (!restauranteSelecionado) {
     return (
       <div className={styles.container}>
-        <div className={styles.loading}>Selecione um restaurante...</div>
+        <div className={styles.noRestaurantPrompt}>
+          <div className={styles.promptIcon}>🍽️</div>
+          <h2 className={styles.promptTitle}>Nenhum restaurante selecionado</h2>
+          <p className={styles.promptText}>
+            Para visualizar os pedidos, selecione um restaurante primeiro.
+          </p>
+          <button
+            className={styles.promptButton}
+            onClick={() => router.push('/admin/restaurants')}
+          >
+            Selecionar restaurante
+          </button>
+        </div>
       </div>
     );
   }
@@ -55,7 +67,12 @@ export default function OrdersPage() {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1 className={styles.title} data-testid="page-title">Pedidos</h1>
+        <div className={styles.headerLeft}>
+          <h1 className={styles.title} data-testid="page-title">Pedidos</h1>
+          <span className={styles.restaurantIndicator} data-testid="restaurant-indicator">
+            📍 {restauranteSelecionado.nome}
+          </span>
+        </div>
       </header>
       <div className={styles.filters}>
         <input

@@ -9,6 +9,21 @@
   margin-bottom: 24px;
 }
 
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.restaurantIndicator {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  background: var(--color-background);
+  padding: 4px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--color-border);
+}
+
 .title {
   margin: 0;
   font-size: 24px;
@@ -34,6 +49,53 @@
 
 .addButton:hover {
   background: var(--color-success-dark);
+}
+
+/* No restaurant selected prompt */
+.noRestaurantPrompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 24px;
+  text-align: center;
+  background: var(--color-background);
+  border-radius: 12px;
+  border: 2px dashed var(--color-border);
+  margin-top: 48px;
+}
+
+.noRestaurantIcon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.noRestaurantTitle {
+  margin: 0 0 8px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.noRestaurantText {
+  margin: 0 0 24px 0;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.selectRestaurantButton {
+  padding: 12px 24px;
+  background: var(--color-primary);
+  color: var(--color-surface);
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.selectRestaurantButton:hover {
+  background: var(--color-primary-dark);
 }
 
 .placeholder {

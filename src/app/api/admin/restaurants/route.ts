@@ -1,21 +1,68 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { cookies } from 'next/headers';
 
-// Admin API client with service role
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+/**
+ * Admin client for bypassing RLS - uses service role key directly
+ * without cookie handling (service role bypasses auth context)
+ */
+function getSupabaseAdmin() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false,
+      },
+    }
+  );
+}
+
+/**
+ * Auth client for validating user sessions via cookies
+ */
+async function getSupabaseAuth() {
+  const cookieStore = await cookies();
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Server component - ignore
+          }
+        },
+      },
+    }
+  );
+}
 
 export async function GET() {
   try {
+    // Validate user session via cookies (uses anon key for auth)
+    const supabaseAuth = await getSupabaseAuth();
     const {
       data: { user },
-    } = await supabaseAdmin.auth.getUser();
+    } = await supabaseAuth.auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
+
+    // Admin client for database operations (uses service role - bypasses RLS)
+    const supabaseAdmin = getSupabaseAdmin();
 
     // Get user's restaurants via users_profiles
     const { data: profiles, error: profilesError } = await supabaseAdmin
@@ -24,7 +71,9 @@ export async function GET() {
       .eq('user_id', user.id);
 
     if (profilesError) {
-      console.error('Error fetching profiles:', profilesError);
+      console.error('Error fetching profiles:', JSON.stringify(profilesError, null, 2));
+      console.error('User ID from cookie:', user.id);
+      console.error('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? 'set' : 'NOT SET');
       return NextResponse.json(
         { error: 'Erro ao buscar restaurantes' },
         { status: 500 }
@@ -79,13 +128,18 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    // Validate user session via cookies (uses anon key for auth)
+    const supabaseAuth = await getSupabaseAuth();
     const {
       data: { user },
-    } = await supabaseAdmin.auth.getUser();
+    } = await supabaseAuth.auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
+
+    // Admin client for database operations (uses service role - bypasses RLS)
+    const supabaseAdmin = getSupabaseAdmin();
 
     const body = await request.json();
     const { name, description, address, phone, logo_url } = body;

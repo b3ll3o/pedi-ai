@@ -1,4 +1,4 @@
-import { test, expect } from './shared/fixtures';
+import { test, expect } from '../shared/fixtures';
 
 /**
  * E2E Tests for Multi-Restaurant Offline Behavior

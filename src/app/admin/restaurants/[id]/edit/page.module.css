@@ -15,9 +15,15 @@
   color: var(--color-text-primary);
 }
 
+.restaurantName {
+  color: var(--color-text-secondary);
+  font-weight: 400;
+}
+
 .breadcrumb {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   font-size: 14px;
   color: var(--color-text-secondary);
@@ -61,6 +67,16 @@
   color: var(--color-text-secondary);
 }
 
+.errorBanner {
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  background-color: var(--color-error-bg, #fee2e2);
+  border: 1px solid var(--color-error-border, #ef4444);
+  border-radius: 8px;
+  color: var(--color-error, #dc2626);
+  font-size: 14px;
+}
+
 .backLink {
   padding: 10px 20px;
   background: var(--color-primary);
@@ -71,9 +87,71 @@
   font-weight: 500;
 }
 
+.backLink:hover {
+  opacity: 0.9;
+}
+
+.footer {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--color-border, #e5e7eb);
+}
+
+.dangerZone {
+  margin-top: 32px;
+  padding: 20px;
+  border: 1px solid var(--color-danger-border, #fca5a5);
+  border-radius: 8px;
+  background-color: var(--color-danger-bg, #fef2f2);
+}
+
+.dangerTitle {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-danger, #dc2626);
+}
+
+.dangerDescription {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.dangerButton {
+  padding: 10px 20px;
+  background-color: var(--color-danger, #dc2626);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.dangerButton:hover:not(:disabled) {
+  background-color: var(--color-danger-hover, #b91c1c);
+}
+
+.dangerButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* Mobile responsive */
 @media (max-width: 40em) {
   .container {
     padding: 16px;
+  }
+
+  .title {
+    font-size: 20px;
+  }
+
+  .breadcrumb {
+    font-size: 13px;
+    gap: 6px;
   }
 }

@@ -13,7 +13,7 @@ type ToastType = 'success' | 'error' | null;
 
 export default function ProductsPage() {
   const router = useRouter();
-  const { selectedRestaurantId } = useRestaurantStore();
+  const { restauranteSelecionado, selectedRestaurantId } = useRestaurantStore();
 
   // Auth & loading
   const [loading, setLoading] = useState(true);
@@ -114,12 +114,7 @@ export default function ProductsPage() {
     init();
   }, [router, isInitialized]);
 
-  // Redirect to restaurants if no restaurant selected
-  useEffect(() => {
-    if (!loading && !selectedRestaurantId) {
-      router.replace('/admin/restaurants');
-    }
-  }, [loading, selectedRestaurantId, router]);
+
 
   // Load data after auth is verified and restaurant is selected
   useEffect(() => {
@@ -247,7 +242,20 @@ export default function ProductsPage() {
   if (!selectedRestaurantId) {
     return (
       <div className={styles.container}>
-        <div className={styles.loading}>Selecione um restaurante...</div>
+        <div className={styles.restaurantPrompt}>
+          <div className={styles.promptIcon} aria-hidden="true">📋</div>
+          <h2 className={styles.promptTitle}>Nenhum restaurante selecionado</h2>
+          <p className={styles.promptText}>
+            Selecione um restaurante para gerenciar seus produtos.
+          </p>
+          <button
+            data-testid="select-restaurant-button"
+            className={styles.promptButton}
+            onClick={() => router.push('/admin/restaurants')}
+          >
+            Selecionar Restaurante
+          </button>
+        </div>
       </div>
     );
   }
@@ -255,7 +263,12 @@ export default function ProductsPage() {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1 data-testid="page-title" className={styles.title}>Produtos</h1>
+        <div className={styles.headerLeft}>
+          <h1 data-testid="page-title" className={styles.title}>Produtos</h1>
+          <span className={styles.restaurantIndicator}>
+            📍 {restauranteSelecionado.nome}
+          </span>
+        </div>
         <div className={styles.actions}>
           <button
             data-testid="add-product-button"

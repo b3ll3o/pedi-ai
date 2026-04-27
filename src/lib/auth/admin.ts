@@ -3,8 +3,9 @@
  * Helper functions for admin role-based authentication and authorization.
  */
 
-import { getSession } from '@/lib/supabase/auth'
-import { createClient } from '@/lib/supabase/client'
+import { createServerClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
+import { cookies } from 'next/headers'
 import type { Enum_user_role, users_profiles } from '@/lib/supabase/types'
 
 export type Role = Extract<Enum_user_role, 'owner' | 'manager' | 'staff'>
@@ -18,24 +19,53 @@ export interface AuthUser {
 
 /**
  * Require a valid authenticated admin user.
+ * Uses server-side Supabase client (ANON key) to read session from cookies.
+ * Uses service role key to query users_profiles (bypasses RLS).
  * Throws an error if no session or user not found in database.
  */
 async function requireAuth(): Promise<AuthUser> {
-  const session = await getSession()
+  // Client for session validation - reads cookies with ANON key
+  const cookieStore = await cookies()
+  const supabaseAuth = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch {
+            // Server Component - ignore
+          }
+        },
+      },
+    }
+  )
 
-  if (!session?.user) {
+  const { data: { user }, error: userError } = await supabaseAuth.auth.getUser()
+
+  if (userError || !user) {
     throw new Error('Não autenticado')
   }
 
-  const supabase = createClient()
+  // Admin client for data queries - uses SERVICE ROLE KEY to bypass RLS
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
 
-  const { data: profile, error } = await supabase
+  const { data: profile, error: profileError } = await supabaseAdmin
     .from('users_profiles')
     .select('*')
-    .eq('user_id', session.user.id)
+    .eq('user_id', user.id)
     .single()
 
-  if (error || !profile) {
+  if (profileError || !profile) {
     throw new Error('Usuário não encontrado')
   }
 

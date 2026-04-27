@@ -165,15 +165,18 @@ export default function TeamPage() {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1 className={styles.title}>Equipe do Restaurante</h1>
+        <h1 className={styles.title}>
+          Equipe
+          {restaurant && <span className={styles.restaurantName}> — {restaurant.name}</span>}
+        </h1>
         <nav className={styles.breadcrumb} aria-label="Breadcrumb">
-          <Link href="/admin">Admin</Link>
-          <span>/</span>
+          <Link href="/admin">Home</Link>
+          <span aria-hidden="true">/</span>
           <Link href="/admin/restaurants">Restaurantes</Link>
-          <span>/</span>
+          <span aria-hidden="true">/</span>
           <Link href={`/admin/restaurants/${restaurantId}/edit`}>{restaurant?.name}</Link>
-          <span>/</span>
-          <span>Equipe</span>
+          <span aria-hidden="true">/</span>
+          <span aria-current="page">Equipe</span>
         </nav>
       </header>
 
@@ -185,15 +188,23 @@ export default function TeamPage() {
         </div>
       )}
 
-      <TeamManagement
-        users={users}
-        currentUserId={currentUserId}
-        currentUserRole={currentUserRole}
-        restaurantId={restaurantId}
-        onInvite={handleInvite}
-        onUpdateRole={handleUpdateRole}
-        onRemove={handleRemove}
-      />
+      <main>
+        <TeamManagement
+          users={users}
+          currentUserId={currentUserId}
+          currentUserRole={currentUserRole}
+          restaurantId={restaurantId}
+          onInvite={handleInvite}
+          onUpdateRole={handleUpdateRole}
+          onRemove={handleRemove}
+        />
+      </main>
+
+      <footer className={styles.footer}>
+        <Link href={`/admin/restaurants/${restaurantId}/edit`} className={styles.backLink}>
+          ← Voltar para edição do restaurante
+        </Link>
+      </footer>
     </div>
   );
 }

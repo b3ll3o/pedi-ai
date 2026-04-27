@@ -5,17 +5,18 @@ import { IRestauranteRepository } from '@/domain/admin/repositories/IRestaurante
 import { IUsuarioRestauranteRepository } from '@/domain/admin/repositories/IUsuarioRestauranteRepository';
 import { RestauranteCriadoEvent } from '@/domain/admin/events/RestauranteCriadoEvent';
 import { ConfiguracoesRestaurante } from '@/domain/admin/value-objects/ConfiguracoesRestaurante';
+import { isMultiRestaurantEnabled } from '@/lib/feature-flags';
 
 /**
  * Input para criar restaurante
  */
 export interface CriarRestauranteInput {
-  proprietarioId: string;
   nome: string;
   cnpj: string;
-  endereco: string;
-  telefone?: string | null;
-  logoUrl?: string | null;
+  endereco?: string;
+  telefone?: string;
+  logoUrl?: string;
+  ownerId: string;
 }
 
 /**
@@ -23,8 +24,15 @@ export interface CriarRestauranteInput {
  */
 export interface CriarRestauranteOutput {
   restaurante: Restaurante;
-  vinculoOwner: UsuarioRestaurante;
-  sucesso: boolean;
+  vinculo: UsuarioRestaurante;
+}
+
+/**
+ * Valida formato do CNPJ (XX.XXX.XXX/XXXX-XX)
+ */
+function validarCNPJ(cnpj: string): boolean {
+  const regex = /^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/;
+  return regex.test(cnpj);
 }
 
 /**
@@ -39,6 +47,27 @@ export class CriarRestauranteUseCase implements UseCase<CriarRestauranteInput, C
   ) {}
 
   async execute(input: CriarRestauranteInput): Promise<CriarRestauranteOutput> {
+    // Validar nome (mínimo 2 caracteres)
+    if (!input.nome || input.nome.trim().length < 2) {
+      throw new Error('O nome do restaurante deve ter pelo menos 2 caracteres');
+    }
+
+    // Validar CNPJ (formato XX.XXX.XXX/XXXX-XX)
+    if (!validarCNPJ(input.cnpj)) {
+      throw new Error('CNPJ inválido. O formato deve ser XX.XXX.XXX/XXXX-XX');
+    }
+
+    // Verificar se feature flag multi-restaurant está habilitada
+    const multiRestaurantAtivo = isMultiRestaurantEnabled();
+
+    // Se feature flag desabilitada, verificar se owner já tem restaurante legacy
+    if (!multiRestaurantAtivo) {
+      const restaurantesDoOwner = await this.usuarioRestauranteRepo.findByUsuarioId(input.ownerId);
+      if (restaurantesDoOwner.length > 0) {
+        throw new Error('Não é permitido criar novos restaurantes enquanto a funcionalidade multi-restaurante estiver desativada');
+      }
+    }
+
     // Verificar se CNPJ já existe
     const existente = await this.restauranteRepo.findByCNPJ(input.cnpj);
     if (existente) {
@@ -47,9 +76,9 @@ export class CriarRestauranteUseCase implements UseCase<CriarRestauranteInput, C
 
     // Criar restaurante
     const restaurante = Restaurante.criar({
-      nome: input.nome,
+      nome: input.nome.trim(),
       cnpj: input.cnpj,
-      endereco: input.endereco,
+      endereco: input.endereco?.trim() ?? '',
       telefone: input.telefone ?? null,
       logoUrl: input.logoUrl ?? null,
       ativo: true,
@@ -63,7 +92,7 @@ export class CriarRestauranteUseCase implements UseCase<CriarRestauranteInput, C
 
     // Criar vínculo de owner
     const vinculoOwner = UsuarioRestaurante.criar({
-      usuarioId: input.proprietarioId,
+      usuarioId: input.ownerId,
       restauranteId: restaurantePersistido.id,
       papel: 'owner',
     });
@@ -76,15 +105,14 @@ export class CriarRestauranteUseCase implements UseCase<CriarRestauranteInput, C
         new RestauranteCriadoEvent({
           restauranteId: restaurantePersistido.id,
           nome: restaurantePersistido.nome,
-          proprietarioId: input.proprietarioId,
+          proprietarioId: input.ownerId,
         })
       );
     }
 
     return {
       restaurante: restaurantePersistido,
-      vinculoOwner,
-      sucesso: true,
+      vinculo: vinculoOwner,
     };
   }
 }

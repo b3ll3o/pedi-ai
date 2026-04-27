@@ -232,17 +232,37 @@ export function TeamManagement({
                         ✏️
                       </button>
                     )}
-                    {user.id !== currentUserId && user.role !== 'owner' && (
+                    {user.role !== 'owner' ? (
+                      user.id !== currentUserId ? (
+                        <button
+                          type="button"
+                          className={styles.deleteButton}
+                          onClick={() => {
+                            if (confirm(`Remover ${user.name} da equipe?`)) {
+                              onRemove(user.id);
+                            }
+                          }}
+                          disabled={!canManage(user.role)}
+                          title={canManage(user.role) ? 'Remover' : 'Sem permissão'}
+                        >
+                          🗑️
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className={styles.deleteButton}
+                          disabled
+                          title="Você não pode se remover"
+                        >
+                          🗑️
+                        </button>
+                      )
+                    ) : (
                       <button
                         type="button"
                         className={styles.deleteButton}
-                        onClick={() => {
-                          if (confirm(`Remover ${user.name} da equipe?`)) {
-                            onRemove(user.id);
-                          }
-                        }}
-                        disabled={!canManage(user.role)}
-                        title={canManage(user.role) ? 'Remover' : 'Sem permissão'}
+                        disabled
+                        title="Proprietário não pode ser removido"
                       >
                         🗑️
                       </button>

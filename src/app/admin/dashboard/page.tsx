@@ -10,7 +10,7 @@ import styles from './page.module.css';
 export default function AdminDashboard() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const { selectedRestaurantId } = useRestaurantStore();
+  const { restauranteSelecionado } = useRestaurantStore();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -31,18 +31,25 @@ export default function AdminDashboard() {
 
   // Redirect to restaurants page if no restaurant selected
   useEffect(() => {
-    if (!loading && !selectedRestaurantId) {
+    if (!loading && !restauranteSelecionado) {
       router.replace('/admin/restaurants');
     }
-  }, [loading, selectedRestaurantId, router]);
+  }, [loading, restauranteSelecionado, router]);
 
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1 className={styles.title}>Dashboard</h1>
+        <div className={styles.headerLeft}>
+          <h1 className={styles.title}>Dashboard</h1>
+          {restauranteSelecionado && (
+            <span className={styles.restaurantIndicator}>
+              {restauranteSelecionado.nome}
+            </span>
+          )}
+        </div>
       </header>
       {loading && <div className={styles.loading}>Carregando...</div>}
-      {!loading && selectedRestaurantId && (
+      {!loading && restauranteSelecionado && (
         <nav className={styles.nav}>
           <Link href="/admin/orders" className={styles.link}>Pedidos</Link>
           <Link href="/admin/products" className={styles.link}>Produtos</Link>

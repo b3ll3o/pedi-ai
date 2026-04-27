@@ -215,41 +215,22 @@ export const test = base.extend<Fixtures, { reuse: boolean }>({
     await fixtureUse(page)
   },
 
-  admin: async ({ page, seedData, reuse }, fixtureUse) => {
+  admin: async ({ page, seedData }, fixtureUse) => {
     const email = seedData.admin.email
     const password = seedData.admin.password
 
-    if (reuse && isStorageValid(email)) {
-      await loadStorageState(page, email, '/admin/dashboard')
-      // Verifica se sessão ainda é válida - se não, faz login novamente
-      const isLoggedIn = await page.evaluate(() => {
-        return !window.location.href.includes('/login')
-      })
-      if (!isLoggedIn) {
-        await performLogin(page, email, password, '/admin/login', /\/admin\/dashboard/)
-      }
-    } else {
-      await performLogin(page, email, password, '/admin/login', /\/admin\/dashboard/)
-    }
+    // Always perform fresh login to ensure valid session cookie
+    // Storage state reuse can cause 401 errors due to stale Supabase session cookies
+    await performLogin(page, email, password, '/admin/login', /\/admin\/dashboard/)
     await fixtureUse(page)
   },
 
-  waiter: async ({ page, seedData, reuse }, fixtureUse) => {
+  waiter: async ({ page, seedData }, fixtureUse) => {
     const email = seedData.waiter.email
     const password = seedData.waiter.password
 
-    if (reuse && isStorageValid(email)) {
-      await loadStorageState(page, email, '/admin/dashboard')
-      // Verifica se sessão ainda é válida - se não, faz login novamente
-      const isLoggedIn = await page.evaluate(() => {
-        return !window.location.href.includes('/login')
-      })
-      if (!isLoggedIn) {
-        await performLogin(page, email, password, '/admin/login', /\/admin\/dashboard/)
-      }
-    } else {
-      await performLogin(page, email, password, '/admin/login', /\/admin\/dashboard/)
-    }
+    // Always perform fresh login to ensure valid session cookie
+    await performLogin(page, email, password, '/admin/login', /\/admin\/dashboard/)
     await fixtureUse(page)
   },
 

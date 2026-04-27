@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { getSession } from '@/lib/supabase/auth';
-import { RestaurantForm, type RestaurantInput } from '@/components/admin/RestaurantForm';
+import { RestaurantForm, type RestaurantFormData } from '@/components/admin/RestaurantForm';
 import type { restaurants } from '@/lib/supabase/types';
 import styles from './page.module.css';
 
@@ -14,11 +14,16 @@ export default function EditRestaurantPage() {
   const restaurantId = params.id as string;
 
   const [loading, setLoading] = useState(true);
+  const [_submitting, setSubmitting] = useState(false);
   const [restaurant, setRestaurant] = useState<restaurants | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [deactivating, setDeactivating] = useState(false);
 
   useEffect(() => {
-    const checkAuth = async () => {
+    let cancelled = false;
+
+    const loadRestaurant = async () => {
       try {
         const session = await getSession();
         if (!session) {
@@ -26,11 +31,12 @@ export default function EditRestaurantPage() {
           return;
         }
 
-        // Fetch restaurant data
         const res = await fetch(`/api/admin/restaurants/${restaurantId}`);
         if (res.status === 404) {
-          setNotFound(true);
-          setLoading(false);
+          if (!cancelled) {
+            setNotFound(true);
+            setLoading(false);
+          }
           return;
         }
 
@@ -39,29 +45,83 @@ export default function EditRestaurantPage() {
         }
 
         const data = await res.json();
-        setRestaurant(data.restaurant);
-        setLoading(false);
-      } catch (error) {
-        console.error('Auth check failed:', error);
-        router.replace('/admin/login');
+        if (!cancelled) {
+          setRestaurant(data.restaurant);
+          setLoading(false);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error('Erro ao carregar restaurante:', err);
+          setError(err instanceof Error ? err.message : 'Erro ao carregar restaurante');
+          setLoading(false);
+        }
       }
     };
-    checkAuth();
+
+    loadRestaurant();
+
+    return () => {
+      cancelled = true;
+    };
   }, [router, restaurantId]);
 
-  const handleSubmit = async (data: RestaurantInput) => {
-    const res = await fetch(`/api/admin/restaurants/${restaurantId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
+  const handleSubmit = async (data: RestaurantFormData) => {
+    setSubmitting(true);
+    setError(null);
 
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.error || 'Erro ao atualizar restaurante');
+    try {
+      const res = await fetch(`/api/admin/restaurants/${restaurantId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: data.nome,
+          address: data.endereco,
+          phone: data.telefone,
+          logo_url: data.logoUrl,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Erro ao atualizar restaurante');
+      }
+
+      router.push('/admin/restaurants');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao atualizar restaurante';
+      setError(message);
+      throw err;
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeactivate = async () => {
+    if (!confirm('Tem certeza que deseja desativar este restaurante? Ele não aparecerá para os clientes, mas os dados serão mantidos.')) {
+      return;
     }
 
-    router.push('/admin/restaurants');
+    setDeactivating(true);
+    setError(null);
+
+    try {
+      const res = await fetch(`/api/admin/restaurants/${restaurantId}/deactivate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Erro ao desativar restaurante');
+      }
+
+      router.push('/admin/restaurants');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao desativar restaurante';
+      setError(message);
+    } finally {
+      setDeactivating(false);
+    }
   };
 
   const handleCancel = () => {
@@ -71,7 +131,9 @@ export default function EditRestaurantPage() {
   if (loading) {
     return (
       <div className={styles.container}>
-        <div className={styles.loading}>Carregando...</div>
+        <div className={styles.loading} role="status" aria-live="polite">
+          Carregando...
+        </div>
       </div>
     );
   }
@@ -90,22 +152,75 @@ export default function EditRestaurantPage() {
     );
   }
 
+  const initialData: RestaurantFormData | undefined = restaurant
+    ? {
+        nome: restaurant.name,
+        cnpj: '', // CNPJ não é exibido/editable no modo edição
+        endereco: restaurant.address ?? '',
+        telefone: restaurant.phone ?? '',
+        logoUrl: restaurant.logo_url ?? '',
+      }
+    : undefined;
+
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1 className={styles.title}>Editar Restaurante</h1>
+        <h1 className={styles.title}>
+          Editar Restaurante
+          {restaurant && <span className={styles.restaurantName}> — {restaurant.name}</span>}
+        </h1>
         <nav className={styles.breadcrumb} aria-label="Breadcrumb">
           <Link href="/admin">Admin</Link>
-          <span>/</span>
+          <span aria-hidden="true">/</span>
           <Link href="/admin/restaurants">Restaurantes</Link>
-          <span>/</span>
+          <span aria-hidden="true">/</span>
           <span>{restaurant?.name || 'Editar'}</span>
+          <span aria-hidden="true">/</span>
+          <span aria-current="page">Editar</span>
         </nav>
       </header>
 
-      {restaurant && (
-        <RestaurantForm restaurant={restaurant} onSubmit={handleSubmit} onCancel={handleCancel} />
-      )}
+      <main>
+        {error && (
+          <div className={styles.errorBanner} role="alert">
+            {error}
+          </div>
+        )}
+
+        {restaurant && (
+          <RestaurantForm
+            mode="edit"
+            initialData={initialData}
+            onSubmit={handleSubmit}
+            onCancel={handleCancel}
+          />
+        )}
+
+        {restaurant && (
+          <div className={styles.dangerZone}>
+            <h3 className={styles.dangerTitle}>Zona de Perigo</h3>
+            <p className={styles.dangerDescription}>
+              Desativar o restaurante fará com que ele não apareça mais para os clientes.
+              Os dados serão mantidos para fins históricos.
+            </p>
+            <button
+              type="button"
+              className={styles.dangerButton}
+              onClick={handleDeactivate}
+              disabled={deactivating}
+              aria-busy={deactivating}
+            >
+              {deactivating ? 'Desativando...' : 'Desativar Restaurante'}
+            </button>
+          </div>
+        )}
+      </main>
+
+      <footer className={styles.footer}>
+        <Link href="/admin/restaurants" className={styles.backLink}>
+          ← Voltar para listagem
+        </Link>
+      </footer>
     </div>
   );
 }

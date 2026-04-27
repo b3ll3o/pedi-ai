@@ -1,4 +1,5 @@
 import { UseCase } from '@/application/shared';
+import { isMultiRestaurantEnabled } from '@/lib/feature-flags';
 import { IUsuarioRestauranteRepository } from '@/domain/admin/repositories/IUsuarioRestauranteRepository';
 import { UsuarioDesvinculadoRestauranteEvent } from '@/domain/admin/events/UsuarioDesvinculadoRestauranteEvent';
 
@@ -6,8 +7,9 @@ import { UsuarioDesvinculadoRestauranteEvent } from '@/domain/admin/events/Usuar
  * Input para desvincular usuário de restaurante
  */
 export interface DesvincularUsuarioRestauranteInput {
-  usuarioId: string;
   restauranteId: string;
+  usuarioId: string;
+  solicitanteId: string;
 }
 
 /**
@@ -15,11 +17,15 @@ export interface DesvincularUsuarioRestauranteInput {
  */
 export interface DesvincularUsuarioRestauranteOutput {
   sucesso: boolean;
+  mensagem?: string;
 }
 
 /**
  * Use Case para desvincular um usuário de um restaurante
- * IMPORANTE: Não permite remover vínculo de owner
+ *
+ * Regras:
+ * - Não permite desvincular o owner do restaurante
+ * - Apenas owner ou manager podem realizar esta operação
  */
 export class DesvincularUsuarioRestauranteUseCase implements UseCase<DesvincularUsuarioRestauranteInput, DesvincularUsuarioRestauranteOutput> {
   constructor(
@@ -28,6 +34,26 @@ export class DesvincularUsuarioRestauranteUseCase implements UseCase<Desvincular
   ) {}
 
   async execute(input: DesvincularUsuarioRestauranteInput): Promise<DesvincularUsuarioRestauranteOutput> {
+    // Verificar feature flag
+    if (!isMultiRestaurantEnabled()) {
+      throw new Error('Funcionalidade de multi-restaurantes não está habilitada');
+    }
+
+    // Validar que o solicitante tem permissão (owner ou manager do restaurante)
+    const vinculoSolicitante = await this.usuarioRestauranteRepo.findByUsuarioIdAndRestauranteId(
+      input.solicitanteId,
+      input.restauranteId
+    );
+
+    if (!vinculoSolicitante) {
+      throw new Error('Você não tem permissão para gerenciar membros deste restaurante');
+    }
+
+    if (!vinculoSolicitante.eDono() && !vinculoSolicitante.eGerente()) {
+      throw new Error('Apenas o owner ou manager pode desvincular membros do restaurante');
+    }
+
+    // Buscar vínculo do usuário a ser removido
     const vinculo = await this.usuarioRestauranteRepo.findByUsuarioIdAndRestauranteId(
       input.usuarioId,
       input.restauranteId
@@ -37,11 +63,12 @@ export class DesvincularUsuarioRestauranteUseCase implements UseCase<Desvincular
       throw new Error('Vínculo entre usuário e restaurante não encontrado');
     }
 
-    // Impedir remoção do owner
-    if (vinculo.papel === 'owner') {
-      throw new Error('Não é possível remover o vínculo de owner de um restaurante');
+    // Impedir remoção do owner - critical business rule
+    if (vinculo.eDono()) {
+      throw new Error('Não é possível remover o proprietário do restaurante');
     }
 
+    // Remover vínculo
     await this.usuarioRestauranteRepo.delete(vinculo.id);
 
     // Emitir evento
@@ -54,6 +81,9 @@ export class DesvincularUsuarioRestauranteUseCase implements UseCase<Desvincular
       );
     }
 
-    return { sucesso: true };
+    return {
+      sucesso: true,
+      mensagem: 'Usuário desvinculado com sucesso',
+    };
   }
 }

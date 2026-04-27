@@ -9,6 +9,21 @@
   margin-bottom: 24px;
 }
 
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.restaurantIndicator {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  background: var(--color-background);
+  padding: 4px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--color-border);
+}
+
 .title {
   margin: 0;
   font-size: 1.5rem;
@@ -63,6 +78,55 @@
   padding: 3rem;
   text-align: center;
   color: var(--color-text-secondary);
+}
+
+/* Restaurant selection prompt */
+.restaurantPrompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  max-width: 400px;
+  margin: 4rem auto;
+}
+
+.promptIcon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.promptTitle {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.promptText {
+  margin: 0 0 1.5rem;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.promptButton {
+  padding: 10px 20px;
+  background: var(--color-primary);
+  color: var(--color-surface);
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.promptButton:hover {
+  background: var(--color-primary-dark);
 }
 
 .listContainer {

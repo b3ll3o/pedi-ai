@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -19,6 +19,12 @@ import {
 } from 'lucide-react';
 import { RestaurantSelector } from '@/components/admin/RestaurantSelector';
 import { useRestaurantStore } from '@/stores/restaurantStore';
+import { Restaurante } from '@/domain/admin/entities/Restaurante';
+import { UsuarioRestaurante } from '@/domain/admin/entities/UsuarioRestaurante';
+import { ConfiguracoesRestaurante } from '@/domain/admin/value-objects/ConfiguracoesRestaurante';
+import { RestauranteRepository } from '@/infrastructure/persistence/admin/RestauranteRepository';
+import { UsuarioRestauranteRepository } from '@/infrastructure/persistence/admin/UsuarioRestauranteRepository';
+import { db } from '@/infrastructure/persistence/database';
 import styles from './layout.module.css';
 
 interface NavItem {
@@ -39,33 +45,99 @@ const navItems: NavItem[] = [
   { label: 'Configurações', href: '/admin/configuracoes', icon: <Settings size={20} />, disabled: true },
 ];
 
-interface RestaurantInfo {
-  id: string;
-  name: string;
+/**
+ * Sincroniza restaurantes do Supabase (via API) para IndexedDB.
+ * Garante que os dados estejam disponíveis offline e para operações locais.
+ */
+async function sincronizarRestaurantes(userId: string): Promise<void> {
+  try {
+    // Buscar restaurantes da API (fonte: Supabase)
+    const response = await fetch('/api/admin/restaurants');
+    if (!response.ok) {
+      console.error('Erro ao buscar restaurantes da API:', response.status);
+      return;
+    }
+
+    const data = await response.json();
+    const restaurants = data.restaurants || [];
+
+    if (restaurants.length === 0) {
+      return;
+    }
+
+    // Buscar profiles do usuário para obter roles (vinculos)
+    // A API não retorna roles diretamente, então buscamos profiles separadamente
+    // Usamos o endpoint de profile do usuário logado
+    let userProfiles: Array<{ restaurant_id: string; role: 'owner' | 'manager' | 'staff' }> = [];
+    try {
+      const profilesRes = await fetch('/api/admin/my-profiles');
+      if (profilesRes.ok) {
+        const profilesData = await profilesRes.json();
+        userProfiles = profilesData.profiles || [];
+      }
+    } catch (profileError) {
+      console.warn('Não foi possível buscar profiles, usando dados da API:', profileError);
+      // Fallback: se não conseguir buscar profiles, presumir 'owner' para todos
+      userProfiles = restaurants.map((r: { id: string }) => ({
+        restaurant_id: r.id,
+        role: 'owner' as const,
+      }));
+    }
+
+    const restauranteRepo = new RestauranteRepository(db);
+    const usuarioRestauranteRepo = new UsuarioRestauranteRepository(db);
+
+    for (const restaurantData of restaurants) {
+      // Criar entidade Restaurante
+      const restaurante = Restaurante.reconstruir({
+        id: restaurantData.id,
+        nome: restaurantData.name || '',
+        cnpj: restaurantData.cnpj || '',
+        endereco: restaurantData.address || '',
+        telefone: restaurantData.phone || null,
+        logoUrl: restaurantData.logo_url || null,
+        ativo: true,
+        criadoEm: restaurantData.created_at ? new Date(restaurantData.created_at) : new Date(),
+        atualizadoEm: restaurantData.updated_at ? new Date(restaurantData.updated_at) : new Date(),
+      });
+
+      // Salvar restaurante no IndexedDB
+      await restauranteRepo.create(restaurante, ConfiguracoesRestaurante.criarPadrao());
+
+      // Encontrar role do usuário para este restaurante
+      const profile = userProfiles.find((p) => p.restaurant_id === restaurantData.id);
+      const role = profile?.role || 'owner';
+
+      // Criar e salvar vínculo usuário-restaurante
+      const vinculo = UsuarioRestaurante.criar({
+        usuarioId: userId,
+        restauranteId: restaurantData.id,
+        papel: role,
+      });
+      await usuarioRestauranteRepo.save(vinculo);
+    }
+
+    console.log(`Sincronizados ${restaurants.length} restaurantes para IndexedDB`);
+  } catch (error) {
+    console.error('Erro ao sincronizar restaurantes:', error);
+  }
 }
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
 
-  const { selectedRestaurantId, selectedRestaurantName, setRestaurante } = useRestaurantStore();
+  const {
+    restauranteSelecionado,
+    restaurantesAcessiveis,
+    isLoading: isStoreLoading,
+    carregarRestaurantes,
+    setRestaurante,
+  } = useRestaurantStore();
 
   const [loading, setLoading] = useState(true);
-  const [restaurants, setRestaurants] = useState<RestaurantInfo[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
-
-  const fetchRestaurants = useCallback(async () => {
-    try {
-      const res = await fetch('/api/admin/restaurants');
-      if (res.ok) {
-        const data = await res.json();
-        setRestaurants(data.restaurants || []);
-      }
-    } catch (err) {
-      console.error('Erro ao buscar restaurantes:', err);
-    }
-  }, []);
 
   useEffect(() => {
     if (isInitialized) return;
@@ -73,14 +145,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const init = async () => {
       try {
         const session = await getSession();
-        if (!session) {
+        if (!session?.user?.id) {
           setLoading(false);
           router.replace('/admin/login');
           return;
         }
 
-        // Fetch restaurants for selector
-        await fetchRestaurants();
+        // Sincronizar restaurantes do Supabase para IndexedDB
+        await sincronizarRestaurantes(session.user.id);
+
+        // Carregar restaurantes do usuário no store (agora disponíveis no IndexedDB)
+        await carregarRestaurantes(session.user.id);
         setIsInitialized(true);
         setLoading(false);
       } catch (error) {
@@ -90,15 +165,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       }
     };
     init();
-  }, [router, fetchRestaurants, isInitialized]);
+  }, [router, carregarRestaurantes, isInitialized]);
 
   // Auto-select first restaurant if none selected
   useEffect(() => {
-    if (!loading && restaurants.length > 0 && !selectedRestaurantId) {
-      const first = restaurants[0];
-      setRestaurante(first.id, first.name);
+    if (!isStoreLoading && restaurantesAcessiveis.length > 0 && !restauranteSelecionado) {
+      const primeiro = restaurantesAcessiveis[0];
+      const restauranteEntity = Restaurante.reconstruir(primeiro);
+      setRestaurante(restauranteEntity);
     }
-  }, [loading, restaurants, selectedRestaurantId, setRestaurante]);
+  }, [isStoreLoading, restaurantesAcessiveis, restauranteSelecionado, setRestaurante]);
 
   const handleLogout = async () => {
     await signOut();
@@ -110,9 +186,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   // Restaurant selector callback
-  const handleRestaurantChange = (restaurant: RestaurantInfo) => {
-    // Could trigger data refetch or other side effects
-    console.log('Restaurant changed to:', restaurant.name);
+  const handleRestaurantChange = () => {
+    // Restaurant change is handled by the selector component via store
   };
 
   if (loading) {
@@ -140,14 +215,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         {/* Restaurant Selector */}
-        {restaurants.length > 0 && (
-          <div className={styles.restaurantSelector}>
-            <RestaurantSelector
-              restaurantes={restaurants}
-              onRestaurantChange={handleRestaurantChange}
-            />
-          </div>
-        )}
+        <div className={styles.restaurantSelector}>
+          <RestaurantSelector onRestaurantChange={handleRestaurantChange} />
+        </div>
 
         <nav className={styles.nav}>
           {navItems.map((item) => {
@@ -205,10 +275,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </button>
 
           {/* Active restaurant indicator */}
-          {selectedRestaurantName && (
+          {restauranteSelecionado && (
             <div className={styles.activeRestaurant}>
               <Store size={16} aria-hidden="true" />
-              <span>{selectedRestaurantName}</span>
+              <span>{restauranteSelecionado.nome}</span>
             </div>
           )}
 

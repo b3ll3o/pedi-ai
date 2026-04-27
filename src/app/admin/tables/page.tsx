@@ -18,7 +18,8 @@ interface TableFormData {
 
 export default function TablesPage() {
   const router = useRouter();
-  const { selectedRestaurantId } = useRestaurantStore();
+  const { restauranteSelecionado } = useRestaurantStore();
+  const selectedRestaurantId = restauranteSelecionado?.id ?? null;
   const [loading, setLoading] = useState(true);
   const [tables, setTables] = useState<tables[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -312,7 +313,14 @@ export default function TablesPage() {
   if (!selectedRestaurantId) {
     return (
       <div className={styles.container}>
-        <div className={styles.loading}>Selecione um restaurante...</div>
+        <div className={styles.loading}>
+          <p>Nenhum restaurante selecionado.</p>
+          <p>
+            <a href="/admin/restaurants" className={styles.link}>
+              Selecionar restaurante
+            </a>
+          </p>
+        </div>
       </div>
     );
   }
@@ -320,9 +328,16 @@ export default function TablesPage() {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1 data-testid="page-title" className={styles.title}>
-          Mesas
-        </h1>
+        <div className={styles.headerTop}>
+          <h1 data-testid="page-title" className={styles.title}>
+            Mesas
+          </h1>
+          {restauranteSelecionado && (
+            <span data-testid="current-restaurant" className={styles.restaurantIndicator}>
+              {restauranteSelecionado.nome}
+            </span>
+          )}
+        </div>
         <div className={styles.actions}>
           <button
             data-testid="add-table-button"

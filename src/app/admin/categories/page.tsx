@@ -13,7 +13,8 @@ type ToastType = 'success' | 'error' | null;
 
 export default function CategoriesPage() {
   const router = useRouter();
-  const { selectedRestaurantId } = useRestaurantStore();
+  const { restauranteSelecionado } = useRestaurantStore();
+  const selectedRestaurantId = restauranteSelecionado?.id ?? null;
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<categories[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -73,13 +74,6 @@ export default function CategoriesPage() {
     };
     checkAuth();
   }, [router]);
-
-  // Redirect to restaurants if no restaurant selected
-  useEffect(() => {
-    if (!loading && !selectedRestaurantId) {
-      router.replace('/admin/restaurants');
-    }
-  }, [loading, selectedRestaurantId, router]);
 
   // Load data when restaurant is selected
   useEffect(() => {
@@ -202,10 +196,22 @@ export default function CategoriesPage() {
     );
   }
 
-  if (!selectedRestaurantId) {
+  if (!restauranteSelecionado) {
     return (
       <div className={styles.container}>
-        <div className={styles.loading}>Selecione um restaurante...</div>
+        <div className={styles.noRestaurantPrompt}>
+          <div className={styles.noRestaurantIcon}>🍽️</div>
+          <h2 className={styles.noRestaurantTitle}>Nenhum restaurante selecionado</h2>
+          <p className={styles.noRestaurantText}>
+            Selecione um restaurante para gerenciar suas categorias.
+          </p>
+          <button
+            className={styles.selectRestaurantButton}
+            onClick={() => router.push('/admin/restaurants')}
+          >
+            Selecionar restaurante
+          </button>
+        </div>
       </div>
     );
   }
@@ -213,7 +219,12 @@ export default function CategoriesPage() {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1 data-testid="page-title" className={styles.title}>Categorias</h1>
+        <div className={styles.headerLeft}>
+          <h1 data-testid="page-title" className={styles.title}>Categorias</h1>
+          <span className={styles.restaurantIndicator}>
+            📍 {restauranteSelecionado.nome}
+          </span>
+        </div>
         <div className={styles.actions}>
           <button
             data-testid="add-category-button"

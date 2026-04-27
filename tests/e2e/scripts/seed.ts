@@ -612,6 +612,7 @@ async function createCategories(
 
 async function createProducts(
   admin: SupabaseClient,
+  restaurantId: string,
   categories: Array<{ id: string; name: string }>
 ): Promise<SeedResult['products']> {
   console.log('🍽️  Criando produtos de teste...')
@@ -636,6 +637,7 @@ async function createProducts(
     description: `Descrição do produto ${p.name}`,
     price: p.price,
     category_id: categories[p.category_idx].id,
+    restaurant_id: restaurantId,
     dietary_labels: p.dietary_labels,
     available: true,
     sort_order: 0,
@@ -766,7 +768,7 @@ export async function seed(): Promise<SeedResult> {
   const restaurant = await createRestaurant(admin)
   await createUserProfiles(admin, users, restaurant.id)
   const categories = await createCategories(admin, restaurant.id)
-  const products = await createProducts(admin, categories)
+  const products = await createProducts(admin, restaurant.id, categories)
   const tables = await createTables(admin, restaurant.id)
 
   // Requirement 2.1.x: Criar modifier groups e values
