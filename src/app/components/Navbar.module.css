@@ -36,26 +36,46 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-md);
   position: relative;
 }
 
-/* Desktop: logo centralizado */
-@media (min-width: 40em) {
+/* Mobile: hamburger left, logo center */
+@media (max-width: 39.99em) {
+  .navContainer {
+    justify-content: space-between;
+  }
+
   .logo {
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
   }
+}
+
+/* Desktop: logo left, nav center, CTA right */
+@media (min-width: 40em) {
+  .navContainer {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: var(--spacing-lg);
+  }
+
+  .logo {
+    /* Left side - no absolute positioning */
+  }
 
   .navLinks {
-    position: absolute;
-    left: 1rem;
+    /* Center - flex container */
+    display: flex;
+    justify-content: center;
+    position: static;
   }
 
   .navCta {
-    position: absolute;
-    right: 1rem;
+    /* Right side - show at same breakpoint as grid */
+    display: inline-flex;
+    position: static;
   }
 
   .menuButton {
@@ -92,12 +112,6 @@
   gap: var(--spacing-xs);
   margin: 0;
   padding: 0;
-}
-
-@media (min-width: 48em) {
-  .navLinks {
-    display: flex;
-  }
 }
 
 .navLink {

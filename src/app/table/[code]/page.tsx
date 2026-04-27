@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useValidarQRCode } from '@/hooks/useMesa';
@@ -26,28 +26,35 @@ export default function TableQRPage() {
   const { setTable } = useTableStore();
   const validarQRCodeMutation = useValidarQRCode();
 
+  // Evita que o effect rode múltiplas vezes - o mutateAsync do useMutation é estável
+  // mas o objeto mutation é recriado em cada render
+  const hasValidatedRef = useRef(false);
+
   useEffect(() => {
     if (!code) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError('Código da mesa não fornecido');
       return;
     }
 
-    const validateQR = async () => {
-      setIsValidating(true);
-      setError(null);
+    // Evita loop infinito: só executa se ainda não validou ou se o code mudou
+    if (hasValidatedRef.current) {
+      return;
+    }
+    hasValidatedRef.current = true;
 
-      try {
-        // O QR code é um base64 encoded JSON com { restauranteId, mesaId, assinatura }
-        // O código na URL é o QR code base64
-        const qrCodeData = decodeURIComponent(code);
-        const secretKey = process.env.NEXT_PUBLIC_QR_SECRET_KEY || 'default-secret';
+    setIsValidating(true);
+    setError(null);
 
-        const result = await validarQRCodeMutation.mutateAsync({
-          qrCode: qrCodeData,
-          secret: secretKey,
-        });
+    // O QR code é um base64 encoded JSON com { restauranteId, mesaId, assinatura }
+    // O código na URL é o QR code base64
+    const qrCodeData = decodeURIComponent(code);
+    const secretKey = process.env.NEXT_PUBLIC_QR_SECRET_KEY || 'default-secret';
 
+    validarQRCodeMutation.mutateAsync({
+      qrCode: qrCodeData,
+      secret: secretKey,
+    })
+      .then((result) => {
         if (result.valido) {
           setTableInfo({
             restaurantId: result.restauranteId,
@@ -58,15 +65,14 @@ export default function TableQRPage() {
         } else {
           setError('QR Code inválido ou expirado');
         }
-      } catch (err) {
+      })
+      .catch((err) => {
         setError(err instanceof Error ? err.message : 'Erro ao validar QR Code');
-      } finally {
+      })
+      .finally(() => {
         setIsValidating(false);
-      }
-    };
-
-    validateQR();
-  }, [code, validarQRCodeMutation, setTable]);
+      });
+  }, [code, validarQRCodeMutation.mutateAsync, setTable]);
 
   if (isValidating) {
     return (

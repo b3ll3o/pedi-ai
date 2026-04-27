@@ -130,7 +130,7 @@ export default function Navbar() {
           ref={menuRef}
           id="mobile-menu"
           className={`${styles.mobileMenu} ${isMenuOpen ? styles.mobileMenuOpen : ''}`}
-          aria-hidden={!isMenuOpen}
+          aria-hidden={isMenuOpen ? true : undefined}
         >
           <ul className={styles.mobileNavLinks}>
             {navLinks.map((link) => (

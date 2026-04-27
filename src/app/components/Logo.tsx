@@ -15,7 +15,6 @@ export default function Logo({ size = 24, className }: LogoProps) {
       href="/" 
       scroll={false}
       aria-label="Página inicial Pedi-AI"
-      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
       className={className}
     >
       <UtensilsCrossed size={size} className={styles.logoIcon} aria-hidden="true" />
