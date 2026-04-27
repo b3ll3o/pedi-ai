@@ -46,10 +46,27 @@ export function useAuth(): UseAuthReturn {
   // Initialize auth state
   useEffect(() => {
     let isMounted = true;
+    const AUTH_INIT_TIMEOUT_MS = 5000;
 
     async function initAuth() {
+      const TIMEOUT_ERROR = new Error('Auth init timeout');
+      
       try {
-        const [sessionResult, userResult] = await Promise.all([getSession(), getUser()]);
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(TIMEOUT_ERROR), AUTH_INIT_TIMEOUT_MS)
+        );
+
+        const authPromise = Promise.all([getSession(), getUser()]);
+        const [sessionResult, userResult] = await Promise.race([authPromise, timeoutPromise])
+          .catch((err) => {
+            // Apenas timeout trata como sem sessão; erros reais são relançados
+            if (err === TIMEOUT_ERROR) {
+              console.warn('Auth init timed out');
+              return [null, null];
+            }
+            throw err; // Re-lança erros reais para o catch externo
+          });
+
         if (isMounted) {
           setSession(sessionResult);
           setUser(userResult);
@@ -75,12 +92,23 @@ export function useAuth(): UseAuthReturn {
 
   // Listen to auth state changes and handle session expiry
   useEffect(() => {
+    // Páginas públicas que não devem ter redirect automático
+    const publicPaths = ['/login', '/register', '/reset-password'];
+    const isPublicPath = publicPaths.includes(window.location.pathname);
+
     const { data: { subscription } } = onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT' || session === null) {
         // Session expired or user signed out - redirect to login
-        setSession(null);
-        setUser(null);
-        router.push('/login');
+        // ONLY redirect if not on a public path (login/register)
+        if (!isPublicPath) {
+          setSession(null);
+          setUser(null);
+          router.push('/login');
+        } else {
+          // On public paths, just update state without redirect
+          setSession(null);
+          setUser(null);
+        }
       } else if (event === 'TOKEN_REFRESHED' && session) {
         // Token refreshed - update session
         setSession(session);

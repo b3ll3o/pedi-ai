@@ -51,7 +51,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { selectedRestaurantId, selectedRestaurantName, setRestaurante } = useRestaurantStore();
 
   const [loading, setLoading] = useState(true);
-  const [, setRestaurants] = useState<RestaurantInfo[]>([]);
+  const [restaurants, setRestaurants] = useState<RestaurantInfo[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 

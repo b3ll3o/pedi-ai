@@ -19,15 +19,15 @@ export default function CustomerRegisterPage() {
     const checkSession = async () => {
       try {
         // Timeout de 5 segundos para evitar carregamento infinito
-        const timeoutPromise = new Promise<boolean>((resolve) => {
-          timeoutId = setTimeout(() => resolve(false), 5000);
+        const timeoutPromise = new Promise<null>((resolve) => {
+          timeoutId = setTimeout(() => resolve(null), 5000);
         });
 
         const sessionPromise = getSession();
         const results = await Promise.race([sessionPromise, timeoutPromise]);
 
-        // Se Promise.race retornou boolean, foi timeout
-        if (results === false) {
+        // Se Promise.race retornou null, foi timeout
+        if (results === null) {
           console.warn('Session check timed out, continuing anyway');
           if (isMounted) setIsCheckingSession(false);
           return;
