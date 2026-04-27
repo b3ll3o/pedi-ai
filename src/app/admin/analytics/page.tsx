@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { AdminLayout } from '@/components/admin/AdminLayout'
 import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard'
 import { getAnalytics } from '@/services/analyticsService'
-import { requireAuth } from '@/lib/auth/admin'
+import { requireAuth } from '@/lib/auth/client-admin'
 import type { AnalyticsData } from '@/services/analyticsService'
 
 export default function AnalyticsPage() {
