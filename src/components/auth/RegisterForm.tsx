@@ -182,21 +182,42 @@ export function RegisterForm({ onSubmit }: RegisterFormProps) {
       </div>
 
       <div className={styles.intentSelection}>
+        <span className={styles.intentLabel}>Como você deseja usar o Pedi-AI?</span>
         <button
           type="button"
           onClick={() => setIntent('gerenciar_restaurante')}
-          className={intent === 'gerenciar_restaurante' ? styles.selected : ''}
+          className={`${styles.intentButtonOwner} ${intent === 'gerenciar_restaurante' ? styles.selected : ''}`}
           disabled={isLoading}
+          aria-pressed={intent === 'gerenciar_restaurante'}
         >
-          🏪 Quero gerenciar meu restaurante
+          <span className={styles.intentIcon}>🏪</span>
+          <span className={styles.intentContent}>
+            <span className={styles.intentTitle}>Quero gerenciar meu restaurante</span>
+            <span className={styles.intentDescription}>Cadastre seu negócio, produtos e pedidos</span>
+          </span>
+          <span className={styles.intentCheck} aria-hidden="true">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </span>
         </button>
         <button
           type="button"
           onClick={() => setIntent('fazer_pedidos')}
-          className={intent === 'fazer_pedidos' ? styles.selected : ''}
+          className={`${styles.intentButtonCustomer} ${intent === 'fazer_pedidos' ? styles.selected : ''}`}
           disabled={isLoading}
+          aria-pressed={intent === 'fazer_pedidos'}
         >
-          🍽️ Quero fazer pedidos
+          <span className={styles.intentIcon}>🍽️</span>
+          <span className={styles.intentContent}>
+            <span className={styles.intentTitle}>Quero fazer pedidos</span>
+            <span className={styles.intentDescription}>Explore cardápios e peça pelo app</span>
+          </span>
+          <span className={styles.intentCheck} aria-hidden="true">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </span>
         </button>
       </div>
 
