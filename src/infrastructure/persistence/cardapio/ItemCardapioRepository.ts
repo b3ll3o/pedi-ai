@@ -69,7 +69,7 @@ export class ItemCardapioRepository implements IItemCardapioRepository {
     return {
       id: item.id,
       categoriaId: item.categoriaId,
-      restauranteId: '', // ItemCardapio não tem restauranteId diretamente
+      restauranteId: item.restauranteId ?? '',
       nome: item.nome,
       descricao: item.descricao,
       preco: JSON.stringify({ valor: item.preco.valor, moeda: item.preco.moeda }),
@@ -87,6 +87,7 @@ export class ItemCardapioRepository implements IItemCardapioRepository {
     return ItemCardapio.reconstruir({
       id: dbModel.id,
       categoriaId: dbModel.categoriaId,
+      restauranteId: dbModel.restauranteId,
       nome: dbModel.nome,
       descricao: dbModel.descricao,
       preco: Dinheiro.criar(precoParsed.valor, precoParsed.moeda),

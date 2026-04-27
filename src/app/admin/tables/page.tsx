@@ -3,9 +3,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSession } from '@/lib/supabase/auth';
+import { useRestaurantStore } from '@/stores/restaurantStore';
 import { TableManagement } from '@/components/admin/TableManagement';
 import { TableQRCode } from '@/components/admin/TableQRCode';
-import { useListarMesas } from '@/hooks/useMesa';
 import type { tables } from '@/lib/supabase/types';
 import styles from './page.module.css';
 
@@ -16,11 +16,9 @@ interface TableFormData {
   generateQr: boolean;
 }
 
-// Restaurante padrão para admin - em produção viria da sessão do usuário
-const DEFAULT_RESTAURANTE_ID = 'default-restaurant';
-
 export default function TablesPage() {
   const router = useRouter();
+  const { selectedRestaurantId } = useRestaurantStore();
   const [loading, setLoading] = useState(true);
   const [tables, setTables] = useState<tables[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -36,45 +34,6 @@ export default function TablesPage() {
     capacity: '',
     generateQr: true,
   });
-
-  // Hook para listar mesas usando ListarMesasUseCase
-  const { data: mesasData, isLoading: isLoadingMesas, error: _mesasError, refetch: _refetch } = useListarMesas(DEFAULT_RESTAURANTE_ID);
-
-  // Usar dados do hook diretamente (evita set-state-in-effect)
-  const tables = mesasData || [];
-
-  // Fetch tables via API (para operações de criação/atualização/exclusão)
-  const _fetchTables = useCallback(async () => {
-    try {
-      const response = await fetch('/api/admin/tables');
-      if (!response.ok) {
-        throw new Error('Falha ao carregar mesas');
-      }
-      const data = await response.json();
-      setTables(data.tables || []);
-    } catch (err) {
-      console.error('Erro ao carregar mesas:', err);
-      setError('Erro ao carregar mesas');
-    }
-  }, []);
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const session = await getSession();
-        if (!session) {
-          router.replace('/admin/login');
-          return;
-        }
-        // Tables will be loaded by the hook via useListarMesas
-        setLoading(false);
-      } catch (err) {
-        console.error('Auth check failed:', err);
-        router.replace('/admin/login');
-      }
-    };
-    checkAuth();
-  }, [router]);
 
   const showSuccess = useCallback((message: string) => {
     setSuccess(message);
@@ -95,6 +54,54 @@ export default function TablesPage() {
     });
     setEditingTable(null);
   }, []);
+
+  const fetchTables = useCallback(async () => {
+    if (!selectedRestaurantId) return;
+
+    try {
+      const response = await fetch(`/api/admin/tables?restaurant_id=${selectedRestaurantId}`);
+      if (!response.ok) {
+        throw new Error('Falha ao carregar mesas');
+      }
+      const data = await response.json();
+      setTables(data.tables || []);
+    } catch (err) {
+      console.error('Erro ao carregar mesas:', err);
+      setError('Erro ao carregar mesas');
+    }
+  }, [selectedRestaurantId]);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const session = await getSession();
+        if (!session) {
+          router.replace('/admin/login');
+          return;
+        }
+        setLoading(false);
+      } catch (err) {
+        console.error('Auth check failed:', err);
+        router.replace('/admin/login');
+      }
+    };
+    checkAuth();
+  }, [router]);
+
+  // Redirect to restaurants if no restaurant selected
+  useEffect(() => {
+    if (!loading && !selectedRestaurantId) {
+      router.replace('/admin/restaurants');
+    }
+  }, [loading, selectedRestaurantId, router]);
+
+  // Load data when restaurant is selected
+  useEffect(() => {
+    if (!loading && selectedRestaurantId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      fetchTables();
+    }
+  }, [loading, selectedRestaurantId, fetchTables]);
 
   const handleGenerateQR = useCallback(
     async (table: tables) => {
@@ -121,11 +128,14 @@ export default function TablesPage() {
   );
 
   const handleCreate = useCallback(async () => {
+    if (!selectedRestaurantId) return;
+
     try {
       const response = await fetch('/api/admin/tables', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          restaurant_id: selectedRestaurantId,
           number: parseInt(formData.number, 10),
           name: formData.name || null,
           capacity: formData.capacity ? parseInt(formData.capacity, 10) : null,
@@ -152,7 +162,7 @@ export default function TablesPage() {
       console.error('Erro ao criar mesa:', err);
       showError(err instanceof Error ? err.message : 'Erro ao criar mesa');
     }
-  }, [formData, showSuccess, showError, resetForm, handleGenerateQR]);
+  }, [formData, selectedRestaurantId, showSuccess, showError, resetForm, handleGenerateQR]);
 
   const handleUpdate = useCallback(async () => {
     if (!editingTable) return;
@@ -291,10 +301,18 @@ export default function TablesPage() {
     resetForm();
   }, [resetForm]);
 
-  if (loading || isLoadingMesas) {
+  if (loading) {
     return (
       <div className={styles.container}>
         <div className={styles.loading}>Carregando...</div>
+      </div>
+    );
+  }
+
+  if (!selectedRestaurantId) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.loading}>Selecione um restaurante...</div>
       </div>
     );
   }

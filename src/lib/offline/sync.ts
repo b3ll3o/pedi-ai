@@ -8,8 +8,9 @@ function getBackoffDelay(retryCount: number): number {
   return Math.min(INITIAL_BACKOFF_MS * Math.pow(2, retryCount), 30000);
 }
 
-export async function queueOrderForSync(orderData: unknown): Promise<number> {
+export async function queueOrderForSync(orderData: unknown, restaurantId: string): Promise<number> {
   const entry: PendingSync = {
+    restaurantId,
     orderData,
     retryCount: 0,
     maxRetries: MAX_RETRIES,

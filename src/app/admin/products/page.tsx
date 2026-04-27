@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSession } from '@/lib/supabase/auth';
+import { useRestaurantStore } from '@/stores/restaurantStore';
 import { ProductList } from '@/components/admin/ProductList';
 import { ProductForm, type ProductInput } from '@/components/admin/ProductForm';
 import type { products, categories } from '@/lib/supabase/types';
@@ -12,6 +13,7 @@ type ToastType = 'success' | 'error' | null;
 
 export default function ProductsPage() {
   const router = useRouter();
+  const { selectedRestaurantId } = useRestaurantStore();
 
   // Auth & loading
   const [loading, setLoading] = useState(true);
@@ -47,14 +49,17 @@ export default function ProductsPage() {
 
   // Fetch products from API
   const fetchProducts = useCallback(async () => {
+    if (!selectedRestaurantId) return;
+
     setIsFetchingProducts(true);
     try {
       const params = new URLSearchParams();
       if (selectedCategory) {
         params.set('category_id', selectedCategory);
       }
+      params.set('restaurant_id', selectedRestaurantId);
       const queryString = params.toString();
-      const url = `/api/admin/products${queryString ? `?${queryString}` : ''}`;
+      const url = `/api/admin/products?${queryString}`;
 
       const res = await fetch(url);
       if (!res.ok) {
@@ -69,12 +74,14 @@ export default function ProductsPage() {
     } finally {
       setIsFetchingProducts(false);
     }
-  }, [selectedCategory, showToast]);
+  }, [selectedCategory, selectedRestaurantId, showToast]);
 
   // Fetch categories for filter dropdown
   const fetchCategories = useCallback(async () => {
+    if (!selectedRestaurantId) return;
+
     try {
-      const res = await fetch('/api/admin/categories');
+      const res = await fetch(`/api/admin/categories?restaurant_id=${selectedRestaurantId}`);
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || 'Erro ao buscar categorias');
@@ -84,7 +91,7 @@ export default function ProductsPage() {
     } catch (err) {
       console.error('Erro ao carregar categorias:', err);
     }
-  }, []);
+  }, [selectedRestaurantId]);
 
   // Initialize: check auth and load initial data
   useEffect(() => {
@@ -107,15 +114,22 @@ export default function ProductsPage() {
     init();
   }, [router, isInitialized]);
 
-  // Load data after auth is verified
+  // Redirect to restaurants if no restaurant selected
   useEffect(() => {
-    if (!isInitialized) return;
+    if (!loading && !selectedRestaurantId) {
+      router.replace('/admin/restaurants');
+    }
+  }, [loading, selectedRestaurantId, router]);
+
+  // Load data after auth is verified and restaurant is selected
+  useEffect(() => {
+    if (!isInitialized || !selectedRestaurantId) return;
     const loadData = async () => {
       await fetchCategories();
       await fetchProducts();
     };
     loadData();
-  }, [isInitialized, fetchCategories, fetchProducts]);
+  }, [isInitialized, selectedRestaurantId, fetchCategories, fetchProducts]);
 
   // Open create modal
   const handleAddProduct = () => {
@@ -198,7 +212,7 @@ export default function ProductsPage() {
         const res = await fetch('/api/admin/products', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(input),
+          body: JSON.stringify({ ...input, restaurant_id: selectedRestaurantId }),
         });
         if (!res.ok) {
           const data = await res.json();
@@ -226,6 +240,14 @@ export default function ProductsPage() {
     return (
       <div className={styles.container}>
         <div className={styles.loading}>Carregando...</div>
+      </div>
+    );
+  }
+
+  if (!selectedRestaurantId) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.loading}>Selecione um restaurante...</div>
       </div>
     );
   }

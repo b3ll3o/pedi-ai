@@ -44,6 +44,11 @@ export function isCashbackEnabled(): boolean {
   return process.env.NEXT_PUBLIC_FEATURE_CASHBACK_ENABLED === 'true';
 }
 
+/** Enable multi-restaurant support (N:N user-restaurant relationship) */
+export function isMultiRestaurantEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_ENABLE_MULTI_RESTAURANT === 'true';
+}
+
 /**
  * Get a raw feature flag value.
  * @param name - Environment variable name (e.g., 'NEXT_PUBLIC_FEATURE_OFFLINE_ENABLED')

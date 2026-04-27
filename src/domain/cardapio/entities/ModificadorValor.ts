@@ -4,6 +4,7 @@ import { Dinheiro } from '@/domain/pedido/value-objects/Dinheiro';
 export interface ModificadorValorProps {
   id: string;
   modificadorGrupoId: string;
+  restauranteId?: string;
   nome: string;
   ajustePreco: Dinheiro;
   ativo: boolean;

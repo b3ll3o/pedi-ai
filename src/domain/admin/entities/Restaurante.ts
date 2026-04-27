@@ -1,4 +1,5 @@
 import { EntityClass } from '@/domain/shared';
+import { IUsuarioRestauranteRepository } from '../repositories/IUsuarioRestauranteRepository';
 
 export interface RestauranteProps {
   id: string;
@@ -86,5 +87,23 @@ export class Restaurante extends EntityClass<RestauranteProps> {
 
   static reconstruir(props: RestauranteProps): Restaurante {
     return new Restaurante(props);
+  }
+
+  /**
+   * Verifica se o usuário tem acesso a este restaurante através da relação
+   * UsuarioRestaurante (N:N).
+   * @param usuarioId ID do usuário
+   * @param repository Repositório de UsuarioRestaurante
+   * @returns true se o usuário está vinculado ao restaurante
+   */
+  async pertenceAoUsuario(
+    usuarioId: string,
+    repository: IUsuarioRestauranteRepository
+  ): Promise<boolean> {
+    const vinculo = await repository.findByUsuarioIdAndRestauranteId(
+      usuarioId,
+      this.id
+    );
+    return vinculo !== null;
   }
 }

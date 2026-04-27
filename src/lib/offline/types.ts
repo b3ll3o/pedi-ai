@@ -11,6 +11,7 @@ export interface CartItem {
 
 export interface MenuCache {
   id?: number;
+  restaurantId: string;
   categories: unknown[];
   products: unknown[];
   modifiers: unknown[];
@@ -21,6 +22,7 @@ export type SyncStatus = 'pending' | 'syncing' | 'failed' | 'completed';
 
 export interface PendingSync {
   id?: number;
+  restaurantId: string;
   orderData: unknown;
   retryCount: number;
   maxRetries: number;

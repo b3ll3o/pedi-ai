@@ -6,3 +6,4 @@ export type { ItemCardapioRecord as ItemCardapioDbModel } from './database';
 export type { ModificadorGrupoRecord as ModificadorGrupoDbModel } from './database';
 export type { ModificadorValorRecord as ModificadorValorDbModel } from './database';
 export type { ComboRecord as ComboDbModel } from './database';
+export type { UsuarioRestauranteRecord } from './database';

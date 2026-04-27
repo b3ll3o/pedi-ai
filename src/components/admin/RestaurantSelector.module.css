@@ -1,0 +1,191 @@
+.selector {
+  position: relative;
+}
+
+.selectorButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--color-text-primary);
+  transition: all 0.2s ease;
+  min-width: 200px;
+}
+
+.selectorButton:hover {
+  border-color: var(--color-primary);
+  background: var(--color-background);
+}
+
+.selectorButton.open {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(232, 93, 4, 0.1);
+}
+
+.selectorLabel {
+  flex: 1;
+  text-align: left;
+  font-weight: 500;
+}
+
+.selectorIcon {
+  transition: transform 0.2s ease;
+}
+
+.selectorIcon.open {
+  transform: rotate(180deg);
+}
+
+.selectorIcon svg {
+  width: 16px;
+  height: 16px;
+  color: var(--color-text-secondary);
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  z-index: 200;
+  overflow: hidden;
+  animation: dropdownFadeIn 0.15s ease;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdownList {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  font-size: 14px;
+  color: var(--color-text-primary);
+}
+
+.dropdownItem:hover {
+  background: var(--color-background);
+}
+
+.dropdownItem.active {
+  background: rgba(232, 93, 4, 0.08);
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.dropdownItem.active::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--color-primary);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dropdownEmpty {
+  padding: 24px 12px;
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+/* Confirmation Dialog */
+.dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.dialogContent {
+  background: var(--color-surface);
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: var(--shadow-lg);
+}
+
+.dialogTitle {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.dialogText {
+  margin: 0 0 20px;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.dialogActions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.dialogButton {
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dialogButtonCancel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+.dialogButtonCancel:hover {
+  background: var(--color-background);
+}
+
+.dialogButtonConfirm {
+  background: var(--color-primary);
+  border: none;
+  color: white;
+}
+
+.dialogButtonConfirm:hover {
+  background: var(--color-primary-dark);
+}

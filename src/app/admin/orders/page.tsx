@@ -3,10 +3,12 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSession } from '@/lib/supabase/auth';
+import { useRestaurantStore } from '@/stores/restaurantStore';
 import styles from './page.module.css';
 
 export default function OrdersPage() {
   const router = useRouter();
+  const { selectedRestaurantId } = useRestaurantStore();
   const [loading, setLoading] = useState(true);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
@@ -27,10 +29,25 @@ export default function OrdersPage() {
     checkAuth();
   }, [router]);
 
+  // Redirect to restaurants if no restaurant selected
+  useEffect(() => {
+    if (!loading && !selectedRestaurantId) {
+      router.replace('/admin/restaurants');
+    }
+  }, [loading, selectedRestaurantId, router]);
+
   if (loading) {
     return (
       <div className={styles.container}>
         <div className={styles.loading}>Carregando...</div>
+      </div>
+    );
+  }
+
+  if (!selectedRestaurantId) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.loading}>Selecione um restaurante...</div>
       </div>
     );
   }

@@ -13,20 +13,47 @@ export default function CustomerRegisterPage() {
   const { signUp, isAuthenticated } = useAuth();
 
   useEffect(() => {
+    let isMounted = true;
+    let timeoutId: ReturnType<typeof setTimeout>;
+
     const checkSession = async () => {
       try {
-        const session = await getSession();
-        if (session?.user) {
+        // Timeout de 5 segundos para evitar carregamento infinito
+        const timeoutPromise = new Promise<boolean>((resolve) => {
+          timeoutId = setTimeout(() => resolve(false), 5000);
+        });
+
+        const sessionPromise = getSession();
+        const results = await Promise.race([sessionPromise, timeoutPromise]);
+
+        // Se Promise.race retornou boolean, foi timeout
+        if (results === false) {
+          console.warn('Session check timed out, continuing anyway');
+          if (isMounted) setIsCheckingSession(false);
+          return;
+        }
+
+        const session = results;
+        if (isMounted && session?.user) {
           router.replace('/menu');
           return;
         }
       } catch (error) {
         console.error('Session check failed:', error);
       } finally {
-        setIsCheckingSession(false);
+        if (isMounted) {
+          clearTimeout(timeoutId);
+          setIsCheckingSession(false);
+        }
       }
     };
+
     checkSession();
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
   }, [router]);
 
   // Redirecionar após autenticação bem-sucedida

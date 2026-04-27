@@ -3,6 +3,7 @@ import { ItemCardapio } from '@/domain/cardapio/entities/ItemCardapio';
 import { TipoItemCardapio } from '@/domain/cardapio/value-objects/TipoItemCardapio';
 import { LabelDietetico } from '@/domain/cardapio/value-objects/LabelDietetico';
 import { Dinheiro } from '@/domain/pedido/value-objects/Dinheiro';
+import { isMultiRestaurantEnabled } from '@/lib/feature-flags';
 
 /**
  * Input para gerenciar produto/item do cardápio
@@ -11,12 +12,15 @@ export interface ProdutoInput {
   acao: 'criar' | 'atualizar' | 'excluir' | 'ativar' | 'desativar';
   id?: string;
   categoriaId: string;
+  restauranteId?: string;
   nome?: string;
   descricao?: string | null;
   preco?: number; // em centavos
   imagemUrl?: string | null;
   tipo?: 'produto' | 'combo';
   labelsDieteticos?: string[];
+  /** ID do usuário logado (necessário para validar acesso quando multi-restaurant está ativo) */
+  usuarioId?: string;
 }
 
 /**
@@ -39,11 +43,39 @@ export class GerenciarProdutoUseCase implements UseCase<ProdutoInput, ProdutoOut
       excluir(id: string): Promise<void>;
     },
     private categoriaRepo: {
-      buscarPorId(id: string): Promise<{ id: string } | null>;
+      buscarPorId(id: string): Promise<{ id: string; restauranteId?: string } | null>;
+    },
+    private usuarioRestauranteRepo?: {
+      findByUsuarioIdAndRestauranteId(usuarioId: string, restauranteId: string): Promise<{ id: string } | null>;
     }
   ) {}
 
+  /**
+   * Valida se o usuário tem acesso ao restaurante (quando multi-restaurant está ativo)
+   */
+  private async validarAcessoRestaurante(usuarioId: string | undefined, restauranteId: string | undefined): Promise<void> {
+    if (!isMultiRestaurantEnabled()) {
+      return; // Modo legacy - não valida acesso
+    }
+
+    if (!usuarioId || !restauranteId) {
+      throw new Error('usuarioId e restauranteId são obrigatórios para operações de produto quando multi-restaurant está ativo');
+    }
+
+    if (!this.usuarioRestauranteRepo) {
+      throw new Error('Repositório de vínculo usuário-restaurante não configurado');
+    }
+
+    const vinculo = await this.usuarioRestauranteRepo.findByUsuarioIdAndRestauranteId(usuarioId, restauranteId);
+    if (!vinculo) {
+      throw new Error('Usuário não tem acesso a este restaurante');
+    }
+  }
+
   async execute(input: ProdutoInput): Promise<ProdutoOutput> {
+    // Validar acesso ao restaurante (quando multi-restaurant está ativo)
+    await this.validarAcessoRestaurante(input.usuarioId, input.restauranteId);
+
     switch (input.acao) {
       case 'criar':
         return this.criar(input);

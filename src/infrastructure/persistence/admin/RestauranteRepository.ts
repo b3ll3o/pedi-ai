@@ -2,6 +2,7 @@ import { PediDatabase, RestauranteRecord } from '../database';
 import { IRestauranteRepository } from '@/domain/admin/repositories/IRestauranteRepository';
 import { Restaurante } from '@/domain/admin/entities/Restaurante';
 import { ConfiguracoesRestaurante } from '@/domain/admin/value-objects/ConfiguracoesRestaurante';
+import { UsuarioRestauranteRepository } from './UsuarioRestauranteRepository';
 
 /**
  * Implementação do repositório de restaurantes usando Dexie (IndexedDB)
@@ -92,6 +93,21 @@ export class RestauranteRepository implements IRestauranteRepository {
     const record = records.find(r => r.ativo === true);
     if (!record) return null;
     return this.recordToRestaurante(record);
+  }
+
+  async findByUsuarioId(usuarioId: string): Promise<Restaurante[]> {
+    const usuarioRestauranteRepo = new UsuarioRestauranteRepository(this.db);
+    const vinculos = await usuarioRestauranteRepo.findByUsuarioId(usuarioId);
+    
+    if (vinculos.length === 0) return [];
+
+    const restaurantIds = vinculos.map(v => v.restauranteId);
+    const records = await this.db.restaurantes
+      .where('id')
+      .anyOf(restaurantIds)
+      .toArray();
+    
+    return records.map(r => this.recordToRestaurante(r));
   }
 
   private recordToRestaurante(record: RestauranteRecord): Restaurante {

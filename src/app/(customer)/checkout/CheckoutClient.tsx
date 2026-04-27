@@ -2,17 +2,32 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { LogOut } from 'lucide-react';
 import { useCartStore } from '@/stores/cartStore';
+import { useAuth } from '@/hooks/useAuth';
 import { CheckoutForm } from './CheckoutForm';
 import styles from './page.module.css';
 
 export default function CheckoutClient() {
   const router = useRouter();
+  const { signOut } = useAuth();
   const items = useCartStore((state) => state.items);
   const validateCart = useCartStore((state) => state.validateCart);
 
   const [isValidating, setIsValidating] = useState(true);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      await signOut();
+      router.push('/login');
+    } catch {
+      setIsLoggingOut(false);
+    }
+  };
 
   useEffect(() => {
     const validate = async () => {
@@ -85,6 +100,21 @@ export default function CheckoutClient() {
           </svg>
         </button>
         <h1 className={styles.title}>Finalizar Pedido</h1>
+        <button
+          type="button"
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          className={styles.logoutButton}
+          aria-label="Sair da conta"
+          data-testid="customer-logout-button"
+        >
+          {isLoggingOut ? (
+            <span className={styles.logoutSpinner} aria-hidden="true" />
+          ) : (
+            <LogOut size={18} aria-hidden="true" />
+          )}
+          {isLoggingOut && <span className={styles.logoutText}>Saindo...</span>}
+        </button>
       </header>
 
       <main className={styles.main}>

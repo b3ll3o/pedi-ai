@@ -179,8 +179,8 @@ export function getProductsByCategory(
  * Used by `useMenu` hook (see hooks/useMenu.ts) — it already calls this
  * automatically when API fetch fails or on startup offline.
  */
-export async function hydrateFromCache(): Promise<void> {
-  const cached = await getCachedMenu();
+export async function hydrateFromCache(restaurantId: string): Promise<void> {
+  const cached = await getCachedMenu(restaurantId);
   if (!cached) return;
 
   useMenuStore.getState().setCategories(cached.categories as categories[]);
@@ -192,12 +192,12 @@ export async function hydrateFromCache(): Promise<void> {
  * Attempts to fetch menu from API; falls back to IndexedDB cache if offline.
  * Returns { success, fromCache } to indicate data origin.
  */
-export async function useHydratedMenu(): Promise<{ success: boolean; fromCache: boolean }> {
+export async function useHydratedMenu(restaurantId: string): Promise<{ success: boolean; fromCache: boolean }> {
   try {
     throw new Error('API not implemented');
   } catch (err) {
     console.warn('useHydratedMenu: API not available, falling back to cache', err);
-    const cached = await getCachedMenu();
+    const cached = await getCachedMenu(restaurantId);
     if (!cached) return { success: false, fromCache: false };
 
     useMenuStore.getState().setCategories(cached.categories as categories[]);

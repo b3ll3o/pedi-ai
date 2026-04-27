@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSession } from '@/lib/supabase/auth';
+import { useRestaurantStore } from '@/stores/restaurantStore';
 import { CategoryList } from '@/components/admin/CategoryList';
 import { CategoryForm, type CategoryInput } from '@/components/admin/CategoryForm';
 import type { categories } from '@/lib/supabase/types';
@@ -12,6 +13,7 @@ type ToastType = 'success' | 'error' | null;
 
 export default function CategoriesPage() {
   const router = useRouter();
+  const { selectedRestaurantId } = useRestaurantStore();
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<categories[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -37,8 +39,10 @@ export default function CategoriesPage() {
 
   // Fetch categories from API
   const fetchCategories = useCallback(async () => {
+    if (!selectedRestaurantId) return;
+
     try {
-      const res = await fetch('/api/admin/categories');
+      const res = await fetch(`/api/admin/categories?restaurant_id=${selectedRestaurantId}`);
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || 'Erro ao buscar categorias');
@@ -51,7 +55,7 @@ export default function CategoriesPage() {
       setError(message);
       showToast('error', message);
     }
-  }, [showToast]);
+  }, [selectedRestaurantId, showToast]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -62,14 +66,28 @@ export default function CategoriesPage() {
           return;
         }
         setLoading(false);
-        await fetchCategories();
       } catch (error) {
         console.error('Auth check failed:', error);
         router.replace('/admin/login');
       }
     };
     checkAuth();
-  }, [router, fetchCategories]);
+  }, [router]);
+
+  // Redirect to restaurants if no restaurant selected
+  useEffect(() => {
+    if (!loading && !selectedRestaurantId) {
+      router.replace('/admin/restaurants');
+    }
+  }, [loading, selectedRestaurantId, router]);
+
+  // Load data when restaurant is selected
+  useEffect(() => {
+    if (!loading && selectedRestaurantId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      fetchCategories();
+    }
+  }, [loading, selectedRestaurantId, fetchCategories]);
 
   // Handle create new category
   const handleAddCategory = () => {
@@ -103,7 +121,7 @@ export default function CategoriesPage() {
         const res = await fetch('/api/admin/categories', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(input),
+          body: JSON.stringify({ ...input, restaurant_id: selectedRestaurantId }),
         });
         if (!res.ok) {
           const data = await res.json();
@@ -180,6 +198,14 @@ export default function CategoriesPage() {
     return (
       <div className={styles.container}>
         <div className={styles.loading}>Carregando...</div>
+      </div>
+    );
+  }
+
+  if (!selectedRestaurantId) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.loading}>Selecione um restaurante...</div>
       </div>
     );
   }

@@ -1,0 +1,74 @@
+.header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.75rem 1rem;
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.logoutButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.logoutButton:hover:not(:disabled) {
+  background-color: var(--color-error-light);
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
+.logoutButton:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.logoutButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.logoutText {
+  display: none;
+}
+
+@media (min-width: 40em) {
+  .logoutText {
+    display: inline;
+  }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.errorMessage {
+  font-size: 0.75rem;
+  color: var(--color-error);
+}

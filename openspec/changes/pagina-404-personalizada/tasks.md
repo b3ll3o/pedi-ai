@@ -6,14 +6,14 @@
 - [x] 1.3 Verificar estrutura de `src/app/` para confirmar localização de `not-found.tsx`
 
 ## Phase 2: Core Implementation
-- [ ] 2.1 Criar `src/app/not-found.tsx` com:
+- [x] 2.1 Criar `src/app/not-found.tsx` com:
   - Comportamento `'use client'`
   - Hook `useAuth()` para verificar autenticação
   - Loading state com skeleton durante verificação
   - Redirect com `router.replace('/admin/dashboard')` para usuário logado
   - Exibição de página 404 pública para usuário não logado
   - Acessibilidade: `aria-labelledby`, `aria-label`, landmarks semânticos
-- [ ] 2.2 Criar `src/app/not-found.module.css` com:
+- [x] 2.2 Criar `src/app/not-found.module.css` com:
   - Variáveis CSS do `globals.css` (cores `#E85D04`, `#F48C06`, `#DC2626`)
   - Background `#FFFBF5`
   - Design mobile-first (layout vertical centralizado)
@@ -23,14 +23,14 @@
   - Estilos para botões primário e secundário
 
 ## Phase 3: Verification
-- [ ] 3.1 Executar build `npm run build` e verificar sem erros
-- [ ] 3.2 Verificar sucesso criteria:
-  - [ ] 404 exibida para usuário não logado
-  - [ ] Redirect para `/admin/dashboard` para usuário logado
-  - [ ] Loading state durante verificação de auth
-  - [ ] Design responsivo mobile-first
-  - [ ] Identidade visual Pedi-AI (cores, tipografia Geist)
-  - [ ] Acessibilidade: contraste, landmarks, elementos interativos com nome acessível
+- [x] 3.1 Executar build `npm run build` e verificar sem erros
+- [x] 3.2 Verificar sucesso criteria:
+  - [x] 404 exibida para usuário não logado
+  - [x] Redirect para `/admin/dashboard` para usuário logado
+  - [x] Loading state durante verificação de auth
+  - [x] Design responsivo mobile-first
+  - [x] Identidade visual Pedi-AI (cores, tipografia Geist)
+  - [x] Acessibilidade: contraste, landmarks, elementos interativos com nome acessível
 
 ## Phase 4: Documentation
-- [ ] 4.1 Confirmar que proposal.md está em `openspec/changes/pagina-404-personalizada/proposal.md`
+- [x] 4.1 Confirmar que proposal.md está em `openspec/changes/pagina-404-personalizada/proposal.md`

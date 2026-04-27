@@ -102,7 +102,7 @@ supabase db push
 supabase db reset
 ```
 
-> **Nota**: Migrations estão em `supabase/migrations/` (16 arquivos SQL)
+> **Nota**: Migrations estão em `supabase/migrations/` (17 arquivos SQL)
 
 ---
 

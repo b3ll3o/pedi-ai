@@ -199,7 +199,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 ## Arquitetura DDD (Domain-Driven Design) - MIGRAÇÃO EM ANDAMENTO
 
 > ⚠️ **STATUS**: A arquitetura DDD está **em implementação**. A estrutura DDD existe parcialmente em `src/domain/`, `src/application/`, e `src/infrastructure/`.
-> A estrutura tradicional coexiste com a DDD. Ver: `openspec/changes/implantacao-ddd/` para o plano de migração completo.
+> A estrutura tradicional coexiste com a DDD. Ver: `openspec/changes/archive/2026-04-25-implantacao-ddd/` para o plano de migração completo.
 
 ### Regras Obrigatórias
 
@@ -285,7 +285,7 @@ src/
 
 ### Migration Plan for DDD
 
-> ⚠️ **ATUALIZADO**: A estrutura DDD JÁ ESTÁ IMPLEMENTADA em `src/domain/`, `src/application/`, `src/infrastructure/`. A migração está em andamento. Voir `openspec/changes/implantacao-ddd/design.md` para o estado atual.
+> ⚠️ **ATUALIZADO**: A estrutura DDD JÁ ESTÁ IMPLEMENTADA em `src/domain/`, `src/application/`, `src/infrastructure/`. A migração está em andamento. Voir `openspec/changes/archive/2026-04-25-implantacao-ddd/design.md` para o estado atual.
 
 <!-- END:pedi-ai-rules -->
 

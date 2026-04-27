@@ -5,6 +5,10 @@ export interface UsuarioProps {
   id: string;
   email: string;
   papel: Papel;
+  /**
+   * @deprecated Utilize a relação N:N via UsuarioRestaurante para múltiplos restaurantes.
+   * O campo restauranteId será removido em versões futuras.
+   */
   restauranteId?: string;
   createdAt: Date;
   updatedAt: Date;

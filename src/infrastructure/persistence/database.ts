@@ -148,6 +148,15 @@ export interface ComboRecord {
   ativo: boolean;
 }
 
+// Tabela de vínculo usuário-restaurante (N:N)
+export interface UsuarioRestauranteRecord {
+  id?: number;
+  user_id: string;
+  restaurant_id: string;
+  role: 'owner' | 'manager' | 'staff';
+  created_at: string;
+}
+
 export interface CarrinhoRecord {
   id: string;
   clienteId?: string;
@@ -264,6 +273,29 @@ export class PediDatabase extends Dexie {
       modificadores_valor: 'id, modificadorGrupoId',
       combos: 'id, restauranteId, ativo',
       carrinhos: 'id, restauranteId',
+    });
+
+    // Versão 6: adicionar tabela user_restaurants (vínculo N:N usuário-restaurante)
+    this.version(6).stores({
+      cart: '++id, productId, createdAt',
+      menu_cache: '++id, restaurantId, timestamp',
+      pending_sync: '++id, restaurantId, status, createdAt',
+      tables_info: '++id, tableId, restaurantId',
+      usuarios: 'id, email, restauranteId, papel',
+      sessoes: 'id, usuarioId, token',
+      restaurantes: 'id, cnpj, ativo',
+      pedidos: 'id, restauranteId, status, createdAt',
+      mesas: 'id, restauranteId, label, ativo',
+      pagamentos: 'id, pedidoId, transacaoId, status',
+      transacoes: 'id, pagamentoId, providerId, status',
+      configuracoes_restaurante: 'restauranteId',
+      categorias: 'id, restauranteId, ativo',
+      itens_cardapio: 'id, categoriaId, restauranteId, tipo, ativo',
+      modificadores_grupo: 'id, restauranteId',
+      modificadores_valor: 'id, modificadorGrupoId',
+      combos: 'id, restauranteId, ativo',
+      carrinhos: 'id, restauranteId',
+      user_restaurants: '++id, user_id, restaurant_id, role',
     });
   }
 }

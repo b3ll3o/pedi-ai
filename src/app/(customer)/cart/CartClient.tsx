@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/stores/cartStore';
 import { CartItem } from '@/components/cart/CartItem';
 import { CartSummary } from '@/components/cart/CartSummary';
+import { CustomerHeader } from '@/components/customer/CustomerHeader';
 import styles from './page.module.css';
 
 const TAX_RATE = 0.1; // 10% service tax
@@ -56,6 +57,7 @@ export default function CartClient() {
 
   return (
     <div className={styles.container} data-testid="cart-container">
+      <CustomerHeader />
       <header className={styles.header}>
         <button
           className={styles.backButton}

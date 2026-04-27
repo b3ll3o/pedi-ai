@@ -3,12 +3,14 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { signOut, getSession } from '@/lib/supabase/auth';
+import { getSession } from '@/lib/supabase/auth';
+import { useRestaurantStore } from '@/stores/restaurantStore';
 import styles from './page.module.css';
 
 export default function AdminDashboard() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const { selectedRestaurantId } = useRestaurantStore();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -27,26 +29,26 @@ export default function AdminDashboard() {
     checkAuth();
   }, [router]);
 
-  const handleLogout = async () => {
-    await signOut();
-    router.push('/admin/login');
-  };
+  // Redirect to restaurants page if no restaurant selected
+  useEffect(() => {
+    if (!loading && !selectedRestaurantId) {
+      router.replace('/admin/restaurants');
+    }
+  }, [loading, selectedRestaurantId, router]);
 
   return (
     <div className={styles.container}>
       <header className={styles.header}>
         <h1 className={styles.title}>Dashboard</h1>
-        <button onClick={handleLogout} data-testid="admin-logout-button" className={styles.logoutButton}>
-          Sair
-        </button>
       </header>
       {loading && <div className={styles.loading}>Carregando...</div>}
-      {!loading && (
+      {!loading && selectedRestaurantId && (
         <nav className={styles.nav}>
           <Link href="/admin/orders" className={styles.link}>Pedidos</Link>
           <Link href="/admin/products" className={styles.link}>Produtos</Link>
           <Link href="/admin/categories" className={styles.link}>Categorias</Link>
           <Link href="/admin/tables" className={styles.link}>Mesas</Link>
+          <Link href="/admin/restaurants" className={styles.link}>Restaurantes</Link>
         </nav>
       )}
     </div>

@@ -38,17 +38,12 @@ Pedi-AI é uma plataforma de cardápio digital que permite restaurantes gerencia
 | Directory | Responsabilidade | Status | Mapa Detalhado |
 |-----------|-----------------|--------|----------------|
 | `src/app/` | Next.js App Router — todas as rotas, layouts, API routes | ✅ Atual | [Ver Map](src/app/codemap.md) |
-| `src/components/` | Componentes React organizados por domínio (UI layer) | ✅ Atual | [Ver Map](src/components/codemap.md) |
-| `src/hooks/` | Custom React hooks — auth, menu, realtime, table, role | ✅ Atual | [Ver Map](src/hooks/codemap.md) |
-| `src/lib/` | Módulos reutilizáveis — auth, offline (Dexie), QR, Supabase client, SW | ✅ Atual | [Ver Map](src/lib/codemap.md) |
-| `src/services/` | Business logic layer — orders, users, tables, analytics | ✅ Atual | [Ver Map](src/services/codemap.md) |
-| `src/stores/` | Zustand state management — menu, cart, table com persistência offline | ✅ Atual | [Ver Map](src/stores/codemap.md) |
 | `src/domain/` | REGRAS DE NEGÓCIO - pure TypeScript, sem deps de framework | ✅ Implementado | Entidades, Value Objects, Aggregates, Events, Services, Repository interfaces |
 | `src/application/` | CASOS DE USO - orquestração | ✅ Implementado | Application services que coordinam domain + infrastructure |
 | `src/infrastructure/` | IMPLEMENTAÇÕES - adapters, repos | ✅ Implementado | Repository implementations, Supabase adapter, QR code crypto |
 | `src/presentation/` | NEXT.JS - UI, API routes | ⚠️ Parcial | Camada de apresentação (Next.js), mas domain/application são accessed diretamente |
 
-> **Nota**: A estrutura DDD **JÁ ESTÁ IMPLEMENTADA** em `src/domain/`, `src/application/`, `src/infrastructure/`. O `presentation/` coexiste com a estrutura tradicional. Voir `openspec/changes/implantacao-ddd/` para o plano de migração completo (em progresso).
+> **Nota**: A estrutura DDD **JÁ ESTÁ IMPLEMENTADA** em `src/domain/`, `src/application/`, `src/infrastructure/`. O `presentation/` coexiste com a estrutura tradicional. Voir `openspec/changes/archive/2026-04-25-implantacao-ddd/` para o plano de migração completo (em progresso).
 
 ---
 

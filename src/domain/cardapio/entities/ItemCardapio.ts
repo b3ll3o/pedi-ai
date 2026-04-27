@@ -6,6 +6,7 @@ import { LabelDietetico, LabelDieteticoValue } from '../value-objects/LabelDiete
 export interface ItemCardapioProps {
   id: string;
   categoriaId: string;
+  restauranteId?: string;
   nome: string;
   descricao: string | null;
   preco: Dinheiro;
@@ -46,6 +47,10 @@ export class ItemCardapio extends EntityClass<ItemCardapioProps> {
 
   get ativo(): boolean {
     return this.props.ativo;
+  }
+
+  get restauranteId(): string | undefined {
+    return this.props.restauranteId;
   }
 
   equals(other: EntityClass<ItemCardapioProps>): boolean {

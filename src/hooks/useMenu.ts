@@ -37,7 +37,7 @@ export function useMenu(restaurantId: string) {
         return response.json();
       } catch {
         // Offline ou erro → tentar usar cache do IndexedDB
-        const cached = await getCachedMenu();
+        const cached = await getCachedMenu(restaurantId);
         if (cached) {
           // Hydrate menuStore com dados do cache
           useMenuStore.getState().setCategories(cached.categories as categories[]);

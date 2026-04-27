@@ -7,6 +7,7 @@ import { useMenuStore } from '@/stores/menuStore';
 import { SearchBar } from '@/components/menu/SearchBar';
 import { CategoryList } from '@/components/menu/CategoryList';
 import { ProductList } from '@/components/menu/ProductList';
+import { CustomerHeader } from '@/components/customer/CustomerHeader';
 import type { Category } from '@/components/menu/CategoryList';
 import type { MenuResponse } from '@/hooks/useCardapio';
 import styles from './page.module.css';
@@ -78,6 +79,7 @@ export default function MenuPageClient() {
 
   return (
     <div className={styles.container}>
+      <CustomerHeader />
       <header className={styles.header}>
         <h1 className={styles.title} data-testid="page-title">Cardápio</h1>
         <p className={styles.subtitle}>

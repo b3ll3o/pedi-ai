@@ -1,0 +1,167 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 20px;
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.badge {
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.badgeAtivo {
+  background: var(--color-success-light);
+  color: var(--color-success-dark);
+}
+
+.badgeInativo {
+  background: var(--color-error-light);
+  color: var(--color-error-dark);
+}
+
+.cardInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.infoRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.infoRow svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--color-text-tertiary);
+}
+
+.infoLabel {
+  font-weight: 500;
+  color: var(--color-text-tertiary);
+  min-width: 60px;
+}
+
+.cardFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+.teamCount {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.teamCount svg {
+  width: 16px;
+  height: 16px;
+}
+
+.cardActions {
+  display: flex;
+  gap: 8px;
+}
+
+.actionButton {
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.actionButton svg {
+  width: 14px;
+  height: 14px;
+}
+
+.editButton {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+.editButton:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.teamButton {
+  background: var(--color-primary);
+  border: none;
+  color: white;
+}
+
+.teamButton:hover {
+  background: var(--color-primary-dark);
+}
+
+/* Mobile responsive */
+@media (max-width: 40em) {
+  .card {
+    padding: 16px;
+  }
+
+  .cardHeader {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .cardFooter {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .cardActions {
+    width: 100%;
+  }
+
+  .actionButton {
+    flex: 1;
+    justify-content: center;
+  }
+}

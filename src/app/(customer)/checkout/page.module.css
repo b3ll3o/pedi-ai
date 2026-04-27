@@ -45,6 +45,66 @@
   outline-offset: 1px;
 }
 
+.backButton svg,
+.logoutButton svg {
+  width: 24px;
+  height: 24px;
+}
+
+.logoutButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  transition: background-color 0.15s ease;
+}
+
+.logoutButton:hover:not(:disabled) {
+  background-color: var(--color-hover);
+}
+
+.logoutButton:active:not(:disabled) {
+  background-color: var(--color-border);
+}
+
+.logoutButton:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.logoutButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.logoutText {
+  font-size: 14px;
+  font-weight: 500;
+  margin-left: 4px;
+}
+
+.logoutSpinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .backButton svg {
   width: 24px;
   height: 24px;
@@ -213,6 +273,22 @@
 
   .backButton:active {
     background-color: var(--color-dark-border);
+  }
+
+  .logoutButton {
+    color: var(--color-dark-text);
+  }
+
+  .logoutButton:hover:not(:disabled) {
+    background-color: var(--color-dark-hover);
+  }
+
+  .logoutButton:active:not(:disabled) {
+    background-color: var(--color-dark-border);
+  }
+
+  .logoutButton:disabled {
+    opacity: 0.7;
   }
 
   .title {

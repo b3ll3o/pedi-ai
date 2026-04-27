@@ -11,7 +11,7 @@ export class PediDatabase extends Dexie {
     super('pedi');
     this.version(1).stores({
       cart: '++id, productId, createdAt',
-      menu_cache: '++id, timestamp',
+      menu_cache: '++id, timestamp, restaurantId',
       pending_sync: '++id, status, createdAt',
       tables_info: '++id, tableId, restaurantId',
     });

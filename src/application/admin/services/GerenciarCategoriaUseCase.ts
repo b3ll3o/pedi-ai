@@ -1,5 +1,6 @@
 import { UseCase } from '@/application/shared';
 import { Categoria } from '@/domain/cardapio/entities/Categoria';
+import { isMultiRestaurantEnabled } from '@/lib/feature-flags';
 
 /**
  * Input para gerenciar categoria
@@ -12,6 +13,8 @@ export interface CategoriaInput {
   descricao?: string | null;
   imagemUrl?: string | null;
   ordemExibicao?: number;
+  /** ID do usuário logado (necessário para validar acesso quando multi-restaurant está ativo) */
+  usuarioId?: string;
 }
 
 /**
@@ -32,10 +35,38 @@ export class GerenciarCategoriaUseCase implements UseCase<CategoriaInput, Catego
       buscarPorRestaurante(restauranteId: string): Promise<Categoria[]>;
       salvar(categoria: Categoria): Promise<Categoria>;
       excluir(id: string): Promise<void>;
+    },
+    private usuarioRestauranteRepo?: {
+      findByUsuarioIdAndRestauranteId(usuarioId: string, restauranteId: string): Promise<{ id: string } | null>;
     }
   ) {}
 
+  /**
+   * Valida se o usuário tem acesso ao restaurante (quando multi-restaurant está ativo)
+   */
+  private async validarAcessoRestaurante(usuarioId: string | undefined, restauranteId: string): Promise<void> {
+    if (!isMultiRestaurantEnabled()) {
+      return; // Modo legacy - não valida acesso
+    }
+
+    if (!usuarioId) {
+      throw new Error('usuarioId é obrigatório para operações de categoria quando multi-restaurant está ativo');
+    }
+
+    if (!this.usuarioRestauranteRepo) {
+      throw new Error('Repositório de vínculo usuário-restaurante não configurado');
+    }
+
+    const vinculo = await this.usuarioRestauranteRepo.findByUsuarioIdAndRestauranteId(usuarioId, restauranteId);
+    if (!vinculo) {
+      throw new Error('Usuário não tem acesso a este restaurante');
+    }
+  }
+
   async execute(input: CategoriaInput): Promise<CategoriaOutput> {
+    // Validar acesso ao restaurante (quando multi-restaurant está ativo)
+    await this.validarAcessoRestaurante(input.usuarioId, input.restauranteId);
+
     switch (input.acao) {
       case 'criar':
         return this.criar(input);
