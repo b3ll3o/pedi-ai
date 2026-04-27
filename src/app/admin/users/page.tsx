@@ -6,7 +6,7 @@ import { AdminLayout } from '@/components/admin/AdminLayout'
 import { UserManagement } from '@/components/admin/UserManagement'
 import { UserForm } from '@/components/admin/UserForm'
 import { getUsers, inviteUser, deleteUser, updateUser, type UserRole } from '@/services/userService'
-import { requireAuth } from '@/lib/auth/admin'
+import { requireAuth } from '@/lib/auth/client-admin'
 import type { users_profiles } from '@/lib/supabase/types'
 
 export default function UsersPage() {
