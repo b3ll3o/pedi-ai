@@ -240,7 +240,7 @@ export default function ProductsPage() {
     );
   }
 
-  if (!selectedRestaurantId) {
+  if (!restauranteSelecionado) {
     return (
       <div className={styles.container}>
         <div className={styles.restaurantPrompt}>
