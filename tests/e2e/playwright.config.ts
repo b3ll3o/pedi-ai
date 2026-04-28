@@ -109,5 +109,4 @@ export default defineConfig({
   },
   outputDir: 'test-results',
 
-  globalSetup: './global-setup-demo.ts',
 })

@@ -42,7 +42,15 @@ jobs:
           EOF
 
       - name: Seed database
-        run: pnpm test:e2e:seed
+        run: |
+          pnpm test:e2e:seed
+          sleep 2
+          if [ -f tests/e2e/scripts/.seed-result.json ]; then
+            echo "Seed result file found"
+            cat tests/e2e/scripts/.seed-result.json
+          else
+            echo "WARNING: Seed result file not found"
+          fi
         env:
           NODE_ENV: e2e
 
