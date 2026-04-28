@@ -35,6 +35,93 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   process.exit(1)
 }
 
+// Lock file para evitar race condition entre workers paralelos
+const LOCK_FILE = path.join(__dirname, '.seed.lock')
+const LOCK_TIMEOUT = 60_000 // 60 segundos
+
+// Arquivo de resultado do seed (para cache)
+const SEED_RESULT_FILE = path.join(__dirname, '.seed-result.json')
+
+/**
+ * Adquire um lock de arquivo para serializar seed entre workers.
+ * Usa Node.js built-in fs para não adicionar dependências.
+ */
+async function acquireLock(): Promise<() => Promise<void>> {
+  const fs = await import('fs')
+
+  const waitForLock = async (): Promise<void> => {
+    const startTime = Date.now()
+    while (fs.existsSync(LOCK_FILE)) {
+      if (Date.now() - startTime > LOCK_TIMEOUT) {
+        throw new Error(`Timeout ao aguardar lock de seed (${LOCK_TIMEOUT}ms)`)
+      }
+      // Espera 100ms antes de verificar novamente
+      await new Promise((resolve) => setTimeout(resolve, 100))
+    }
+  }
+
+  const releaseLock = async (): Promise<void> => {
+    try {
+      if (fs.existsSync(LOCK_FILE)) {
+        fs.unlinkSync(LOCK_FILE)
+      }
+    } catch {
+      // Ignorar erros ao remover lock
+    }
+  }
+
+  await waitForLock()
+
+  // Criar arquivo de lock com PID e timestamp
+  fs.writeFileSync(LOCK_FILE, JSON.stringify({
+    pid: process.pid,
+    timestamp: Date.now(),
+    workerId: process.env.TEST_WORKER_ID || 'unknown',
+  }))
+
+  return releaseLock
+}
+
+/**
+ * Verifica se os dados do seed ainda são válidos no banco.
+ * Retorna true se o restaurant do seed ainda existir no Supabase.
+ */
+async function isSeedValid(): Promise<boolean> {
+  const fs = await import('fs')
+
+  // Verificar se arquivo de resultado existe
+  if (!fs.existsSync(SEED_RESULT_FILE)) {
+    return false
+  }
+
+  try {
+    const result: SeedResult = JSON.parse(fs.readFileSync(SEED_RESULT_FILE, 'utf-8'))
+
+    // Verificar se o restaurant existe no banco pelo ID fixo
+    const admin = createAdminClient()
+    const { data: restaurant } = await admin
+      .from('restaurants')
+      .select('id')
+      .eq('id', result.restaurant.id)
+      .maybeSingle()
+
+    if (!restaurant) {
+      return false
+    }
+
+    // Verificar se o nome do restaurant ainda corresponde
+    if (restaurant && result.restaurant.name === RESTAURANT_NAME) {
+      console.log('✅ Seed válido encontrado - usando dados existentes do cache')
+      console.log(`   Restaurant ID: ${result.restaurant.id}\n`)
+      return true
+    }
+
+    return false
+  } catch {
+    return false
+  }
+}
+
 // Prefixo para identificar dados de teste (idempotência)
 const SEED_PREFIX = 'e2e+'
 const TEST_PASSWORD = 'E2ETestPassword123!'
@@ -541,7 +628,6 @@ async function createUsers(admin: SupabaseClient): Promise<SeedResult['users']> 
         console.log(`   ${role}: usuário já existe, usando ID existente`)
         user.id = existingUser.id
       } else {
-        // Criar novo usuário
         const { data, error } = await admin.auth.admin.createUser({
           email: user.email,
           password: user.password,
@@ -708,13 +794,14 @@ async function createTables(
 
   const { data, error } = await admin
     .from('tables')
-    .insert(
+    .upsert(
       tablesData.map((t) => ({
         ...t,
         restaurant_id: restaurantId,
         qr_code: `E2E-TABLE-${t.number.toString().padStart(3, '0')}`,
         active: true,
-      }))
+      })),
+      { onConflict: 'qr_code' }
     )
     .select()
 
@@ -776,85 +863,115 @@ async function createUserProfiles(
 // ============================================
 
 export async function seed(): Promise<SeedResult> {
-  console.log('========================================')
-  console.log('🚀 SEED E2E - Iniciando...')
-  console.log('========================================\n')
+  // Adquirir lock para evitar race condition entre workers paralelos
+  const releaseLock = await acquireLock()
 
-  const admin = createAdminClient()
+  try {
+    console.log('========================================')
+    console.log('🚀 SEED E2E - Iniciando...')
+    console.log('========================================\n')
 
-  // Cleanup primeiro (idempotência)
-  await cleanupExistingTestData(admin)
+    const admin = createAdminClient()
 
-  // Criar dados
-  const users = await createUsers(admin)
-  const restaurant = await createRestaurant(admin)
-  await createUserProfiles(admin, users, restaurant.id)
-  const categories = await createCategories(admin, restaurant.id)
-  const products = await createProducts(admin, restaurant.id, categories)
-  const tables = await createTables(admin, restaurant.id)
+    // Verificar se seed já é válido (dados existem no banco)
+    if (await isSeedValid()) {
+      const fs = await import('fs')
+      const result: SeedResult = JSON.parse(fs.readFileSync(SEED_RESULT_FILE, 'utf-8'))
+      console.log('========================================')
+      console.log('✅ SEED E2E - Usando cache existente!')
+      console.log('========================================')
+      console.log(`\n📍 Restaurant ID: ${result.restaurant.id}`)
+      console.log(`📍 Restaurant Name: ${result.restaurant.name}`)
+      return result
+    }
 
-  // Requirement 2.1.x: Criar modifier groups e values
-  const modifierGroups = await createModifierGroups(admin, restaurant.id)
-  await createModifierValues(admin, modifierGroups)
+    // Cleanup primeiro (idempotência)
+    await cleanupExistingTestData(admin)
 
-  // Mapear IDs dos produtos para associações
-  const picanhaProduct = products.find((p) => p.name === 'Picanha 300g')
-  const cocaColaProduct = products.find((p) => p.name === 'Coca-Cola')
+    // Phase 1: Operações independentes em paralelo
+    const [users, restaurant] = await Promise.all([
+      createUsers(admin),
+      createRestaurant(admin),
+    ])
 
-  if (picanhaProduct) {
-    await associateModifierGroupsToProducts(admin, {
-      picanhaId: picanhaProduct.id,
-      tamanhoId: modifierGroups.tamanhoId,
-      extrasId: modifierGroups.extrasId,
-    })
+    // Phase 2: Operações que dependem apenas do restaurantId (em paralelo)
+    // createUserProfiles depende de users + restaurantId
+    // createCategories, createTables, createModifierGroups dependem apenas de restaurantId
+    const [categoriesResult, tablesResult, modifierGroupsResult] = await Promise.all([
+      createCategories(admin, restaurant.id),
+      createTables(admin, restaurant.id),
+      createModifierGroups(admin, restaurant.id),
+      createUserProfiles(admin, users, restaurant.id),
+    ])
+
+    const categories = categoriesResult
+    const tables = tablesResult
+    const modifierGroups = modifierGroupsResult
+
+    // Phase 3: Produtos dependem de categorias
+    const products = await createProducts(admin, restaurant.id, categories)
+
+    // Mapear IDs dos produtos para associações
+    const picanhaProduct = products.find((p) => p.name === 'Picanha 300g')
+    const cocaColaProduct = products.find((p) => p.name === 'Coca-Cola')
+
+    // Phase 4: Operações que dependem de products e modifierGroups (em paralelo)
+    const [,, comboId] = await Promise.all([
+      createModifierValues(admin, modifierGroups),
+      // associateModifierGroupsToProducts depende apenas de products + modifierGroups
+      picanhaProduct ? associateModifierGroupsToProducts(admin, {
+        picanhaId: picanhaProduct.id,
+        tamanhoId: modifierGroups.tamanhoId,
+        extrasId: modifierGroups.extrasId,
+      }) : Promise.resolve(),
+      // createCombos depende de products
+      picanhaProduct && cocaColaProduct ? createCombos(admin, restaurant.id, {
+        picanhaId: picanhaProduct.id,
+        cocaColaId: cocaColaProduct.id,
+      }) : Promise.resolve(undefined),
+    ])
+
+    const result: SeedResult = {
+      users,
+      restaurant,
+      categories,
+      products,
+      tables,
+      modifierGroups,
+      comboId,
+    }
+
+    //输出结果
+    console.log('========================================')
+    console.log('✅ SEED E2E - Concluído com sucesso!')
+    console.log('========================================')
+    console.log('\n📋 Credenciais de teste:')
+    console.log(`   Customer: ${users.customer.email} / ${TEST_PASSWORD}`)
+    console.log(`   Admin: ${users.admin.email} / ${TEST_PASSWORD}`)
+    console.log(`   Garçom: ${users.waiter.email} / ${TEST_PASSWORD}`)
+    console.log(`\n📍 Restaurant ID: ${restaurant.id}`)
+    console.log(`📍 Restaurant Name: ${restaurant.name}`)
+    if (picanhaProduct) {
+      console.log(`\n🏷️  Modifier Groups:`)
+      console.log(`   Tamanho (required): ${modifierGroups.tamanhoId}`)
+      console.log(`   Extras (optional): ${modifierGroups.extrasId}`)
+    }
+    if (comboId) {
+      console.log(`\n🎁 Combo Picanha: ${comboId}`)
+    }
+    console.log('\n💾 Dados salvos em: tests/e2e/scripts/.seed-result.json')
+
+    // Salvar resultado em arquivo para uso pelos testes
+    // Usa __dirname para garantir caminho sempre relativo ao diretório do script
+    const fs = await import('fs')
+    const resultPath = path.join(__dirname, '.seed-result.json')
+    fs.writeFileSync(resultPath, JSON.stringify(result, null, 2))
+
+    return result
+  } finally {
+    // Sempre liberar lock, mesmo em caso de erro
+    await releaseLock()
   }
-
-  // Requirement 2.2.x: Criar combos
-  let comboId: string | undefined
-  if (picanhaProduct && cocaColaProduct) {
-    comboId = await createCombos(admin, restaurant.id, {
-      picanhaId: picanhaProduct.id,
-      cocaColaId: cocaColaProduct.id,
-    })
-  }
-
-  const result: SeedResult = {
-    users,
-    restaurant,
-    categories,
-    products,
-    tables,
-    modifierGroups,
-    comboId,
-  }
-
-  //输出结果
-  console.log('========================================')
-  console.log('✅ SEED E2E - Concluído com sucesso!')
-  console.log('========================================')
-  console.log('\n📋 Credenciais de teste:')
-  console.log(`   Customer: ${users.customer.email} / ${TEST_PASSWORD}`)
-  console.log(`   Admin: ${users.admin.email} / ${TEST_PASSWORD}`)
-  console.log(`   Garçom: ${users.waiter.email} / ${TEST_PASSWORD}`)
-  console.log(`\n📍 Restaurant ID: ${restaurant.id}`)
-  console.log(`📍 Restaurant Name: ${restaurant.name}`)
-  if (picanhaProduct) {
-    console.log(`\n🏷️  Modifier Groups:`)
-    console.log(`   Tamanho (required): ${modifierGroups.tamanhoId}`)
-    console.log(`   Extras (optional): ${modifierGroups.extrasId}`)
-  }
-  if (comboId) {
-    console.log(`\n🎁 Combo Picanha: ${comboId}`)
-  }
-  console.log('\n💾 Dados salvos em: tests/e2e/scripts/.seed-result.json')
-
-  // Salvar resultado em arquivo para uso pelos testes
-  // Usa __dirname para garantir caminho sempre relativo ao diretório do script
-  const fs = await import('fs')
-  const resultPath = path.join(__dirname, '.seed-result.json')
-  fs.writeFileSync(resultPath, JSON.stringify(result, null, 2))
-
-  return result
 }
 
 // Executar apenas se rodado diretamente (não se importado como módulo)
