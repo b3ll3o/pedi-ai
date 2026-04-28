@@ -104,7 +104,7 @@ export default defineConfig({
     command: 'pnpm dev',
     cwd: path.resolve(__dirname, '..'),
     url: 'http://localhost:3000',
-    reuseExistingServer: !isCI,
+    reuseExistingServer: true,
     timeout: 120_000,
   },
   outputDir: 'test-results',
