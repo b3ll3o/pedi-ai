@@ -39,7 +39,7 @@ const shardMatch = process.env.SHARD?.match(/^(\d+)\/(\d+)$/)
 const shardCurrent = shardMatch ? Number(shardMatch[1]) : 1
 const shardTotal = shardMatch ? Number(shardMatch[2]) : isCI ? 4 : 1
 // Rollback: pula testes novos, roda apenas auth.spec
-const skipNewTests = process.env.E2E_SKIP_NEW_TESTS === 'true'
+const _skipNewTests = process.env.E2E_SKIP_NEW_TESTS === 'true'
 
 export default defineConfig({
   testDir: path.resolve(__dirname, 'tests'),
@@ -59,13 +59,17 @@ export default defineConfig({
     video: isCI ? 'retain-on-failure' : 'off',
     trace: isCI ? 'on-first-retry' : 'off',
     screenshot: isCI ? 'only-on-failure' : 'off',
-    actionTimeout: 10_000,
-    navigationTimeout: 30_000,
+    actionTimeout: 5_000,
+    navigationTimeout: 15_000,
   },
   projects: [
     // ─── Local fast feedback ───────────────────────────────────────────────
     {
       name: 'chromium-headless-shell',
+      use: { ...devices['Desktop Chrome'], headless: true, baseURL: BASE_URL },
+    },
+    {
+      name: 'chromium-headless',
       use: { ...devices['Desktop Chrome'], headless: true, baseURL: BASE_URL },
     },
 
