@@ -2,6 +2,69 @@
 
 ## ADDED Requirements
 
+### Requirement: Login Role Detection
+After a successful authentication in `/login`, the system MUST detect the user's role by querying the `users_profiles` table and MUST redirect the user to the appropriate area based on their role.
+
+#### Scenario: Owner Login Redirect
+- GIVEN a user with role `owner` successfully authenticates via `/login`
+- WHEN the authentication completes
+- THEN the system SHALL query `users_profiles` to obtain the user's role
+- AND the system SHALL redirect the user to `/admin/dashboard`
+
+#### Scenario: Manager Login Redirect
+- GIVEN a user with role `manager` successfully authenticates via `/login`
+- WHEN the authentication completes
+- THEN the system SHALL query `users_profiles` to obtain the user's role
+- AND the system SHALL redirect the user to `/admin/dashboard`
+
+#### Scenario: Staff Login Redirect
+- GIVEN a user with role `staff` successfully authenticates via `/login`
+- WHEN the authentication completes
+- THEN the system SHALL query `users_profiles` to obtain the user's role
+- AND the system SHALL redirect the user to `/admin/dashboard`
+
+#### Scenario: Cliente Login Redirect
+- GIVEN a user with role `cliente` successfully authenticates via `/login`
+- WHEN the authentication completes
+- THEN the system SHALL query `users_profiles` to obtain the user's role
+- AND the system SHALL redirect the user to `/menu`
+
+#### Scenario: User Without Profile Redirect
+- GIVEN a user authenticates via `/login` but has no entry in `users_profiles`
+- WHEN the authentication completes
+- THEN the system SHALL treat the user as a `cliente`
+- AND the system SHALL redirect the user to `/menu`
+
+### Requirement: Session-Based Role Detection
+When an authenticated user directly accesses `/login`, the system MUST detect their role from the existing session and MUST redirect to the appropriate area.
+
+#### Scenario: Authenticated Admin Accessing Login Page
+- GIVEN an authenticated user with role `owner`, `manager`, or `staff` directly accesses `/login`
+- WHEN the session is validated
+- THEN the system SHALL redirect the user to `/admin/dashboard`
+- AND the user SHALL NOT remain on the login page
+
+#### Scenario: Authenticated Cliente Accessing Login Page
+- GIVEN an authenticated user with role `cliente` directly accesses `/login`
+- WHEN the session is validated
+- THEN the system SHALL redirect the user to `/menu`
+- AND the user SHALL NOT remain on the login page
+
+### Requirement: Logout Redirect Consistency
+After logout from any area, the system MUST redirect the user to `/login`.
+
+#### Scenario: Admin Logout Redirect
+- GIVEN an admin user is logged in
+- WHEN the user clicks logout
+- THEN the system SHALL clear the session
+- AND the system SHALL redirect the user to `/login`
+
+#### Scenario: Customer Logout Redirect
+- GIVEN a customer user is logged in
+- WHEN the user clicks logout
+- THEN the system SHALL clear the session
+- AND the system SHALL redirect the user to `/login`
+
 ### Requirement: Admin Authentication
 The system SHALL authenticate admin users via Supabase Auth.
 
@@ -71,26 +134,82 @@ The system SHALL support password reset functionality.
 - AND the user SHALL be logged in with the new password
 - AND previous sessions SHALL be invalidated
 
-### Requirement: Customer Authentication (Optional)
-The system MAY allow customers to create accounts for order history.
+### Requirement: Customer Registration
+The system SHALL require customers to select their intent during registration.
 
-#### Scenario: Customer Account Creation
+#### Scenario: Customer Registers with Order Intent
 - GIVEN a customer chooses to create an account
 - WHEN the customer registers with email and password
+- AND selects "Quero fazer pedidos" as their intent
 - THEN the system SHALL create a customer account
+- AND the system SHALL assign the "cliente" role
 - AND the customer SHALL be able to view order history
+
+#### Scenario: Customer Registers with Restaurant Management Intent
+- GIVEN a user chooses to create an account
+- WHEN the user registers with email and password
+- AND selects "Quero gerenciar meu restaurante" as their intent
+- THEN the system SHALL create the user account
+- AND the system SHALL assign the "dono" role with no restaurant associated
+- AND the system SHALL redirect the user to create their first restaurant
 
 #### Scenario: Customer Login
 - GIVEN a customer has an account
 - WHEN the customer logs in
 - THEN the system SHALL authenticate the customer
-- AND the customer SHALL be able to view their order history
+- AND the customer SHALL be redirected to `/menu`
 
 #### Scenario: Guest Checkout
 - GIVEN a customer does not want to create an account
 - WHEN the customer proceeds to checkout as a guest
 - THEN the system SHALL allow order placement without account
 - AND the order SHALL be associated with a guest identifier (session or cookie)
+
+### Requirement: Registration Intent Selection
+During registration, the system MUST ask the user to select their intent for using the application.
+
+#### Scenario: Register as Restaurant Owner
+- GIVEN a user accesses `/register`
+- WHEN the user fills email and password
+- AND selects "Quero gerenciar meu restaurante" as their intent
+- THEN the system SHALL create the user account in Supabase Auth
+- AND the system SHALL create a `users_profiles` entry with `role: 'dono'`
+- AND the system SHALL create a `users_profiles` entry with `intent: 'gerenciar_restaurante'`
+- AND the system SHALL redirect the user to `/login?registered=true&intent=gerenciar_restaurante`
+
+#### Scenario: Register as Customer
+- GIVEN a user accesses `/register`
+- WHEN the user fills email and password
+- AND selects "Quero fazer pedidos" as their intent
+- THEN the system SHALL create the user account in Supabase Auth
+- AND the system SHALL create a `users_profiles` entry with `role: 'cliente'`
+- AND the system SHALL create a `users_profiles` entry with `intent: 'fazer_pedidos'`
+- AND the system SHALL redirect the user to `/login?registered=true&intent=fazer_pedidos`
+
+### Requirement: Post-Registration Redirect
+After successful registration, the system MUST redirect the user to the login page with query parameters indicating their intent.
+
+#### Scenario: Owner Intent Redirect After Login
+- GIVEN a user has just registered with intent "gerenciar_restaurante"
+- WHEN the user logs in for the first time
+- THEN the system SHALL detect the user's `intent` from `users_profiles`
+- AND the system SHALL redirect the user to `/admin/restaurants/new`
+
+#### Scenario: Customer Intent Redirect After Login
+- GIVEN a user has just registered with intent "fazer_pedidos"
+- WHEN the user logs in for the first time
+- THEN the system SHALL detect the user's `intent` from `users_profiles`
+- AND the system SHALL redirect the user to `/menu`
+
+### Requirement: Existing User Login Compatibility
+Existing users who registered before this feature MUST receive the default intent.
+
+#### Scenario: Existing User Login Without Intent
+- GIVEN an existing user who has no `intent` in their `users_profiles`
+- WHEN the user logs in
+- THEN the system SHALL treat the user based on their `role`
+- AND if `role` is `dono`, `gerente`, or `atendente` the system SHALL redirect to `/admin/dashboard`
+- AND if `role` is `cliente` the system SHALL redirect to `/menu`
 
 ### Requirement: Guest Session Management
 The system SHALL manage anonymous guest sessions to enable checkout without authentication while maintaining order tracking.
@@ -165,7 +284,11 @@ The system SHALL use descriptive subject lines for authentication emails.
 
 ## MODIFIED Requirements
 
-None.
+### Requirement: Login Post-Authentication Redirect (Modified)
+The login page at `/login` MUST redirect users based on their role after authentication, instead of always redirecting to `/menu`.
+
+**Previous behavior:** All users redirected to `/menu` unconditionally.
+**New behavior:** Users with role `owner`, `manager`, or `staff` redirect to `/admin/dashboard`; users with role `cliente` or no profile redirect to `/menu`.
 
 ---
 
@@ -183,7 +306,7 @@ The domain layer MUST contain authentication-related entities.
 #### Scenario: Usuario Entity Exists
 - GIVEN the `src/domain/autenticacao/entities/` directory
 - WHEN the codebase is inspected
-- THEN a `Usuario.ts` entity MUST exist with properties: `id`, `email`, `papel` (owner/manager/staff/cliente), `restauranteId`, `criadoEm`
+- THEN a `Usuario.ts` entity MUST exist with properties: `id`, `email`, `papel` (dono/gerente/atendente/cliente), `restauranteId`, `criadoEm`
 - AND the entity MUST NOT import from Next.js, React, or infrastructure layers
 
 #### Scenario: Sessao Entity Exists
@@ -198,7 +321,7 @@ The domain layer MUST contain value objects.
 #### Scenario: Papel Value Object Exists
 - GIVEN the `src/domain/autenticacao/value-objects/` directory
 - WHEN the codebase is inspected
-- THEN a `Papel.ts` value object MUST exist with values: `owner`, `manager`, `staff`, `cliente`
+- THEN a `Papel.ts` value object MUST exist with values: `dono`, `gerente`, `atendente`, `cliente`
 
 #### Scenario: Credenciais Value Object Exists
 - GIVEN the `src/domain/autenticacao/value-objects/` directory

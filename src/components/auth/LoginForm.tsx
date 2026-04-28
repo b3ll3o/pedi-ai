@@ -2,13 +2,14 @@
 
 import { useState, FormEvent } from 'react';
 import styles from './LoginForm.module.css';
-import { resetPassword } from '@/lib/supabase/auth';
+import { resetPassword, signUp } from '@/lib/supabase/auth';
 
 interface LoginFormProps {
   onSubmit?: (email: string, password: string) => Promise<void> | void;
+  registeredSuccess?: boolean;
 }
 
-export function LoginForm({ onSubmit }: LoginFormProps) {
+export function LoginForm({ onSubmit, registeredSuccess }: LoginFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -18,10 +19,27 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
   const validateEmail = (value: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(value);
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!email) return;
+    setIsResending(true);
+    try {
+      const { error: signUpError } = await signUp(email, password || 'temporary-password');
+      // Supabase reenvia email de confirmação se o usuário ainda não confirmou
+      if (signUpError && signUpError.message !== 'Email not confirmed') {
+        console.error('Erro ao reenviar:', signUpError);
+      }
+    } catch (err) {
+      console.error('Erro ao reenviar confirmação:', err);
+    } finally {
+      setIsResending(false);
+    }
   };
 
   const handleForgotPassword = async (e: FormEvent) => {
@@ -80,6 +98,37 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
 
   return (
     <form className={styles.form} onSubmit={handleSubmit} noValidate>
+      {registeredSuccess && (
+        <div className={styles.success} role="alert" data-testid="registration-success">
+          <div className={styles.successContent}>
+            <svg
+              className={styles.successIcon}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+            <div className={styles.successText}>
+              <strong>Conta criada com sucesso!</strong>
+              <p>Acesse seu email para confirmar seu cadastro antes de fazer login.</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            className={styles.resendButton}
+            onClick={handleResendConfirmation}
+            disabled={isResending}
+          >
+            {isResending ? 'Enviando...' : 'Reenviar email de confirmação'}
+          </button>
+        </div>
+      )}
       <div className={styles.field}>
         <label htmlFor="email" className={styles.label}>
           Email

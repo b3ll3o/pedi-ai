@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getSession } from '@/lib/supabase/auth';
 import { useAuth } from '@/hooks/useAuth';
 import { useRedirectByRole } from '@/hooks/useRedirectByRole';
@@ -10,9 +10,11 @@ import styles from './page.module.css';
 
 export default function CustomerLoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const { signIn, isAuthenticated, session } = useAuth();
   const { destination } = useRedirectByRole(session?.user?.id ?? null);
+  const registeredSuccess = searchParams.get('registered') === 'true';
 
   useEffect(() => {
     const checkSession = async () => {
@@ -29,7 +31,7 @@ export default function CustomerLoginPage() {
       }
     };
     checkSession();
-  }, [router]);
+  }, [router, destination]);
 
   // Redirecionar após autenticação bem-sucedida
   useEffect(() => {
@@ -84,7 +86,7 @@ export default function CustomerLoginPage() {
             <h2 className={styles.logoTitle}>PediAI</h2>
             <p className={styles.subtitle}>Cardápio Digital</p>
           </div>
-          <LoginForm onSubmit={handleLogin} />
+          <LoginForm onSubmit={handleLogin} registeredSuccess={registeredSuccess} />
           <div className={styles.footer}>
             <p>
               Não tem conta?{' '}

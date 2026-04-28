@@ -83,11 +83,12 @@ describe('RegisterForm', () => {
     });
 
     it('não exibe erro de email quando email é válido', async () => {
-      const { getByTestId, queryByText } = render(<RegisterForm />);
+      const { getByTestId, queryByText, getByText } = render(<RegisterForm />);
 
       fireEvent.change(getByTestId('email-input'), { target: { value: 'teste@email.com' } });
       fireEvent.change(getByTestId('password-input'), { target: { value: 'senha123' } });
       fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'senha123' } });
+      fireEvent.click(getByText('Quero gerenciar meu restaurante'));
       fireEvent.click(getByTestId('register-button'));
 
       await waitFor(() => {
@@ -123,11 +124,12 @@ describe('RegisterForm', () => {
     });
 
     it('não exibe erro de senha quando tem 6 ou mais caracteres', async () => {
-      const { getByTestId, queryByText } = render(<RegisterForm />);
+      const { getByTestId, queryByText, getByText } = render(<RegisterForm />);
 
       fireEvent.change(getByTestId('email-input'), { target: { value: 'teste@email.com' } });
       fireEvent.change(getByTestId('password-input'), { target: { value: 'senha123' } });
       fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'senha123' } });
+      fireEvent.click(getByText('Quero gerenciar meu restaurante'));
       fireEvent.click(getByTestId('register-button'));
 
       await waitFor(() => {
@@ -165,11 +167,12 @@ describe('RegisterForm', () => {
     });
 
     it('não exibe erro de confirmação quando senhas coincidem', async () => {
-      const { getByTestId, queryByText } = render(<RegisterForm />);
+      const { getByTestId, queryByText, getByText } = render(<RegisterForm />);
 
       fireEvent.change(getByTestId('email-input'), { target: { value: 'teste@email.com' } });
       fireEvent.change(getByTestId('password-input'), { target: { value: 'senha123' } });
       fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'senha123' } });
+      fireEvent.click(getByText('Quero gerenciar meu restaurante'));
       fireEvent.click(getByTestId('register-button'));
 
       await waitFor(() => {
@@ -182,25 +185,27 @@ describe('RegisterForm', () => {
   describe('5. Submit com sucesso (onSubmit fornecido)', () => {
     it('chama onSubmit com email e password corretos', async () => {
       const onSubmit = vi.fn().mockResolvedValue(undefined);
-      const { getByTestId } = render(<RegisterForm onSubmit={onSubmit} />);
+      const { getByTestId, getByText } = render(<RegisterForm onSubmit={onSubmit} />);
 
       fireEvent.change(getByTestId('email-input'), { target: { value: 'teste@email.com' } });
       fireEvent.change(getByTestId('password-input'), { target: { value: 'senha123' } });
       fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'senha123' } });
+      fireEvent.click(getByText('Quero gerenciar meu restaurante'));
       fireEvent.click(getByTestId('register-button'));
 
       await waitFor(() => {
-        expect(onSubmit).toHaveBeenCalledWith('teste@email.com', 'senha123');
+        expect(onSubmit).toHaveBeenCalledWith('teste@email.com', 'senha123', 'gerenciar_restaurante');
       });
     });
 
     it('chama onSubmit apenas uma vez', async () => {
       const onSubmit = vi.fn().mockResolvedValue(undefined);
-      const { getByTestId } = render(<RegisterForm onSubmit={onSubmit} />);
+      const { getByTestId, getByText } = render(<RegisterForm onSubmit={onSubmit} />);
 
       fireEvent.change(getByTestId('email-input'), { target: { value: 'teste@email.com' } });
       fireEvent.change(getByTestId('password-input'), { target: { value: 'senha123' } });
       fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'senha123' } });
+      fireEvent.click(getByText('Quero gerenciar meu restaurante'));
       fireEvent.click(getByTestId('register-button'));
 
       await waitFor(() => {
@@ -241,11 +246,12 @@ describe('RegisterForm', () => {
     it('exibe mensagem de erro retornada por onSubmit', async () => {
       const errorMessage = 'Email já está em uso';
       const onSubmit = vi.fn().mockRejectedValue(new Error(errorMessage));
-      const { getByTestId, queryByText } = render(<RegisterForm onSubmit={onSubmit} />);
+      const { getByTestId, queryByText, getByText } = render(<RegisterForm onSubmit={onSubmit} />);
 
       fireEvent.change(getByTestId('email-input'), { target: { value: 'teste@email.com' } });
       fireEvent.change(getByTestId('password-input'), { target: { value: 'senha123' } });
       fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'senha123' } });
+      fireEvent.click(getByText('Quero gerenciar meu restaurante'));
       fireEvent.click(getByTestId('register-button'));
 
       await waitFor(() => {
@@ -255,11 +261,12 @@ describe('RegisterForm', () => {
 
     it('exibe mensagem genérica quando erro não tem mensagem', async () => {
       const onSubmit = vi.fn().mockRejectedValue(new Error());
-      const { getByTestId, queryByText } = render(<RegisterForm onSubmit={onSubmit} />);
+      const { getByTestId, queryByText, getByText } = render(<RegisterForm onSubmit={onSubmit} />);
 
       fireEvent.change(getByTestId('email-input'), { target: { value: 'teste@email.com' } });
       fireEvent.change(getByTestId('password-input'), { target: { value: 'senha123' } });
       fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'senha123' } });
+      fireEvent.click(getByText('Quero gerenciar meu restaurante'));
       fireEvent.click(getByTestId('register-button'));
 
       await waitFor(() => {
@@ -269,11 +276,12 @@ describe('RegisterForm', () => {
 
     it('exibe mensagem string quando erro rejeita com string', async () => {
       const onSubmit = vi.fn().mockRejectedValue('Erro desconhecido');
-      const { getByTestId, queryByText } = render(<RegisterForm onSubmit={onSubmit} />);
+      const { getByTestId, queryByText, getByText } = render(<RegisterForm onSubmit={onSubmit} />);
 
       fireEvent.change(getByTestId('email-input'), { target: { value: 'teste@email.com' } });
       fireEvent.change(getByTestId('password-input'), { target: { value: 'senha123' } });
       fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'senha123' } });
+      fireEvent.click(getByText('Quero gerenciar meu restaurante'));
       fireEvent.click(getByTestId('register-button'));
 
       await waitFor(() => {
@@ -287,11 +295,12 @@ describe('RegisterForm', () => {
       const onSubmit = vi.fn().mockImplementation(() => {
         return new Promise((resolve) => setTimeout(resolve, 100));
       });
-      const { getByTestId } = render(<RegisterForm onSubmit={onSubmit} />);
+      const { getByTestId, getByText } = render(<RegisterForm onSubmit={onSubmit} />);
 
       fireEvent.change(getByTestId('email-input'), { target: { value: 'teste@email.com' } });
       fireEvent.change(getByTestId('password-input'), { target: { value: 'senha123' } });
       fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'senha123' } });
+      fireEvent.click(getByText('Quero gerenciar meu restaurante'));
 
       fireEvent.click(getByTestId('register-button'));
 
@@ -308,11 +317,12 @@ describe('RegisterForm', () => {
       const onSubmit = vi.fn().mockImplementation(() => {
         return new Promise((resolve) => setTimeout(resolve, 100));
       });
-      const { getByTestId } = render(<RegisterForm onSubmit={onSubmit} />);
+      const { getByTestId, getByText } = render(<RegisterForm onSubmit={onSubmit} />);
 
       fireEvent.change(getByTestId('email-input'), { target: { value: 'teste@email.com' } });
       fireEvent.change(getByTestId('password-input'), { target: { value: 'senha123' } });
       fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'senha123' } });
+      fireEvent.click(getByText('Quero gerenciar meu restaurante'));
 
       fireEvent.click(getByTestId('register-button'));
 
@@ -344,12 +354,13 @@ describe('RegisterForm', () => {
   describe('8. Campo nome é opcional', () => {
     it('não exibe erro quando nome está vazio', async () => {
       const onSubmit = vi.fn().mockResolvedValue(undefined);
-      const { getByTestId, queryByTestId } = render(<RegisterForm onSubmit={onSubmit} />);
+      const { getByTestId, queryByTestId, getByText } = render(<RegisterForm onSubmit={onSubmit} />);
 
       fireEvent.change(getByTestId('name-input'), { target: { value: '' } });
       fireEvent.change(getByTestId('email-input'), { target: { value: 'teste@email.com' } });
       fireEvent.change(getByTestId('password-input'), { target: { value: 'senha123' } });
       fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'senha123' } });
+      fireEvent.click(getByText('Quero gerenciar meu restaurante'));
       fireEvent.click(getByTestId('register-button'));
 
       await waitFor(() => {
@@ -359,31 +370,33 @@ describe('RegisterForm', () => {
 
     it('chama onSubmit mesmo com nome vazio', async () => {
       const onSubmit = vi.fn().mockResolvedValue(undefined);
-      const { getByTestId } = render(<RegisterForm onSubmit={onSubmit} />);
+      const { getByTestId, getByText } = render(<RegisterForm onSubmit={onSubmit} />);
 
       fireEvent.change(getByTestId('name-input'), { target: { value: '' } });
       fireEvent.change(getByTestId('email-input'), { target: { value: 'teste@email.com' } });
       fireEvent.change(getByTestId('password-input'), { target: { value: 'senha123' } });
       fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'senha123' } });
+      fireEvent.click(getByText('Quero gerenciar meu restaurante'));
       fireEvent.click(getByTestId('register-button'));
 
       await waitFor(() => {
-        expect(onSubmit).toHaveBeenCalledWith('teste@email.com', 'senha123');
+        expect(onSubmit).toHaveBeenCalledWith('teste@email.com', 'senha123', 'gerenciar_restaurante');
       });
     });
 
     it('aceita nome com caracteres especiais', async () => {
       const onSubmit = vi.fn().mockResolvedValue(undefined);
-      const { getByTestId } = render(<RegisterForm onSubmit={onSubmit} />);
+      const { getByTestId, getByText } = render(<RegisterForm onSubmit={onSubmit} />);
 
       fireEvent.change(getByTestId('name-input'), { target: { value: 'João José Silva' } });
       fireEvent.change(getByTestId('email-input'), { target: { value: 'teste@email.com' } });
       fireEvent.change(getByTestId('password-input'), { target: { value: 'senha123' } });
       fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'senha123' } });
+      fireEvent.click(getByText('Quero gerenciar meu restaurante'));
       fireEvent.click(getByTestId('register-button'));
 
       await waitFor(() => {
-        expect(onSubmit).toHaveBeenCalledWith('teste@email.com', 'senha123');
+        expect(onSubmit).toHaveBeenCalledWith('teste@email.com', 'senha123', 'gerenciar_restaurante');
       });
     });
   });

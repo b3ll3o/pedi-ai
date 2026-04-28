@@ -48,11 +48,12 @@ describe('RegisterForm — loading state (bug fix verification)', () => {
     mockSignUpFn.mockImplementation(() =>
       Promise.resolve({ error: { message: 'Email já cadastrado' } })
     );
-    const { getByTestId } = render(<RegisterForm />);
+    const { getByTestId, getByText } = render(<RegisterForm />);
 
     fireEvent.change(getByTestId('email-input'), { target: { value: 'existente@email.com' } });
     fireEvent.change(getByTestId('password-input'), { target: { value: 'senha123' } });
     fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'senha123' } });
+    fireEvent.click(getByText('Quero gerenciar meu restaurante'));
     fireEvent.click(getByTestId('register-button'));
 
     // Aguarda erro aparecer
@@ -70,11 +71,12 @@ describe('RegisterForm — loading state (bug fix verification)', () => {
 
   it('botão NÃO está desabilitado após erro genérico (catch)', async () => {
     const onSubmit = vi.fn().mockRejectedValue(new Error('Erro interno'));
-    const { getByTestId } = render(<RegisterForm onSubmit={onSubmit} />);
+    const { getByTestId, getByText } = render(<RegisterForm onSubmit={onSubmit} />);
 
     fireEvent.change(getByTestId('email-input'), { target: { value: 'teste@email.com' } });
     fireEvent.change(getByTestId('password-input'), { target: { value: 'senha123' } });
     fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'senha123' } });
+    fireEvent.click(getByText('Quero gerenciar meu restaurante'));
     fireEvent.click(getByTestId('register-button'));
 
     await waitFor(() => {
@@ -92,16 +94,17 @@ describe('RegisterForm — loading state (bug fix verification)', () => {
   it('botão NÃO está desabilitado após sucesso (finally executa mesmo com redirect)', async () => {
     // Este teste usa onSubmit ao invés de signUpAuth mockado para controlar melhor
     const onSubmit = vi.fn().mockResolvedValue(undefined);
-    const { getByTestId } = render(<RegisterForm onSubmit={onSubmit} />);
+    const { getByTestId, getByText } = render(<RegisterForm onSubmit={onSubmit} />);
 
     fireEvent.change(getByTestId('email-input'), { target: { value: 'novo@email.com' } });
     fireEvent.change(getByTestId('password-input'), { target: { value: 'senha123' } });
     fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'senha123' } });
+    fireEvent.click(getByText('Quero gerenciar meu restaurante'));
     fireEvent.click(getByTestId('register-button'));
 
     // Aguarda chamada de onSubmit
     await waitFor(() => {
-      expect(onSubmit).toHaveBeenCalledWith('novo@email.com', 'senha123');
+      expect(onSubmit).toHaveBeenCalledWith('novo@email.com', 'senha123', 'gerenciar_restaurante');
     });
 
     // Bug fix: botão deve ser reabilitado após sucesso (finally executa)
@@ -116,11 +119,12 @@ describe('RegisterForm — loading state (bug fix verification)', () => {
           setTimeout(() => resolve({ error: null }), 100)
         )
     );
-    const { getByTestId } = render(<RegisterForm />);
+    const { getByTestId, getByText } = render(<RegisterForm />);
 
     fireEvent.change(getByTestId('email-input'), { target: { value: 'teste@email.com' } });
     fireEvent.change(getByTestId('password-input'), { target: { value: 'senha123' } });
     fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'senha123' } });
+    fireEvent.click(getByText('Quero gerenciar meu restaurante'));
     fireEvent.click(getByTestId('register-button'));
 
     // Imediatamente após click, o botão deve estar desabilitado
@@ -135,11 +139,12 @@ describe('RegisterForm — loading state (bug fix verification)', () => {
     mockSignUpFn.mockImplementation(() =>
       Promise.resolve({ error: { message: 'Email já cadastrado' } })
     );
-    const { getByTestId } = render(<RegisterForm />);
+    const { getByTestId, getByText } = render(<RegisterForm />);
 
     fireEvent.change(getByTestId('email-input'), { target: { value: 'existente@email.com' } });
     fireEvent.change(getByTestId('password-input'), { target: { value: 'senha123' } });
     fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'senha123' } });
+    fireEvent.click(getByText('Quero gerenciar meu restaurante'));
     fireEvent.click(getByTestId('register-button'));
 
     await waitFor(() => {
@@ -159,11 +164,12 @@ describe('RegisterForm — loading state (bug fix verification)', () => {
       return Promise.resolve({ error: null });
     });
 
-    const { getByTestId } = render(<RegisterForm />);
+    const { getByTestId, getByText } = render(<RegisterForm />);
 
     fireEvent.change(getByTestId('email-input'), { target: { value: 'teste@email.com' } });
     fireEvent.change(getByTestId('password-input'), { target: { value: 'senha123' } });
     fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'senha123' } });
+    fireEvent.click(getByText('Quero gerenciar meu restaurante'));
 
     // Primeiro submit - falha
     fireEvent.click(getByTestId('register-button'));

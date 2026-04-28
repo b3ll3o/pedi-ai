@@ -30,9 +30,11 @@ export default function TableQRPage() {
   // mas o objeto mutation é recriado em cada render
   const hasValidatedRef = useRef(false);
 
+  // Erro derivado diretamente do código - sem setState em effect
+  const codeError = !code ? 'Código da mesa não fornecido' : null;
+
   useEffect(() => {
     if (!code) {
-      setError('Código da mesa não fornecido');
       return;
     }
 
@@ -72,7 +74,7 @@ export default function TableQRPage() {
       .finally(() => {
         setIsValidating(false);
       });
-  }, [code, validarQRCodeMutation.mutateAsync, setTable]);
+  }, [code, validarQRCodeMutation, setTable]);
 
   if (isValidating) {
     return (
@@ -88,7 +90,7 @@ export default function TableQRPage() {
     );
   }
 
-  if (error) {
+  if (codeError || error) {
     return (
       <div className={styles.container}>
         <header style={{ padding: '1rem', display: 'flex', justifyContent: 'center' }}>
@@ -96,7 +98,7 @@ export default function TableQRPage() {
         </header>
         <h1 data-testid="page-title">Mesa</h1>
         <div className={styles.content}>
-          <p data-testid="error-message" className={styles.error}>{error}</p>
+          <p data-testid="error-message" className={styles.error}>{codeError || error}</p>
           <p className={styles.instructions}>
             Escaneie o QR Code disponível em sua mesa para acessar o cardápio.
           </p>

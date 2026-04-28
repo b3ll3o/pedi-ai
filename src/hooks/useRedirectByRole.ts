@@ -20,15 +20,20 @@ export interface UseRedirectByRoleResult {
 const ADMIN_ROLES = ['dono', 'gerente', 'atendente'] as const;
 
 export function useRedirectByRole(userId: string | null): UseRedirectByRoleResult {
-  const [destination, setDestination] = useState<'/admin/dashboard' | '/admin/restaurants/new' | '/menu'>('/menu');
+  const [destination, setDestination] = useState<'/admin/dashboard' | '/admin/restaurants/new' | '/menu'>(() => {
+    // Estado inicial: sem usuário logado, vai para /menu
+    if (!userId) return '/menu';
+    return '/menu';
+  });
   const [role, setRole] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(() => {
+    // Sem usuário = não está carregando (já temos o destino final)
+    return !userId;
+  });
 
   useEffect(() => {
+    // Early return: sem usuário, o estado inicial já está correto
     if (!userId) {
-      setDestination('/menu');
-      setRole(null);
-      setIsLoading(false);
       return;
     }
 

@@ -1,75 +1,104 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin'
-import * as authModule from '@/lib/supabase/auth'
-import * as clientModule from '@/lib/supabase/client'
 
-vi.mock('@/lib/supabase/auth')
-vi.mock('@/lib/supabase/client')
+// Store mock functions in module scope so we can configure them in tests
+type MockInstance<T extends (...args: never[]) => unknown> = ReturnType<typeof vi.fn<T>>
+let mockCookiesGetAll: MockInstance<() => { name: string; value: string }[]> = vi.fn(() => [])
+let mockCookiesSet: MockInstance<(...args: unknown[]) => void> = vi.fn()
+let mockCookiesSetAll: MockInstance<(...args: unknown[]) => void> = vi.fn()
+let mockGetUser: MockInstance<() => Promise<{ data: { user: unknown }; error: unknown }>> = vi.fn(() =>
+  Promise.resolve({ data: { user: null }, error: null })
+)
+let mockAdminSingle: MockInstance<() => Promise<{ data: unknown; error: unknown }>> = vi.fn()
 
-const mockGetSession = vi.mocked(authModule.getSession)
-const mockCreateClient = vi.mocked(clientModule.createClient)
+// Mock modules before importing the function under test
+vi.mock('next/headers', () => ({
+  cookies: vi.fn(() => ({
+    getAll: (...args: unknown[]) => mockCookiesGetAll(...args),
+    set: (...args: unknown[]) => mockCookiesSet(...args),
+    setAll: (...args: unknown[]) => mockCookiesSetAll(...args),
+  })),
+}))
+
+vi.mock('@supabase/ssr', () => ({
+  createServerClient: vi.fn(() => ({
+    auth: {
+      getUser: (...args: unknown[]) => mockGetUser(...args),
+    },
+  })),
+}))
+
+vi.mock('@supabase/supabase-js', () => ({
+  createClient: vi.fn(() => ({
+    from: vi.fn().mockReturnThis(),
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    single: (...args: unknown[]) => mockAdminSingle(...args),
+  })),
+}))
 
 describe('admin auth', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+
+    // Reset mock implementations to defaults
+    mockCookiesGetAll = vi.fn(() => [])
+    mockCookiesSet = vi.fn()
+    mockCookiesSetAll = vi.fn()
+    mockGetUser = vi.fn(() => Promise.resolve({ data: { user: null }, error: null }))
+    mockAdminSingle = vi.fn()
   })
 
   describe('requireAuth', () => {
     it('deve retornar AuthUser quando sessão válida', async () => {
-      const mockSession = {
-        user: { id: 'user-123', email: 'owner@restaurante.com' },
-      }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      mockGetSession.mockResolvedValue(mockSession as any)
+      mockGetUser = vi.fn(() =>
+        Promise.resolve({
+          data: { user: { id: 'user-123', email: 'owner@restaurante.com' } },
+          error: null,
+        })
+      )
 
-      const mockSupabaseClient = {
-        from: vi.fn().mockReturnThis(),
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({
+      mockAdminSingle = vi.fn(() =>
+        Promise.resolve({
           data: {
             id: 'user-123',
             email: 'owner@restaurante.com',
-            role: 'owner',
+            role: 'dono',
             restaurant_id: 'rest-456',
           },
           error: null,
-        }),
-      }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      mockCreateClient.mockReturnValue(mockSupabaseClient as any)
+        })
+      )
 
       const user = await requireAuth()
 
       expect(user).toEqual({
         id: 'user-123',
         email: 'owner@restaurante.com',
-        role: 'owner',
+        role: 'dono',
         restaurant_id: 'rest-456',
       })
-      expect(mockGetSession).toHaveBeenCalledOnce()
     })
 
     it('deve lançar erro quando sem sessão', async () => {
-      mockGetSession.mockResolvedValue(null)
+      mockGetUser = vi.fn(() =>
+        Promise.resolve({ data: { user: null }, error: null })
+      )
 
       await expect(requireAuth()).rejects.toThrow('Não autenticado')
     })
 
     it('deve lançar erro quando usuário não encontrado no banco', async () => {
-      mockGetSession.mockResolvedValue({
-        user: { id: 'user-123', email: 'test@test.com' },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any)
+      mockGetUser = vi.fn(() =>
+        Promise.resolve({
+          data: { user: { id: 'user-123', email: 'test@test.com' } },
+          error: null,
+        })
+      )
 
-      const mockSupabaseClient = {
-        from: vi.fn().mockReturnThis(),
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: null, error: { message: 'Not found' } }),
-      }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      mockCreateClient.mockReturnValue(mockSupabaseClient as any)
+      mockAdminSingle = vi.fn(() =>
+        Promise.resolve({ data: null, error: { message: 'Not found' } })
+      )
 
       await expect(requireAuth()).rejects.toThrow('Usuário não encontrado')
     })
@@ -77,15 +106,15 @@ describe('admin auth', () => {
 
   describe('requireRole', () => {
     it('deve permitir usuário com role autorizada', () => {
-      const user = { id: '1', email: 'a@b.com', role: 'owner' as const, restaurant_id: 'r1' }
-      expect(() => requireRole(user, ['owner', 'manager'])).not.toThrow()
+      const user = { id: '1', email: 'a@b.com', role: 'dono' as const, restaurant_id: 'r1' }
+      expect(() => requireRole(user, ['dono', 'gerente'])).not.toThrow()
     })
 
     it('deve lançar erro 403 para role não autorizada', () => {
-      const user = { id: '1', email: 'a@b.com', role: 'staff' as const, restaurant_id: 'r1' }
-      expect(() => requireRole(user, ['owner', 'manager'])).toThrow()
+      const user = { id: '1', email: 'a@b.com', role: 'atendente' as const, restaurant_id: 'r1' }
+      expect(() => requireRole(user, ['dono', 'gerente'])).toThrow()
       try {
-        requireRole(user, ['owner', 'manager'])
+        requireRole(user, ['dono', 'gerente'])
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (e: any) {
         expect(e.status).toBe(403)
@@ -95,7 +124,7 @@ describe('admin auth', () => {
 
   describe('getRestaurantId', () => {
     it('deve retornar restaurant_id do usuário', () => {
-      const user = { id: '1', email: 'a@b.com', role: 'owner' as const, restaurant_id: 'rest-123' }
+      const user = { id: '1', email: 'a@b.com', role: 'dono' as const, restaurant_id: 'rest-123' }
       expect(getRestaurantId(user)).toBe('rest-123')
     })
   })
