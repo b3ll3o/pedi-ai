@@ -8,14 +8,10 @@ on:
   pull_request:
 
 jobs:
-  e2e-tests:
-    name: E2E Tests (Shard ${{ matrix.shard }})
+  setup:
+    name: Setup E2E
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2, 3, 4]
+    timeout-minutes: 20
 
     steps:
       - name: Checkout code
@@ -49,6 +45,72 @@ jobs:
         run: pnpm test:e2e:seed
         env:
           NODE_ENV: e2e
+
+      - name: Start dev server in background
+        run: pnpm dev &
+        env:
+          NODE_ENV: e2e
+
+      - name: Wait for dev server to be ready
+        run: |
+          for i in {1..30}; do
+            if curl -s http://localhost:3000 > /dev/null 2>&1; then
+              echo "Dev server is ready"
+              exit 0
+            fi
+            echo "Waiting for dev server... ($i/30)"
+            sleep 2
+          done
+          echo "Dev server failed to start"
+          exit 1
+
+      - name: Upload seed result
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-seed
+          path: tests/e2e/scripts/.seed-result.json
+          retention-days: 1
+
+  e2e-tests:
+    name: E2E Tests (Shard ${{ matrix.shard }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: setup
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download seed result
+        uses: actions/download-artifact@v4
+        with:
+          name: e2e-seed
+          path: tests/e2e/scripts/
+
+      - name: Create .env.e2e
+        run: |
+          cat > .env.e2e << EOF
+          NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          EOF
 
       - name: Start dev server in background
         run: pnpm dev &
