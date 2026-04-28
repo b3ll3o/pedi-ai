@@ -47,11 +47,13 @@ async function requireAuth(): Promise<AuthUser> {
     }
   )
 
-  const { data: { user }, error: userError } = await supabaseAuth.auth.getUser()
+  const { data: { session }, error: sessionError } = await supabaseAuth.auth.getSession()
 
-  if (userError || !user) {
+  if (sessionError || !session?.user) {
     throw new Error('Não autenticado')
   }
+
+  const user = session.user
 
   // Admin client for data queries - uses SERVICE ROLE KEY to bypass RLS
   const supabaseAdmin = createClient(

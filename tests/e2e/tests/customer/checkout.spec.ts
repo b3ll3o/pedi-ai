@@ -10,9 +10,10 @@ test.describe('Checkout', () => {
     menuPage = new MenuPage(authenticated)
     checkoutPage = new CheckoutPage(authenticated)
 
-    // Add item to cart and go to checkout
+    // Add item to cart (no required modifiers for drinks) and go to checkout
     await menuPage.goto()
-    await menuPage.addProductToCart('Picanha')
+    await menuPage.selectCategory('Bebidas')
+    await menuPage.addProductToCart('Coca-Cola')
     await checkoutPage.goto()
   })
 

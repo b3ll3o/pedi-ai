@@ -5,7 +5,7 @@
 
 import type { orders, order_items, order_status_history } from '@/lib/supabase/types'
 
-export type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled'
+export type OrderStatus = 'pending_payment' | 'paid' | 'preparing' | 'ready' | 'delivered' | 'cancelled'
 export type PaymentStatus = 'pending' | 'paid' | 'refunded' | 'failed'
 
 export interface OrderFilters {
@@ -130,8 +130,8 @@ export async function updateOrderStatus(
 
 // Valid transitions map
 export const VALID_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
-  pending: ['confirmed', 'cancelled'],
-  confirmed: ['preparing', 'cancelled'],
+  pending_payment: ['paid', 'cancelled'],
+  paid: ['preparing', 'cancelled'],
   preparing: ['ready', 'cancelled'],
   ready: ['delivered', 'cancelled'],
   delivered: [],

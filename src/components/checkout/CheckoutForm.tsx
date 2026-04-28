@@ -132,7 +132,7 @@ export function CheckoutForm({
             onChange={(e) => setCustomerName(e.target.value)}
             placeholder="Seu nome"
             disabled={isSubmitting}
-            data-testid="checkout-email"
+            data-testid="checkout-name"
           />
             {errors.name && <span className={styles.error} data-testid="field-error">{errors.name}</span>}
         </div>
@@ -146,7 +146,7 @@ export function CheckoutForm({
             onChange={handlePhoneChange}
             placeholder="(00) 00000-0000"
             disabled={isSubmitting}
-            data-testid="checkout-table-number"
+            data-testid="checkout-phone"
           />
           {errors.phone && <span className={styles.error} data-testid="field-error">{errors.phone}</span>}
         </div>

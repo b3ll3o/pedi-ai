@@ -75,10 +75,11 @@ export function useListarMesas(restauranteId: string) {
 export function useValidarQRCode() {
   return useMutation<MesaValidada, Error, ValidarQRCodeInput>({
     mutationFn: async (input) => {
-      // Instanciar serviço de validação QR code (infraestrutura)
+      // Instanciar repository e serviço de validação QR code (infraestrutura)
+      const mesaRepo = new MesaRepository(db);
       const qrCodeCryptoService = new QRCodeCryptoService();
       // Instanciar e executar use case com dependências
-      const validarQRCodeUseCase = new ValidarQRCodeUseCase(qrCodeCryptoService);
+      const validarQRCodeUseCase = new ValidarQRCodeUseCase(qrCodeCryptoService, mesaRepo);
       return validarQRCodeUseCase.execute(input);
     },
   });

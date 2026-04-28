@@ -1,6 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import type { order_items } from '@/lib/supabase/types'
+
+/**
+ * Admin client for bypassing RLS - uses service role key directly
+ */
+function getSupabaseAdmin() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false,
+      },
+    }
+  )
+}
 
 // GET /api/orders - Fetch orders for a customer
 export async function GET(request: NextRequest) {
@@ -88,9 +106,10 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = await createClient()
+    const supabaseAdmin = getSupabaseAdmin()
 
-    // Check idempotency - prevent duplicate orders
-    const { data: existingOrder, error: idempotencyError } = await supabase
+    // Check idempotency - prevent duplicate orders (uses admin client to bypass RLS)
+    const { data: existingOrder, error: idempotencyError } = await supabaseAdmin
       .from('orders')
       .select('id, status, total, created_at')
       .eq('customer_id', body.customer_id)

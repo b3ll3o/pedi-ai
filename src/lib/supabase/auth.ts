@@ -6,10 +6,17 @@ import { createClient } from './client'
  */
 async function signUp(email: string, password: string): Promise<AuthResponse> {
   const supabase = createClient()
+  // Nota: emailConfirm não existe nos tipos TypeScript do Supabase v2,
+  // mas a API aceita o parâmetro. O servidor confirma o email se
+  // "Confirm email" estiver desabilitado nas configurações do projeto.
   return supabase.auth.signUp({
     email,
     password,
-  })
+    options: {
+      emailConfirm: true,
+    },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } as any)
 }
 
 /**

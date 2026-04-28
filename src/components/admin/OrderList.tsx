@@ -12,8 +12,8 @@ interface OrderListProps {
 }
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
-  pending: 'Pendente',
-  confirmed: 'Confirmado',
+  pending_payment: 'Aguardando Pagamento',
+  paid: 'Pago',
   preparing: 'Preparando',
   ready: 'Pronto',
   delivered: 'Entregue',
@@ -21,8 +21,8 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
 }
 
 const STATUS_COLORS: Record<OrderStatus, string> = {
-  pending: '#f59e0b',
-  confirmed: '#3b82f6',
+  pending_payment: '#f59e0b',
+  paid: '#3b82f6',
   preparing: '#8b5cf6',
   ready: '#10b981',
   delivered: '#059669',
@@ -187,8 +187,8 @@ export function OrderList({
                       data-testid="order-status-select"
                     >
                       <option value="">Atualizar status...</option>
-                      {order.status === 'pending' && <option value="confirmed">Confirmar</option>}
-                      {order.status === 'confirmed' && <option value="preparing">Iniciar preparo</option>}
+                      {order.status === 'pending_payment' && <option value="paid">Confirmar Pagamento</option>}
+                      {order.status === 'paid' && <option value="preparing">Iniciar preparo</option>}
                       {order.status === 'preparing' && <option value="ready">Marcar como pronto</option>}
                       {order.status === 'ready' && <option value="delivered">Marcar como entregue</option>}
                       <option value="cancelled">Cancelar</option>

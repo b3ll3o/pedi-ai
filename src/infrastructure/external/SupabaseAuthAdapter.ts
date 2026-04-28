@@ -1,7 +1,25 @@
 import { signUp, signIn, resetPassword } from '@/lib/supabase/auth';
 import { createClient } from '@/lib/supabase/client';
+import { createClient as createSupabaseAdminClient } from '@supabase/supabase-js';
 import { IAuthAdapter } from '@/application/autenticacao/services/RegistrarUsuarioUseCase';
 import type { User as _User } from '@supabase/supabase-js';
+
+/**
+ * Admin client para operações privilegiadas (confirmar email, etc)
+ */
+function getSupabaseAdmin() {
+  return createSupabaseAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false,
+      },
+    }
+  );
+}
 
 /**
  * Traduz mensagens de erro do Supabase para pt-BR
@@ -36,6 +54,17 @@ export class SupabaseAuthAdapter implements IAuthAdapter {
     }
 
     return { id: data.user.id };
+  }
+
+  async confirmarEmail(userId: string): Promise<void> {
+    const supabaseAdmin = getSupabaseAdmin();
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+      email_confirm: true,
+    });
+
+    if (error) {
+      throw new Error(`Erro ao confirmar email: ${error.message}`);
+    }
   }
 
   async enviarRedefinicaoSenha(email: string): Promise<void> {

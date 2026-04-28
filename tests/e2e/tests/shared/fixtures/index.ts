@@ -242,22 +242,13 @@ export const test = base.extend<Fixtures, { reuse: boolean }>({
     await fixtureUse(page)
   },
 
-  authenticated: async ({ page, seedData, reuse }, fixtureUse) => {
+  authenticated: async ({ page, seedData }, fixtureUse) => {
     const email = seedData.customer.email
     const password = seedData.customer.password
 
-    if (reuse && isStorageValid(email)) {
-      await loadStorageState(page, email, '/menu')
-      // Verifica se sessão ainda é válida - se não, faz login novamente
-      const isLoggedIn = await page.evaluate(() => {
-        return !window.location.href.includes('/login')
-      })
-      if (!isLoggedIn) {
-        await performLogin(page, email, password, '/login', /\/menu/)
-      }
-    } else {
-      await performLogin(page, email, password, '/login', /\/menu/)
-    }
+    // Always perform fresh login to ensure valid session cookie
+    // Storage state reuse can cause stale Supabase session cookies leading to redirect loops
+    await performLogin(page, email, password, '/login', /\/menu/)
     await fixtureUse(page)
   },
 

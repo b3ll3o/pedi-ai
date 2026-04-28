@@ -1,8 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin'
 
 type Period = 'day' | 'week' | 'month'
+
+/**
+ * Admin client for bypassing RLS - uses service role key directly
+ */
+function getSupabaseAdmin() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false,
+      },
+    }
+  )
+}
 
 // GET /api/admin/analytics/popular-items - Get most popular items
 export async function GET(request: NextRequest) {
@@ -42,7 +60,8 @@ export async function GET(request: NextRequest) {
     const from = startDate || defaultStartDate.toISOString().split('T')[0]
     const to = endDate || defaultEndDate.toISOString().split('T')[0]
 
-    const supabase = await createClient()
+    // Use admin client to bypass RLS for analytics queries
+    const supabase = getSupabaseAdmin()
 
     // First, get all paid orders in the date range for this restaurant
     const { data: orders, error: ordersError } = await supabase

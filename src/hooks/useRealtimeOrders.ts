@@ -41,7 +41,7 @@ export function useRealtimeOrders({
     queryFn: async (): Promise<OrderWithItems[]> => {
       const params = new URLSearchParams()
       params.set('restaurant_id', restaurantId ?? '')
-      params.set('status', 'pending,confirmed,preparing,ready') // Active orders
+      params.set('status', 'pending_payment,paid,preparing,ready') // Active orders
 
       const response = await fetch(`/api/admin/orders?${params.toString()}`)
       if (!response.ok) {

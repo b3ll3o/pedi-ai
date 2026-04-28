@@ -16,9 +16,9 @@ export class CheckoutPage {
 
   constructor(page: Page) {
     this.page = page
-    this.nameInput = page.locator('[data-testid="customer-name-input"]')
+    this.nameInput = page.locator('[data-testid="checkout-name"]')
     this.emailInput = page.locator('[data-testid="checkout-email"]')
-    this.phoneInput = page.locator('[data-testid="customer-phone-input"]')
+    this.phoneInput = page.locator('[data-testid="checkout-phone"]')
     this.tableCodeInput = page.locator('[data-testid="checkout-table-number"]')
     this.pixButton = page.locator('[data-testid="payment-method-pix"]')
     this.cardButton = page.locator('[data-testid="payment-method-card"]')

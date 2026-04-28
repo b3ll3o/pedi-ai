@@ -6,8 +6,8 @@ type MockInstance<T extends (...args: never[]) => unknown> = ReturnType<typeof v
 let mockCookiesGetAll: MockInstance<() => { name: string; value: string }[]> = vi.fn(() => [])
 let mockCookiesSet: MockInstance<(...args: unknown[]) => void> = vi.fn()
 let mockCookiesSetAll: MockInstance<(...args: unknown[]) => void> = vi.fn()
-let mockGetUser: MockInstance<() => Promise<{ data: { user: unknown }; error: unknown }>> = vi.fn(() =>
-  Promise.resolve({ data: { user: null }, error: null })
+let mockGetSession: MockInstance<() => Promise<{ data: { session: { user: unknown } | null }; error: unknown }>> = vi.fn(() =>
+  Promise.resolve({ data: { session: null }, error: null })
 )
 let mockAdminSingle: MockInstance<() => Promise<{ data: unknown; error: unknown }>> = vi.fn()
 
@@ -23,7 +23,7 @@ vi.mock('next/headers', () => ({
 vi.mock('@supabase/ssr', () => ({
   createServerClient: vi.fn(() => ({
     auth: {
-      getUser: (...args: unknown[]) => mockGetUser(...args),
+      getSession: (...args: unknown[]) => mockGetSession(...args),
     },
   })),
 }))
@@ -45,15 +45,15 @@ describe('admin auth', () => {
     mockCookiesGetAll = vi.fn(() => [])
     mockCookiesSet = vi.fn()
     mockCookiesSetAll = vi.fn()
-    mockGetUser = vi.fn(() => Promise.resolve({ data: { user: null }, error: null }))
+    mockGetSession = vi.fn(() => Promise.resolve({ data: { session: null }, error: null }))
     mockAdminSingle = vi.fn()
   })
 
   describe('requireAuth', () => {
     it('deve retornar AuthUser quando sessão válida', async () => {
-      mockGetUser = vi.fn(() =>
+      mockGetSession = vi.fn(() =>
         Promise.resolve({
-          data: { user: { id: 'user-123', email: 'owner@restaurante.com' } },
+          data: { session: { user: { id: 'user-123', email: 'owner@restaurante.com' } } },
           error: null,
         })
       )
@@ -81,17 +81,17 @@ describe('admin auth', () => {
     })
 
     it('deve lançar erro quando sem sessão', async () => {
-      mockGetUser = vi.fn(() =>
-        Promise.resolve({ data: { user: null }, error: null })
+      mockGetSession = vi.fn(() =>
+        Promise.resolve({ data: { session: null }, error: null })
       )
 
       await expect(requireAuth()).rejects.toThrow('Não autenticado')
     })
 
     it('deve lançar erro quando usuário não encontrado no banco', async () => {
-      mockGetUser = vi.fn(() =>
+      mockGetSession = vi.fn(() =>
         Promise.resolve({
-          data: { user: { id: 'user-123', email: 'test@test.com' } },
+          data: { session: { user: { id: 'user-123', email: 'test@test.com' } } },
           error: null,
         })
       )

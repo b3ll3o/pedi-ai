@@ -10,15 +10,15 @@ interface OrderStatusProps {
 }
 
 const STATUS_CONFIG: Record<Enum_order_status, { label: string; icon: React.ElementType; color: string }> = {
-  pending: { label: "Pendente", icon: Clock, color: "text-yellow-500" },
-  confirmed: { label: "Confirmado", icon: CheckCircle, color: "text-blue-500" },
+  pending_payment: { label: "Aguardando Pagamento", icon: Clock, color: "text-yellow-500" },
+  paid: { label: "Pago", icon: CheckCircle, color: "text-blue-500" },
   preparing: { label: "Preparando", icon: ChefHat, color: "text-orange-500" },
   ready: { label: "Pronto", icon: Bell, color: "text-green-500" },
   delivered: { label: "Entregue", icon: Truck, color: "text-green-600" },
   cancelled: { label: "Cancelado", icon: XCircle, color: "text-red-500" },
 }
 
-const STATUS_ORDER: Enum_order_status[] = ["pending", "confirmed", "preparing", "ready", "delivered"]
+const STATUS_ORDER: Enum_order_status[] = ["pending_payment", "paid", "preparing", "ready", "delivered"]
 
 export function OrderStatus({ orderId }: OrderStatusProps) {
   const supabase = createClient()
@@ -27,15 +27,43 @@ export function OrderStatus({ orderId }: OrderStatusProps) {
   const [loading, setLoading] = useState(true)
 
   const loadHistory = useCallback(async () => {
-    const { data } = await supabase
-      .from("order_status_history")
-      .select("*")
-      .eq("order_id", orderId)
-      .order("created_at", { ascending: true })
-    if (data) setHistory(data as order_status_history[])
+    // Use API route to bypass RLS for history
+    try {
+      const response = await fetch(`/api/orders/${orderId}/status`)
+      if (response.ok) {
+        const data = await response.json()
+        // History not available via API yet, keep using supabase for now
+        const { data: historyData } = await supabase
+          .from("order_status_history")
+          .select("*")
+          .eq("order_id", orderId)
+          .order("created_at", { ascending: true })
+        if (historyData) setHistory(historyData as order_status_history[])
+      }
+    } catch {
+      // Fallback: try direct query
+      const { data: historyData } = await supabase
+        .from("order_status_history")
+        .select("*")
+        .eq("order_id", orderId)
+        .order("created_at", { ascending: true })
+      if (historyData) setHistory(historyData as order_status_history[])
+    }
   }, [supabase, orderId])
 
   const loadCurrentStatus = useCallback(async () => {
+    // Use API route to bypass RLS - API uses server-side client without RLS restrictions
+    try {
+      const response = await fetch(`/api/orders/${orderId}/status`)
+      if (response.ok) {
+        const data = await response.json()
+        setCurrentStatus(data.status as Enum_order_status)
+        return
+      }
+    } catch (error) {
+      console.error('Error fetching order status via API:', error)
+    }
+    // Fallback: try direct query (may fail due to RLS)
     const { data } = await supabase
       .from("orders")
       .select("status")

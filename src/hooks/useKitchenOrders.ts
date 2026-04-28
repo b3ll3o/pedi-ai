@@ -55,7 +55,7 @@ export function useKitchenOrders({
 
   // Filter by status
   const pendingOrders = useMemo(
-    () => sortedOrders.filter((o) => o.status === 'pending'),
+    () => sortedOrders.filter((o) => o.status === 'pending_payment'),
     [sortedOrders]
   )
 

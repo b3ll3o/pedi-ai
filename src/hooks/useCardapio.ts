@@ -2,6 +2,11 @@
  * useCardapio Hook
  * Hook para buscar cardápio usando use cases do application layer.
  * Mantém interface compatível com o existing MenuResponse.
+ *
+ * FLUXO:
+ * 1. Tenta sincronizar do IndexedDB (cache local)
+ * 2. Se cache vazio, busca via API /api/menu e persiste no IndexedDB
+ * 3. Lê do IndexedDB via ListarCardapioUseCase
  */
 
 import { useQuery } from '@tanstack/react-query';
@@ -12,6 +17,7 @@ import {
 import {
   CategoriaRepository,
   ItemCardapioRepository,
+  CardapioSyncService,
 } from '@/infrastructure/persistence/repositories';
 import { db } from '@/infrastructure/persistence/database';
 import type { categories, products } from '@/lib/supabase/types';
@@ -79,6 +85,7 @@ export type MenuResponse = {
 /**
  * Hook para buscar cardápio completo do restaurante.
  * Usa ListarCardapioUseCase do application layer.
+ * Sincroniza do IndexedDB, buscando via API se necessário.
  *
  * @param restauranteId - ID do restaurante
  * @returns UseQueryResult com cardápio transformada para formato compatível
@@ -87,11 +94,22 @@ export function useCardapio(restauranteId: string) {
   return useQuery<MenuResponse>({
     queryKey: ['cardapio', restauranteId],
     queryFn: async () => {
-      // Instanciar repositories com o banco de dados
+      // Instanciar repositories e sync service
       const categoriaRepo = new CategoriaRepository(db);
       const itemCardapioRepo = new ItemCardapioRepository(db);
+      const syncService = new CardapioSyncService(db);
 
-      // Instanciar e executar use case
+      // Verificar se há dados no cache local
+      const categoriasNoCache = await categoriaRepo.buscarAtivas(restauranteId);
+
+      // Se cache vazio, sincronizar via API
+      if (categoriasNoCache.length === 0) {
+        console.log(`[useCardapio] Cache vazio para restaurante ${restauranteId}, sincronizando via API...`);
+        const syncResult = await syncService.syncFromApiMenu(restauranteId);
+        console.log(`[useCardapio] Sync resultado:`, syncResult);
+      }
+
+      // Instanciar e executar use case (lê do IndexedDB)
       const listarCardapioUseCase = new ListarCardapioUseCase(categoriaRepo, itemCardapioRepo);
       const cardapio = await listarCardapioUseCase.execute({ restauranteId });
 

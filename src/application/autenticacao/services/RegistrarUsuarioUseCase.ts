@@ -23,13 +23,18 @@ export interface RegistrarUsuarioOutput {
 }
 
 /**
- * Interface do adapter de autenticação (implementação em Phase 4 - Infrastructure)
- */
+   * Interface do adapter de autenticação (implementação em Phase 4 - Infrastructure)
+   */
 export interface IAuthAdapter {
   /**
    * Criar usuário no sistema de autenticação (Supabase Auth)
    */
   criarUsuario(email: string, senha: string): Promise<{ id: string }>;
+
+  /**
+   * Confirmar email do usuário via Admin API (bypass de confirmação)
+   */
+  confirmarEmail(userId: string): Promise<void>;
 
   /**
    * Enviar email de redefinição de senha
@@ -73,6 +78,9 @@ export class RegistrarUsuarioUseCase implements UseCase<RegistrarUsuarioInput, R
 
     // Criar usuário no sistema de autenticação (Supabase)
     const { id: authId } = await this.authAdapter.criarUsuario(input.email, input.senha);
+
+    // Confirmar email via Admin API (bypass de confirmação de email)
+    await this.authAdapter.confirmarEmail(authId);
 
     // Criar aggregate de usuário
     const usuario = Usuario.criar({

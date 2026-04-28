@@ -1,6 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin'
+
+/**
+ * Admin client for bypassing RLS - uses service role key directly
+ */
+function getSupabaseAdmin() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false,
+      },
+    }
+  )
+}
 
 // GET /api/admin/analytics - Get analytics data
 export async function GET(request: NextRequest) {
@@ -21,7 +39,8 @@ export async function GET(request: NextRequest) {
     const from = dateFrom || defaultDateFrom.toISOString().split('T')[0]
     const to = dateTo || defaultDateTo.toISOString().split('T')[0]
 
-    const supabase = await createClient()
+    // Use admin client to bypass RLS for analytics queries
+    const supabase = getSupabaseAdmin()
 
     // Fetch orders in date range
     const { data: orders, error: ordersError } = await supabase

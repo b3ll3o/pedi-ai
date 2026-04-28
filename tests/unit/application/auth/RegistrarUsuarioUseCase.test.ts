@@ -20,9 +20,11 @@ const mockUsuarioRepo = {
 
 // Mock do AuthAdapter
 const mockCriarUsuario = vi.fn();
+const mockConfirmarEmail = vi.fn();
 
 const mockAuthAdapter: IAuthAdapter = {
   criarUsuario: mockCriarUsuario,
+  confirmarEmail: mockConfirmarEmail,
   enviarRedefinicaoSenha: vi.fn(),
   validarToken: vi.fn(),
   autenticar: vi.fn(),
@@ -47,6 +49,7 @@ describe('RegistrarUsuarioUseCase', () => {
       // Arrange
       mockUsuarioRepoFindByEmail.mockResolvedValue(null);
       mockCriarUsuario.mockResolvedValue({ id: 'auth-id-123' });
+      mockConfirmarEmail.mockResolvedValue(undefined);
       mockUsuarioRepoCreate.mockResolvedValue({
         id: 'auth-id-123',
         email: 'usuario@exemplo.com',
@@ -61,6 +64,7 @@ describe('RegistrarUsuarioUseCase', () => {
       expect(resultado.evento.tipo).toBe('UsuarioCriadoEvent');
       expect(mockUsuarioRepoFindByEmail).toHaveBeenCalledWith('usuario@exemplo.com');
       expect(mockCriarUsuario).toHaveBeenCalledWith('usuario@exemplo.com', 'senha123');
+      expect(mockConfirmarEmail).toHaveBeenCalledWith('auth-id-123');
       expect(mockUsuarioRepoCreate).toHaveBeenCalled();
     });
 
@@ -98,6 +102,7 @@ describe('RegistrarUsuarioUseCase', () => {
       // Arrange
       mockUsuarioRepoFindByEmail.mockResolvedValue(null);
       mockCriarUsuario.mockResolvedValue({ id: 'auth-id-456' });
+      mockConfirmarEmail.mockResolvedValue(undefined);
       mockUsuarioRepoCreate.mockImplementation(async (usuario: Usuario) => usuario);
 
       const inputComRestaurante: RegistrarUsuarioInput = {
@@ -111,6 +116,7 @@ describe('RegistrarUsuarioUseCase', () => {
 
       // Assert
       expect(resultado.usuario.restauranteId).toBe('restaurante-123');
+      expect(mockConfirmarEmail).toHaveBeenCalledWith('auth-id-456');
       expect(mockUsuarioRepoCreate).toHaveBeenCalled();
     });
 
@@ -118,6 +124,7 @@ describe('RegistrarUsuarioUseCase', () => {
       // Arrange
       mockUsuarioRepoFindByEmail.mockResolvedValue(null);
       mockCriarUsuario.mockResolvedValue({ id: 'auth-id-789' });
+      mockConfirmarEmail.mockResolvedValue(undefined);
       mockUsuarioRepoCreate.mockImplementation(async (usuario: Usuario) => usuario);
 
       const inputCliente: RegistrarUsuarioInput = {

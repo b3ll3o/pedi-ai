@@ -40,7 +40,7 @@ export function WaiterDashboard({ restaurantId }: WaiterDashboardProps) {
 
   const handleAcceptOrder = async (orderId: string) => {
     try {
-      await updateOrderStatus(orderId, 'confirmed')
+      await updateOrderStatus(orderId, 'paid')
       setNewOrder(null)
       refetch()
     } catch (err) {

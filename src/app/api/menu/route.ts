@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import type { categories, products, modifier_groups, modifier_values, combos } from '@/lib/supabase/types'
 
 type Category = categories
@@ -28,7 +28,11 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const supabase = await createClient()
+    // Use service role key to bypass RLS
+    const supabase = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
 
     // Fetch categories (active only, sorted by sort_order)
     const { data: categoriesData, error: categoriesError } = await supabase

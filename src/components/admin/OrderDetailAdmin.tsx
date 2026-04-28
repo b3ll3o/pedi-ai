@@ -12,8 +12,8 @@ interface OrderDetailAdminProps {
 }
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
-  pending: 'Pendente',
-  confirmed: 'Confirmado',
+  pending_payment: 'Aguardando Pagamento',
+  paid: 'Pago',
   preparing: 'Preparando',
   ready: 'Pronto',
   delivered: 'Entregue',
@@ -21,8 +21,8 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
 }
 
 const STATUS_COLORS: Record<OrderStatus, string> = {
-  pending: '#f59e0b',
-  confirmed: '#3b82f6',
+  pending_payment: '#f59e0b',
+  paid: '#3b82f6',
   preparing: '#8b5cf6',
   ready: '#10b981',
   delivered: '#059669',
@@ -58,9 +58,9 @@ export function OrderDetailAdmin({
 
   const getNextStatus = (): OrderStatus | null => {
     switch (order.status) {
-      case 'pending':
-        return 'confirmed'
-      case 'confirmed':
+      case 'pending_payment':
+        return 'paid'
+      case 'paid':
         return 'preparing'
       case 'preparing':
         return 'ready'

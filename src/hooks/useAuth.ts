@@ -46,7 +46,7 @@ export function useAuth(): UseAuthReturn {
   // Initialize auth state
   useEffect(() => {
     let isMounted = true;
-    const AUTH_INIT_TIMEOUT_MS = 5000;
+    const AUTH_INIT_TIMEOUT_MS = 10000;
 
     async function initAuth() {
       const TIMEOUT_ERROR = new Error('Auth init timeout');
@@ -57,12 +57,14 @@ export function useAuth(): UseAuthReturn {
         );
 
         const authPromise = Promise.all([getSession(), getUser()]);
-        const [sessionResult, userResult] = await Promise.race([authPromise, timeoutPromise])
-          .catch((err) => {
+        let [sessionResult, userResult] = await Promise.race([authPromise, timeoutPromise])
+          .catch(async (err) => {
             // Apenas timeout trata como sem sessão; erros reais são relançados
             if (err === TIMEOUT_ERROR) {
-              console.warn('Auth init timed out');
-              return [null, null];
+              console.warn('Auth init timed out, retrying session check...');
+              // Retry once more before giving up - session might just be slow
+              const retrySession = await getSession().catch(() => null);
+              return [retrySession, null];
             }
             throw err; // Re-lança erros reais para o catch externo
           });
@@ -215,7 +217,9 @@ export function useAuth(): UseAuthReturn {
     user,
     session,
     isLoading,
-    isAuthenticated: !!session && !!user,
+    // Session is the ground truth for authentication state
+    // User can be null even with valid session during initial load
+    isAuthenticated: !!session,
     error,
     signIn: handleSignIn,
     signUp: handleSignUp,
