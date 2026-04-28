@@ -113,48 +113,14 @@ export const metadata: Metadata = {
           {
             '@type': 'FAQPage',
             '@id': `${BASE_URL}/#faq`,
-            mainEntity: [
-              {
-                '@type': 'Question',
-                name: 'Preciso de internet para usar?',
-                acceptedAnswer: {
-                  '@type': 'Answer',
-                  text: 'Não! O Pedi-AI funciona completamente offline. O cliente pode navegar pelo cardápio e fazer o pedido mesmo sem internet. Quando a conexão voltar, tudo é sincronizado automaticamente.',
-                },
+            mainEntity: faqData.map((item) => ({
+              '@type': 'Question',
+              name: item.question,
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: item.answer,
               },
-              {
-                '@type': 'Question',
-                name: 'Como os pedidos chegam na cozinha?',
-                acceptedAnswer: {
-                  '@type': 'Answer',
-                  text: 'Os pedidos aparecem em tempo real no Kitchen Display, uma tela que pode ser usada em tablet ou TV. Você também recebe notificações sonoras para cada novo pedido.',
-                },
-              },
-              {
-                '@type': 'Question',
-                name: 'Posso personalizar o cardápio?',
-                acceptedAnswer: {
-                  '@type': 'Answer',
-                  text: 'Sim! Você pode adicionar fotos, descrições, valores, opções de personalização (como adicionais e removidos), e organizar por categorias. Tudo pelo painel admin.',
-                },
-              },
-              {
-                '@type': 'Question',
-                name: 'Funciona com meu sistema de delivery?',
-                acceptedAnswer: {
-                  '@type': 'Answer',
-                  text: 'No plano Profissional e Enterprise, oferecemos integração com as principais plataformas de delivery. Também temos API para automações personalizadas.',
-                },
-              },
-              {
-                '@type': 'Question',
-                name: 'Como funciona o suporte?',
-                acceptedAnswer: {
-                  '@type': 'Answer',
-                  text: 'Oferecemos suporte por chat em todos os planos. O plano Profissional tem suporte prioritário, e o Enterprise conta com gerente de conta dedicado.',
-                },
-              },
-            ],
+            })),
           },
         ],
       }),
