@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest'
 import {
   isOfflineEnabled,
   isPixEnabled,
-  isStripeEnabled,
   isWaiterModeEnabled,
   isQrCodeEnabled,
   isCombosEnabled,
@@ -39,18 +38,6 @@ describe('Feature Flags', () => {
     it('deve retornar false quando não configurado', () => {
       delete process.env.NEXT_PUBLIC_FEATURE_PIX_ENABLED
       expect(isPixEnabled()).toBe(false)
-    })
-  })
-
-  describe('isStripeEnabled', () => {
-    it('deve retornar true quando NEXT_PUBLIC_FEATURE_STRIPE_ENABLED é "true"', () => {
-      process.env.NEXT_PUBLIC_FEATURE_STRIPE_ENABLED = 'true'
-      expect(isStripeEnabled()).toBe(true)
-    })
-
-    it('deve retornar false quando não configurado', () => {
-      delete process.env.NEXT_PUBLIC_FEATURE_STRIPE_ENABLED
-      expect(isStripeEnabled()).toBe(false)
     })
   })
 

@@ -8,14 +8,14 @@ describe('Transacao', () => {
         id: 'trans-123',
         pagamentoId: 'pag-456',
         tipo: 'charge',
-        providerId: 'stripe-123',
+        providerId: 'pix-123',
         payload: { amount: 1000 },
       })
 
       expect(transacao.id).toBe('trans-123')
       expect(transacao.pagamentoId).toBe('pag-456')
       expect(transacao.tipo).toBe('charge')
-      expect(transacao.providerId).toBe('stripe-123')
+      expect(transacao.providerId).toBe('pix-123')
       expect(transacao.payload).toEqual({ amount: 1000 })
       expect(transacao.status).toBe('pending')
       expect(transacao.createdAt).toBeInstanceOf(Date)
@@ -29,7 +29,7 @@ describe('Transacao', () => {
         id: 'trans-123',
         pagamentoId: 'pag-456',
         tipo: 'refund',
-        providerId: 'stripe-789',
+        providerId: 'pix-789',
         status: 'success',
         payload: { refund_id: 're-123' },
         createdAt,
@@ -38,7 +38,7 @@ describe('Transacao', () => {
       expect(transacao.id).toBe('trans-123')
       expect(transacao.pagamentoId).toBe('pag-456')
       expect(transacao.tipo).toBe('refund')
-      expect(transacao.providerId).toBe('stripe-789')
+      expect(transacao.providerId).toBe('pix-789')
       expect(transacao.status).toBe('success')
       expect(transacao.payload).toEqual({ refund_id: 're-123' })
       expect(transacao.createdAt).toEqual(createdAt)

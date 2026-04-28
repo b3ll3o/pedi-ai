@@ -20,13 +20,6 @@ export const FeatureFlags = {
   PIX_ENABLED: true,
 
   /**
-   * Stripe Payment
-   * Default: true
-   * Enables Stripe card payments via Stripe.js.
-   */
-  STRIPE_ENABLED: true,
-
-  /**
    * Waiter Mode
    * Default: true
    * Enables waiter call button and service request flow.

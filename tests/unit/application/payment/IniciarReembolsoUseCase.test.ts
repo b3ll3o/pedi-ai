@@ -51,7 +51,7 @@ describe('IniciarReembolsoUseCase', () => {
     const pagamento = Pagamento.criar({
       id,
       pedidoId: `pedido-${id}`,
-      metodo: MetodoPagamento.CREDITO,
+      metodo: MetodoPagamento.PIX,
       valor: Dinheiro.criar(valorEmCentavos),
     });
     // Pagamento criado com status PENDING, mas o UseCase verifica via repository
@@ -308,7 +308,7 @@ describe('IniciarReembolsoUseCase', () => {
 
         mockPagamentoRepo.buscarPorId.mockResolvedValue(pagamento);
         mockTransacaoRepo.buscarPorPagamentoId.mockResolvedValue([transacaoCharge]);
-        mockRefundAdapter.iniciarReembolso.mockRejectedValue(new Error('Erro de comunicação com Stripe'));
+        mockRefundAdapter.iniciarReembolso.mockRejectedValue(new Error('Erro de comunicação com MercadoPago'));
 
         const useCase = new IniciarReembolsoUseCase(
           mockPagamentoRepo,
@@ -320,7 +320,7 @@ describe('IniciarReembolsoUseCase', () => {
         const input = { pagamentoId };
 
         // Act & Assert
-        await expect(useCase.execute(input)).rejects.toThrow('Erro de comunicação com Stripe');
+        await expect(useCase.execute(input)).rejects.toThrow('Erro de comunicação com MercadoPago');
       });
 
       it('deve retornar status failure quando provider retorna falha', async () => {

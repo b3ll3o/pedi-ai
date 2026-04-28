@@ -14,11 +14,6 @@ export function isPixEnabled(): boolean {
   return process.env.NEXT_PUBLIC_FEATURE_PIX_ENABLED === 'true';
 }
 
-/** Enable Stripe as a payment method */
-export function isStripeEnabled(): boolean {
-  return process.env.NEXT_PUBLIC_FEATURE_STRIPE_ENABLED === 'true';
-}
-
 /** Enable waiter call / service mode */
 export function isWaiterModeEnabled(): boolean {
   return process.env.NEXT_PUBLIC_FEATURE_WAITER_MODE === 'true';

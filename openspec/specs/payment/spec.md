@@ -7,7 +7,7 @@ The system SHALL allow customers to select between available payment methods.
 
 #### Scenario: Select Payment Method
 - GIVEN the customer is at checkout with a valid cart
-- WHEN the customer selects a payment method (Pix or Credit Card)
+- WHEN the customer selects a payment method (Pix)
 - THEN the system SHALL record the selected payment method on the order
 - AND the system SHALL proceed to payment processing for the selected method
 
@@ -17,13 +17,6 @@ The system SHALL allow customers to select between available payment methods.
 - THEN the system SHALL create a Pix charge via backend endpoint
 - AND the system SHALL display the Pix QR code to the customer
 - AND the system SHALL start polling for payment confirmation
-
-#### Scenario: Credit Card Payment Flow
-- GIVEN the customer has selected Credit Card as the payment method
-- WHEN the order is confirmed
-- THEN the system SHALL create a Stripe PaymentIntent via backend endpoint
-- AND the system SHALL display the Stripe card input form
-- AND the system SHALL process the card payment securely via Stripe
 
 ### Requirement: Payment Confirmation
 The system SHALL confirm payments and update order status accordingly.
@@ -40,20 +33,6 @@ The system SHALL confirm payments and update order status accordingly.
 - WHEN 60 seconds elapse without payment confirmation
 - THEN the system SHALL display a timeout message
 - AND the customer SHALL be given the option to retry payment or cancel order
-
-#### Scenario: Credit Card Payment Success
-- GIVEN a customer has entered card details and submitted
-- WHEN Stripe confirms the payment
-- THEN the system SHALL update the order status to `paid`
-- AND the system SHALL emit a realtime event for waiter notification
-- AND the customer SHALL be shown the order confirmation screen
-
-#### Scenario: Credit Card Payment Failure
-- GIVEN a customer has entered card details and submitted
-- WHEN Stripe declines the card
-- THEN the system SHALL update the order status to `payment_failed`
-- AND the customer SHALL be shown the error message from Stripe
-- AND the customer SHALL be given the option to retry with a different card
 
 ### Requirement: Payment Webhook Handling
 The system SHALL handle payment provider webhooks securely.
@@ -96,7 +75,14 @@ None.
 
 ## REMOVED Requirements
 
-None.
+### Requirement: Credit Card Payment Flow
+- REMOVED: Credit card payment via Stripe is no longer supported. Only Pix is available.
+
+### Requirement: Credit Card Payment Success
+- REMOVED: Replaced by Pix Payment Success scenario.
+
+### Requirement: Credit Card Payment Failure
+- REMOVED: Replaced by Pix Payment Timeout scenario.
 
 ---
 
@@ -108,14 +94,14 @@ The domain layer MUST contain payment-related entities.
 #### Scenario: Pagamento Entity Exists
 - GIVEN the `src/domain/pagamento/entities/` directory
 - WHEN the codebase is inspected
-- THEN a `Pagamento.ts` entity MUST exist with properties: `id`, `pedidoId`, `metodo` (pix/credito), `status`, `valor`, `transacaoId`, `webhookId`, `createdAt`, `confirmedAt`
+- THEN a `Pagamento.ts` entity MUST exist with properties: `id`, `pedidoId`, `metodo` (pix), `status`, `valor`, `transacaoId`, `webhookId`, `createdAt`, `confirmedAt`
 - AND the entity MUST contain domain logic for status transitions
 - AND the entity MUST NOT import from Next.js, React, or infrastructure layers
 
 #### Scenario: Transacao Entity Exists
 - GIVEN the `src/domain/pagamento/entities/` directory
 - WHEN the codebase is inspected
-- THEN a `Transacao.ts` entity MUST exist with properties: `id`, `pagamentoId`, `tipo` (charge/intent), `providerId`, `status`, `payload`, `createdAt`
+- THEN a `Transacao.ts` entity MUST exist with properties: `id`, `pagamentoId`, `tipo` (charge), `providerId`, `status`, `payload`, `createdAt`
 
 ### Requirement: Pagamento Domain Layer — Value Objects
 The domain layer MUST contain value objects for payment concepts.
@@ -123,7 +109,7 @@ The domain layer MUST contain value objects for payment concepts.
 #### Scenario: MetodoPagamento Value Object Exists
 - GIVEN the `src/domain/pagamento/value-objects/` directory
 - WHEN the codebase is inspected
-- THEN a `MetodoPagamento.ts` value object MUST exist with values: `pix`, `credito`
+- THEN a `MetodoPagamento.ts` value object MUST exist with value: `pix` only
 
 #### Scenario: StatusPagamento Value Object Exists
 - GIVEN the `src/domain/pagamento/value-objects/` directory
@@ -207,12 +193,10 @@ The infrastructure layer MUST contain external API adapters.
 - AND it MUST implement Pix charge creation and status polling
 - AND it MUST expose a clean interface for use cases
 
-#### Scenario: StripeAdapter Exists
+#### Scenario: StripeAdapter Does NOT Exist
 - GIVEN the `src/infrastructure/external/` directory
 - WHEN the codebase is inspected
-- THEN a `StripeAdapter.ts` class MUST exist
-- AND it MUST implement Stripe PaymentIntent creation
-- AND it MUST handle card payment processing
+- THEN `StripeAdapter.ts` MUST NOT exist
 
 ### Requirement: Pagamento Presentation Layer — Boundaries
 The presentation layer MUST only contain UI rendering and input collection.

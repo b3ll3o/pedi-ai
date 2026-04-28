@@ -1,11 +1,9 @@
 import { ValueObjectClass } from '@/domain/shared';
 
-export type MetodoPagamentoValue = 'pix' | 'credito' | 'debito';
+export type MetodoPagamentoValue = 'pix';
 
 export class MetodoPagamento extends ValueObjectClass<MetodoPagamentoValue> {
   static readonly PIX = new MetodoPagamento('pix');
-  static readonly CREDITO = new MetodoPagamento('credito');
-  static readonly DEBITO = new MetodoPagamento('debito');
 
   private constructor(value: MetodoPagamentoValue) {
     super(value);
@@ -31,6 +29,4 @@ export class MetodoPagamento extends ValueObjectClass<MetodoPagamentoValue> {
 
 const ALL_METODOS: MetodoPagamento[] = [
   MetodoPagamento.PIX,
-  MetodoPagamento.CREDITO,
-  MetodoPagamento.DEBITO,
 ];

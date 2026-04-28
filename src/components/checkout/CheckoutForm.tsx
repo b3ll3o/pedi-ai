@@ -15,7 +15,7 @@ export interface CheckoutFormProps {
 export interface CheckoutData {
   customerName: string;
   customerPhone: string;
-  paymentMethod: 'pix' | 'credit' | 'debit';
+  paymentMethod: 'pix';
 }
 
 const formatPrice = (value: number): string => {
@@ -34,7 +34,7 @@ export function CheckoutForm({
 }: CheckoutFormProps) {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'pix' | 'credit' | 'debit'>('pix');
+  const [paymentMethod] = useState<'pix'>('pix');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ name?: string; phone?: string; offline?: string }>({});
 
@@ -155,16 +155,7 @@ export function CheckoutForm({
       <div className={styles.section}>
         <h2 className={styles.sectionTitle}>Forma de Pagamento</h2>
         <div className={styles.paymentMethods} data-testid="payment-method-select">
-          <label className={`${styles.paymentOption} ${paymentMethod === 'pix' ? styles.paymentOptionSelected : ''}`}>
-            <input
-              type="radio"
-              name="paymentMethod"
-              value="pix"
-              checked={paymentMethod === 'pix'}
-              onChange={() => setPaymentMethod('pix')}
-              disabled={isSubmitting}
-              className={styles.radioInput}
-            />
+          <label className={`${styles.paymentOption} ${styles.paymentOptionSelected}`}>
             <div className={styles.paymentIcon}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -173,49 +164,10 @@ export function CheckoutForm({
             </div>
             <span className={styles.paymentName}>PIX</span>
           </label>
-          <label className={`${styles.paymentOption} ${paymentMethod === 'credit' ? styles.paymentOptionSelected : ''}`} data-testid="card-form">
-            <input
-              type="radio"
-              name="paymentMethod"
-              value="credit"
-              checked={paymentMethod === 'credit'}
-              onChange={() => setPaymentMethod('credit')}
-              disabled={isSubmitting}
-              className={styles.radioInput}
-            />
-            <div className={styles.paymentIcon}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="2" y="5" width="20" height="14" rx="2" />
-                <line x1="2" y1="10" x2="22" y2="10" />
-              </svg>
-            </div>
-            <span className={styles.paymentName}>Crédito</span>
-          </label>
-          <label className={`${styles.paymentOption} ${paymentMethod === 'debit' ? styles.paymentOptionSelected : ''}`}>
-            <input
-              type="radio"
-              name="paymentMethod"
-              value="debit"
-              checked={paymentMethod === 'debit'}
-              onChange={() => setPaymentMethod('debit')}
-              disabled={isSubmitting}
-              className={styles.radioInput}
-            />
-            <div className={styles.paymentIcon}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="2" y="5" width="20" height="14" rx="2" />
-                <line x1="2" y1="10" x2="22" y2="10" />
-                <line x1="6" y1="14" x2="10" y2="14" />
-              </svg>
-            </div>
-            <span className={styles.paymentName}>Débito</span>
-          </label>
         </div>
-        {paymentMethod === 'pix' && (
-          <div className={styles.pixInfo} data-testid="pix-qr-code">
-            <p>Use o QR Code abaixo para pagar com PIX</p>
-          </div>
-        )}
+        <div className={styles.pixInfo} data-testid="pix-qr-code">
+          <p>Use o QR Code abaixo para pagar com PIX</p>
+        </div>
         <div className={styles.paymentTimeoutMessage} data-testid="payment-timeout-message" />
       </div>
 

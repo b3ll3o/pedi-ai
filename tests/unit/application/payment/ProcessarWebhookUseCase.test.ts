@@ -9,12 +9,10 @@ import { Dinheiro } from '@/domain/pedido/value-objects/Dinheiro';
 import { MetodoPagamento } from '@/domain/pagamento/value-objects/MetodoPagamento';
 import { StatusPagamento } from '@/domain/pagamento/value-objects/StatusPagamento';
 
-// Mock da interface IWebhookSignatureValidator
 const mockSignatureValidator = {
   validar: vi.fn(),
 };
 
-// Mock do repositório de pagamentos
 const mockPagamentoRepo = {
   salvar: vi.fn(),
   buscarPorId: vi.fn(),
@@ -25,7 +23,6 @@ const mockPagamentoRepo = {
   excluir: vi.fn(),
 };
 
-// Mock do repositório de transações
 const mockTransacaoRepo = {
   salvar: vi.fn(),
   buscarPorId: vi.fn(),
@@ -35,7 +32,6 @@ const mockTransacaoRepo = {
   excluir: vi.fn(),
 };
 
-// Mock do EventDispatcher
 const mockEventDispatcher = {
   dispatch: vi.fn(),
   register: vi.fn(),
@@ -50,7 +46,6 @@ describe('ProcessarWebhookUseCase', () => {
   describe('execute', () => {
     describe('validação de assinatura', () => {
       it('deve rejeitar webhook com assinatura inválida', async () => {
-        // Arrange
         mockSignatureValidator.validar.mockReturnValue(false);
 
         const useCase = new ProcessarWebhookUseCase(
@@ -61,26 +56,23 @@ describe('ProcessarWebhookUseCase', () => {
         );
 
         const input = {
-          provider: 'stripe' as const,
-          payload: { id: 'evt_123', tipo: 'payment_intent.succeeded' },
+          provider: 'pix' as const,
+          payload: { id: 'evt_123', evento: 'PAGAMENTO' },
           signature: 'invalid_signature',
         };
 
-        // Act
         const result = await useCase.execute(input);
 
-        // Assert
         expect(result.sucesso).toBe(false);
         expect(result.mensagem).toBe('Assinatura de webhook inválida');
         expect(mockSignatureValidator.validar).toHaveBeenCalledWith(
-          'stripe',
+          'pix',
           JSON.stringify(input.payload),
           'invalid_signature'
         );
       });
 
       it('deve aceitar webhook com assinatura válida', async () => {
-        // Arrange
         mockSignatureValidator.validar.mockReturnValue(true);
         mockTransacaoRepo.buscarPorProviderId.mockResolvedValue(null);
 
@@ -92,22 +84,19 @@ describe('ProcessarWebhookUseCase', () => {
         );
 
         const input = {
-          provider: 'stripe' as const,
-          payload: { id: 'evt_456', tipo: 'outro_evento' },
+          provider: 'pix' as const,
+          payload: { id: 'evt_456', evento: 'OUTRO_EVENTO' },
           signature: 'valid_signature',
         };
 
-        // Act
         const result = await useCase.execute(input);
 
-        // Assert
         expect(result.sucesso).toBe(true);
       });
     });
 
     describe('idempotência', () => {
       it('deve ignorar webhooks duplicados (já processados)', async () => {
-        // Arrange
         mockSignatureValidator.validar.mockReturnValue(true);
         mockTransacaoRepo.buscarPorProviderId.mockResolvedValue({ id: 'transacao_existente' });
 
@@ -124,10 +113,8 @@ describe('ProcessarWebhookUseCase', () => {
           signature: 'valid_signature',
         };
 
-        // Act
         const result = await useCase.execute(input);
 
-        // Assert
         expect(result.sucesso).toBe(true);
         expect(result.mensagem).toBe('Evento já processado anteriormente');
         expect(result.eventoId).toBe('evt_duplicate');
@@ -137,7 +124,6 @@ describe('ProcessarWebhookUseCase', () => {
 
     describe('provider não suportado', () => {
       it('deve retornar erro para provider desconhecido', async () => {
-        // Arrange
         mockSignatureValidator.validar.mockReturnValue(true);
 
         const useCase = new ProcessarWebhookUseCase(
@@ -148,179 +134,21 @@ describe('ProcessarWebhookUseCase', () => {
         );
 
         const input = {
-          provider: 'mercadopago' as unknown as 'pix' | 'stripe',
+          provider: 'mercadopago' as unknown as 'pix',
           payload: { id: 'evt_123' },
           signature: 'valid_signature',
         };
 
-        // Act
         const result = await useCase.execute(input);
 
-        // Assert
         expect(result.sucesso).toBe(false);
         expect(result.mensagem).toContain('não suportado');
       });
     });
   });
 
-  describe('webhook Stripe', () => {
-    describe('payment_intent.succeeded', () => {
-      it('deve confirmar pagamento ao receber evento de sucesso do Stripe', async () => {
-        // Arrange
-        mockSignatureValidator.validar.mockReturnValue(true);
-        mockTransacaoRepo.buscarPorProviderId.mockResolvedValue(null);
-
-        const pagamentoProps = {
-          id: 'pagamento-123',
-          pedidoId: 'pedido-456',
-          metodo: MetodoPagamento.CREDITO,
-          status: StatusPagamento.PENDING,
-          valor: Dinheiro.criar(5000),
-          createdAt: new Date(),
-        };
-        const pagamento = Pagamento.criar(pagamentoProps);
-        mockPagamentoRepo.buscarPorTransacaoId.mockResolvedValue(pagamento);
-
-        const transacaoCharge = Transacao.criar({
-          id: 'transacao-789',
-          pagamentoId: 'pagamento-123',
-          tipo: 'charge',
-          providerId: 'pi_test_123',
-          payload: {},
-        });
-        mockTransacaoRepo.buscarPorPagamentoId.mockResolvedValue([transacaoCharge]);
-        mockPagamentoRepo.salvar.mockImplementation(async (aggregate) => {
-          return aggregate.pagamento;
-        });
-
-        const useCase = new ProcessarWebhookUseCase(
-          mockPagamentoRepo as unknown as IPagamentoRepository,
-          mockTransacaoRepo as unknown as ITransacaoRepository,
-          mockEventDispatcher as unknown as EventDispatcher,
-          mockSignatureValidator as unknown as IWebhookSignatureValidator
-        );
-
-        const input = {
-          provider: 'stripe' as const,
-          payload: {
-            id: 'evt_stripe_success',
-            tipo: 'payment_intent.succeeded',
-            dados: {
-              id: 'pi_test_123',
-            },
-          },
-          signature: 'valid_signature',
-        };
-
-        // Act
-        const result = await useCase.execute(input);
-
-        // Assert
-        expect(result.sucesso).toBe(true);
-        expect(result.mensagem).toBe('PaymentIntent confirmado com sucesso');
-        expect(result.eventoId).toBe('evt_stripe_success');
-        expect(mockPagamentoRepo.salvar).toHaveBeenCalled();
-        expect(mockEventDispatcher.dispatch).toHaveBeenCalled();
-      });
-
-      it('deve falhar quando PaymentIntent não é encontrado', async () => {
-        // Arrange
-        mockSignatureValidator.validar.mockReturnValue(true);
-        mockTransacaoRepo.buscarPorProviderId.mockResolvedValue(null);
-        mockPagamentoRepo.buscarPorTransacaoId.mockResolvedValue(null);
-
-        const useCase = new ProcessarWebhookUseCase(
-          mockPagamentoRepo as unknown as IPagamentoRepository,
-          mockTransacaoRepo as unknown as ITransacaoRepository,
-          mockEventDispatcher as unknown as EventDispatcher,
-          mockSignatureValidator as unknown as IWebhookSignatureValidator
-        );
-
-        const input = {
-          provider: 'stripe' as const,
-          payload: {
-            id: 'evt_stripe_notfound',
-            tipo: 'payment_intent.succeeded',
-            dados: {
-              id: 'pi_unknown',
-            },
-          },
-          signature: 'valid_signature',
-        };
-
-        // Act
-        const result = await useCase.execute(input);
-
-        // Assert
-        expect(result.sucesso).toBe(false);
-        expect(result.mensagem).toContain('não encontrado');
-      });
-    });
-
-    describe('payment_intent.payment_failed', () => {
-      it('deve registrar falha ao receber evento de falha do Stripe', async () => {
-        // Arrange
-        mockSignatureValidator.validar.mockReturnValue(true);
-        mockTransacaoRepo.buscarPorProviderId.mockResolvedValue(null);
-
-        const pagamentoProps = {
-          id: 'pagamento-fail-123',
-          pedidoId: 'pedido-fail-456',
-          metodo: MetodoPagamento.CREDITO,
-          status: StatusPagamento.PENDING,
-          valor: Dinheiro.criar(5000),
-          createdAt: new Date(),
-        };
-        const pagamento = Pagamento.criar(pagamentoProps);
-        mockPagamentoRepo.buscarPorTransacaoId.mockResolvedValue(pagamento);
-
-        const transacaoCharge = Transacao.criar({
-          id: 'transacao-fail-789',
-          pagamentoId: 'pagamento-fail-123',
-          tipo: 'charge',
-          providerId: 'pi_test_fail',
-          payload: {},
-        });
-        mockTransacaoRepo.buscarPorPagamentoId.mockResolvedValue([transacaoCharge]);
-        mockPagamentoRepo.salvar.mockImplementation(async (aggregate) => {
-          return aggregate.pagamento;
-        });
-
-        const useCase = new ProcessarWebhookUseCase(
-          mockPagamentoRepo as unknown as IPagamentoRepository,
-          mockTransacaoRepo as unknown as ITransacaoRepository,
-          mockEventDispatcher as unknown as EventDispatcher,
-          mockSignatureValidator as unknown as IWebhookSignatureValidator
-        );
-
-        const input = {
-          provider: 'stripe' as const,
-          payload: {
-            id: 'evt_stripe_failed',
-            tipo: 'payment_intent.payment_failed',
-            dados: {
-              id: 'pi_test_fail',
-            },
-          },
-          signature: 'valid_signature',
-        };
-
-        // Act
-        const result = await useCase.execute(input);
-
-        // Assert
-        expect(result.sucesso).toBe(true);
-        expect(result.mensagem).toBe('Pagamento falhou registrado');
-        expect(result.eventoId).toBe('evt_stripe_failed');
-        expect(mockPagamentoRepo.salvar).toHaveBeenCalled();
-        expect(mockEventDispatcher.dispatch).toHaveBeenCalled();
-      });
-    });
-  });
-
   describe('webhook Pix', () => {
     it('deve confirmar pagamento Pix ao receber evento PAGAMENTO', async () => {
-      // Arrange
       mockSignatureValidator.validar.mockReturnValue(true);
       mockTransacaoRepo.buscarPorProviderId.mockResolvedValue(null);
 
@@ -366,10 +194,8 @@ describe('ProcessarWebhookUseCase', () => {
         signature: 'valid_signature',
       };
 
-      // Act
       const result = await useCase.execute(input);
 
-      // Assert
       expect(result.sucesso).toBe(true);
       expect(result.mensagem).toBe('Pagamento Pix confirmado com sucesso');
       expect(result.eventoId).toBe('evt_pix_success');
@@ -378,7 +204,6 @@ describe('ProcessarWebhookUseCase', () => {
     });
 
     it('deve falhar quando payload Pix é inválido (sem evento ou id)', async () => {
-      // Arrange
       mockSignatureValidator.validar.mockReturnValue(true);
       mockTransacaoRepo.buscarPorProviderId.mockResolvedValue(null);
 
@@ -393,15 +218,12 @@ describe('ProcessarWebhookUseCase', () => {
         provider: 'pix' as const,
         payload: {
           id: 'evt_pix_invalid',
-          // falta evento
         },
         signature: 'valid_signature',
       };
 
-      // Act
       const result = await useCase.execute(input);
 
-      // Assert
       expect(result.sucesso).toBe(false);
       expect(result.mensagem).toBe('Payload de webhook Pix inválido');
     });
