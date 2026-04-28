@@ -42,15 +42,7 @@ jobs:
           EOF
 
       - name: Seed database
-        run: |
-          pnpm test:e2e:seed
-          sleep 2
-          if [ -f tests/e2e/scripts/.seed-result.json ]; then
-            echo "Seed result file found"
-            cat tests/e2e/scripts/.seed-result.json
-          else
-            echo "WARNING: Seed result file not found"
-          fi
+        run: pnpm test:e2e:seed
         env:
           NODE_ENV: e2e
 
@@ -71,13 +63,6 @@ jobs:
           done
           echo "Dev server failed to start"
           exit 1
-
-      - name: Upload seed result
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-seed
-          path: tests/e2e/scripts/.seed-result.json
-          retention-days: 1
 
   e2e-tests:
     name: E2E Tests (Shard ${{ matrix.shard }})
@@ -105,12 +90,6 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Download seed result
-        uses: actions/download-artifact@v4
-        with:
-          name: e2e-seed
-          path: tests/e2e/scripts/
 
       - name: Create .env.e2e
         run: |
