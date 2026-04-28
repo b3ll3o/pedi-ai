@@ -1,50 +1,35 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getSession } from '@/lib/supabase/auth';
 import { useAuth } from '@/hooks/useAuth';
 import { useRedirectByRole } from '@/hooks/useRedirectByRole';
 import { LoginForm } from '@/components/auth/LoginForm';
 import styles from './page.module.css';
 
-export default function CustomerLoginPage() {
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [isCheckingSession, setIsCheckingSession] = useState(true);
   const { signIn, isAuthenticated, session } = useAuth();
-  const { destination } = useRedirectByRole(session?.user?.id ?? null);
+  const { destination, isLoading, hasDeterminedDestination } = useRedirectByRole(session?.user?.id ?? null, isAuthenticated);
   const registeredSuccess = searchParams.get('registered') === 'true';
 
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const session = await getSession();
-        if (session?.user) {
-          router.replace(destination);
-          return;
-        }
-      } catch (error) {
-        console.error('Session check failed:', error);
-      } finally {
-        setIsCheckingSession(false);
-      }
-    };
-    checkSession();
-  }, [router, destination]);
+  // Computa se deve mostrar loading: enquanto estiver verificando sessão E carregando profile
+  // Quando isLoading ou hasDeterminedDestination muda, showLoading é recalculado
+  const showLoading = isLoading || (isAuthenticated && !hasDeterminedDestination);
 
-  // Redirecionar após autenticação bem-sucedida
   useEffect(() => {
-    if (isAuthenticated) {
-      router.push(destination);
+    // Redireciona usuário autenticado quando destino estiver determinado
+    if (isAuthenticated && hasDeterminedDestination) {
+      router.replace(destination);
     }
-  }, [isAuthenticated, router, destination]);
+  }, [router, destination, isAuthenticated, hasDeterminedDestination]);
 
   const handleLogin = async (email: string, password: string) => {
     await signIn(email, password);
   };
 
-  if (isCheckingSession) {
+  if (showLoading) {
     return (
       <div className={styles.container}>
         <div className={styles.loadingContainer}>
@@ -98,5 +83,23 @@ export default function CustomerLoginPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+function LoginFallback() {
+  return (
+    <div className={styles.container}>
+      <div className={styles.loadingContainer}>
+        <div className={styles.spinner} aria-label="Carregando..." />
+      </div>
+    </div>
+  );
+}
+
+export default function CustomerLoginPage() {
+  return (
+    <Suspense fallback={<LoginFallback />}>
+      <LoginContent />
+    </Suspense>
   );
 }

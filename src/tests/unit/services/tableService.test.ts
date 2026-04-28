@@ -351,7 +351,7 @@ describe('tableService', () => {
       const timestamp = Date.now()
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         json: () => Promise.resolve({ valid: 'yes' as any }), // truthy but not === true
       })
 

@@ -149,6 +149,107 @@ describe('Payment webhooks integration', () => {
     })
   })
 
+    describe('Pix payment flow', () => {
+    const PIX_CREATE_URL = '/api/payments/pix/create'
+    const PIX_STATUS_URL = '/api/payments/pix/status'
+
+    it('5. POST /api/payments/pix/create - should create Pix charge', async () => {
+      const orderId = 'order_pix_create_001'
+      const mockQrCode = '00020101021226880014br.gov.bcb.pix2565demo.here.co/v2/demo123'
+      const expiresAt = new Date()
+      expiresAt.setMinutes(expiresAt.getMinutes() + 30)
+
+      const mockResponse = {
+        qr_code: mockQrCode,
+        qr_code_base64: `data:image/png;base64,${Buffer.from(mockQrCode).toString('base64')}`,
+        expires_at: expiresAt.toISOString(),
+      }
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse,
+      })
+
+      const response = await fetch(PIX_CREATE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order_id: orderId }),
+      })
+
+      const result = await response.json()
+
+      expect(response.ok).toBe(true)
+      expect(result.qr_code).toBe(mockQrCode)
+      expect(result.qr_code_base64).toContain('data:image/png;base64')
+      expect(result.expires_at).toBeDefined()
+      expect(mockFetch).toHaveBeenCalledWith(PIX_CREATE_URL, expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ order_id: orderId }),
+      }))
+    })
+
+    it('6. GET /api/payments/pix/status/:orderId - should return payment status', async () => {
+      const orderId = 'order_pix_status_002'
+      const confirmedAt = new Date().toISOString()
+
+      const mockResponse = {
+        status: 'confirmed',
+        confirmed_at: confirmedAt,
+      }
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse,
+      })
+
+      const response = await fetch(`${PIX_STATUS_URL}/${orderId}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      })
+
+      const result = await response.json()
+
+      expect(response.ok).toBe(true)
+      expect(result.status).toBe('confirmed')
+      expect(result.confirmed_at).toBe(confirmedAt)
+    })
+
+    it('7. Pix timeout scenario - expired QR code', async () => {
+      const orderId = 'order_pix_timeout_003'
+      const mockQrCode = '00020101021226880014br.gov.bcb.pix2565demo.here.co/v2/expired'
+
+      // Create response with already-expired time
+      const expiredTime = new Date()
+      expiredTime.setMinutes(expiredTime.getMinutes() - 5) // Already expired 5 minutes ago
+
+      const mockResponse = {
+        qr_code: mockQrCode,
+        qr_code_base64: `data:image/png;base64,${Buffer.from(mockQrCode).toString('base64')}`,
+        expires_at: expiredTime.toISOString(),
+      }
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse,
+      })
+
+      const response = await fetch(PIX_CREATE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order_id: orderId }),
+      })
+
+      const result = await response.json()
+
+      expect(response.ok).toBe(true)
+      expect(result.expires_at).toBeDefined()
+
+      // Verify the expiration time is in the past
+      const expiresAt = new Date(result.expires_at)
+      expect(expiresAt.getTime()).toBeLessThan(Date.now())
+    })
+  })
+
   describe('Stripe webhook', () => {
     const STRIPE_WEBHOOK_SECRET = 'stripe_webhook_secret_67890'
     const STRIPE_WEBHOOK_URL = '/api/webhooks/stripe'

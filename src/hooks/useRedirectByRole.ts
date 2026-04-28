@@ -1,68 +1,89 @@
 /**
  * useRedirectByRole Hook
  * Hook para redirecionamento baseado no papel do usuário após login.
- * Consulta users_profiles via SERVICE_ROLE_KEY e determina destino:
+ * Busca perfil via API route /api/auth/profile (server-side) e determina destino:
  * - dono|gerente|atendente sem restaurante → /admin/restaurants/new
  * - dono|gerente|atendente com restaurante → /admin/dashboard
  * - demais perfis ou erro → /menu
  */
 
-import { useEffect, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
-import type { users_profiles } from '@/lib/supabase/types';
+import { useEffect, useState, useRef } from 'react';
 
 export interface UseRedirectByRoleResult {
   destination: '/admin/dashboard' | '/admin/restaurants/new' | '/menu';
   isLoading: boolean;
   role: string | null;
+  hasDeterminedDestination: boolean;
 }
 
 const ADMIN_ROLES = ['dono', 'gerente', 'atendente'] as const;
 
-export function useRedirectByRole(userId: string | null): UseRedirectByRoleResult {
+interface ProfileResponse {
+  role: string;
+  restaurant_id: string | null;
+}
+
+export function useRedirectByRole(userId: string | null, isAuthenticated: boolean): UseRedirectByRoleResult {
   const [destination, setDestination] = useState<'/admin/dashboard' | '/admin/restaurants/new' | '/menu'>(() => {
-    // Estado inicial: sem usuário logado, vai para /menu
     if (!userId) return '/menu';
     return '/menu';
   });
   const [role, setRole] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(() => {
-    // Sem usuário = não está carregando (já temos o destino final)
-    return !userId;
-  });
+  const [isLoading, setIsLoading] = useState(() => true);
+  const [hasDeterminedDestination, setHasDeterminedDestination] = useState(() => !userId);
+
+  const isMountedRef = useRef(true);
+  const userIdRef = useRef(userId);
 
   useEffect(() => {
-    // Early return: sem usuário, o estado inicial já está correto
+    userIdRef.current = userId;
+  }, [userId]);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!userId) {
+      // Usar startTransition para evitar cascading renders
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setIsLoading(false);
+       
+      setHasDeterminedDestination(true);
       return;
     }
 
+    setHasDeterminedDestination(false);
+    setIsLoading(true);
+
     async function fetchRoleAndRedirect() {
       try {
-        const supabaseAdmin = createClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.SUPABASE_SERVICE_ROLE_KEY!
-        );
+        // Usar API route server-side para buscar perfil
+        // (SUPABASE_SERVICE_ROLE_KEY não está disponível no browser)
+        const response = await fetch('/api/auth/profile');
 
-        const { data: profile, error } = await supabaseAdmin
-          .from('users_profiles')
-          .select('role, restaurant_id')
-          .eq('user_id', userId)
-          .single();
+        if (!isMountedRef.current) return;
 
-        if (error || !profile) {
+        if (!response.ok) {
           setDestination('/menu');
           setRole(null);
+          setHasDeterminedDestination(true);
           return;
         }
 
-        const typedProfile = profile as unknown as users_profiles;
-        const userRole = typedProfile.role;
+        const profile: ProfileResponse = await response.json();
+
+        if (!isMountedRef.current) return;
+
+        const userRole = profile.role;
 
         setRole(userRole);
 
         if (ADMIN_ROLES.includes(userRole as typeof ADMIN_ROLES[number])) {
-          if (userRole === 'dono' && !typedProfile.restaurant_id) {
+          if (userRole === 'dono' && !profile.restaurant_id) {
             setDestination('/admin/restaurants/new');
           } else {
             setDestination('/admin/dashboard');
@@ -70,11 +91,16 @@ export function useRedirectByRole(userId: string | null): UseRedirectByRoleResul
         } else {
           setDestination('/menu');
         }
+        setHasDeterminedDestination(true);
       } catch {
+        if (!isMountedRef.current) return;
         setDestination('/menu');
         setRole(null);
+        setHasDeterminedDestination(true);
       } finally {
-        setIsLoading(false);
+        if (isMountedRef.current) {
+          setIsLoading(false);
+        }
       }
     }
 
@@ -85,5 +111,6 @@ export function useRedirectByRole(userId: string | null): UseRedirectByRoleResul
     destination,
     isLoading,
     role,
+    hasDeterminedDestination,
   };
 }

@@ -165,6 +165,24 @@
   cursor: not-allowed;
 }
 
+.resendSuccessMessage {
+  font-size: 13px;
+  color: var(--color-success-dark);
+  background: var(--color-success-light);
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--color-success);
+}
+
+.resendErrorMessage {
+  font-size: 13px;
+  color: var(--color-error);
+  background: var(--color-error-light);
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--color-error);
+}
+
 .button {
   display: flex;
   align-items: center;

@@ -109,6 +109,32 @@ function writeStorageMeta(email: string): void {
 }
 
 /**
+ * Garante que o seed foi executado.
+ * Se `.seed-result.json` não existe, executa o seed automaticamente.
+ */
+async function ensureSeedExists(): Promise<void> {
+  if (fs.existsSync(SEED_RESULT_PATH)) return
+
+  console.log('⏳ Seed não encontrado, executando seed automaticamente...')
+  const { exec } = await import('child_process')
+  const { promisify } = await import('util')
+  const execAsync = promisify(exec)
+
+  try {
+    const { stdout, stderr } = await execAsync('pnpm test:e2e:seed', {
+      cwd: path.join(__dirname, '..', '..', '..', '..', '..'),
+      timeout: 120_000,
+    })
+    if (stdout) console.log(stdout)
+    if (stderr) console.warn(stderr)
+    console.log('✅ Seed automático concluído')
+  } catch (error) {
+    console.error('❌ Falha ao executar seed automático:', error)
+    throw error
+  }
+}
+
+/**
  * Lê dados de seed do arquivo `.seed-result.json`.
  * O seed deve ser executado via `pnpm test:e2e:seed` antes dos testes.
  */
@@ -187,6 +213,26 @@ async function loadStorageState(page: Page, email: string, destinationUrl: strin
 export const test = base.extend<Fixtures, { reuse: boolean }>({
   reuse: [true, { scope: 'worker', option: true }],
   seedData: async ({ browser: _browser }, fixtureUse) => {
+    // Seed pode não ter sido executado por globalSetup (ex: primeiro run ou cleanup pendente)
+    // Verifica e executa seed se necessário
+    if (!fs.existsSync(SEED_RESULT_PATH)) {
+      console.log('⏳ Seed não encontrado, executando seed automaticamente...')
+      const { exec } = await import('child_process')
+      const { promisify } = await import('util')
+      const execAsync = promisify(exec)
+      try {
+        const { stdout, stderr } = await execAsync('pnpm test:e2e:seed', {
+          cwd: path.join(__dirname, '..', '..', '..', '..', '..'),
+          timeout: 180_000,
+        })
+        if (stdout) console.log(stdout)
+        if (stderr) console.warn(stderr)
+        console.log('✅ Seed automático concluído')
+      } catch (error) {
+        console.error('❌ Falha ao executar seed automático:', error)
+        throw error
+      }
+    }
     const data = await loadSeedData()
     await fixtureUse(data)
   },

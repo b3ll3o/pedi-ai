@@ -4,6 +4,23 @@ import { IAuthAdapter } from '@/application/autenticacao/services/RegistrarUsuar
 import type { User as _User } from '@supabase/supabase-js';
 
 /**
+ * Traduz mensagens de erro do Supabase para pt-BR
+ */
+function traduzirMensagemErro(mensagem: string): string {
+  const traducoes: Record<string, string> = {
+    'Invalid login credentials': 'Email ou senha incorretos',
+    'Invalid credentials': 'Email ou senha incorretos',
+    'Email not confirmed': 'Email não confirmado. Verifique sua caixa de entrada.',
+    'User already registered': 'Este email já está cadastrado',
+    'User not found': 'Usuário não encontrado',
+    'Email not found': 'Email não encontrado',
+    'Password should be at least 6 characters': 'A senha deve ter pelo menos 6 caracteres',
+  };
+
+  return traducoes[mensagem] || mensagem;
+}
+
+/**
  * Implementação do adapter de autenticação usando Supabase Auth
  */
 export class SupabaseAuthAdapter implements IAuthAdapter {
@@ -40,7 +57,9 @@ export class SupabaseAuthAdapter implements IAuthAdapter {
     const { data, error } = await signIn(email, senha);
 
     if (error) {
-      throw new Error(`Erro na autenticação: ${error.message}`);
+      // Traduzir mensagens de erro comuns do Supabase para pt-BR
+      const mensagemTraduzida = traduzirMensagemErro(error.message);
+      throw new Error(mensagemTraduzida);
     }
 
     if (!data.session || !data.user) {

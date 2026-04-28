@@ -18,7 +18,10 @@
     "test:all": "vitest run tests/unit tests/integration && playwright test --project=chromium-headless -c tests/e2e/playwright.config.ts",
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "mailpit": "mailpit",
+    "mailpit:start": "mailpit",
+    "stripe:listen": "stripe listen --forward-to localhost:3000/api/webhooks/stripe"
   },
   "dependencies": {
     "@stripe/react-stripe-js": "^3.1.0",

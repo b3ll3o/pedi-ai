@@ -68,7 +68,7 @@ async function sincronizarRestaurantes(userId: string): Promise<void> {
     // Buscar profiles do usuário para obter roles (vinculos)
     // A API não retorna roles diretamente, então buscamos profiles separadamente
     // Usamos o endpoint de profile do usuário logado
-    let userProfiles: Array<{ restaurant_id: string; role: 'owner' | 'manager' | 'staff' }> = [];
+    let userProfiles: Array<{ restaurant_id: string; role: 'dono' | 'gerente' | 'atendente' }> = [];
     try {
       const profilesRes = await fetch('/api/admin/my-profiles');
       if (profilesRes.ok) {
@@ -77,10 +77,10 @@ async function sincronizarRestaurantes(userId: string): Promise<void> {
       }
     } catch (profileError) {
       console.warn('Não foi possível buscar profiles, usando dados da API:', profileError);
-      // Fallback: se não conseguir buscar profiles, presumir 'owner' para todos
+      // Fallback: se não conseguir buscar profiles, presumir 'dono' para todos
       userProfiles = restaurants.map((r: { id: string }) => ({
         restaurant_id: r.id,
-        role: 'owner' as const,
+        role: 'dono' as const,
       }));
     }
 
@@ -106,7 +106,7 @@ async function sincronizarRestaurantes(userId: string): Promise<void> {
 
       // Encontrar role do usuário para este restaurante
       const profile = userProfiles.find((p) => p.restaurant_id === restaurantData.id);
-      const role = profile?.role || 'owner';
+      const role = profile?.role || 'dono';
 
       // Criar e salvar vínculo usuário-restaurante
       const vinculo = UsuarioRestaurante.criar({

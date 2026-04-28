@@ -20,6 +20,8 @@ export function LoginForm({ onSubmit, registeredSuccess }: LoginFormProps) {
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
+  const [resendError, setResendError] = useState('');
 
   const validateEmail = (value: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -27,16 +29,27 @@ export function LoginForm({ onSubmit, registeredSuccess }: LoginFormProps) {
   };
 
   const handleResendConfirmation = async () => {
-    if (!email) return;
+    if (!email) {
+      setResendError('Por favor, insira seu email para reenviar a confirmação');
+      return;
+    }
+    setResendSuccess(false);
+    setResendError('');
     setIsResending(true);
     try {
       const { error: signUpError } = await signUp(email, password || 'temporary-password');
       // Supabase reenvia email de confirmação se o usuário ainda não confirmou
-      if (signUpError && signUpError.message !== 'Email not confirmed') {
-        console.error('Erro ao reenviar:', signUpError);
+      if (signUpError) {
+        if (signUpError.message !== 'Email not confirmed') {
+          setResendError(signUpError.message || 'Erro ao reenviar email de confirmação');
+        }
+      } else {
+        setResendSuccess(true);
+        setTimeout(() => setResendSuccess(false), 5000);
       }
     } catch (err) {
       console.error('Erro ao reenviar confirmação:', err);
+      setResendError('Erro ao reenviar email de confirmação');
     } finally {
       setIsResending(false);
     }
@@ -127,6 +140,16 @@ export function LoginForm({ onSubmit, registeredSuccess }: LoginFormProps) {
           >
             {isResending ? 'Enviando...' : 'Reenviar email de confirmação'}
           </button>
+          {resendSuccess && (
+            <div className={styles.resendSuccessMessage} role="alert" aria-live="polite">
+              Email de confirmação reenviado! Verifique sua caixa de entrada.
+            </div>
+          )}
+          {resendError && (
+            <div className={styles.resendErrorMessage} role="alert" aria-live="assertive">
+              {resendError}
+            </div>
+          )}
         </div>
       )}
       <div className={styles.field}>
@@ -137,7 +160,7 @@ export function LoginForm({ onSubmit, registeredSuccess }: LoginFormProps) {
           id="email"
           type="email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => { setEmail(e.target.value); setResendError(''); }}
           className={styles.input}
           placeholder="seu@email.com"
           disabled={isLoading}

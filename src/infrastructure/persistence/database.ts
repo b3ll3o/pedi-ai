@@ -127,6 +127,7 @@ export interface ModificadorGrupoRecord {
   minSelecoes: number;
   maxSelecoes: number;
   valores: string; // JSON serialized array
+  ativo: boolean;
 }
 
 export interface ModificadorValorRecord {

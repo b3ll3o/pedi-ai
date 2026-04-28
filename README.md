@@ -23,6 +23,20 @@ Aplicação de **Cardápio Digital** para restaurantes com foco em **mobile-firs
 - **Testes E2E**: Playwright (19 specs)
 - **Pagamentos**: Mercado Pago (Pix) + Stripe (Cartão)
 
+## Documentação
+
+| Guia | Descrição |
+|------|-----------|
+| [docs/README.md](docs/README.md) | Hub de documentação |
+| [docs/INDICE.md](docs/INDICE.md) | Índice completo |
+| [docs/guides/ARCHITECTURE.md](docs/guides/ARCHITECTURE.md) | Arquitetura DDD |
+| [docs/guides/OFFLINE.md](docs/guides/OFFLINE.md) | Offline-first |
+| [docs/guides/REALTIME.md](docs/guides/REALTIME.md) | Realtime subscriptions |
+| [docs/guides/PAYMENTS.md](docs/guides/PAYMENTS.md) | Pagamentos |
+| [docs/guides/QR_CODE.md](docs/guides/QR_CODE.md) | QR Code e segurança |
+| [docs/guides/ROLES.md](docs/guides/ROLES.md) | Roles e permissões |
+| [docs/guides/MOBILE_PWA.md](docs/guides/MOBILE_PWA.md) | Mobile-first PWA |
+
 ## Feature Flags
 
 O projeto possui um sistema de **feature flags** que permite ativar/desativar funcionalidades de forma granular via variáveis de ambiente. Isso é útil para:
@@ -115,7 +129,7 @@ QR_SECRET_KEY=sua_chave_secreta_para_hmac
 
 ### 3. Configurar Supabase
 
-Siga as instruções em [SUPABASE_SETUP.md](./SUPABASE_SETUP.md) para:
+Siga as instruções em [docs/setup/SUPABASE_SETUP.md](docs/setup/SUPABASE_SETUP.md) para:
 
 - Criar um projeto no Supabase
 - Rodar as migrations

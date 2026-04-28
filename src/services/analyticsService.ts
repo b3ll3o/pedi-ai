@@ -9,6 +9,49 @@ export interface AnalyticsFilters {
   date_to?: string
 }
 
+export interface ItensMaisVendidosFilters {
+  date_from?: string
+  date_to?: string
+  period?: 'day' | 'week' | 'month'
+  limit?: number
+}
+
+export interface ItemVendido {
+  product_id: string
+  product_name: string
+  count: number
+}
+
+export interface ItensMaisVendidosResponse {
+  items: ItemVendido[]
+  period: string
+  date_range: {
+    start_date: string
+    end_date: string
+  }
+}
+
+export interface PedidosPorPeriodoFilters {
+  period?: 'day' | 'week' | 'month'
+  date_from?: string
+  date_to?: string
+}
+
+export interface PedidosPorPeriodoResponse {
+  orders_by_period: {
+    day?: Record<string, { count: number; revenue: number }>
+    week?: Record<string, { count: number; revenue: number }>
+    month?: Record<string, { count: number; revenue: number }>
+  }
+  total_revenue: number
+  total_orders: number
+  period: string
+  date_range: {
+    start_date: string
+    end_date: string
+  }
+}
+
 export interface AnalyticsSummary {
   total_orders: number
   total_revenue: number
@@ -60,6 +103,78 @@ export async function getAnalytics(filters: AnalyticsFilters): Promise<Analytics
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Failed to fetch analytics' }))
     throw new Error(error.error || 'Failed to fetch analytics')
+  }
+
+  return response.json()
+}
+
+// ── Itens Mais Vendidos ──────────────────────────────────────
+
+export async function getItensMaisVendidos(
+  restaurantId: string,
+  filters?: ItensMaisVendidosFilters
+): Promise<ItensMaisVendidosResponse> {
+  const params = new URLSearchParams()
+
+  if (filters?.date_from) {
+    params.append('start_date', filters.date_from)
+  }
+
+  if (filters?.date_to) {
+    params.append('end_date', filters.date_to)
+  }
+
+  if (filters?.period) {
+    params.append('period', filters.period)
+  }
+
+  const limit = filters?.limit ?? 10
+  params.append('limit', String(limit))
+
+  const response = await fetch(`/api/admin/analytics/popular-items?${params.toString()}`, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Erro ao buscar itens mais vendidos' }))
+    throw new Error(error.error || 'Erro ao buscar itens mais vendidos')
+  }
+
+  return response.json()
+}
+
+// ── Pedidos Por Periodo ──────────────────────────────────────
+
+export async function getPedidosPorPeriodo(
+  restaurantId: string,
+  filters?: PedidosPorPeriodoFilters
+): Promise<PedidosPorPeriodoResponse> {
+  const params = new URLSearchParams()
+  params.append('restaurant_id', restaurantId)
+
+  if (filters?.period) {
+    params.append('period', filters.period)
+  }
+
+  if (filters?.date_from) {
+    params.append('date_from', filters.date_from)
+  }
+
+  if (filters?.date_to) {
+    params.append('date_to', filters.date_to)
+  }
+
+  const response = await fetch(`/api/admin/analytics/orders-by-period?${params.toString()}`, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Erro ao buscar pedidos por período' }))
+    throw new Error(error.error || 'Erro ao buscar pedidos por período')
   }
 
   return response.json()

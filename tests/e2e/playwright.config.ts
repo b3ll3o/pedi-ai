@@ -22,6 +22,16 @@
 import { defineConfig, devices } from '@playwright/test'
 import path from 'path'
 import os from 'os'
+import * as dotenv from 'dotenv'
+
+// Carregar .env.e2e ANTES de avaliar process.env.BASE_URL
+// O envFile do Playwright é carregado após o config, causando baseURL inválido
+// O config está em tests/e2e/, então o .env.e2e está no mesmo diretório
+const CONFIG_DIR = path.resolve(__dirname)
+dotenv.config({ path: path.join(CONFIG_DIR, '.env.e2e') })
+
+// BASE_URL para testes E2E - usa localhost em desenvolvimento
+const BASE_URL = process.env.BASE_URL || 'http://localhost:3000'
 
 const isCI = process.env.CI === 'true'
 // SHARD=current/total (ex: 1/4, 2/4). Default em CI: 4 shards.
@@ -45,7 +55,7 @@ export default defineConfig({
   ],
   envFile: '.env.e2e',
   use: {
-    baseURL: process.env.BASE_URL || 'http://localhost:3000',
+    baseURL: BASE_URL,
     video: isCI ? 'retain-on-failure' : 'off',
     trace: isCI ? 'on-first-retry' : 'off',
     screenshot: isCI ? 'only-on-failure' : 'off',
@@ -55,10 +65,8 @@ export default defineConfig({
   projects: [
     // ─── Local fast feedback ───────────────────────────────────────────────
     {
-      name: 'chromium-headless',
-      use: { ...devices['Desktop Chrome'], headless: true },
-      grep: skipNewTests ? /auth\.spec\.ts/ : undefined,
-      grepInvert: skipNewTests ? undefined : undefined,
+      name: 'chromium-headless-shell',
+      use: { ...devices['Desktop Chrome'], headless: true, baseURL: BASE_URL },
     },
 
     // ─── CI-only cross-browser / cross-device matrix ───────────────────────

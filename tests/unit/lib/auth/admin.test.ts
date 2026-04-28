@@ -115,7 +115,7 @@ describe('admin auth', () => {
       expect(() => requireRole(user, ['dono', 'gerente'])).toThrow()
       try {
         requireRole(user, ['dono', 'gerente'])
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       } catch (e: any) {
         expect(e.status).toBe(403)
       }

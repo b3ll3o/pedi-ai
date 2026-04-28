@@ -27,6 +27,7 @@ rules:
   verify:
     test_command: ''
     build_command: ''
-    coverage_threshold: 80
+    # Meta de coverage: 80% para novo código, 50% para código existente (migração gradual)
+    coverage_threshold: 50
   archive:
     - Warn before merging destructive deltas

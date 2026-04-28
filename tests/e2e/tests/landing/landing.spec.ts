@@ -123,4 +123,71 @@ test.describe('Landing Page', () => {
       }
     })
   })
+
+  test.describe('SEO', () => {
+    test('deve ter todos os meta tags de SEO requeridos no head', async ({ page }) => {
+      const expectedMetaTags = [
+        { name: 'title', key: 'title' },
+        { name: 'description', key: 'description' },
+        { name: 'robots', key: 'robots' },
+        { name: 'og:title', key: 'property', value: 'og:title' },
+        { name: 'og:description', key: 'property', value: 'og:description' },
+        { name: 'og:image', key: 'property', value: 'og:image' },
+        { name: 'og:url', key: 'property', value: 'og:url' },
+        { name: 'og:type', key: 'property', value: 'og:type' },
+        { name: 'twitter:card', key: 'name', value: 'twitter:card' },
+        { name: 'twitter:title', key: 'name', value: 'twitter:title' },
+        { name: 'twitter:description', key: 'name', value: 'twitter:description' },
+        { name: 'twitter:image', key: 'name', value: 'twitter:image' },
+      ]
+
+      for (const tag of expectedMetaTags) {
+        let meta: string | null = null
+        if (tag.key === 'title') {
+          meta = await page.title()
+        } else if (tag.key === 'property') {
+          meta = await page.$eval(`meta[property="${tag.value}"]`, el => el.getAttribute('content'))
+        } else {
+          meta = await page.$eval(`meta[name="${tag.name}"]`, el => el.getAttribute('content'))
+        }
+        expect(meta, `Meta tag ${tag.name} deve estar presente`).not.toBeNull()
+        expect(meta?.trim().length, `Meta tag ${tag.name} não pode estar vazia`).toBeGreaterThan(0)
+      }
+    })
+
+    test('deve ter canonical URL válido', async ({ page }) => {
+      const canonical = await page.$eval('link[rel="canonical"]', el => el.getAttribute('href'))
+      expect(canonical).not.toBeNull()
+      expect(canonical).toContain('pedi-ai')
+    })
+
+    test('deve ter scripts JSON-LD válidos e parseáveis', async ({ page }) => {
+      const jsonLdScripts = await page.$$('script[type="application/ld+json"]')
+      expect(jsonLdScripts.length, 'Deve ter pelo menos um script JSON-LD').toBeGreaterThan(0)
+
+      for (const script of jsonLdScripts) {
+        const content = await script.textContent()
+        expect(content, 'JSON-LD script não pode estar vazio').not.toBeNull()
+        expect(content?.trim().length, 'JSON-LD script não pode estar vazio').toBeGreaterThan(0)
+
+        // Verifica que o JSON é parseável
+        expect(() => JSON.parse(content!), 'JSON-LD deve ser JSON válido').not.toThrow()
+      }
+    })
+
+    test('deve ter schema Organization e WebSite', async ({ page }) => {
+      const jsonLdScripts = await page.$$('script[type="application/ld+json"]')
+      const allContent = await Promise.all(
+        jsonLdScripts.map(script => script.textContent())
+      )
+
+      const combinedContent = allContent.join('')
+      const parsedSchemas = JSON.parse(combinedContent)
+      const schemasArray = Array.isArray(parsedSchemas) ? parsedSchemas : [parsedSchemas]
+
+      const schemaTypes = schemasArray.map((s: Record<string, unknown>) => s['@type'])
+      expect(schemaTypes, 'Deve conter schema Organization ou WebSite').toContain('Organization')
+      expect(schemaTypes, 'Deve conter schema Organization ou WebSite').toContain('WebSite')
+    })
+  })
 })

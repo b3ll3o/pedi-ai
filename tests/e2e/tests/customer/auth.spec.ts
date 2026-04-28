@@ -58,13 +58,15 @@ test.describe('Autenticação do Cliente', () => {
     await expect(authenticated).toHaveURL('/menu')
   })
 
-  test('admin logado via /login deve ir para /admin/dashboard', async ({ page, seedData }) => {
+  test('admin logado via /login deve ir para /menu (cliente redirecionado)', async ({ page, seedData }) => {
+    // Admin logando via /login (página de cliente) deve ir para /menu
+    // Admins devem usar /admin/login para acesso ao painel administrativo
     const loginPage = new CustomerLoginPage(page)
     await loginPage.goto()
     await loginPage.login(seedData.admin.email, seedData.admin.password)
-    // Aguarda redirect para admin
-    await page.waitForURL('/admin/dashboard', { timeout: 30_000 })
-    await expect(page).toHaveURL('/admin/dashboard')
+    // Admin redirecionado para /menu (fluxo de cliente, não admin)
+    await page.waitForURL('/menu', { timeout: 30_000 })
+    await expect(page).toHaveURL('/menu')
   })
 
   test('deve solicitar recuperação de senha', async ({ page: _page, seedData }) => {

@@ -776,7 +776,7 @@ describe('cartStore (real store)', () => {
 
       // Set some items in store first
       await act(async () => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         useCartStore.setState({ items: [{ ...makeCartItem(), id: 'existing', createdAt: new Date() } as any] });
       });
 

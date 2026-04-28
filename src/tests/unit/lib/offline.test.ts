@@ -72,7 +72,7 @@ import { db } from '@/lib/offline/db';
 describe('IndexedDB Operations', () => {
   beforeEach(() => {
     // Reset all tables before each test
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     (db as any)._reset();
   });
 
@@ -148,7 +148,9 @@ describe('IndexedDB Operations', () => {
 
   describe('Dexie Database - Menu Cache Table', () => {
     it('should set menu cache', async () => {
+      const testRestaurantId = '00000000-0000-0000-0000-000000000001';
       const cache: MenuCache = {
+        restaurantId: testRestaurantId,
         categories: [{ id: 'cat1', name: 'Bebidas' }],
         products: [{ id: 'prod1', name: 'Coca-Cola', price: 5 }],
         modifiers: [],
@@ -165,7 +167,9 @@ describe('IndexedDB Operations', () => {
     });
 
     it('should get cached menu', async () => {
+      const testRestaurantId = '00000000-0000-0000-0000-000000000001';
       const cache: MenuCache = {
+        restaurantId: testRestaurantId,
         categories: [{ id: 'cat1', name: 'Sobremesas' }],
         products: [{ id: 'prod2', name: 'Bolo', price: 8 }],
         modifiers: [],
@@ -180,7 +184,9 @@ describe('IndexedDB Operations', () => {
     });
 
     it('should invalidate menu cache (clear)', async () => {
+      const testRestaurantId = '00000000-0000-0000-0000-000000000001';
       const cache: MenuCache = {
+        restaurantId: testRestaurantId,
         categories: [],
         products: [],
         modifiers: [],
@@ -197,7 +203,9 @@ describe('IndexedDB Operations', () => {
 
   describe('Dexie Database - Pending Sync Table', () => {
     it('should add order to pending sync', async () => {
+      const testRestaurantId = '00000000-0000-0000-0000-000000000001';
       const pending: PendingSync = {
+        restaurantId: testRestaurantId,
         orderData: { orderId: 'order-123', items: [] },
         retryCount: 0,
         maxRetries: 3,
@@ -213,9 +221,10 @@ describe('IndexedDB Operations', () => {
     });
 
     it('should get all pending orders', async () => {
+      const testRestaurantId = '00000000-0000-0000-0000-000000000001';
       const orders: PendingSync[] = [
-        { orderData: { id: 1 }, retryCount: 0, maxRetries: 3, status: 'pending', createdAt: new Date() },
-        { orderData: { id: 2 }, retryCount: 1, maxRetries: 3, status: 'pending', createdAt: new Date() },
+        { restaurantId: testRestaurantId, orderData: { id: 1 }, retryCount: 0, maxRetries: 3, status: 'pending', createdAt: new Date() },
+        { restaurantId: testRestaurantId, orderData: { id: 2 }, retryCount: 1, maxRetries: 3, status: 'pending', createdAt: new Date() },
       ];
 
       await db.pending_sync.add(orders[0]);
@@ -226,7 +235,9 @@ describe('IndexedDB Operations', () => {
     });
 
     it('should remove order from pending sync (mark synced)', async () => {
+      const testRestaurantId = '00000000-0000-0000-0000-000000000001';
       const pending: PendingSync = {
+        restaurantId: testRestaurantId,
         orderData: { orderId: 'order-456' },
         retryCount: 0,
         maxRetries: 3,
@@ -242,7 +253,9 @@ describe('IndexedDB Operations', () => {
     });
 
     it('should increment retry count', async () => {
+      const testRestaurantId = '00000000-0000-0000-0000-000000000001';
       const pending: PendingSync = {
+        restaurantId: testRestaurantId,
         orderData: { orderId: 'order-789' },
         retryCount: 0,
         maxRetries: 3,
@@ -368,7 +381,9 @@ describe('IndexedDB Operations', () => {
 
   describe('Sync Queue Operations', () => {
     it('should queue multiple orders', async () => {
+      const testRestaurantId = '00000000-0000-0000-0000-000000000001';
       const order1: PendingSync = {
+        restaurantId: testRestaurantId,
         orderData: { orderId: 'ord-1', total: 100 },
         retryCount: 0,
         maxRetries: 3,
@@ -376,6 +391,7 @@ describe('IndexedDB Operations', () => {
         createdAt: new Date(),
       };
       const order2: PendingSync = {
+        restaurantId: testRestaurantId,
         orderData: { orderId: 'ord-2', total: 200 },
         retryCount: 0,
         maxRetries: 3,
@@ -391,7 +407,9 @@ describe('IndexedDB Operations', () => {
     });
 
     it('should get pending orders count', async () => {
+      const testRestaurantId = '00000000-0000-0000-0000-000000000001';
       const order: PendingSync = {
+        restaurantId: testRestaurantId,
         orderData: { orderId: 'ord-count' },
         retryCount: 0,
         maxRetries: 3,
@@ -406,7 +424,9 @@ describe('IndexedDB Operations', () => {
     });
 
     it('should handle retry logic for failed sync', async () => {
+      const testRestaurantId = '00000000-0000-0000-0000-000000000001';
       const order: PendingSync = {
+        restaurantId: testRestaurantId,
         orderData: { orderId: 'ord-retry' },
         retryCount: 0,
         maxRetries: 3,

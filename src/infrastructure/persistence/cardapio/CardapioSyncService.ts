@@ -48,6 +48,7 @@ interface SupabaseModificadorGrupo {
   obrigatorio: boolean;
   min_selecoes: number;
   max_selecoes: number;
+  ativo: boolean;
 }
 
 export class CardapioSyncService {
@@ -148,6 +149,7 @@ export class CardapioSyncService {
             minSelecoes: grupo.min_selecoes,
             maxSelecoes: grupo.max_selecoes,
             valores: [], // Valores são carregados separadamente
+            ativo: grupo.ativo,
           });
         });
         await this.grupoRepo.salvarMany(gruposEntities);

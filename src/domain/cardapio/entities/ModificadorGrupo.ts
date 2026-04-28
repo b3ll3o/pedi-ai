@@ -9,6 +9,7 @@ export interface ModificadorGrupoProps {
   minSelecoes: number;
   maxSelecoes: number;
   valores: ModificadorValor[];
+  ativo: boolean;
 }
 
 export class ModificadorGrupo extends EntityClass<ModificadorGrupoProps> {
@@ -38,6 +39,10 @@ export class ModificadorGrupo extends EntityClass<ModificadorGrupoProps> {
 
   get valoresAtivos(): ModificadorValor[] {
     return this.props.valores.filter(v => v.ativo);
+  }
+
+  get ativo(): boolean {
+    return this.props.ativo;
   }
 
   equals(other: EntityClass<ModificadorGrupoProps>): boolean {
@@ -81,6 +86,10 @@ export class ModificadorGrupo extends EntityClass<ModificadorGrupoProps> {
       throw new Error('Configuração de seleção inválida');
     }
     Object.assign(this.props, { minSelecoes: min, maxSelecoes: max });
+  }
+
+  desativar(): void {
+    Object.assign(this.props, { ativo: false });
   }
 
   static criar(props: Omit<ModificadorGrupoProps, 'id'>): ModificadorGrupo {

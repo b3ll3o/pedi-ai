@@ -32,7 +32,7 @@ describe('proxy (middleware)', () => {
         getAll: () => [],
       },
       headers: new Headers(),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
     } as any
   }
 
@@ -61,7 +61,7 @@ describe('proxy (middleware)', () => {
     const response = await proxy(request)
 
     expect(response).toBeInstanceOf(NextResponse)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     expect((response as any).status).toBe(200)
   })
 
@@ -74,7 +74,7 @@ describe('proxy (middleware)', () => {
     const response = await proxy(request)
 
     expect(response).toBeInstanceOf(NextResponse)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     expect((response as any).status).toBe(200)
   })
 })

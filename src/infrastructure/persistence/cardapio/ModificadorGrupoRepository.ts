@@ -78,6 +78,7 @@ export class ModificadorGrupoRepository implements IModificadorGrupoRepository {
       minSelecoes: grupo.minSelecoes,
       maxSelecoes: grupo.maxSelecoes,
       valores: JSON.stringify(grupo.valores.map(v => this.valorToStored(v))),
+      ativo: grupo.ativo,
     };
   }
 
@@ -114,6 +115,7 @@ export class ModificadorGrupoRepository implements IModificadorGrupoRepository {
       minSelecoes: dbModel.minSelecoes,
       maxSelecoes: dbModel.maxSelecoes,
       valores,
+      ativo: dbModel.ativo,
     });
   }
 

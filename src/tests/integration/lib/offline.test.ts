@@ -98,8 +98,10 @@ describe('IndexedDB cart persistence', () => {
   });
 
   it('4. getPendingOrders returns correct count', async () => {
+    const testRestaurantId = '00000000-0000-0000-0000-000000000001';
     // Add items to pending_sync table
     await testDb.pending_sync.add({
+      restaurantId: testRestaurantId,
       orderData: { orderId: 'order-001' },
       retryCount: 0,
       maxRetries: 3,
@@ -107,6 +109,7 @@ describe('IndexedDB cart persistence', () => {
       createdAt: new Date(),
     });
     await testDb.pending_sync.add({
+      restaurantId: testRestaurantId,
       orderData: { orderId: 'order-002' },
       retryCount: 0,
       maxRetries: 3,
@@ -114,6 +117,7 @@ describe('IndexedDB cart persistence', () => {
       createdAt: new Date(),
     });
     await testDb.pending_sync.add({
+      restaurantId: testRestaurantId,
       orderData: { orderId: 'order-003' },
       retryCount: 0,
       maxRetries: 3,
@@ -137,8 +141,10 @@ describe('IndexedDB cart persistence', () => {
   });
 
   it('5. Retry count increments', async () => {
+    const testRestaurantId = '00000000-0000-0000-0000-000000000001';
     // Add item to pending_sync
     const id = await testDb.pending_sync.add({
+      restaurantId: testRestaurantId,
       orderData: { orderId: 'order-retry' },
       retryCount: 0,
       maxRetries: 3,

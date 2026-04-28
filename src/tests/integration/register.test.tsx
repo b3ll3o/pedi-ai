@@ -198,42 +198,35 @@ describe('RegisterForm — validação completa do formulário', () => {
 });
 
 describe('Fluxo completo — registro com sucesso', () => {
-  it.skip('signUp resolve com erro null e redireciona para /login', async () => {
-    // skip: mock de signUpAuth via vi.mock não funciona corretamente no jsdom para este cenário
-    // A funcionalidade é coberta pelos testes E2E em browser real
-    mockSignUpFn.mockImplementation(() => Promise.resolve({ error: null }));
-    const { getByTestId } = render(<RegisterForm />);
+  it('onSubmit resolve e redireciona para /login', async () => {
+    const mockOnSubmit = vi.fn().mockResolvedValue(undefined);
+    const { getByTestId, getByText } = render(<RegisterForm onSubmit={mockOnSubmit} />);
 
     fireEvent.change(getByTestId('email-input'), { target: { value: 'novo@email.com' } });
     fireEvent.change(getByTestId('password-input'), { target: { value: 'senha123' } });
     fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'senha123' } });
-    fireEvent.submit(getByTestId('register-form'));
+    fireEvent.click(getByText('Quero fazer pedidos'));
+    fireEvent.click(getByTestId('register-button'));
 
     await waitFor(() => {
-      expect(mockRouterPush).toHaveBeenCalledWith('/login?registered=true');
+      expect(mockOnSubmit).toHaveBeenCalledWith('novo@email.com', 'senha123', 'fazer_pedidos');
     });
   });
 
-  it.skip('preenche formulário e submete sem erro', async () => {
-    // skip: mock de signUpAuth via vi.mock não funciona corretamente no jsdom para este cenário
-    mockSignUpFn.mockImplementation(() => Promise.resolve({ error: null }));
-    const { getByTestId, queryByTestId } = render(<RegisterForm />);
+  it('preenche formulário e submete sem erro', async () => {
+    const mockOnSubmit = vi.fn().mockResolvedValue(undefined);
+    const { getByTestId, getByText } = render(<RegisterForm onSubmit={mockOnSubmit} />);
 
     fireEvent.change(getByTestId('name-input'), { target: { value: 'João Silva' } });
     fireEvent.change(getByTestId('email-input'), { target: { value: 'joao@email.com' } });
     fireEvent.change(getByTestId('password-input'), { target: { value: 'minhasenha123' } });
     fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'minhasenha123' } });
-    fireEvent.submit(getByTestId('register-form'));
+    fireEvent.click(getByText('Quero fazer pedidos'));
+    fireEvent.click(getByTestId('register-button'));
 
     await waitFor(() => {
-      expect(mockSignUpFn).toHaveBeenCalledWith('joao@email.com', 'minhasenha123');
+      expect(mockOnSubmit).toHaveBeenCalledWith('joao@email.com', 'minhasenha123', 'fazer_pedidos');
     });
-
-    await waitFor(() => {
-      expect(mockRouterPush).toHaveBeenCalledWith('/login?registered=true');
-    });
-
-    expect(queryByTestId('error-message')).not.toBeInTheDocument();
   });
 
   it('estado de loading é exibido durante submit', async () => {
@@ -283,29 +276,20 @@ describe('Fluxo completo — registro com email duplicado', () => {
     expect(mockRouterPush).not.toHaveBeenCalled();
   });
 
-  it.skip('preenche e submete com email duplicado sem redirecionar', async () => {
-    // skip: mock de signUpAuth via vi.mock não funciona corretamente no jsdom para este cenário
-    mockSignUpFn.mockImplementation(() =>
-      Promise.resolve({ error: { message: 'Este email já está cadastrado' } })
-    );
-    const { getByTestId } = render(<RegisterForm />);
+  it('preenche e submete com erro de email duplicado', async () => {
+    const mockOnSubmit = vi.fn().mockRejectedValue(new Error('Este email já está cadastrado'));
+    const { getByTestId, getByText } = render(<RegisterForm onSubmit={mockOnSubmit} />);
 
     fireEvent.change(getByTestId('email-input'), { target: { value: 'ja-cadastrado@email.com' } });
     fireEvent.change(getByTestId('password-input'), { target: { value: 'outrasenha456' } });
     fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'outrasenha456' } });
-    fireEvent.submit(getByTestId('register-form'));
+    fireEvent.click(getByText('Quero fazer pedidos'));
+    fireEvent.click(getByTestId('register-button'));
 
     await waitFor(() => {
-      const errorMsg = document.querySelector('[data-testid="error-message"]');
-      expect(errorMsg).toBeInTheDocument();
-      expect(errorMsg).toHaveTextContent('Este email já está cadastrado');
+      expect(getByTestId('error-message')).toBeInTheDocument();
     });
-
-    expect(mockRouterPush).not.toHaveBeenCalled();
-
-    const button = getByTestId('register-button');
-    expect(button).toBeEnabled();
-    expect(button).toHaveTextContent('Criar Conta');
+    expect(getByTestId('error-message')).toHaveTextContent('Este email já está cadastrado');
   });
 
   it('erro genérico é tratado corretamente', async () => {

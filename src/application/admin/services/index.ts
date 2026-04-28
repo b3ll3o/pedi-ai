@@ -38,3 +38,19 @@ export type { ListarEquipeRestauranteInput, ListarEquipeRestauranteOutput, Membr
 
 export { ObterCardapioCompletoUseCase } from './ObterCardapioCompletoUseCase';
 export type { ObterCardapioCompletoInput, ObterCardapioCompletoOutput, CardapioCompleto } from './ObterCardapioCompletoUseCase';
+
+// Modifier Group Use Cases
+export { CriarGrupoModificadorUseCase } from './CriarGrupoModificadorUseCase';
+export type { CriarGrupoModificadorInput, CriarGrupoModificadorOutput } from './CriarGrupoModificadorUseCase';
+
+export { AtualizarGrupoModificadorUseCase } from './AtualizarGrupoModificadorUseCase';
+export type { AtualizarGrupoModificadorInput, AtualizarGrupoModificadorOutput } from './AtualizarGrupoModificadorUseCase';
+
+export { ExcluirGrupoModificadorUseCase } from './ExcluirGrupoModificadorUseCase';
+export type { ExcluirGrupoModificadorInput, ExcluirGrupoModificadorOutput } from './ExcluirGrupoModificadorUseCase';
+
+export { CriarValorModificadorUseCase } from './CriarValorModificadorUseCase';
+export type { CriarValorModificadorInput, CriarValorModificadorOutput } from './CriarValorModificadorUseCase';
+
+export { AtualizarValorModificadorUseCase } from './AtualizarValorModificadorUseCase';
+export type { AtualizarValorModificadorInput, AtualizarValorModificadorOutput } from './AtualizarValorModificadorUseCase';

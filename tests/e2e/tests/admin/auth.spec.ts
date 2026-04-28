@@ -1,5 +1,6 @@
 import { test, expect } from '../shared/fixtures'
 import { AdminLoginPage } from '../../pages/AdminLoginPage'
+import { CustomerLoginPage } from '../../pages/CustomerLoginPage'
 
 test.describe('Admin Authentication', () => {
   let loginPage: AdminLoginPage
@@ -53,16 +54,16 @@ test.describe('Admin Authentication', () => {
     await expect(loginPage.forgotPasswordSuccessMessage).toBeVisible()
   })
 
-  test('admin logado acessando /login diretamente deve ir para /admin/dashboard',
+  test('admin acessando /login diretamente deve ir para /menu (fluxo cliente)',
     async ({ page, seedData }) => {
-      // Primeiro faz login via admin/login
-      const loginPage = new AdminLoginPage(page)
+      // Admin acessando /login (página de cliente) deve seguir fluxo de cliente
+      // O redirect é baseado no perfil, não na página de origem
+      const loginPage = new CustomerLoginPage(page)
       await loginPage.goto()
       await loginPage.login(seedData.admin.email, seedData.admin.password)
-      // Depois tenta acessar /login diretamente
-      await page.goto('/login')
-      // Deve redirecionar para /admin/dashboard
-      await expect(page).toHaveURL('/admin/dashboard')
+      // Admin vai para /menu (fluxo de cliente)
+      await page.waitForURL('/menu', { timeout: 30_000 })
+      await expect(page).toHaveURL('/menu')
     }
   )
 

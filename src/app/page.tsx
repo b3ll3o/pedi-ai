@@ -52,18 +52,114 @@ const faqData = [
   },
 ];
 
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://pedi-ai.com';
+
 export const metadata: Metadata = {
-  title: 'Cardápio Digital Restaurantes | Pedi-AI - Funciona Offline',
+  title: 'Cardápio Digital para Restaurantes | Pedi-AI - Funciona Offline',
   description: 'Cardápio digital que funciona offline para restaurantes. Pedidos em tempo real, QR Codes por mesa, Kitchen Display e muito mais. Teste grátis 14 dias.',
   alternates: {
     canonical: '/',
   },
   openGraph: {
-    title: 'Cardápio Digital Restaurantes | Pedi-AI',
-    description: 'Cardápio digital que funciona offline para restaurantes. Teste grátis 14 dias.',
-    url: '/',
+    title: 'Cardápio Digital para Restaurantes | Pedi-AI',
+    description: 'Cardápio digital que funciona offline para restaurantes. Pedidos em tempo real, QR Codes por mesa. Teste grátis 14 dias.',
+    url: BASE_URL,
     type: 'website',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'PediAI - Cardápio Digital',
+      },
+    ],
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Cardápio Digital para Restaurantes | Pedi-AI - Funciona Offline',
+    description: 'Cardápio digital que funciona offline para restaurantes. Pedidos em tempo real, QR Codes por mesa. Teste grátis 14 dias.',
+    images: ['/og-image.png'],
+  },
+  script: [
+    {
+      type: 'application/ld+json',
+      children: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@graph': [
+          {
+            '@type': 'WebSite',
+            '@id': `${BASE_URL}/#website`,
+            url: BASE_URL,
+            name: 'PediAI - Cardápio Digital para Restaurantes',
+            description: 'Cardápio digital que funciona offline para restaurantes. Pedidos em tempo real, QR Codes por mesa.',
+            publisher: {
+              '@id': `${BASE_URL}/#organization`,
+            },
+          },
+          {
+            '@type': 'Organization',
+            '@id': `${BASE_URL}/#organization`,
+            name: 'PediAI',
+            url: BASE_URL,
+            logo: {
+              '@type': 'ImageObject',
+              url: `${BASE_URL}/logo.png`,
+            },
+            sameAs: [
+              'https://twitter.com/pediai',
+              'https://instagram.com/pediai',
+            ],
+          },
+          {
+            '@type': 'FAQPage',
+            '@id': `${BASE_URL}/#faq`,
+            mainEntity: [
+              {
+                '@type': 'Question',
+                name: 'Preciso de internet para usar?',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: 'Não! O Pedi-AI funciona completamente offline. O cliente pode navegar pelo cardápio e fazer o pedido mesmo sem internet. Quando a conexão voltar, tudo é sincronizado automaticamente.',
+                },
+              },
+              {
+                '@type': 'Question',
+                name: 'Como os pedidos chegam na cozinha?',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: 'Os pedidos aparecem em tempo real no Kitchen Display, uma tela que pode ser usada em tablet ou TV. Você também recebe notificações sonoras para cada novo pedido.',
+                },
+              },
+              {
+                '@type': 'Question',
+                name: 'Posso personalizar o cardápio?',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: 'Sim! Você pode adicionar fotos, descrições, valores, opções de personalização (como adicionais e removidos), e organizar por categorias. Tudo pelo painel admin.',
+                },
+              },
+              {
+                '@type': 'Question',
+                name: 'Funciona com meu sistema de delivery?',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: 'No plano Profissional e Enterprise, oferecemos integração com as principais plataformas de delivery. Também temos API para automações personalizadas.',
+                },
+              },
+              {
+                '@type': 'Question',
+                name: 'Como funciona o suporte?',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: 'Oferecemos suporte por chat em todos os planos. O plano Profissional tem suporte prioritário, e o Enterprise conta com gerente de conta dedicado.',
+                },
+              },
+            ],
+          },
+        ],
+      }),
+    },
+  ],
 };
 
 export default function Home() {

@@ -331,10 +331,7 @@ describe('RegisterForm', () => {
       });
     });
 
-    it.skip('finally executa mesmo quando onSubmit rejeita (isLoading volta a false)', async () => {
-      // skip: timing issue com fireEvent + act + jsdom neste ambiente específico
-      // A funcionalidade de finally/loading está coberta pelos testes anteriores
-      // "desabilita campos durante loading" e "botão mostra Criando conta..."
+    it('finally executa mesmo quando onSubmit rejeita (isLoading volta a false)', async () => {
       const onSubmit = vi.fn().mockRejectedValue(new Error('Erro de rede'));
       const { getByTestId } = render(<RegisterForm onSubmit={onSubmit} />);
 
@@ -342,12 +339,17 @@ describe('RegisterForm', () => {
       fireEvent.change(getByTestId('password-input'), { target: { value: 'senha123' } });
       fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'senha123' } });
 
-      await act(async () => {
-        fireEvent.click(getByTestId('register-button'));
-      });
+      fireEvent.click(getByTestId('register-button'));
+
+      // Aguarda que o erro seja exibido (confirma que finally executou)
+      await waitFor(() => {
+        expect(getByTestId('error-message')).toBeInTheDocument();
+      }, { timeout: 3000 });
 
       // Após rejeição + finally, botão deve estar habilitado
-      expect(getByTestId('register-button')).not.toBeDisabled();
+      await waitFor(() => {
+        expect(getByTestId('register-button')).not.toBeDisabled();
+      });
     });
   });
 

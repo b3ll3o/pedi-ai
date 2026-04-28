@@ -51,15 +51,15 @@ export class Usuario extends AggregateRootClass<UsuarioProps> {
   }
 
   eProprietario(): boolean {
-    return Papel.isOwner(this.papel);
+    return Papel.isDono(this.papel);
   }
 
   eGerente(): boolean {
-    return Papel.isManager(this.papel);
+    return Papel.isGerente(this.papel);
   }
 
   eFuncionario(): boolean {
-    return Papel.isStaff(this.papel);
+    return Papel.isAtendente(this.papel);
   }
 
   eCliente(): boolean {

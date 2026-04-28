@@ -258,7 +258,9 @@ describe('useAuth hook', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      await result.current.signIn('admin@test.com', 'wrongpassword');
+      await act(async () => {
+        await expect(result.current.signIn('admin@test.com', 'wrongpassword')).rejects.toThrow('Invalid credentials');
+      });
 
       await waitFor(() => {
         expect(result.current.error).toBe('Invalid credentials');
@@ -280,7 +282,7 @@ describe('useAuth hook', () => {
       });
 
       await act(async () => {
-        await result.current.signIn('admin@test.com', 'password123');
+        await expect(result.current.signIn('admin@test.com', 'password123')).rejects.toThrow();
       });
 
       expect(result.current.error).toBe('Falha na autenticação');
@@ -299,7 +301,7 @@ describe('useAuth hook', () => {
       });
 
       await act(async () => {
-        await result.current.signIn('admin@test.com', 'password123');
+        await expect(result.current.signIn('admin@test.com', 'password123')).rejects.toThrow();
       });
 
       expect(result.current.error).toBe('Falha na autenticação');

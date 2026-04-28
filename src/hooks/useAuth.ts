@@ -146,11 +146,22 @@ export function useAuth(): UseAuthReturn {
       await autenticarUseCase.execute(input);
 
       // Atualizar estado após autenticação bem-sucedida
-      const [sessionResult, userResult] = await Promise.all([getSession(), getUser()]);
+      // Retry getSession/getUser até 3 vezes com 100ms de delay
+      // para evitar race condition onde session ainda não está disponível
+      let sessionResult = null;
+      let userResult = null;
+      for (let i = 0; i < 3; i++) {
+        [sessionResult, userResult] = await Promise.all([getSession(), getUser()]);
+        if (sessionResult?.user) break;
+        await new Promise((r) => setTimeout(r, 100));
+      }
       setSession(sessionResult);
       setUser(userResult);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha na autenticação');
+      const errorMessage = err instanceof Error ? err.message : 'Falha na autenticação';
+      setError(errorMessage);
+      // Lança erro para que o LoginForm possa exibir a mensagem
+      throw new Error(errorMessage);
     } finally {
       setIsLoading(false);
     }
