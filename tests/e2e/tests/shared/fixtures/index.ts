@@ -278,6 +278,18 @@ export const test = base.extend<Fixtures, { reuse: boolean }>({
       localStorage.clear()
       sessionStorage.clear()
     })
+    try {
+      await page.evaluate(() => {
+        return new Promise((resolve, reject) => {
+          const req = indexedDB.deleteDatabase('pedi')
+          req.onsuccess = () => resolve(undefined)
+          req.onerror = () => reject(req.error)
+          req.onblocked = () => reject(new Error('IndexedDB blocked'))
+        })
+      })
+    } catch {
+      // IndexedDB cleanup failed, continue anyway
+    }
     await fixtureUse(page)
   },
 })

@@ -84,39 +84,46 @@ async function acquireLock(): Promise<() => Promise<void>> {
 
 /**
  * Verifica se os dados do seed ainda são válidos no banco.
- * Retorna true se o restaurant do seed ainda existir no Supabase.
+ * Retorna true se o restaurant E os usuários do seed ainda existirem no Supabase.
  */
 async function isSeedValid(): Promise<boolean> {
   const fs = await import('fs')
 
-  // Verificar se arquivo de resultado existe
   if (!fs.existsSync(SEED_RESULT_FILE)) {
     return false
   }
 
   try {
     const result: SeedResult = JSON.parse(fs.readFileSync(SEED_RESULT_FILE, 'utf-8'))
-
-    // Verificar se o restaurant existe no banco pelo ID fixo
     const admin = createAdminClient()
+
     const { data: restaurant } = await admin
       .from('restaurants')
       .select('id')
       .eq('id', result.restaurant.id)
       .maybeSingle()
 
-    if (!restaurant) {
+    if (!restaurant || result.restaurant.name !== RESTAURANT_NAME) {
       return false
     }
 
-    // Verificar se o nome do restaurant ainda corresponde
-    if (restaurant && result.restaurant.name === RESTAURANT_NAME) {
-      console.log('✅ Seed válido encontrado - usando dados existentes do cache')
-      console.log(`   Restaurant ID: ${result.restaurant.id}\n`)
-      return true
+    const { data: existingUsers } = await admin.auth.admin.listUsers()
+    const allEmailsExist = [
+      result.users.customer.email,
+      result.users.admin.email,
+      result.users.waiter.email,
+    ].every(email =>
+      existingUsers?.users.some(u => u.email === email && u.confirmed_at !== null)
+    )
+
+    if (!allEmailsExist) {
+      console.log('⚠️ Seed inválido - usuários não confirmados, recriando...')
+      return false
     }
 
-    return false
+    console.log('✅ Seed válido encontrado - usando dados existentes do cache')
+    console.log(`   Restaurant ID: ${result.restaurant.id}\n`)
+    return true
   } catch {
     return false
   }
@@ -618,28 +625,39 @@ async function createUsers(admin: SupabaseClient): Promise<SeedResult['users']> 
   }
 
   for (const [role, user] of Object.entries(users)) {
-    console.log(`   Criando ${role}: ${user.email}`)
+    console.log(`   Processando ${role}: ${user.email}`)
     try {
-      // Tentar buscar usuário existente primeiro (idempotência)
       const { data: existingUsers } = await admin.auth.admin.listUsers()
       const existingUser = existingUsers?.users.find((u) => u.email === user.email)
 
       if (existingUser) {
-        console.log(`   ${role}: usuário já existe, usando ID existente`)
-        user.id = existingUser.id
+        if (!existingUser.confirmed_at) {
+          console.log(`   ${role}: usuário existe mas não confirmado, deletando e recriando...`)
+          await admin.auth.admin.deleteUser(existingUser.id)
+          const { data, error } = await admin.auth.admin.createUser({
+            email: user.email,
+            password: user.password,
+            email_confirm: true,
+          })
+          if (error) {
+            console.log(`   ⚠️ Erro ao recriar ${role}: ${error.message}`)
+            continue
+          }
+          user.id = data.user.id
+        } else {
+          console.log(`   ${role}: usuário já existe e confirmado, usando ID existente`)
+          user.id = existingUser.id
+        }
       } else {
         const { data, error } = await admin.auth.admin.createUser({
           email: user.email,
           password: user.password,
           email_confirm: true,
         })
-
         if (error) {
-          // Se falhar (ex: rate limit), pular e continuar
           console.log(`   ⚠️ Erro ao criar ${role}: ${error.message}`)
           continue
         }
-
         user.id = data.user.id
       }
     } catch (err) {
@@ -823,6 +841,85 @@ async function createTables(
   return tables
 }
 
+async function createOrders(
+  admin: SupabaseClient,
+  restaurantId: string,
+  tables: SeedResult['tables'],
+  products: SeedResult['products']
+): Promise<void> {
+  console.log('📝 Criando pedidos de teste...')
+
+  if (tables.length === 0 || products.length === 0) {
+    console.log('   Nenhuma mesa ou produto disponível, pulando criação de pedidos')
+    return
+  }
+
+  const tableId = tables[0].id
+  const product = products[0]
+
+  const ordersData = [
+    {
+      table_id: tableId,
+      status: 'pending_payment',
+      subtotal: product.price,
+      tax: 0,
+      total: product.price,
+      payment_method: 'pix',
+      payment_status: 'pending',
+    },
+    {
+      table_id: tableId,
+      status: 'paid',
+      subtotal: product.price * 2,
+      tax: 0,
+      total: product.price * 2,
+      payment_method: 'pix',
+      payment_status: 'paid',
+    },
+    {
+      table_id: tables.length > 1 ? tables[1].id : tableId,
+      status: 'preparing',
+      subtotal: product.price * 3,
+      tax: 0,
+      total: product.price * 3,
+      payment_method: 'pix',
+      payment_status: 'paid',
+    },
+  ]
+
+  for (const orderData of ordersData) {
+    const { data: order, error: orderError } = await admin
+      .from('orders')
+      .insert({
+        ...orderData,
+        restaurant_id: restaurantId,
+      })
+      .select()
+      .single()
+
+    if (orderError) {
+      console.warn(`   Erro ao criar pedido: ${orderError.message}`)
+      continue
+    }
+
+    const { error: itemError } = await admin.from('order_items').insert({
+      order_id: order.id,
+      product_id: product.id,
+      quantity: 1,
+      unit_price: product.price,
+      total_price: product.price,
+    })
+
+    if (itemError) {
+      console.warn(`   Erro ao criar item do pedido: ${itemError.message}`)
+    }
+
+    console.log(`   Pedido: ${order.id.slice(0, 8)}... - ${order.status}`)
+  }
+
+  console.log('')
+}
+
 async function createUserProfiles(
   admin: SupabaseClient,
   users: SeedResult['users'],
@@ -910,6 +1007,9 @@ export async function seed(): Promise<SeedResult> {
 
     // Phase 3: Produtos dependem de categorias
     const products = await createProducts(admin, restaurant.id, categories)
+
+    // Phase 3.5: Criar pedidos de teste
+    await createOrders(admin, restaurant.id, tables, products)
 
     // Mapear IDs dos produtos para associações
     const picanhaProduct = products.find((p) => p.name === 'Picanha 300g')

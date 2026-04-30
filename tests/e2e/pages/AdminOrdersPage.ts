@@ -1,6 +1,6 @@
 import { Page, Locator } from '@playwright/test'
 
-export type AdminOrderStatus = 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled'
+export type AdminOrderStatus = 'pending_payment' | 'paid' | 'preparing' | 'ready' | 'delivered' | 'cancelled'
 
 export interface OrderFilter {
   status?: AdminOrderStatus
@@ -23,7 +23,7 @@ export class AdminOrdersPage {
 
   constructor(page: Page) {
     this.page = page
-    this.ordersList = page.locator('[data-testid="admin-order-item"]')
+    this.ordersList = page.locator('[data-testid="order-card"]')
     this.orderCard = page.locator('[data-testid="order-card"]')
     this.filterStatusSelect = page.locator('[data-testid="filter-status-select"]')
     this.filterDateInput = page.locator('[data-testid="filter-date-input"]')
