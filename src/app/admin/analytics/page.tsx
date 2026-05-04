@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation'
 import { AdminLayout } from '@/components/admin/AdminLayout'
 import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard'
 import { getAnalytics } from '@/services/analyticsService'
-import { requireAuth } from '@/lib/auth/client-admin'
+import { getSession } from '@/lib/supabase/auth'
+import { useRestaurantStore } from '@/stores/restaurantStore'
 import type { AnalyticsData } from '@/services/analyticsService'
 
 export default function AnalyticsPage() {
   const router = useRouter()
+  const { restauranteSelecionado } = useRestaurantStore()
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [dateRange, setDateRange] = useState(() => {
@@ -24,7 +26,11 @@ export default function AnalyticsPage() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        await requireAuth()
+        const session = await getSession()
+        if (!session) {
+          router.replace('/admin/login')
+          return
+        }
         setAuthChecked(true)
       } catch (error) {
         console.error('Auth check failed:', error)
@@ -35,14 +41,13 @@ export default function AnalyticsPage() {
   }, [router])
 
   useEffect(() => {
-    if (!authChecked) return
+    if (!authChecked || !restauranteSelecionado) return
 
     const loadAnalytics = async () => {
       setIsLoading(true)
       try {
-        const authUser = await requireAuth()
         const analyticsData = await getAnalytics({
-          restaurant_id: authUser.restaurant_id,
+          restaurant_id: restauranteSelecionado.id,
           date_from: dateRange.from,
           date_to: dateRange.to,
         })
@@ -54,13 +59,23 @@ export default function AnalyticsPage() {
       }
     }
     loadAnalytics()
-  }, [dateRange, authChecked])
+  }, [dateRange, authChecked, restauranteSelecionado])
 
   if (!authChecked || isLoading) {
     return (
       <AdminLayout>
         <div style={{ padding: 48, textAlign: 'center', color: 'var(--color-text-secondary)' }}>
           Carregando analytics...
+        </div>
+      </AdminLayout>
+    )
+  }
+
+  if (!restauranteSelecionado) {
+    return (
+      <AdminLayout>
+        <div style={{ padding: 48, textAlign: 'center' }}>
+          <h2 style={{ color: 'var(--color-error)' }}>Selecione um restaurante primeiro</h2>
         </div>
       </AdminLayout>
     )

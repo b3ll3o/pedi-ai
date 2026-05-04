@@ -23,6 +23,31 @@ const teamMember = {
 }
 
 test.describe('Admin Multi-Restaurant - Fluxo Completo', () => {
+  // Cleanup after each test
+  test.afterEach(async ({ page }) => {
+    try {
+      await page.context().clearCookies()
+    } catch { /* ignore */ }
+    try {
+      await page.evaluate(() => {
+        try {
+          localStorage.clear()
+          sessionStorage.clear()
+        } catch { /* ignore */ }
+      })
+    } catch { /* ignore */ }
+    try {
+      await page.evaluate(() => {
+        return new Promise<void>((resolve) => {
+          const req = indexedDB.deleteDatabase('pedi')
+          req.onsuccess = () => resolve()
+          req.onerror = () => resolve()
+          req.onblocked = () => resolve()
+        })
+      })
+    } catch { /* ignore */ }
+  })
+
   // ============================================
   // Fluxo 1: Criar restaurante
   // ============================================

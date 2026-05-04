@@ -1,53 +1,59 @@
 /**
  * Playwright E2E Configuration
  *
- * Structure:
- * - Local dev: single 'chromium-headless' project, no video/trace/screenshot,
- *   half the CPU cores, reuseExistingServer=true for faster iteration.
- * - CI: all 5 browser/device projects, video+trace+screenshot on failure,
- *   1 worker, 4 shards, fresh server every run.
+ * Performance Optimizations:
+ * - Local dev: single 'chromium-headless-shell' project, no video/trace/screenshot
+ * - Workers: 50% CPU cores locally, 1 in CI for stability
+ * - Parallel: fullyParallel enabled for better local performance
+ * - Storage State: TTL-based caching to avoid redundant logins
+ * - Navigation: Using 'load' instead of 'networkidle' for faster page loads
+ * - Network: Blocking unnecessary external requests (fonts, analytics)
  *
  * Sharding (CI):
- * - Default: 4 shards (tests distribuídos entre workers)
- * - Controlar shard específico: SHARD=1/4 npx playwright test --shard=1/4
- * - Cada runner CI executa: SHARD=1/4, SHARD=2/4, SHARD=3/4, SHARD=4/4
+ * - Default: 4 shards distributed across workers
+ * - Control shard: SHARD=1/4 pnpm test:e2e --shard=1/4
+ * - Each CI runner: SHARD=1/4, SHARD=2/4, SHARD=3/4, SHARD=4/4
  *
  * Network Blocking:
  * - globalSetup.ts launches a browser and applies route blocking globally
  * - Blocked: fonts.googleapis.com, google-analytics.com, facebook.net, etc.
  *
  * Rollback / Feature Flag:
- * - E2E_SKIP_NEW_TESTS=true: pula todos os testes exceto auth.spec (minimal set)
+ * - E2E_SKIP_NEW_TESTS=true: skip all tests except auth.spec (minimal set)
  */
 import { defineConfig, devices } from '@playwright/test'
 import path from 'path'
 import os from 'os'
 import * as dotenv from 'dotenv'
 
-// Carregar .env.e2e ANTES de avaliar process.env.BASE_URL
-// O envFile do Playwright é carregado após o config, causando baseURL inválido
-// O config está em tests/e2e/, então o .env.e2e está no mesmo diretório
+// Load .env.e2e BEFORE evaluating process.env.BASE_URL
+// Playwright's envFile is loaded after config, causing invalid baseURL
+// Config is in tests/e2e/, so .env.e2e is in the same directory
 const CONFIG_DIR = path.resolve(__dirname)
 dotenv.config({ path: path.join(CONFIG_DIR, '.env.e2e') })
 
-// BASE_URL para testes E2E - usa localhost em desenvolvimento
+// BASE_URL for E2E tests - uses localhost in development
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000'
 
 const isCI = process.env.CI === 'true'
-// SHARD=current/total (ex: 1/4, 2/4). Default em CI: 4 shards.
+// SHARD=current/total (ex: 1/4, 2/4). Default in CI: 4 shards.
 const shardMatch = process.env.SHARD?.match(/^(\d+)\/(\d+)$/)
 const shardCurrent = shardMatch ? Number(shardMatch[1]) : 1
 const shardTotal = shardMatch ? Number(shardMatch[2]) : isCI ? 4 : 1
-// Rollback: pula testes novos, roda apenas auth.spec
+// Rollback: skip new tests, run only auth.spec
 const _skipNewTests = process.env.E2E_SKIP_NEW_TESTS === 'true'
 
 export default defineConfig({
   testDir: path.resolve(__dirname, 'tests'),
-  fullyParallel: isCI,
+  fullyParallel: false,
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
-  workers: isCI ? 1 : Math.max(1, os.cpus().length / 2),
+  // Use 1 worker locally to avoid IndexedDB conflicts between workers
+  // IndexedDB is shared between browser contexts and causes conflicts
+  workers: isCI ? 1 : 1,
   shard: isCI && !shardMatch ? { current: 1, total: 4 } : { current: shardCurrent, total: shardTotal },
+  globalSetup: path.join(__dirname, 'global-setup.ts'),
+  globalTeardown: path.join(__dirname, 'global-teardown.ts'),
   reporter: [
     ['html', { outputFolder: 'playwright-report' }],
     ['json', { outputFile: 'playwright-results.json' }],
@@ -56,28 +62,43 @@ export default defineConfig({
   envFile: '.env.e2e',
   use: {
     baseURL: BASE_URL,
+    // Performance: use 'load' instead of 'networkidle' for faster navigation
+    // networkidle waits for all network connections to be idle (fonts, analytics, etc.)
+    navigationTimeout: 30_000,
+    actionTimeout: 10_000,
+    // Optimize browser context creation
+    contextOptions: {
+      reducedMotion: 'reduce',
+      viewport: { width: 1280, height: 720 },
+    },
+    // Capture only on failure to save resources
     video: isCI ? 'retain-on-failure' : 'off',
     trace: isCI ? 'on-first-retry' : 'off',
     screenshot: isCI ? 'only-on-failure' : 'off',
-    actionTimeout: 5_000,
-    navigationTimeout: 15_000,
   },
   projects: [
     // ─── Local fast feedback ───────────────────────────────────────────────
     {
       name: 'chromium-headless-shell',
-      use: { ...devices['Desktop Chrome'], headless: true, baseURL: BASE_URL },
-    },
-    {
-      name: 'chromium-headless',
-      use: { ...devices['Desktop Chrome'], headless: true, baseURL: BASE_URL },
+      use: {
+        ...devices['Desktop Chrome'],
+        headless: true,
+        baseURL: BASE_URL,
+        launchOptions: {
+          args: [
+            '--disable-dev-shm-usage',
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+          ],
+        },
+      },
     },
 
     // ─── CI-only cross-browser / cross-device matrix ───────────────────────
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-      grep: isCI ? undefined : /(?!)/,  // skip locally (no test matches /(?!)/)
+      grep: isCI ? undefined : /(?!)/,
     },
     {
       name: 'firefox',
@@ -104,9 +125,8 @@ export default defineConfig({
     command: 'pnpm dev',
     cwd: path.resolve(__dirname, '..'),
     url: 'http://localhost:3000',
-    reuseExistingServer: true,
+    reuseExistingServer: !isCI,
     timeout: 120_000,
   },
   outputDir: 'test-results',
-
 })

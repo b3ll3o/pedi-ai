@@ -1,9 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import type { orders } from '@/lib/supabase/types'
 
 interface RouteParams {
   params: Promise<{ id: string }>
+}
+
+function getSupabaseAdmin() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false,
+      },
+    }
+  )
 }
 
 // Valid status transitions
@@ -21,9 +36,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params
 
-    const supabase = await createClient()
+    const supabaseAdmin = getSupabaseAdmin()
 
-    const { data: order, error } = await supabase
+    const { data: order, error } = await supabaseAdmin
       .from('orders')
       .select('*')
       .eq('id', id)
@@ -73,10 +88,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    const supabase = await createClient()
+    const supabaseAdmin = getSupabaseAdmin()
 
     // Fetch current order
-    const { data: currentOrder, error: fetchError } = await supabase
+    const { data: currentOrder, error: fetchError } = await supabaseAdmin
       .from('orders')
       .select('id, status, payment_status')
       .eq('id', id)
@@ -110,7 +125,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     // Update order status
-    const { data: order, error: updateError } = await supabase
+    const { data: order, error: updateError } = await supabaseAdmin
       .from('orders')
       .update({ status })
       .eq('id', id)
@@ -126,7 +141,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     // Record status change in history
-    await supabase
+    await supabaseAdmin
       .from('order_status_history')
       .insert({
         order_id: id,

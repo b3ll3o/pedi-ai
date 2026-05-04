@@ -9,32 +9,31 @@ export class MenuPage {
   constructor(page: Page) {
     this.page = page
     this.categoryTabs = page.locator('[data-testid^="menu-category-card-"]')
-    // ProductList uses menu-product-card-{id} and menu-add-to-cart-{id}
     this.productCards = page.locator('[data-testid^="menu-product-card-"]')
     this.searchInput = page.locator('[data-testid="search-input"]')
   }
 
   async goto(categoryId?: string): Promise<void> {
     const url = categoryId ? `/menu/${categoryId}` : '/menu'
-    await this.page.goto(url)
-    // Wait for page to be fully loaded before interacting
-    await this.page.waitForLoadState('networkidle')
+    // Performance: use 'load' instead of 'networkidle' for faster navigation
+    // networkidle waits for all network activity including fonts, analytics, etc.
+    await this.page.goto(url, { waitUntil: 'load' })
+    // Wait for critical content to be present (not full networkidle)
+    await this.page.waitForSelector('[data-testid^="menu-category-card-"]', { timeout: 10_000 })
   }
 
   async selectCategory(categoryName: string): Promise<void> {
-    // Filter by text match on the category tab element (partial match to handle whitespace/variations)
     await this.categoryTabs.filter({ hasText: categoryName }).click()
   }
 
   async addProductToCart(productName: string): Promise<void> {
-    // Find product card by name text, then click its add-to-cart button
     const productCard = this.productCards.filter({ hasText: productName })
     await productCard.locator('[data-testid^="menu-add-to-cart-"]').click()
   }
 
   async viewProduct(productName: string): Promise<void> {
     await this.productCards.filter({ hasText: productName }).click()
-    await this.page.waitForURL(/\/product\//)
+    await this.page.waitForURL(/\/product\//, { timeout: 15_000 })
   }
 
   async search(query: string): Promise<void> {

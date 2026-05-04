@@ -110,7 +110,7 @@ export async function updateOrderStatus(
   payment_status: PaymentStatus
   updated_at: string
 }> {
-  const response = await fetch(`/api/orders/${orderId}/status`, {
+  const response = await fetch(`/api/admin/orders/${orderId}/status`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',

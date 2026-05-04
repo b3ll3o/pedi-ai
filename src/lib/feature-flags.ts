@@ -39,6 +39,11 @@ export function isCashbackEnabled(): boolean {
   return process.env.NEXT_PUBLIC_FEATURE_CASHBACK_ENABLED === 'true';
 }
 
+/** Enable Stripe payment integration */
+export function isStripeEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_FEATURE_STRIPE_ENABLED === 'true';
+}
+
 /** Enable multi-restaurant support (N:N user-restaurant relationship) */
 export function isMultiRestaurantEnabled(): boolean {
   return process.env.NEXT_PUBLIC_ENABLE_MULTI_RESTAURANT === 'true';

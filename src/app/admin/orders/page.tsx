@@ -1,47 +1,105 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { getSession } from '@/lib/supabase/auth';
-import { useRestaurantStore } from '@/stores/restaurantStore';
-import styles from './page.module.css';
+import { useEffect, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
+import { getSession } from '@/lib/supabase/auth'
+import { useRestaurantStore } from '@/stores/restaurantStore'
+import { getOrders, updateOrderStatus, type OrderWithItems, type OrderStatus } from '@/services/adminOrderService'
+import { OrderList } from '@/components/admin/OrderList'
+import { OrderDetailAdmin } from '@/components/admin/OrderDetailAdmin'
+import styles from './page.module.css'
 
 export default function OrdersPage() {
-  const router = useRouter();
-  const { restauranteSelecionado } = useRestaurantStore();
-  const [loading, setLoading] = useState(true);
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const router = useRouter()
+  const { restauranteSelecionado } = useRestaurantStore()
+  const [loading, setLoading] = useState(true)
+  const [orders, setOrders] = useState<OrderWithItems[]>([])
+  const [isLoadingOrders, setIsLoadingOrders] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
+
+  const fetchOrders = useCallback(async () => {
+    if (!restauranteSelecionado) return
+
+    setIsLoadingOrders(true)
+    setError(null)
+
+    try {
+      const result = await getOrders({
+        restaurant_id: restauranteSelecionado.id,
+        limit: 100,
+      })
+      setOrders(result.orders)
+    } catch (err) {
+      console.error('Erro ao carregar pedidos:', err)
+      setError(err instanceof Error ? err.message : 'Erro ao carregar pedidos')
+    } finally {
+      setIsLoadingOrders(false)
+    }
+  }, [restauranteSelecionado])
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const session = await getSession();
+        const session = await getSession()
         if (!session) {
-          router.replace('/admin/login');
-          return;
+          router.replace('/admin/login')
+          return
         }
-        setLoading(false);
+        setLoading(false)
       } catch (error) {
-        console.error('Auth check failed:', error);
-        router.replace('/admin/login');
+        console.error('Auth check failed:', error)
+        router.replace('/admin/login')
       }
-    };
-    checkAuth();
-  }, [router]);
+    }
+    checkAuth()
+  }, [router])
 
-  // TODO: Quando API de pedidos estiver implementada, filtrar por restauranteSelecionado.id
   useEffect(() => {
     if (restauranteSelecionado) {
-      console.log('[Orders] Filtrando pedidos para restaurante:', restauranteSelecionado.id);
+      fetchOrders()
     }
-  }, [restauranteSelecionado]);
+  }, [restauranteSelecionado, fetchOrders])
+
+  const handleViewDetails = useCallback((orderId: string) => {
+    setSelectedOrderId(orderId)
+    setIsDetailsModalOpen(true)
+  }, [])
+
+  const handleUpdateStatus = useCallback(async (orderId: string, status: OrderStatus, notes?: string) => {
+    try {
+      await updateOrderStatus(orderId, status, notes)
+      await fetchOrders()
+    } catch (err) {
+      console.error('Erro ao atualizar status:', err)
+      alert(err instanceof Error ? err.message : 'Erro ao atualizar status')
+    }
+  }, [fetchOrders])
+
+  const handleCancel = useCallback(async (orderId: string, reason?: string) => {
+    try {
+      await updateOrderStatus(orderId, 'cancelled', reason)
+      setIsDetailsModalOpen(false)
+      setSelectedOrderId(null)
+      await fetchOrders()
+    } catch (err) {
+      console.error('Erro ao cancelar pedido:', err)
+      alert(err instanceof Error ? err.message : 'Erro ao cancelar pedido')
+    }
+  }, [fetchOrders])
+
+  const handleCloseModal = useCallback(() => {
+    setIsDetailsModalOpen(false)
+    setSelectedOrderId(null)
+  }, [])
 
   if (loading) {
     return (
       <div className={styles.container}>
         <div className={styles.loading}>Carregando...</div>
       </div>
-    );
+    )
   }
 
   if (!restauranteSelecionado) {
@@ -61,8 +119,10 @@ export default function OrdersPage() {
           </button>
         </div>
       </div>
-    );
+    )
   }
+
+  const selectedOrder = orders.find(o => o.id === selectedOrderId)
 
   return (
     <div className={styles.container}>
@@ -74,56 +134,27 @@ export default function OrdersPage() {
           </span>
         </div>
       </header>
-      <div className={styles.filters}>
-        <input
-          type="text"
-          placeholder="Buscar pedidos..."
-          data-testid="search-orders-input"
-          className={styles.searchInput}
-        />
-        <input
-          type="date"
-          data-testid="filter-date-input"
-          className={styles.filterInput}
-        />
-        <select data-testid="filter-status-select" className={styles.filterSelect}>
-          <option value="">Todos os status</option>
-          <option value="pending">Pendente</option>
-          <option value="preparing">Preparando</option>
-          <option value="ready">Pronto</option>
-          <option value="delivered">Entregue</option>
-        </select>
-      </div>
-      <div className={styles.placeholder}>
-        Lista de pedidos aparecerá aqui
-      </div>
 
-      {/* Stub para lista de pedidos */}
-      <div className={styles.ordersList}>
-        <div data-testid="admin-order-item">
-          <div data-testid="order-card">
-          <span data-testid="order-id">#123</span>
-          <span data-testid="order-status">pending</span>
-          <button data-testid="view-details-button" onClick={() => setIsDetailsModalOpen(true)}>Ver detalhes</button>
-          <button data-testid="update-status-button" onClick={() => setIsDetailsModalOpen(true)}>Atualizar status</button>
-          <button data-testid="cancel-order-button">Cancelar</button>
-          </div>
+      {error && (
+        <div className={styles.error} data-testid="error-message">
+          {error}
         </div>
-      </div>
+      )}
 
-      {/* Modal de detalhes do pedido */}
-      <div data-testid="order-details-modal" className={styles.modal} hidden={!isDetailsModalOpen}>
-        <select data-testid="order-status-select">
-          <option value="pending">Pendente</option>
-          <option value="confirmed">Confirmado</option>
-          <option value="preparing">Preparando</option>
-          <option value="ready">Pronto</option>
-          <option value="delivered">Entregue</option>
-          <option value="cancelled">Cancelado</option>
-        </select>
-        <button data-testid="confirm-status-update" onClick={() => setIsDetailsModalOpen(false)}>Confirmar</button>
-        <button data-testid="cancel-order-modal-button" onClick={() => setIsDetailsModalOpen(false)}>Cancelar</button>
-      </div>
+      <OrderList
+        orders={orders}
+        onViewDetails={handleViewDetails}
+        onUpdateStatus={handleUpdateStatus}
+        isLoading={isLoadingOrders}
+      />
+
+      {isDetailsModalOpen && selectedOrder && (
+        <OrderDetailAdmin
+          order={selectedOrder}
+          onUpdateStatus={handleUpdateStatus}
+          onCancel={handleCancel}
+        />
+      )}
     </div>
-  );
+  )
 }

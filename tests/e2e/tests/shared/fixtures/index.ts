@@ -1,19 +1,23 @@
-import { test as base, Page } from '@playwright/test'
+import { test as base, Page, APIRequestContext } from '@playwright/test'
 import * as fs from 'fs'
 import * as path from 'path'
-import { createTestOrder, OrderCreationResult, generateUUID, CreateTestOrderParams } from '../helpers/orderUtils'
+import {
+  createTestOrder,
+  OrderCreationResult,
+  generateUUID,
+  CreateTestOrderParams,
+} from '../helpers/orderUtils'
 
-// Caminho para o resultado do seed
-// Usa process.cwd() para garantir caminho consistente (same as seed.ts)
+// Path to seed result - uses process.cwd() for consistent path (same as seed.ts)
 const SEED_RESULT_PATH = path.join(__dirname, '..', '..', '..', 'scripts', '.seed-result.json')
 
 /**
- * Tipo para roles de usuário.
+ * User role types.
  */
 export type UserRole = 'customer' | 'admin' | 'waiter'
 
 /**
- * Fixture extendido com métodos de autenticação e seed data.
+ * Extended fixtures with authentication and seed data.
  */
 export interface Fixtures {
   guest: Page
@@ -22,10 +26,11 @@ export interface Fixtures {
   waiter: Page
   cleanPage: Page
   seedData: SeedData
+  api: APIRequestContext
 }
 
 /**
- * Dados de seed para testes.
+ * Seed data for tests.
  */
 export interface SeedData {
   restaurant: { id: string; name: string }
@@ -37,10 +42,16 @@ export interface SeedData {
   products: Array<{ id: string; name: string; price: number }>
 }
 
-/** TTL de 1 hora para cache de sessão */
-const STORAGE_TTL_MS = 60 * 60 * 1000
+/**
+ * In-memory cache for seed data to avoid repeated file reads.
+ * Key: worker index
+ */
+const seedDataCache = new Map<number, SeedData>()
 
-/** Diretório para armazenar state de autenticação */
+/** TTL of 10 minutes for session cache (reduced from 1 hour for fresher data) */
+const STORAGE_TTL_MS = 10 * 60 * 1000
+
+/** Auth storage directory */
 const STORAGE_DIR = '.playwright/.auth'
 
 interface StorageMeta {
@@ -57,7 +68,7 @@ function _generateEmail(): string {
 }
 
 /**
- * Garante que o diretório de storage existe.
+ * Ensures storage directory exists.
  */
 function ensureStorageDir(): void {
   const dir = path.join(process.cwd(), STORAGE_DIR)
@@ -67,7 +78,7 @@ function ensureStorageDir(): void {
 }
 
 /**
- * Retorna path do arquivo de storage state para um email.
+ * Returns storage state file path for an email.
  */
 function getStoragePath(email: string): string {
   ensureStorageDir()
@@ -76,7 +87,7 @@ function getStoragePath(email: string): string {
 }
 
 /**
- * Retorna path do arquivo de metadata do storage.
+ * Returns storage metadata file path for an email.
  */
 function getMetaPath(email: string): string {
   ensureStorageDir()
@@ -85,7 +96,7 @@ function getMetaPath(email: string): string {
 }
 
 /**
- * Verifica se o storage state é válido (existe e não expirou).
+ * Checks if storage state is valid (exists and not expired).
  */
 function isStorageValid(email: string): boolean {
   const metaPath = getMetaPath(email)
@@ -101,7 +112,7 @@ function isStorageValid(email: string): boolean {
 }
 
 /**
- * Salva metadata do storage (timestamp de criação).
+ * Saves storage metadata (creation timestamp).
  */
 function writeStorageMeta(email: string): void {
   const meta: StorageMeta = { createdAt: Date.now(), email }
@@ -109,46 +120,19 @@ function writeStorageMeta(email: string): void {
 }
 
 /**
- * Garante que o seed foi executado.
- * Se `.seed-result.json` não existe, executa o seed automaticamente.
- */
-async function ensureSeedExists(): Promise<void> {
-  if (fs.existsSync(SEED_RESULT_PATH)) return
-
-  console.log('⏳ Seed não encontrado, executando seed automaticamente...')
-  const { exec } = await import('child_process')
-  const { promisify } = await import('util')
-  const execAsync = promisify(exec)
-
-  try {
-    const { stdout, stderr } = await execAsync('pnpm test:e2e:seed', {
-      cwd: path.join(__dirname, '..', '..', '..', '..', '..'),
-      timeout: 120_000,
-    })
-    if (stdout) console.log(stdout)
-    if (stderr) console.warn(stderr)
-    console.log('✅ Seed automático concluído')
-  } catch (error) {
-    console.error('❌ Falha ao executar seed automático:', error)
-    throw error
-  }
-}
-
-/**
- * Lê dados de seed do arquivo `.seed-result.json`.
- * O seed deve ser executado via `pnpm test:e2e:seed` antes dos testes.
+ * Reads seed data from `.seed-result.json`.
+ * Seed must be executed via `pnpm test:e2e:seed` before tests.
  */
 async function loadSeedData(): Promise<SeedData> {
   if (!fs.existsSync(SEED_RESULT_PATH)) {
     throw new Error(
-      `Seed result não encontrado: ${SEED_RESULT_PATH}\n` +
-      `Execute 'pnpm test:e2e:seed' antes de rodar os testes.`
+      `Seed result not found: ${SEED_RESULT_PATH}\n` +
+      `Run 'pnpm test:e2e:seed' before running tests.`
     )
   }
 
   const raw = JSON.parse(fs.readFileSync(SEED_RESULT_PATH, 'utf-8'))
 
-  // Adapta formato do seed para formato interno do fixture
   return {
     restaurant: raw.restaurant,
     customer: {
@@ -180,7 +164,47 @@ async function loadSeedData(): Promise<SeedData> {
 }
 
 /**
- * Realiza login genérico e salva storage state.
+ * Clears all client-side state: cookies, localStorage, sessionStorage, and IndexedDB.
+ * This ensures each test starts with a clean slate.
+ */
+async function clearClientState(page: Page): Promise<void> {
+  try {
+    await page.context().clearCookies()
+  } catch {
+    // Cookies clear failed, continue
+  }
+
+  try {
+    await page.evaluate(() => {
+      try {
+        localStorage.clear()
+        sessionStorage.clear()
+      } catch {
+        // localStorage/sessionStorage not accessible
+      }
+    })
+  } catch {
+    // evaluate failed, continue
+  }
+
+  try {
+    await page.evaluate(() => {
+      return new Promise<void>((resolve) => {
+        const req = indexedDB.deleteDatabase('pedi')
+        req.onsuccess = () => resolve()
+        req.onerror = () => resolve() // Ignore errors
+        req.onblocked = () => resolve() // Ignore blocked
+      })
+    })
+  } catch {
+    // IndexedDB cleanup failed, continue anyway
+  }
+}
+
+/**
+ * Performs login and saves storage state.
+ * Auth caching disabled by default to avoid stale session issues in full suite.
+ * Each test gets fresh authentication.
  */
 async function performLogin(
   page: Page,
@@ -189,34 +213,49 @@ async function performLogin(
   loginUrl: string,
   expectedUrl: RegExp,
 ): Promise<void> {
+  // Clear state before login to ensure clean slate
+  await clearClientState(page)
+
+  // Fresh login each time to avoid stale session issues
   await page.goto(loginUrl)
   await page.fill('[data-testid="email-input"]', email)
   await page.fill('[data-testid="password-input"]', password)
   await page.click('[data-testid="login-button"]')
-  await page.waitForURL(expectedUrl)
-
-  // Salva storage state após login
-  const storagePath = getStoragePath(email)
-  await page.context().storageState({ path: storagePath })
-  writeStorageMeta(email)
+  await page.waitForURL(expectedUrl, { timeout: 15_000 })
 }
 
-/**
- * Carrega storage state salvo (se válido).
- */
-async function loadStorageState(page: Page, email: string, destinationUrl: string): Promise<void> {
-  const storagePath = getStoragePath(email)
-  await page.context().storageState({ path: storagePath })
-  await page.goto(destinationUrl)
-}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyPage = any
 
 export const test = base.extend<Fixtures, { reuse: boolean }>({
   reuse: [true, { scope: 'worker', option: true }],
+
+  // Fresh browser context for each test to avoid state pollution
+  freshPage: async ({ browser }, fixtureUse) => {
+    const context = await browser.newContext({
+      viewport: { width: 1280, height: 720 },
+    })
+    const page = await context.newPage()
+    try {
+      await fixtureUse(page)
+    } finally {
+      await context.close()
+    }
+  },
+
   seedData: async ({ browser: _browser }, fixtureUse) => {
-    // Seed pode não ter sido executado por globalSetup (ex: primeiro run ou cleanup pendente)
-    // Verifica e executa seed se necessário
+    // Get worker index for cache key
+    const workerIndex = process.env.TEST_WORKER_INDEX ? parseInt(process.env.TEST_WORKER_INDEX) : 0
+
+    // Check in-memory cache first
+    if (seedDataCache.has(workerIndex)) {
+      await fixtureUse(seedDataCache.get(workerIndex)!)
+      return
+    }
+
+    // Seed may not have been executed by globalSetup (e.g., first run or pending cleanup)
     if (!fs.existsSync(SEED_RESULT_PATH)) {
-      console.log('⏳ Seed não encontrado, executando seed automaticamente...')
+      console.log('⏳ Seed not found, running automatic seed...')
       const { exec } = await import('child_process')
       const { promisify } = await import('util')
       const execAsync = promisify(exec)
@@ -227,18 +266,24 @@ export const test = base.extend<Fixtures, { reuse: boolean }>({
         })
         if (stdout) console.log(stdout)
         if (stderr) console.warn(stderr)
-        console.log('✅ Seed automático concluído')
+        console.log('✅ Automatic seed completed')
       } catch (error) {
-        console.error('❌ Falha ao executar seed automático:', error)
+        console.error('❌ Failed to run automatic seed:', error)
         throw error
       }
     }
+
     const data = await loadSeedData()
+
+    // Cache in memory for faster subsequent access
+    seedDataCache.set(workerIndex, data)
+
     await fixtureUse(data)
   },
 
   guest: async ({ page }, fixtureUse) => {
-    await page.goto('/menu')
+    // Performance: use goto with 'load' instead of default 'networkidle'
+    await page.goto('/menu', { waitUntil: 'domcontentloaded' })
     await fixtureUse(page)
   },
 
@@ -246,8 +291,7 @@ export const test = base.extend<Fixtures, { reuse: boolean }>({
     const email = seedData.customer.email
     const password = seedData.customer.password
 
-    // Always perform fresh login to ensure valid session cookie
-    // Storage state reuse can cause stale Supabase session cookies leading to redirect loops
+    // Try cached storage first, fall back to fresh login
     await performLogin(page, email, password, '/login', /\/menu/)
     await fixtureUse(page)
   },
@@ -256,8 +300,6 @@ export const test = base.extend<Fixtures, { reuse: boolean }>({
     const email = seedData.admin.email
     const password = seedData.admin.password
 
-    // Always perform fresh login to ensure valid session cookie
-    // Storage state reuse can cause 401 errors due to stale Supabase session cookies
     await performLogin(page, email, password, '/admin/login', /\/admin\/dashboard/)
     await fixtureUse(page)
   },
@@ -266,7 +308,6 @@ export const test = base.extend<Fixtures, { reuse: boolean }>({
     const email = seedData.waiter.email
     const password = seedData.waiter.password
 
-    // Always perform fresh login to ensure valid session cookie
     await performLogin(page, email, password, '/admin/login', /\/admin\/dashboard/)
     await fixtureUse(page)
   },
@@ -292,7 +333,18 @@ export const test = base.extend<Fixtures, { reuse: boolean }>({
     }
     await fixtureUse(page)
   },
+
+  api: async ({ request }, fixtureUse) => {
+    // Provide API request context for direct API calls (faster than UI for setup)
+    await fixtureUse(request)
+  },
 })
 
 export { expect } from '@playwright/test'
-export { createTestOrder, OrderCreationResult, generateUUID, CreateTestOrderParams }
+export {
+  createTestOrder,
+  OrderCreationResult,
+  generateUUID,
+  CreateTestOrderParams,
+}
+export { clearClientState }

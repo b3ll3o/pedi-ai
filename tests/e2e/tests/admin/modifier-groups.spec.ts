@@ -10,7 +10,7 @@ test.describe('Admin Modifier Groups', () => {
     await modifierGroupsPage.goto()
   })
 
-  test.afterEach(async () => {
+  test.afterEach(async ({ page }) => {
     // Cleanup: deleta grupos de teste criados
     const groupsToClean = [
       `${TEST_GROUP_PREFIX}_Create`,
@@ -33,6 +33,29 @@ test.describe('Admin Modifier Groups', () => {
         // Ignora erros de cleanup
       }
     }
+
+    // Cleanup: limpa estado do cliente
+    try {
+      await page.context().clearCookies()
+    } catch { /* ignore */ }
+    try {
+      await page.evaluate(() => {
+        try {
+          localStorage.clear()
+          sessionStorage.clear()
+        } catch { /* ignore */ }
+      })
+    } catch { /* ignore */ }
+    try {
+      await page.evaluate(() => {
+        return new Promise<void>((resolve) => {
+          const req = indexedDB.deleteDatabase('pedi')
+          req.onsuccess = () => resolve()
+          req.onerror = () => resolve()
+          req.onblocked = () => resolve()
+        })
+      })
+    } catch { /* ignore */ }
   })
 
   test.describe('5.2.1 - Create modifier group', () => {

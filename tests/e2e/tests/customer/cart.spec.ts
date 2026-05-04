@@ -1,4 +1,4 @@
-import { test, expect } from '../shared/fixtures'
+import { test, expect, clearClientState } from '../shared/fixtures'
 import { MenuPage } from '../../pages/MenuPage'
 import { CartPage } from '../../pages/CartPage'
 
@@ -14,6 +14,10 @@ test.describe('Cart', () => {
     await menuPage.goto()
     await menuPage.addProductToCart('Coca-Cola')
     await menuPage.addProductToCart('Picanha')
+  })
+
+  test.afterEach(async ({ page }) => {
+    await clearClientState(page)
   })
 
   test('should display cart with added items', async ({ authenticated }) => {

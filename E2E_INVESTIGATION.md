@@ -1,6 +1,6 @@
 # E2E Test Investigation - Session Summary
 
-## Date: 2026-04-28
+## Date: 2026-04-30
 ## Project: pedi-ai
 
 ---
@@ -18,7 +18,7 @@
 After login via `performLogin`, the session appears valid initially. But when the user navigates to a second page (e.g., from menu to checkout), the middleware (`proxy.ts`) cannot find the session even though cookies are set.
 
 **Affected flows**:
-- Checkout: Redirects to `/cart` (because cart has items with R$ 0.00 price - data issue)
+- Checkout: Redirects to `/cart` (because cart has items with R$ 0.00 price - partially fixed)
 - Table QR Redirect: Redirects to `/login` instead of `/menu`
 - Register Owner Redirect: Redirects to `/menu` instead of `/admin/restaurants/new`
 - Order Tracking: Order not found
@@ -33,91 +33,73 @@ After login via `performLogin`, the session appears valid initially. But when th
 
 ## Issues Found and Fixes Applied
 
-### 1. useAuth.ts - Race Condition on Timeout (FIXED)
-- **Problem**: Timeout returned `[null, null]` silently, discarding valid sessions
-- **Fix**: Added retry logic on timeout before giving up:
-```typescript
-if (err === TIMEOUT_ERROR) {
-  console.warn('Auth init timed out, retrying session check...');
-  const retrySession = await getSession().catch(() => null);
-  return [retrySession, null];
-}
-```
-
-### 2. useAuth.ts - isAuthenticated Requires Both session AND user (FIXED)
-- **Problem**: `isAuthenticated: !!session && !!user` fails if `getUser()` is slow
-- **Fix**: Changed to `isAuthenticated: !!session` (session is ground truth)
-
-### 3. proxy.ts - Uses getSession() instead of getUser() (APPLIED)
+### 1. proxy.ts - Uses getSession() instead of getUser() (FIXED)
 - **Problem**: `getSession()` just reads stored session, doesn't validate JWT
-- **Fix**: Using `getUser()` which validates the JWT
+- **Fix**: Changed to `getUser()` which validates the JWT
+- **Status**: FIXED but not resolving admin login issues
 
-### 4. Checkout testids swapped (FIXED)
-- **Problem**: `CheckoutForm.tsx` had wrong testids (`checkout-email` on name input)
-- **Fix**: Corrected to `checkout-name`, `checkout-phone`, `checkout-table-number`
+### 2. AdminAnalyticsPage.ts - Wrong Locator Type (FIXED)
+- **Problem**: Locators were looking for `button` elements but AdminLayout uses Next.js `Link` components (rendered as `<a>`)
+- **Fix**: Changed locators from `button` to `a`
+- **Status**: FIXED but admin tests still fail due to login issue
 
-### 5. picsum.photos not configured (FIXED)
+### 3. StoreProvider.tsx - IndexedDB Hydration Overwrites Cart (FIXED)
+- **Problem**: `hydrateCartFromIndexedDB()` was called on every page load, overwriting cart items with `unitPrice: 0`
+- **Fix**: Added check to only hydrate if localStorage doesn't have cart data
+- **Status**: FIXED - cart now shows correct prices (R$ 5,99 for Coca-Cola)
+
+### 4. CheckoutClient.tsx - Wrong CheckoutForm Import (FIXED)
+- **Problem**: `CheckoutClient` was importing simple `CheckoutForm` from `./CheckoutForm` instead of full-featured version from `@/components/checkout/CheckoutForm`
+- **Fix**: Changed import and added required props (items, subtotal, tax, total, onSubmit)
+- **Status**: PARTIALLY FIXED - form integration still has issues
+
+### 5. CheckoutForm.tsx - Missing Props (PARTIAL)
+- **Problem**: `CheckoutForm` component expects props but was being called without them
+- **Fix**: Updated `CheckoutClient` to calculate and pass props
+- **Status**: Needs testing
+
+### 6. picsum.photos not configured (FIXED)
 - **Problem**: `next.config.ts` didn't have remotePatterns for picsum.photos
 - **Fix**: Added `remotePatterns: [{ protocol: 'https', hostname: 'picsum.photos' }]`
-
-### 6. Auth timeout increased (APPLIED)
-- **Problem**: 5s timeout too short for slow networks
-- **Fix**: Increased to 10s
+- **Status**: FIXED in previous session
 
 ---
 
-## Issues Found But NOT Fixed (or reverted)
+## Issues NOT Fully Resolved
 
-### 1. Cookie Options in Middleware
-- **Attempted**: Adding `httpOnly`, `secure`, `sameSite` to cookies in `middleware.ts`
-- **Result**: BROKE tests (18 failed) - reverted
-- **Reason**: `httpOnly: true` prevents browser JavaScript from reading auth cookies needed by Supabase client
+### 1. Admin Login Still Failing
+- **Symptom**: "Invalid login credentials" error even with correct credentials
+- **Analysis**: Supabase auth accepts credentials but subsequent page loads don't recognize session
+- **Next Steps**:
+  - Check if cookies are being set correctly with proper flags
+  - Verify Supabase client configuration in browser vs server
+  - Consider if RLS policies are blocking profile queries
 
-### 2. Browser Client Cookie Configuration
-- **Attempted**: Custom `getAll`/`setAll` in `createBrowserClient()`
-- **Result**: BROKE tests - reverted
-- **Reason**: Same issue - cookies need to be accessible to JavaScript
+### 2. Checkout Form Not Rendering Customer Fields
+- **Symptom**: Cart shows correct prices but customer form fields (name, phone) not visible
+- **Analysis**: The `CheckoutForm` from `@/components/checkout/` has customer fields but they may not be rendering
+- **Next Steps**:
+  - Verify the component is rendering correctly
+  - Check if CSS is hiding elements
+  - Debug component integration
 
----
-
-## Key Discovery: Two Independent Auth Paths
-
-| Layer | File | Method |
-|-------|------|--------|
-| Server | `proxy.ts` | `getSession()` or `getUser()` |
-| Client | `useAuth.ts` | `getSession()` + `getUser()` |
-
-These can disagree during race conditions.
-
----
-
-## Next Steps to Investigate
-
-1. **Debug cookie flow**: Add logging to verify cookies are set and sent correctly
-2. **Check Supabase client version**: Maybe there's a bug with cookie handling
-3. **Investigate network blocking**: E2E setup blocks some domains - could affect Supabase auth
-4. **Race condition between middleware and client**: Middleware might run before client sets cookies
-5. **Admin tests flaky**: Admin analytics/orders timeout - investigate if data is being seeded correctly
+### 3. Order Creation Failing
+- **Symptom**: "Failed to create order items" - 500 Internal Server Error
+- **Analysis**: The API route `/api/orders` is failing when inserting order items
+- **Next Steps**:
+  - Check if `order_items` table schema matches what's being inserted
+  - Verify RLS policies allow the insert
+  - Debug the actual error message from Supabase
 
 ---
 
-## Files Changed
+## Files Changed (This Session)
 
 ```bash
- next.config.ts                                     |   6 +
- src/app/api/admin/analytics/orders/route.ts        |  21 +-
- src/app/api/admin/analytics/popular-items/route.ts |  21 +-
- src/app/api/admin/analytics/route.ts               |  21 +-
- src/app/api/menu/route.ts                         |   8 +-
- src/app/api/orders/route.ts                       |  23 ++-
- ...
- src/hooks/useAuth.ts                              |   2 +-
- src/hooks/useCardapio.ts                         |  22 ++-
- ...
- src/lib/supabase/middleware.ts                    |  10 +-
- tests/e2e/pages/CheckoutPage.ts                    |   4 +-
- tests/e2e/tests/customer/checkout.spec.ts          |   5 +-
- tests/e2e/tests/customer/table-qr-redirect.spec.ts |  34 ++--
+src/proxy.ts                                          | Uses getUser() instead of getSession()
+tests/e2e/pages/AdminAnalyticsPage.ts                  | Changed locators from button to a
+src/components/providers/StoreProvider.tsx              | Only hydrate from IndexedDB if no localStorage
+src/app/(customer)/checkout/CheckoutClient.tsx         | Import correct CheckoutForm, pass props
 ```
 
 ---
@@ -132,3 +114,16 @@ pnpm test:e2e:seed && rm -rf .playwright && pnpm test:e2e:smoke
 # Kill stuck dev servers
 killall -9 node
 ```
+
+---
+
+## Key Discoveries
+
+1. **Two CheckoutForm components exist**:
+   - `src/app/(customer)/checkout/CheckoutForm.tsx` - simple version (no customer fields)
+   - `src/components/checkout/CheckoutForm.tsx` - full version (with customer fields)
+   - `CheckoutClient` was importing the simple version
+
+2. **StoreProvider hydration issue**: Calling `hydrateCartFromIndexedDB()` on every page load was overwriting cart items with corrupted data (unitPrice: 0)
+
+3. **Admin locators**: AdminLayout uses Next.js `Link` components, not `button` elements

@@ -1,4 +1,4 @@
-import { test, expect } from '../shared/fixtures'
+import { test, expect, clearClientState } from '../shared/fixtures'
 import { WaiterDashboardPage } from '../../pages/WaiterDashboardPage'
 
 test.describe('Kitchen / Waiter Dashboard', () => {
@@ -7,6 +7,10 @@ test.describe('Kitchen / Waiter Dashboard', () => {
   test.beforeEach(async ({ waiter }) => {
     kitchenPage = new WaiterDashboardPage(waiter)
     await kitchenPage.navigateToKitchen()
+  })
+
+  test.afterEach(async ({ page }) => {
+    await clearClientState(page)
   })
 
   test('should display kitchen orders', async ({ waiter: _waiter }) => {

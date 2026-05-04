@@ -1,4 +1,4 @@
-import { test, expect } from '../shared/fixtures'
+import { test, expect, clearClientState } from '../shared/fixtures'
 
 /**
  * Testes de funcionalidade offline.
@@ -26,6 +26,10 @@ import { test, expect } from '../shared/fixtures'
  * - checkout-button (CartSummary.tsx line 57)
  */
 test.describe('Offline Functionality', () => {
+  test.afterEach(async ({ page }) => {
+    await clearClientState(page)
+  })
+
   test('should display offline indicator when network is down', async ({ authenticated }) => {
     // First load the page, then go offline
     await authenticated.goto('/menu')

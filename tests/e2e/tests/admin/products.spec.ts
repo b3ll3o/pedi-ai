@@ -1,4 +1,4 @@
-import { test, expect } from '../shared/fixtures'
+import { test, expect, clearClientState } from '../shared/fixtures'
 import { AdminProductsPage } from '../../pages/AdminProductsPage'
 
 test.describe('Admin Products', () => {
@@ -7,6 +7,10 @@ test.describe('Admin Products', () => {
   test.beforeEach(async ({ admin }) => {
     productsPage = new AdminProductsPage(admin)
     await productsPage.goto()
+  })
+
+  test.afterEach(async ({ page }) => {
+    await clearClientState(page)
   })
 
   test('should display products list', async ({ admin }) => {

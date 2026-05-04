@@ -1,4 +1,4 @@
-import { test, expect } from '../shared/fixtures'
+import { test, expect, clearClientState } from '../shared/fixtures'
 import { MenuPage } from '../../pages/MenuPage'
 import { CheckoutPage } from '../../pages/CheckoutPage'
 import { OrderPage } from '../../pages/OrderPage'
@@ -16,6 +16,10 @@ test.describe('Pagamento Pix', () => {
     // Adicionar item ao carrinho
     await menuPage.goto()
     await menuPage.addProductToCart('Picanha')
+  })
+
+  test.afterEach(async ({ page }) => {
+    await clearClientState(page)
   })
 
   test.describe('Fluxo completo de pagamento Pix', () => {

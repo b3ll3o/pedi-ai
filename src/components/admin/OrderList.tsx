@@ -100,6 +100,7 @@ export function OrderList({
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value as OrderStatus | 'all')}
           aria-label="Filtrar por status"
+          data-testid="filter-status-select"
         >
           <option value="all">Todos os status</option>
           {Object.entries(STATUS_LABELS).map(([value, label]) => (

@@ -1,6 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin'
+
+function getSupabaseAdmin() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false,
+      },
+    }
+  )
+}
 
 // GET /api/admin/orders - List orders with filters
 export async function GET(request: NextRequest) {
@@ -12,25 +26,28 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
 
     const status = searchParams.get('status')
-    const startDate = searchParams.get('start_date')
-    const endDate = searchParams.get('end_date')
-    const page = parseInt(searchParams.get('page') || '1', 10)
+    const dateFrom = searchParams.get('date_from')
+    const dateTo = searchParams.get('date_to')
     const limit = parseInt(searchParams.get('limit') || '50', 10)
-    const offset = (page - 1) * limit
+    const offset = parseInt(searchParams.get('offset') || '0', 10)
 
-    const supabase = await createClient()
+    const supabaseAdmin = getSupabaseAdmin()
 
     // Build query with restaurant_id from session
-    let query = supabase
+    let query = supabaseAdmin
       .from('orders')
       .select(`
         id,
         status,
+        subtotal,
+        tax,
         total,
+        payment_method,
+        payment_status,
         created_at,
         updated_at,
         table:tables(id, number, name),
-        customer:customers(id, name, email)
+        items:order_items(id, product_id, combo_id, quantity, unit_price, total_price, notes)
       `, { count: 'exact' })
       .eq('restaurant_id', restaurantId)
 
@@ -45,13 +62,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Apply date range filters
-    if (startDate) {
-      query = query.gte('created_at', startDate)
+    if (dateFrom) {
+      query = query.gte('created_at', dateFrom)
     }
 
-    if (endDate) {
-      // Include the entire end date
-      query = query.lte('created_at', endDate + 'T23:59:59.999Z')
+    if (dateTo) {
+      query = query.lte('created_at', dateTo + 'T23:59:59.999Z')
     }
 
     // Order by created_at descending
@@ -71,16 +87,12 @@ export async function GET(request: NextRequest) {
     }
 
     const total = count || 0
-    const totalPages = Math.ceil(total / limit)
 
     return NextResponse.json({
-      data: orders || [],
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
-      },
+      orders: orders || [],
+      total,
+      limit,
+      offset,
     })
   } catch (error) {
     console.error('Unexpected error in /api/admin/orders:', error)

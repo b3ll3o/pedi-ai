@@ -1,4 +1,4 @@
-import { test, expect } from '../shared/fixtures'
+import { test, expect, clearClientState } from '../shared/fixtures'
 import { OrderPage } from '../../pages/OrderPage'
 import { AdminOrdersPage } from '../../pages/AdminOrdersPage'
 import { createAdminClient, readSeedResult, updateOrderStatus as updateOrderStatusApi } from '../../support/api'
@@ -13,9 +13,13 @@ test.describe('Realtime Updates', () => {
     seedData = readSeedResult()
   })
 
-  test.beforeEach(async ({ admin: _admin, guest: _guest }) => {
+  test.beforeEach(async ({ admin, guest }) => {
     adminOrdersPage = new AdminOrdersPage(admin)
     orderPage = new OrderPage(guest)
+  })
+
+  test.afterEach(async ({ page }) => {
+    await clearClientState(page)
   })
 
   test('admin updates status and customer receives update', async ({ admin: _admin, guest: _guest }) => {

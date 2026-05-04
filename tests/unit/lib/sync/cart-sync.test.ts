@@ -89,6 +89,11 @@ describe('Cart Sync', () => {
       callbackCalled = true
     })
 
+    let broadcastTimestamp = 0
+    mockPostMessage.mockImplementation((msg: CartBroadcast) => {
+      broadcastTimestamp = msg.timestamp
+    })
+
     manager.broadcastCartUpdate(mockCartItems)
 
     const handler = mockAddEventListener.mock.calls.find(
@@ -99,7 +104,7 @@ describe('Cart Sync', () => {
       data: {
         type: 'CART_UPDATE',
         items: mockCartItems,
-        timestamp: Date.now(),
+        timestamp: broadcastTimestamp,
       },
     } as unknown as MessageEvent<CartBroadcast>
 

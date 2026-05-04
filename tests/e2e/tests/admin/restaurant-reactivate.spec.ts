@@ -1,4 +1,4 @@
-import { test, expect } from '../shared/fixtures'
+import { test, expect, clearClientState } from '../shared/fixtures'
 
 /**
  * E2E Tests para Reativação de Restaurante
@@ -22,6 +22,10 @@ test.describe('Admin Restaurant Reactivation', () => {
   test.describe.configure({ mode: 'serial' })
 
   let restaurantId: string
+
+  test.afterEach(async ({ page }) => {
+    await clearClientState(page)
+  })
 
   // ============================================
   // Setup: Criar e desativar restaurante

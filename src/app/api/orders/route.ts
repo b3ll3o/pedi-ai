@@ -225,7 +225,7 @@ export async function POST(request: NextRequest) {
     }))
 
     if (orderItemsToInsert.length > 0) {
-      const { error: itemsError } = await supabase
+      const { error: itemsError } = await supabaseAdmin
         .from('order_items')
         .insert(orderItemsToInsert)
 

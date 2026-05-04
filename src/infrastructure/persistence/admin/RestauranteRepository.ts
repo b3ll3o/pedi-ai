@@ -23,7 +23,7 @@ export class RestauranteRepository implements IRestauranteRepository {
       atualizadoEm: restaurante.atualizadoEm,
     };
 
-    await this.db.restaurantes.add(record);
+    await this.db.restaurantes.put(record);
 
     // Salvar configurações separadamente (em uma tabela de configurações)
     await this.db.table('configuracoes_restaurante').put({

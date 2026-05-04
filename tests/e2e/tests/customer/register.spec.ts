@@ -1,4 +1,4 @@
-import { test, expect } from '../shared/fixtures'
+import { test, expect, clearClientState } from '../shared/fixtures'
 import { RegisterPage } from '../../pages/RegisterPage'
 import { CustomerLoginPage } from '../../pages/CustomerLoginPage'
 
@@ -10,6 +10,10 @@ test.describe('Registro do Cliente', () => {
     registerPage = new RegisterPage(page)
     loginPage = new CustomerLoginPage(page)
     await registerPage.goto()
+  })
+
+  test.afterEach(async ({ page }) => {
+    await clearClientState(page)
   })
 
   test('deve exibir o formulário de registro', async ({ page: _page }) => {

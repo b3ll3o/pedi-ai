@@ -4,16 +4,20 @@ import { createContext, useContext, useEffect } from 'react';
 import { hydrateCartFromIndexedDB } from '@/stores/cartStore';
 import { processQueue } from '@/lib/offline/sync';
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-interface StoreContextValue {}
+const STORE_KEY = 'pedi-ai-cart';
+
+function hasStoredCart(): boolean {
+  if (typeof window === 'undefined') return false;
+  return localStorage.getItem(STORE_KEY) !== null;
+}
 
 const StoreContext = createContext<StoreContextValue | null>(null);
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
-  // Hydrate cart from IndexedDB on app load
   useEffect(() => {
-    hydrateCartFromIndexedDB();
-    // Processar pedidos pendentes salvos em sessões anteriores
+    if (!hasStoredCart()) {
+      hydrateCartFromIndexedDB();
+    }
     processQueue();
   }, []);
 

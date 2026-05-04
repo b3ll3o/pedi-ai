@@ -344,15 +344,15 @@ describe('adminOrderService', () => {
   })
 
   describe('updateOrderStatus', () => {
-    it('faz requisição PATCH para /api/orders/{orderId}/status', async () => {
+    it('faz requisição PATCH para /api/admin/orders/{orderId}/status', async () => {
       mockNextResponse({
         ok: true,
-        json: () => Promise.resolve({ id: 'o1', status: 'confirmed', payment_status: 'pending', updated_at: '' }),
+        json: () => Promise.resolve({ id: 'o1', status: 'paid', payment_status: 'pending', updated_at: '' }),
       })
 
-      await updateOrderStatus('order-123', 'confirmed')
+      await updateOrderStatus('order-123', 'paid')
 
-      expect(mockFetchState.calls[0].url).toContain('/api/orders/order-123/status')
+      expect(mockFetchState.calls[0].url).toContain('/api/admin/orders/order-123/status')
       expect(mockFetchState.calls[0].options.method).toBe('PATCH')
     })
 
@@ -444,12 +444,12 @@ describe('adminOrderService', () => {
   })
 
   describe('VALID_STATUS_TRANSITIONS', () => {
-    it('pending permite confirmed e cancelled', () => {
-      expect(VALID_STATUS_TRANSITIONS.pending).toEqual(['confirmed', 'cancelled'])
+    it('pending_payment permite paid e cancelled', () => {
+      expect(VALID_STATUS_TRANSITIONS.pending_payment).toEqual(['paid', 'cancelled'])
     })
 
-    it('confirmed permite preparing e cancelled', () => {
-      expect(VALID_STATUS_TRANSITIONS.confirmed).toEqual(['preparing', 'cancelled'])
+    it('paid permite preparing e cancelled', () => {
+      expect(VALID_STATUS_TRANSITIONS.paid).toEqual(['preparing', 'cancelled'])
     })
 
     it('preparing permite ready e cancelled', () => {
@@ -470,36 +470,36 @@ describe('adminOrderService', () => {
   })
 
   describe('isValidStatusTransition', () => {
-    it('pending pode ir para confirmed', () => {
-      expect(isValidStatusTransition('pending', 'confirmed')).toBe(true)
+    it('pending_payment pode ir para paid', () => {
+      expect(isValidStatusTransition('pending_payment', 'paid')).toBe(true)
     })
 
-    it('pending pode ir para cancelled', () => {
-      expect(isValidStatusTransition('pending', 'cancelled')).toBe(true)
+    it('pending_payment pode ir para cancelled', () => {
+      expect(isValidStatusTransition('pending_payment', 'cancelled')).toBe(true)
     })
 
-    it('pending não pode ir para preparing', () => {
-      expect(isValidStatusTransition('pending', 'preparing')).toBe(false)
+    it('pending_payment não pode ir para preparing', () => {
+      expect(isValidStatusTransition('pending_payment', 'preparing')).toBe(false)
     })
 
-    it('pending não pode pular para ready', () => {
-      expect(isValidStatusTransition('pending', 'ready')).toBe(false)
+    it('pending_payment não pode pular para ready', () => {
+      expect(isValidStatusTransition('pending_payment', 'ready')).toBe(false)
     })
 
-    it('pending não pode pular para delivered', () => {
-      expect(isValidStatusTransition('pending', 'delivered')).toBe(false)
+    it('pending_payment não pode pular para delivered', () => {
+      expect(isValidStatusTransition('pending_payment', 'delivered')).toBe(false)
     })
 
-    it('confirmed pode ir para preparing', () => {
-      expect(isValidStatusTransition('confirmed', 'preparing')).toBe(true)
+    it('paid pode ir para preparing', () => {
+      expect(isValidStatusTransition('paid', 'preparing')).toBe(true)
     })
 
-    it('confirmed pode ir para cancelled', () => {
-      expect(isValidStatusTransition('confirmed', 'cancelled')).toBe(true)
+    it('paid pode ir para cancelled', () => {
+      expect(isValidStatusTransition('paid', 'cancelled')).toBe(true)
     })
 
-    it('confirmed não pode pular para ready', () => {
-      expect(isValidStatusTransition('confirmed', 'ready')).toBe(false)
+    it('paid não pode pular para ready', () => {
+      expect(isValidStatusTransition('paid', 'ready')).toBe(false)
     })
 
     it('preparing pode ir para ready', () => {
@@ -511,23 +511,23 @@ describe('adminOrderService', () => {
     })
 
     it('delivered não pode transitar para nenhum estado', () => {
-      expect(isValidStatusTransition('delivered', 'pending')).toBe(false)
+      expect(isValidStatusTransition('delivered', 'pending_payment')).toBe(false)
       expect(isValidStatusTransition('delivered', 'cancelled')).toBe(false)
     })
 
     it('cancelled não pode transitar para nenhum estado', () => {
-      expect(isValidStatusTransition('cancelled', 'pending')).toBe(false)
+      expect(isValidStatusTransition('cancelled', 'pending_payment')).toBe(false)
       expect(isValidStatusTransition('cancelled', 'delivered')).toBe(false)
     })
   })
 
   describe('getAllowedTransitions', () => {
-    it('retorna transições válidas para pending', () => {
-      expect(getAllowedTransitions('pending')).toEqual(['confirmed', 'cancelled'])
+    it('retorna transições válidas para pending_payment', () => {
+      expect(getAllowedTransitions('pending_payment')).toEqual(['paid', 'cancelled'])
     })
 
-    it('retorna transições válidas para confirmed', () => {
-      expect(getAllowedTransitions('confirmed')).toEqual(['preparing', 'cancelled'])
+    it('retorna transições válidas para paid', () => {
+      expect(getAllowedTransitions('paid')).toEqual(['preparing', 'cancelled'])
     })
 
     it('retorna transições válidas para preparing', () => {

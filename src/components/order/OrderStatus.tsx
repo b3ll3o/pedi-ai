@@ -151,7 +151,7 @@ export function OrderStatus({ orderId }: OrderStatusProps) {
       </div>
 
       {/* Timeline */}
-      <div className="flex items-start justify-between gap-2 px-4">
+      <div className="flex items-start justify-between gap-2 px-4" data-testid="status-timeline">
         <div className="absolute inset-0 flex items-center">
           <div className="h-0.5 w-full bg-muted" />
           <div

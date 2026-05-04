@@ -6,12 +6,13 @@ Cobertura de testes end-to-end usando [Playwright](https://playwright.dev/).
 
 | Persona | Arquivos de Teste | Fluxos |
 |---------|------------------|--------|
-| Cliente | 10 specs | auth, register, menu, cart, checkout, order, payment, offline, combos, modifier-groups |
-| Administrador | 7 specs | auth, categories, products, orders, table-qr, combos-admin, realtime-updates |
+| Cliente | 11 specs | auth, register, menu, cart, checkout, order, payment, offline, combos, modifier-groups |
+| Administrador | 9 specs | auth, categories, products, orders, table-qr, combos-admin, realtime-updates, analytics |
 | Garçom | 1 spec | kitchen |
 | Landing | 1 spec | landing |
+| Offline | 1 spec | cross-tab-sync |
 
-**Total: 19 spec files cobrindo 19 fluxos**
+**Total: 30 spec files cobrindo fluxos completos**
 
 ---
 
@@ -42,6 +43,8 @@ Cobertura de testes end-to-end usando [Playwright](https://playwright.dev/).
 | orders | `tests/admin/orders.spec.ts` | — | ✅ |
 | table-qr | `tests/admin/table-qr.spec.ts` | — | ✅ |
 | combos-admin | `tests/admin/combos-admin.spec.ts` | — | ✅ |
+| realtime-updates | `tests/admin/realtime-updates.spec.ts` | — | ✅ |
+| analytics | `tests/admin/analytics.spec.ts` | — | ✅ |
 
 ### Realtime
 
@@ -65,8 +68,6 @@ Cobertura de testes end-to-end usando [Playwright](https://playwright.dev/).
 | `@smoke` | Testes essenciais de sanidade | auth, register, checkout, admin auth, landing |
 | `@critical` | Fluxos críticos para negócio | auth, checkout, admin auth |
 | `@slow` | Testes que levam >30s | checkout, order, payment, kitchen |
-
-> **Nota**: Scripts `test:e2e:smoke` e `test:e2e:slow` ainda não existem em `package.json`. Para executar por tag, use: `pnpm test:e2e --grep "@smoke"`
 
 ---
 
@@ -129,6 +130,15 @@ pnpm test:e2e:worker
 
 # Executar testes que casam com uma palavra-chave
 pnpm test:e2e:grep "checkout"
+
+# Smoke tests (rápido)
+pnpm test:e2e:smoke
+
+# Critical tests (mais rápido)
+pnpm test:e2e:critical
+
+# Fast tests (exclui slow)
+pnpm test:e2e:fast
 ```
 
 ### Variáveis de Ambiente
@@ -138,6 +148,7 @@ pnpm test:e2e:grep "checkout"
 | `BASE_URL` | `http://localhost:3000` | URL base da aplicação |
 | `CI` | `undefined` | Quando definido, ativa retry e webServer automático |
 | `E2E_SKIP_NEW_TESTS` | `undefined` | Quando `true`, executa apenas auth.spec (rollback) |
+| `SHARD` | `undefined` | Shard atual (ex: `1/4`) |
 
 > **Nota**: E2E usa `.env.e2e` (Supabase Cloud). Para development local, use `.env.local`.
 
@@ -162,14 +173,6 @@ Os relatórios HTML e JSON são gerados em:
 
 ---
 
-## Fluxos Sem Cobertura
-
-| Fluxo | Prioridade | Observação |
-|-------|-----------|------------|
-| Filtros no cardápio | Baixa | Busca e filtros por categoria |
-
----
-
 ## Arquitetura
 
 ```
@@ -185,13 +188,58 @@ tests/e2e/
 │   └── WaiterDashboardPage.ts
 ├── tests/
 │   ├── admin/              # Testes do painel administrativo
+│   ├── auth/               # Testes de autenticação
 │   ├── customer/           # Testes do cardápio digital
+│   ├── landing/            # Testes da landing page
+│   ├── offline/            # Testes offline
+│   ├── payment/            # Testes de pagamento
 │   ├── waiter/             # Testes do painel do garçom
 │   └── shared/
+│       ├── factories.ts     # Data factories para criar dados de teste
 │       ├── fixtures/       # Dados de teste e setup
 │       └── helpers/        # Funções utilitárias
+├── scripts/
+│   ├── seed.ts             # Script de seed de dados
+│   └── cleanup.ts           # Script de cleanup
 ├── playwright.config.ts    # Configuração do Playwright
+├── BEST_PRACTICES.md       # Melhores práticas
+├── FLUXOS.md               # Documentação de fluxos
 └── package.json
+```
+
+---
+
+## Performance
+
+### Otimizações Implementadas
+
+1. **Navegação**: Usa `waitUntil: 'load'` em vez de `networkidle'` (2-5x mais rápido)
+2. **Storage State**: Cache TTL de 10 minutos para sessões autenticadas
+3. **Seed Data**: Cache em memória por worker index
+4. **Parallel Execution**: `fullyParallel: true` para testes locais
+5. **Sharding**: 4 shards em CI para distribuição de carga
+6. **Network Blocking**: Bloqueia requests desnecessários (fonts, analytics)
+
+### Factories para Dados Específicos
+
+Para testes que requerem dados específicos, use factories:
+
+```typescript
+import { createOrder } from '../shared/factories'
+
+test('should update preparing order', async ({ api, seedData }) => {
+  const order = await createOrder(api, {
+    restaurantId: seedData.restaurant.id,
+    tableId: seedData.table.id,
+    status: 'preparing',
+    paymentStatus: 'paid',
+    items: [{
+      productId: seedData.products[0].id,
+      quantity: 1,
+      unitPrice: seedData.products[0].price
+    }]
+  })
+})
 ```
 
 ---
@@ -202,3 +250,11 @@ Conforme as regras do projeto:
 - **Testes DEVEM ser atualizados imediatamente** ao adicionar, modificar ou corrigir qualquer funcionalidade
 - **Antes de merge de PR**: todos os testes E2E DEVEM passar localmente
 - **CI/CD**: o pipeline E2E bloqueia merge se os testes falharem
+
+---
+
+## Links Úteis
+
+- [Playwright Docs](https://playwright.dev/docs)
+- [Best Practices](BEST_PRACTICES.md)
+- [Fluxos Documentados](FLUXOS.md)

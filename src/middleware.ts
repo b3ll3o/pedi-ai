@@ -1,12 +1,12 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/middleware'
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { supabase } = await createClient(request)
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession()
+    data: { user },
+  } = await supabase.auth.getUser()
 
   const isAdminRoute =
     request.nextUrl.pathname.startsWith('/admin') ||
@@ -14,8 +14,7 @@ export async function proxy(request: NextRequest) {
 
   const isMenuRoute = request.nextUrl.pathname.startsWith('/menu')
 
-  if (!session && isAdminRoute) {
-    // Don't redirect if already on login page
+  if (!user && isAdminRoute) {
     if (request.nextUrl.pathname === '/admin/login') {
       return NextResponse.next()
     }
@@ -24,7 +23,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(redirectUrl)
   }
 
-  if (!session && isMenuRoute) {
+  if (!user && isMenuRoute) {
     const redirectUrl = new URL('/login', request.url)
     redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
     return NextResponse.redirect(redirectUrl)
@@ -36,3 +35,5 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: ['/admin/:path*', '/api/admin/:path*', '/menu/:path*'],
 }
+
+export { middleware as proxy }

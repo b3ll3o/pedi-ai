@@ -1,4 +1,4 @@
-import { test, expect } from '../shared/fixtures'
+import { test, expect, clearClientState } from '../shared/fixtures'
 import { AdminProductsPage } from '../../pages/AdminProductsPage'
 import { createAdminClient, readSeedResult } from '../../support/api'
 
@@ -11,9 +11,13 @@ test.describe('Admin Combos', () => {
     _seedData = readSeedResult()
   })
 
-  test.beforeEach(async ({ admin: _admin }) => {
+  test.beforeEach(async ({ admin }) => {
     productsPage = new AdminProductsPage(admin)
     await productsPage.goto()
+  })
+
+  test.afterEach(async ({ page }) => {
+    await clearClientState(page)
   })
 
   test('should display combos in products list with badge', async ({ admin: _admin }) => {

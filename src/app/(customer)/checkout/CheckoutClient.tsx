@@ -5,18 +5,53 @@ import { useRouter } from 'next/navigation';
 import { LogOut } from 'lucide-react';
 import { useCartStore } from '@/stores/cartStore';
 import { useAuth } from '@/hooks/useAuth';
-import { CheckoutForm } from './CheckoutForm';
+import { CheckoutForm } from '@/components/checkout/CheckoutForm';
 import styles from './page.module.css';
+
+const TAX_RATE = 0.1;
 
 export default function CheckoutClient() {
   const router = useRouter();
   const { signOut } = useAuth();
   const items = useCartStore((state) => state.items);
   const validateCart = useCartStore((state) => state.validateCart);
+  const clearCart = useCartStore((state) => state.clearCart);
 
   const [isValidating, setIsValidating] = useState(true);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const subtotal = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
+  const tax = subtotal * TAX_RATE;
+  const total = subtotal + tax;
+
+  const handleSubmit = async (data: { customerName: string; customerPhone: string; paymentMethod: 'pix' }) => {
+    const response = await fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customer_id: '',
+        table_id: null,
+        items: items.map((item) => ({
+          product_id: item.productId,
+          quantity: item.quantity,
+          unit_price: item.unitPrice,
+          modifiers: item.modifiers.map((m) => ({ name: m.name, price: m.price_adjustment })),
+        })),
+        payment_method: data.paymentMethod,
+        idempotency_key: crypto.randomUUID(),
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Erro ao criar pedido');
+    }
+
+    const order = await response.json();
+    clearCart();
+    router.push(`/order/${order.id}`);
+  };
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
@@ -118,7 +153,13 @@ export default function CheckoutClient() {
       </header>
 
       <main className={styles.main}>
-        <CheckoutForm />
+        <CheckoutForm
+          items={items}
+          subtotal={subtotal}
+          tax={tax}
+          total={total}
+          onSubmit={handleSubmit}
+        />
       </main>
     </div>
   );

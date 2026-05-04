@@ -97,13 +97,19 @@ async function isSeedValid(): Promise<boolean> {
     const result: SeedResult = JSON.parse(fs.readFileSync(SEED_RESULT_FILE, 'utf-8'))
     const admin = createAdminClient()
 
+    const shardPrefix = getShardPrefix()
+    const expectedName = `${shardPrefix}${RESTAURANT_NAME}`
+
     const { data: restaurant } = await admin
       .from('restaurants')
       .select('id')
       .eq('id', result.restaurant.id)
       .maybeSingle()
 
-    if (!restaurant || result.restaurant.name !== RESTAURANT_NAME) {
+    if (!restaurant || result.restaurant.name !== expectedName) {
+      if (IS_SHARD_MODE) {
+        console.log(`⚠️ Seed inválido - restaurant name mismatch (esperado: ${expectedName})`)
+      }
       return false
     }
 
@@ -122,7 +128,8 @@ async function isSeedValid(): Promise<boolean> {
     }
 
     console.log('✅ Seed válido encontrado - usando dados existentes do cache')
-    console.log(`   Restaurant ID: ${result.restaurant.id}\n`)
+    console.log(`   Restaurant ID: ${result.restaurant.id}`)
+    console.log(`   Shard: ${SHARD || 'default'}\n`)
     return true
   } catch {
     return false
@@ -133,6 +140,22 @@ async function isSeedValid(): Promise<boolean> {
 const SEED_PREFIX = 'e2e+'
 const TEST_PASSWORD = 'E2ETestPassword123!'
 const RESTAURANT_NAME = 'Restaurant E2E Test'
+
+// Shard configuration for isolated test data
+const SHARD = process.env.SHARD || ''
+const SHARD_MATCH = SHARD.match(/^(\d+)\/(\d+)$/)
+const SHARD_CURRENT = SHARD_MATCH ? Number(SHARD_MATCH[1]) : 0
+const SHARD_TOTAL = SHARD_MATCH ? Number(SHARD_MATCH[2]) : 0
+const IS_SHARD_MODE = SHARD_CURRENT > 0
+
+// Get shard-specific suffix for emails and prefix for names
+function getShardSuffix(): string {
+  return IS_SHARD_MODE ? `+sh${SHARD_CURRENT}` : ''
+}
+
+function getShardPrefix(): string {
+  return IS_SHARD_MODE ? `[Shard${SHARD_CURRENT}] ` : ''
+}
 
 // ============================================
 // Tipos
@@ -567,11 +590,14 @@ export async function createTestTable(
 async function cleanupExistingTestData(admin: SupabaseClient): Promise<void> {
   console.log('🧹 Limpando dados de teste existentes...')
 
-  // 1. Buscar usuários de teste pelo email
+  const shardSuffix = getShardSuffix()
+  const shardPrefix = getShardPrefix()
+
+  // 1. Buscar usuários de teste pelo email (includes shard suffix)
   const testEmails = [
-    `${SEED_PREFIX}customer@pedi-ai.test`,
-    `${SEED_PREFIX}admin@pedi-ai.test`,
-    `${SEED_PREFIX}waiter@pedi-ai.test`,
+    `${SEED_PREFIX}customer${shardSuffix}@pedi-ai.test`,
+    `${SEED_PREFIX}admin${shardSuffix}@pedi-ai.test`,
+    `${SEED_PREFIX}waiter${shardSuffix}@pedi-ai.test`,
   ]
 
   // Buscar usuários existentes
@@ -585,15 +611,23 @@ async function cleanupExistingTestData(admin: SupabaseClient): Promise<void> {
   }
 
   // 2. Deletar restaurant de teste (cascade deleta tables, categories, products, etc)
-  const { data: restaurants } = await admin
-    .from('restaurants')
-    .select('id')
-    .eq('name', RESTAURANT_NAME)
-    .maybeSingle()
+  // Delete both shard-specific and non-shard restaurants
+  const restaurantsToDelete = [
+    `${shardPrefix}${RESTAURANT_NAME}`,
+    RESTAURANT_NAME,
+  ]
 
-  if (restaurants) {
-    console.log(`   Deletando restaurant: ${RESTAURANT_NAME}`)
-    await admin.from('restaurants').delete().eq('id', restaurants.id)
+  for (const restaurantName of restaurantsToDelete) {
+    const { data: restaurants } = await admin
+      .from('restaurants')
+      .select('id')
+      .eq('name', restaurantName)
+      .maybeSingle()
+
+    if (restaurants) {
+      console.log(`   Deletando restaurant: ${restaurantName}`)
+      await admin.from('restaurants').delete().eq('id', restaurants.id)
+    }
   }
 
   console.log('✅ Cleanup concluído\n')
@@ -606,20 +640,21 @@ async function cleanupExistingTestData(admin: SupabaseClient): Promise<void> {
 async function createUsers(admin: SupabaseClient): Promise<SeedResult['users']> {
   console.log('👥 Criando usuários de teste...')
 
+  const shardSuffix = getShardSuffix()
   const users: SeedResult['users'] = {
     customer: {
       id: '',
-      email: `${SEED_PREFIX}customer@pedi-ai.test`,
+      email: `${SEED_PREFIX}customer${shardSuffix}@pedi-ai.test`,
       password: TEST_PASSWORD,
     },
     admin: {
       id: '',
-      email: `${SEED_PREFIX}admin@pedi-ai.test`,
+      email: `${SEED_PREFIX}admin${shardSuffix}@pedi-ai.test`,
       password: TEST_PASSWORD,
     },
     waiter: {
       id: '',
-      email: `${SEED_PREFIX}waiter@pedi-ai.test`,
+      email: `${SEED_PREFIX}waiter${shardSuffix}@pedi-ai.test`,
       password: TEST_PASSWORD,
     },
   }
@@ -673,14 +708,18 @@ async function createUsers(admin: SupabaseClient): Promise<SeedResult['users']> 
 async function createRestaurant(admin: SupabaseClient): Promise<{ id: string; name: string }> {
   console.log('🏪 Criando restaurant de teste...')
 
-  // Use fixed UUID to match hardcoded ID in MenuPageClient
-  const DEMO_RESTAURANT_ID = '00000000-0000-0000-0000-000000000001'
+  const shardPrefix = getShardPrefix()
+
+  // Generate unique restaurant ID per shard to avoid conflicts
+  const DEMO_RESTAURANT_ID = IS_SHARD_MODE
+    ? `00000000-0000-0000-0000-00000000000${SHARD_CURRENT}`
+    : '00000000-0000-0000-0000-000000000001'
 
   const { data, error } = await admin
     .from('restaurants')
     .upsert({
       id: DEMO_RESTAURANT_ID,
-      name: RESTAURANT_NAME,
+      name: `${shardPrefix}${RESTAURANT_NAME}`,
       description: 'Restaurant de testes E2E',
       settings: {
         currency: 'BRL',
@@ -695,7 +734,7 @@ async function createRestaurant(admin: SupabaseClient): Promise<{ id: string; na
     throw new Error(`Erro ao criar restaurant: ${error.message}`)
   }
 
-  console.log(`   Restaurant criado: ${data.id}\n`)
+  console.log(`   Restaurant criado: ${data.id} (${data.name})\n`)
   return { id: data.id, name: data.name }
 }
 

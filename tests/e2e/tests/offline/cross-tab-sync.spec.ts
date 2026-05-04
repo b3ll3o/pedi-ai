@@ -53,6 +53,10 @@ test.describe('Cross-Tab Cart Sync', () => {
     }
   })
 
+  test.afterEach(async ({ page }) => {
+    await page.evaluate(() => indexedDB.deleteDatabase('pedi-ai-db'))
+  })
+
   test('Cart updates sync across tabs', async ({ browser }) => {
     const seedData = loadSeedData()
     const context = await createAuthenticatedContext(browser, seedData.customer.email)

@@ -48,7 +48,7 @@ export class AdminLoginPage {
   }
 
   async waitForDashboard(): Promise<void> {
-    await this.page.waitForURL('/admin/dashboard', { timeout: 30_000 })
+    await this.page.waitForURL('/admin/dashboard', { timeout: 60_000 })
   }
 
   async gotoResetPassword(token: string): Promise<void> {

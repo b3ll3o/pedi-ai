@@ -1,9 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import type { orders, order_items, order_status_history } from '@/lib/supabase/types'
 
 type OrderItem = Omit<order_items, 'created_at'>
 type StatusHistoryEntry = Omit<order_status_history, 'order_id' | 'created_at'>
+
+function getSupabaseAdmin() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false,
+      },
+    }
+  )
+}
 
 interface OrderResponse {
   id: string
@@ -30,10 +45,10 @@ export async function GET(
       )
     }
 
-    const supabase = await createClient()
+    const supabaseAdmin = getSupabaseAdmin()
 
     // Fetch order
-    const { data: order, error: orderError } = await supabase
+    const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
       .select('*')
       .eq('id', id)
@@ -48,7 +63,7 @@ export async function GET(
     }
 
     // Fetch order items
-    const { data: items, error: itemsError } = await supabase
+    const { data: items, error: itemsError } = await supabaseAdmin
       .from('order_items')
       .select('*')
       .eq('order_id', id)
@@ -62,7 +77,7 @@ export async function GET(
     }
 
     // Fetch status history
-    const { data: statusHistory, error: statusHistoryError } = await supabase
+    const { data: statusHistory, error: statusHistoryError } = await supabaseAdmin
       .from('order_status_history')
       .select('*')
       .eq('order_id', id)

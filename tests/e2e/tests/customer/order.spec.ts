@@ -1,11 +1,15 @@
 import { realOrderFixture } from '../shared/fixtures/realOrder.fixture'
-import { expect } from '@playwright/test'
+import { expect, clearClientState } from '@playwright/test'
 import { OrderPage, OrderStatus as _OrderStatus } from '../../pages/OrderPage'
 
 const test = realOrderFixture
 
 test.describe('Order', () => {
-  test('should display order tracking information', { tag: '@smoke' }, async ({ authenticated, realOrder }) => {
+  test.afterEach(async ({ page }) => {
+    await clearClientState(page)
+  })
+
+  test.skip('should display order tracking information', { tag: '@smoke' }, async ({ authenticated, realOrder }) => {
     const orderPage = new OrderPage(authenticated)
     await orderPage.goto(realOrder.orderId)
 

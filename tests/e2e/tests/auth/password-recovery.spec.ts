@@ -1,12 +1,40 @@
 import { test, expect } from '../shared/fixtures'
 import { CustomerLoginPage } from '../../pages/CustomerLoginPage'
 
+async function cleanupTest(page: Page) {
+  try {
+    await page.context().clearCookies()
+  } catch { /* ignore */ }
+  try {
+    await page.evaluate(() => {
+      try {
+        localStorage.clear()
+        sessionStorage.clear()
+      } catch { /* ignore */ }
+    })
+  } catch { /* ignore */ }
+  try {
+    await page.evaluate(() => {
+      return new Promise<void>((resolve) => {
+        const req = indexedDB.deleteDatabase('pedi')
+        req.onsuccess = () => resolve()
+        req.onerror = () => resolve()
+        req.onblocked = () => resolve()
+      })
+    })
+  } catch { /* ignore */ }
+}
+
 test.describe('Recuperação de Senha', () => {
   let loginPage: CustomerLoginPage
 
   test.beforeEach(async ({ page }) => {
     loginPage = new CustomerLoginPage(page)
     await loginPage.goto()
+  })
+
+  test.afterEach(async ({ page }) => {
+    await cleanupTest(page)
   })
 
   test('deve exibir link para esqueci minha senha na página de login', async ({ page: _page }) => {

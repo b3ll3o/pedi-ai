@@ -1,4 +1,4 @@
-import { test, expect } from '../shared/fixtures'
+import { test, expect, clearClientState } from '../shared/fixtures'
 import { LandingPage } from '../../pages/LandingPage'
 
 test.describe('Landing Page', () => {
@@ -7,6 +7,10 @@ test.describe('Landing Page', () => {
   test.beforeEach(async ({ page }) => {
     landingPage = new LandingPage(page)
     await landingPage.goto()
+  })
+
+  test.afterEach(async ({ page }) => {
+    await clearClientState(page)
   })
 
   test.describe('Navbar', () => {

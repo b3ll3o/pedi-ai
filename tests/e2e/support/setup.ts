@@ -2,17 +2,16 @@
  * Setup hooks para testes E2E com Playwright.
  *
  * beforeAll: Executa seed para criar dados de teste
- * afterAll: Executa cleanup para remover dados de teste
+ * afterEach: Limpa estado do browser após cada teste
  *
  * @module support/setup
  */
 
 import { seed } from '../scripts/seed'
-import { cleanup } from '../scripts/cleanup'
 
 /**
  * Hook executado antes de todos os testes.
- * popula o banco com dados de teste.
+ * Popula o banco com dados de teste.
  */
 export async function beforeAll(): Promise<void> {
   console.log('🌱 Executando seed E2E...')
@@ -21,11 +20,12 @@ export async function beforeAll(): Promise<void> {
 }
 
 /**
- * Hook executado após todos os testes.
- * Remove dados de teste do banco.
+ * Hook executado após cada teste.
+ * Limpa apenas estado do browser (cookies, localStorage).
+ * NÃO remove dados do banco - isso é feito pelo globalTeardown.
  */
-export async function afterAll(): Promise<void> {
-  console.log('🧹 Executando cleanup E2E...')
-  await cleanup()
-  console.log('✅ Cleanup concluído\n')
+export async function afterEach(): Promise<void> {
+  // Não limpa dados do banco aqui!
+  // Cada teste deve criar seus próprios dados ou usar o seed.
+  // O cleanup do banco é feito pelo globalTeardown após todos os testes.
 }

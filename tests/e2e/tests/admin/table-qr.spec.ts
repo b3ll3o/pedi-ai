@@ -1,11 +1,39 @@
 import { test, expect } from '../shared/fixtures'
 import { TableQRPage } from '../../pages/TableQRPage'
 
+async function cleanupTest(page: Page) {
+  try {
+    await page.context().clearCookies()
+  } catch { /* ignore */ }
+  try {
+    await page.evaluate(() => {
+      try {
+        localStorage.clear()
+        sessionStorage.clear()
+      } catch { /* ignore */ }
+    })
+  } catch { /* ignore */ }
+  try {
+    await page.evaluate(() => {
+      return new Promise<void>((resolve) => {
+        const req = indexedDB.deleteDatabase('pedi')
+        req.onsuccess = () => resolve()
+        req.onerror = () => resolve()
+        req.onblocked = () => resolve()
+      })
+    })
+  } catch { /* ignore */ }
+}
+
 test.describe('Table QR Code', () => {
   let tableQRPage: TableQRPage
 
   test.beforeEach(async ({ page }) => {
     tableQRPage = new TableQRPage(page)
+  })
+
+  test.afterEach(async ({ page }) => {
+    await cleanupTest(page)
   })
 
   test('should display table validation form', async ({ admin }) => {

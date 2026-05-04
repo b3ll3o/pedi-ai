@@ -1,4 +1,4 @@
-import { test, expect } from '../shared/fixtures';
+import { test, expect, clearClientState } from '../shared/fixtures';
 
 /**
  * E2E Tests for Multi-Restaurant Offline Behavior
@@ -18,7 +18,11 @@ test.describe('Multi-Restaurant Offline', () => {
   test.beforeEach(async ({ page }) => {
     // Enable offline mode via service worker
     await page.context().setOffline(false); // Start online
-  });
+  })
+
+  test.afterEach(async ({ page }) => {
+    await clearClientState(page)
+  })
 
   test('should cache menu data per restaurant when online', async ({ page }) => {
     // Navigate to restaurant A's menu
