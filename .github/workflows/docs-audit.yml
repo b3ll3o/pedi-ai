@@ -1,0 +1,45 @@
+name: Documentation Audit
+
+on:
+  schedule:
+    - cron: '0 8 * * 1'  # Toda segunda-feira às 8h
+  workflow_dispatch:  # Permitir execução manual
+  push:
+    paths:
+      - 'docs/**'
+      - 'openspec/specs/**'
+      - 'AGENTS.md'
+      - 'codemap.md'
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run Documentation Audit
+        run: node scripts/audit-docs.js
+
+      - name: Create Issue on Failure
+        if: failure()
+        uses: actions/create-or-update-issue@v1
+        with:
+          title: '📋 Auditoria Doc: Problemas Encontrados'
+          body: |
+            A auditoria de documentação encontrou problemas.
+
+            Execute `node scripts/audit-docs.js` para ver detalhes.
+
+            ### Ações necessárias:
+            1. Revise o relatório da auditoria
+            2. Atualize os specs/desocs afetados
+            3. Commit as mudanças
+
+            ### Referências:
+            - [Plano de Update de Docs](./docs/PLANO-UPDATE-DOCS.md)
+          labels: 'documentation'

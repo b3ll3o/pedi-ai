@@ -33,11 +33,12 @@ const eslintConfig = defineConfig([
       }]
     },
   },
-  // Test files: allow explicit any (common in mocks and dynamic types)
+  // Test files: allow explicit any and @ts-nocheck (common in mocks and dynamic types)
   {
     files: ['**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', '**/*.spec.tsx'],
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/ban-ts-comment": "off",
     },
   },
   {

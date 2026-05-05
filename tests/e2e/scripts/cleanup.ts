@@ -153,7 +153,6 @@ async function deleteTestUsers(admin: SupabaseClient): Promise<number> {
 async function deleteTestRestaurant(admin: SupabaseClient): Promise<boolean> {
   console.log('🏪 Deletando restaurant de teste...')
 
-  // Buscar restaurant pelo nome
   const { data: restaurants, error: selectError } = await admin
     .from('restaurants')
     .select('id')
@@ -171,7 +170,8 @@ async function deleteTestRestaurant(admin: SupabaseClient): Promise<boolean> {
 
   console.log(`   Deletando restaurant: ${RESTAURANT_NAME} (${restaurants.id})`)
 
-  // O cascade deve cuidar de tables, categories, products, etc
+  await deleteOrdersByRestaurant(admin, restaurants.id)
+
   const { error: deleteError } = await admin
     .from('restaurants')
     .delete()
@@ -185,13 +185,12 @@ async function deleteTestRestaurant(admin: SupabaseClient): Promise<boolean> {
   return true
 }
 
-async function _deleteOrdersByRestaurant(
-  _admin: SupabaseClient,
-  _restaurantId: string
+async function deleteOrdersByRestaurant(
+  admin: SupabaseClient,
+  restaurantId: string
 ): Promise<void> {
   console.log('🛒 Limpando pedidos do restaurant...')
 
-  // Primeiro deletar order_items e order_status_history (filhos)
   const { data: orders } = await admin
     .from('orders')
     .select('id')
@@ -200,23 +199,9 @@ async function _deleteOrdersByRestaurant(
   if (orders && orders.length > 0) {
     const orderIds = orders.map((o) => o.id)
 
-    // Deletar order_items
-    await admin
-      .from('order_items')
-      .delete()
-      .in('order_id', orderIds)
-
-    // Deletar order_status_history
-    await admin
-      .from('order_status_history')
-      .delete()
-      .in('order_id', orderIds)
-
-    // Deletar orders
-    await admin
-      .from('orders')
-      .delete()
-      .eq('restaurant_id', restaurantId)
+    await admin.from('order_items').delete().in('order_id', orderIds)
+    await admin.from('order_status_history').delete().in('order_id', orderIds)
+    await admin.from('orders').delete().eq('restaurant_id', restaurantId)
 
     console.log(`   ${orders.length} pedido(s) deletado(s)\n`)
   } else {

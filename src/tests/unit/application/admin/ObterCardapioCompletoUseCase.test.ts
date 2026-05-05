@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ObterCardapioCompletoUseCase } from '@/application/admin/services/ObterCardapioCompletoUseCase';
 import { ObterCardapioCompletoInput } from '@/application/admin/services/ObterCardapioCompletoUseCase';

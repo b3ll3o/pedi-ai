@@ -19,11 +19,13 @@ vi.mock('next/server', () => ({
 
 // Mock supabase middleware
 const mockGetSession = vi.fn()
+const mockGetUser = vi.fn()
 vi.mock('@/lib/supabase/middleware', () => ({
   createClient: vi.fn(() => ({
     supabase: {
       auth: {
         getSession: mockGetSession,
+        getUser: mockGetUser,
       },
     },
   })),
@@ -46,8 +48,8 @@ describe('proxy', () => {
 
   describe('sem sessão', () => {
     beforeEach(() => {
-      mockGetSession.mockResolvedValue({
-        data: { session: null },
+      mockGetUser.mockResolvedValue({
+        data: { user: null },
       })
     })
 
@@ -87,11 +89,9 @@ describe('proxy', () => {
 
   describe('com sessão válida', () => {
     beforeEach(() => {
-      mockGetSession.mockResolvedValue({
+      mockGetUser.mockResolvedValue({
         data: {
-          session: {
-            user: { id: 'user-123' },
-          },
+          user: { id: 'user-123' },
         },
       })
     })

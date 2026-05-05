@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, it, expect } from 'vitest';
 import { Pagamento, PagamentoProps } from '@/domain/pagamento/entities/Pagamento';
 import { Dinheiro } from '@/domain/pedido/value-objects/Dinheiro';

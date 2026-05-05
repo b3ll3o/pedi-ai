@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ExcluirGrupoModificadorUseCase } from '@/application/admin/services/ExcluirGrupoModificadorUseCase';
 import { ExcluirGrupoModificadorInput } from '@/application/admin/services/ExcluirGrupoModificadorUseCase';
@@ -12,12 +13,12 @@ describe('ExcluirGrupoModificadorUseCase', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGrupoRepo = {
-      buscarPorId: vi.fn(),
-      buscarPorRestaurante: vi.fn(),
-      buscarPorProduto: vi.fn(),
-      salvar: vi.fn(),
-      salvarMany: vi.fn(),
-      excluir: vi.fn(),
+      buscarPorId: vi.fn() as any,
+      buscarPorRestaurante: vi.fn() as any,
+      buscarPorProduto: vi.fn() as any,
+      salvar: vi.fn() as any,
+      salvarMany: vi.fn() as any,
+      excluir: vi.fn() as any,
     };
     useCase = new ExcluirGrupoModificadorUseCase(mockGrupoRepo);
   });

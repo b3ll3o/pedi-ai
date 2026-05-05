@@ -17,6 +17,37 @@ export interface CardapioSyncResult {
   erros: string[];
 }
 
+interface CategoriaApiResponse {
+  id: string;
+  restaurant_id: string;
+  name: string;
+  description: string | null;
+  image_url: string | null;
+  sort_order: number;
+  active: boolean;
+}
+
+interface ProdutoApiResponse {
+  id: string;
+  category_id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  image_url: string | null;
+  dietary_labels: string[] | null;
+  available: boolean;
+}
+
+interface GrupoModificadorApiResponse {
+  id: string;
+  restaurant_id: string;
+  name: string;
+  description: string | null;
+  required: boolean;
+  min_selections: number | null;
+  max_selections: number | null;
+}
+
 // Supabase table names (English)
 const SUPABASE_TABLES = {
   CATEGORIAS: 'categories',
@@ -174,7 +205,7 @@ export class CardapioSyncService {
 
       // Sincronizar categorias
       if (data.categories && Array.isArray(data.categories)) {
-        const categoriasEntities = data.categories.map((cat) => {
+        const categoriasEntities = data.categories.map((cat: CategoriaApiResponse) => {
           return Categoria.reconstruir({
             id: cat.id,
             restauranteId: cat.restaurant_id,
@@ -191,7 +222,7 @@ export class CardapioSyncService {
 
       // Sincronizar produtos
       if (data.products && Array.isArray(data.products)) {
-        const itensEntities = data.products.map((prod) => {
+        const itensEntities = data.products.map((prod: ProdutoApiResponse) => {
           return ItemCardapio.reconstruir({
             id: prod.id,
             categoriaId: prod.category_id,
@@ -212,14 +243,14 @@ export class CardapioSyncService {
 
       // Sincronizar grupos de modificadores
       if (data.modifier_groups && Array.isArray(data.modifier_groups)) {
-        const gruposEntities = data.modifier_groups.map((grupo) => {
+        const gruposEntities = data.modifier_groups.map((grupo: GrupoModificadorApiResponse) => {
           return ModificadorGrupo.reconstruir({
             id: grupo.id,
             restauranteId: grupo.restaurant_id,
             nome: grupo.name,
             obrigatorio: grupo.required,
-            minSelecoes: grupo.min_selections,
-            maxSelecoes: grupo.max_selections,
+            minSelecoes: grupo.min_selections ?? 0,
+            maxSelecoes: grupo.max_selections ?? 0,
             valores: [], // Valores são carregados separadamente
             ativo: true,
           });

@@ -196,18 +196,32 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **CI/CD**: Pipeline E2E deve bloquear merge se testes falharem
 - **Cobertura de fluxos**: Manter inventário atualizado de fluxos cobertos em `tests/e2e/README.md`
 
-## Arquitetura DDD (Domain-Driven Design) - MIGRAÇÃO EM ANDAMENTO
+## Arquitetura DDD (Domain-Driven Design)
 
-> ⚠️ **STATUS**: A arquitetura DDD está **em implementação**. A estrutura DDD existe parcialmente em `src/domain/`, `src/application/`, e `src/infrastructure/`.
-> A estrutura tradicional coexiste com a DDD. Ver: `openspec/changes/archive/2026-04-25-implantacao-ddd/` para o plano de migração completo.
+> ✅ **STATUS**: A arquitetura DDD está **MAJORITARIAMENTE IMPLEMENTADA**. A estrutura DDD existe em `src/domain/`, `src/application/`, e `src/infrastructure/`.
+> A estrutura coexiste com código em `src/components/`, `src/hooks/`, `src/lib/`, e `src/services/` (legacy).
+> Ver: `openspec/changes/archive/2026-04-25-implantacao-ddd/` para histórico da migração.
+
+### Bounded Contexts Implementados
+
+| Bounded Context | Status | Entities | Value Objects | Events | Repos |
+|-----------------|--------|----------|---------------|--------|-------|
+| `admin/` | ✅ | Restaurante, UsuarioRestaurante | ConfiguracoesRestaurante, PapelRestaurante | 7 events | ✅ |
+| `autenticacao/` | ✅ | Usuario, Sessao | Papel, Credenciais | 3 events | ✅ |
+| `cardapio/` | ✅ | Categoria, Produto, GrupoModificador | Preco, Alergeno, ValorModificador | - | ✅ |
+| `mesa/` | ✅ | Mesa | NumeroMesa | - | ✅ |
+| `pagamento/` | ✅ | Pagamento, Transacao | StatusPagamento, MetodoPagamento | 4 events | ✅ |
+| `pedido/` | ✅ | Pedido, ItemPedido | StatusPedido, Dinheiro, MetodoPagamento | 3 events | ✅ |
+| `shared/` | ✅ | AggregateRootClass | Excecoes, Types | - | - |
 
 ### Regras Obrigatórias
 
-- **TODAS** as funcionalidades do projeto **DEVEM** seguir arquitetura DDD
+- **NOVO código** deve seguir arquitetura DDD
 - O domínio (**domain/**) **DEVE** ser independente de frameworks — sem imports de Next.js, React, ou bibliotecas de infra
 - Entidades, value objects, aggregates e events são pura lógica de negócio em TypeScript
 - Casos de uso no **application/** orchestrating domínio e infra
 - **presentation/** (Next.js) **SÓ** faz renderização e coleta input do usuário
+- **Migração gradual**: código legacy em `src/services/`, `src/stores/` será migrado conforme necessidade
 
 ### Estrutura de Diretórios
 
@@ -234,6 +248,8 @@ src/
     ├── components/
     └── hooks/
 ```
+
+> **Nota**: A estrutura DDD **JÁ ESTÁ IMPLEMENTADA** em `src/domain/`, `src/application/`, `src/infrastructure/`. O `presentation/` coexiste com a estrutura tradicional. Voir `openspec/changes/archive/2026-04-25-implantacao-ddd/` para o plano de migração completo (em progresso).
 
 ### O que vai em cada camada
 
@@ -262,7 +278,19 @@ src/
 
 ## Arquitetura Atual do Projeto
 
-O projeto atualmente segue uma arquitetura **tradicional em camadas**:
+O projeto atualmente segue uma arquitetura **híbrida**:
+
+### Estrutura DDD (Recomendada para novo código)
+
+```
+src/
+├── domain/                 # REGRAS DE NEGÓCIO - puro, testável, sem deps
+├── application/            # CASOS DE USO - orquestração
+├── infrastructure/         # IMPLEMENTAÇÕES - adapters, repos
+└── presentation/           # NEXT.JS - UI, API routes, web-only
+```
+
+### Estrutura Legacy (Em migração gradual)
 
 ```
 src/
@@ -270,22 +298,25 @@ src/
 ├── components/             # Componentes React organizados por domínio
 ├── hooks/                  # Custom React hooks
 ├── lib/                    # Módulos reutilizáveis (auth, offline, QR, supabase)
-├── services/               # Lógica de negócio (services)
-└── stores/                # Zustand stores (estado global)
+├── services/               # Lógica de negócio (services) - migrar para DDD
+└── stores/                # Zustand stores (estado global) - migrar gradualmente
 ```
 
-| Camada | Responsabilidade |
-|--------|-----------------|
-| `app/` | Rotas, layouts, API routes |
-| `components/` | Componentes UI |
-| `hooks/` | Lógica de interface (React hooks) |
-| `lib/` | Utilitários e integrações (auth, supabase, offline) |
-| `services/` | Regras de negócio |
-| `stores/` | Estado global (Zustand) |
+| Camada Legacy | Responsabilidade | Status DDD |
+|---------------|-----------------|-------------|
+| `app/` | Rotas, layouts, API routes | - |
+| `components/` | Componentes UI | - |
+| `hooks/` | Lógica de interface (React hooks) | - |
+| `lib/` | Utilitários e integrações (auth, supabase, offline) | ⚠️ Legacy |
+| `services/` | Regras de negócio | 🔄 Migração em progresso |
+| `stores/` | Estado global (Zustand) | 🔄 Migração em progresso |
 
-### Migration Plan for DDD
+### Progresso da Migração DDD
 
-> ⚠️ **ATUALIZADO**: A estrutura DDD JÁ ESTÁ IMPLEMENTADA em `src/domain/`, `src/application/`, `src/infrastructure/`. A migração está em andamento. Voir `openspec/changes/archive/2026-04-25-implantacao-ddd/design.md` para o estado atual.
+> ✅ **Estrutura base**: Implementada em todos os bounded contexts
+> 🔄 **Camada application**: Use cases implementados
+> 🔄 **Infraestrutura**: Repos e adapters em progresso
+> 📋 **Presentation**: Migrar stores e services legacy
 
 <!-- END:pedi-ai-rules -->
 

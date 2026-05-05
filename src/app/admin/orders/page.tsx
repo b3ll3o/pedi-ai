@@ -58,7 +58,7 @@ export default function OrdersPage() {
 
   useEffect(() => {
     if (restauranteSelecionado) {
-      fetchOrders()
+      queueMicrotask(() => fetchOrders())
     }
   }, [restauranteSelecionado, fetchOrders])
 

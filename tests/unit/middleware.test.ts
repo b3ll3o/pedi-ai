@@ -2,12 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextResponse } from 'next/server'
 
 const mockGetSession = vi.fn()
+const mockGetUser = vi.fn()
 
 vi.mock('@/lib/supabase/middleware', () => ({
   createClient: vi.fn().mockResolvedValue({
     supabase: {
       auth: {
         getSession: mockGetSession,
+        getUser: mockGetUser,
       },
     },
     supabaseResponse: NextResponse.next(),
@@ -37,7 +39,7 @@ describe('proxy (middleware)', () => {
   }
 
   it('deve redirecionar para /admin/login quando sem sessão em rota admin', async () => {
-    mockGetSession.mockResolvedValue({ data: { session: null } })
+    mockGetUser.mockResolvedValue({ data: { user: null } })
 
     const { proxy } = await import('@/proxy')
     const request = createMockRequest('http://localhost/admin/dashboard')
@@ -49,9 +51,9 @@ describe('proxy (middleware)', () => {
   })
 
   it('deve permitir request autenticado em rota admin', async () => {
-    mockGetSession.mockResolvedValue({
+    mockGetUser.mockResolvedValue({
       data: {
-        session: { user: { id: 'user-1' } },
+        user: { id: 'user-1' },
       },
     })
 
@@ -61,12 +63,12 @@ describe('proxy (middleware)', () => {
     const response = await proxy(request)
 
     expect(response).toBeInstanceOf(NextResponse)
-     
+
     expect((response as any).status).toBe(200)
   })
 
   it('não deve interceptar rotas não-admin', async () => {
-    mockGetSession.mockResolvedValue({ data: { session: null } })
+    mockGetUser.mockResolvedValue({ data: { user: null } })
 
     const { proxy } = await import('@/proxy')
     const request = createMockRequest('http://localhost/cardapio')
@@ -74,7 +76,7 @@ describe('proxy (middleware)', () => {
     const response = await proxy(request)
 
     expect(response).toBeInstanceOf(NextResponse)
-     
+
     expect((response as any).status).toBe(200)
   })
 })

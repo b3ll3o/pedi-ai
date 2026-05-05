@@ -11,6 +11,8 @@ function hasStoredCart(): boolean {
   return localStorage.getItem(STORE_KEY) !== null;
 }
 
+type StoreContextValue = Record<string, never>;
+
 const StoreContext = createContext<StoreContextValue | null>(null);
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {

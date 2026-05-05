@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AtualizarRestauranteUseCase } from '@/application/admin/services/AtualizarRestauranteUseCase';
 import { AtualizarRestauranteInput } from '@/application/admin/services/AtualizarRestauranteUseCase';

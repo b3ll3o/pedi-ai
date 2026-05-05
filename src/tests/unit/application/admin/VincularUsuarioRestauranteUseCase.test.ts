@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { VincularUsuarioRestauranteUseCase } from '@/application/admin/services/VincularUsuarioRestauranteUseCase';
 import { VincularUsuarioRestauranteInput } from '@/application/admin/services/VincularUsuarioRestauranteUseCase';

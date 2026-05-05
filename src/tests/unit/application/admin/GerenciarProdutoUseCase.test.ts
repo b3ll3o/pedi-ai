@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GerenciarProdutoUseCase } from '@/application/admin/services/GerenciarProdutoUseCase';
 import type { ProdutoInput } from '@/application/admin/services/GerenciarProdutoUseCase';

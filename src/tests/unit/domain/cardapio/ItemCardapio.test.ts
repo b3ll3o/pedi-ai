@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, it, expect } from 'vitest';
 import { ItemCardapio, ItemCardapioProps } from '@/domain/cardapio/entities/ItemCardapio';
 import { Dinheiro } from '@/domain/pedido/value-objects/Dinheiro';

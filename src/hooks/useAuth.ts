@@ -57,7 +57,7 @@ export function useAuth(): UseAuthReturn {
         );
 
         const authPromise = Promise.all([getSession(), getUser()]);
-        let [sessionResult, userResult] = await Promise.race([authPromise, timeoutPromise])
+        const [sessionResult, userResult] = await Promise.race([authPromise, timeoutPromise])
           .catch(async (err) => {
             // Apenas timeout trata como sem sessão; erros reais são relançados
             if (err === TIMEOUT_ERROR) {
@@ -71,7 +71,7 @@ export function useAuth(): UseAuthReturn {
 
         if (isMounted) {
           setSession(sessionResult);
-          setUser(userResult);
+          setUser(userResult as User | null);
           setError(null);
         }
       } catch (err) {

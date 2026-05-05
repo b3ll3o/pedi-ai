@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { metadata } from '@/app/page';
+import { metadata, ldJson } from '@/app/page';
 
 describe('SEO Metadata - Landing Page', () => {
   const EXPECTED_TITLE = 'Cardápio Digital para Restaurantes | Pedi-AI - Funciona Offline';
@@ -79,19 +79,19 @@ describe('SEO Metadata - Landing Page', () => {
 
   describe('7.1.5 - JSON-LD Schema', () => {
     it('deve ter um JSON-LD schema definido', () => {
-      expect(metadata.script).toBeDefined();
-      expect(Array.isArray(metadata.script)).toBe(true);
-      expect(metadata.script!.length).toBeGreaterThan(0);
+      expect(ldJson).toBeDefined();
+      expect(Array.isArray(ldJson)).toBe(true);
+      expect(ldJson.length).toBeGreaterThan(0);
     });
 
     it('deve conter schema para Organization', () => {
-      const ldJson = metadata.script!.find(
+      const schemaItem = ldJson.find(
         (s: any) => s.type === 'application/ld+json'
       );
-      expect(ldJson).toBeDefined();
-      expect(ldJson.children).toBeDefined();
+      expect(schemaItem).toBeDefined();
+      expect(schemaItem.children).toBeDefined();
 
-      const schema = JSON.parse(ldJson.children);
+      const schema = JSON.parse(schemaItem.children);
       const hasOrganization = Array.isArray(schema['@graph'])
         ? schema['@graph'].some((s: any) => s['@type'] === 'Organization')
         : schema['@type'] === 'Organization';
@@ -99,10 +99,10 @@ describe('SEO Metadata - Landing Page', () => {
     });
 
     it('deve conter schema para WebSite com searchAction', () => {
-      const ldJson = metadata.script!.find(
+      const schemaItem = ldJson.find(
         (s: any) => s.type === 'application/ld+json'
       );
-      const schema = JSON.parse(ldJson.children);
+      const schema = JSON.parse(schemaItem.children);
 
       const hasWebSite = Array.isArray(schema['@graph'])
         ? schema['@graph'].some((s: any) => s['@type'] === 'WebSite')
@@ -112,10 +112,10 @@ describe('SEO Metadata - Landing Page', () => {
     });
 
     it('deve conter schema para FAQPage', () => {
-      const ldJson = metadata.script!.find(
+      const schemaItem = ldJson.find(
         (s: any) => s.type === 'application/ld+json'
       );
-      const schema = JSON.parse(ldJson.children);
+      const schema = JSON.parse(schemaItem.children);
 
       const hasFAQPage = Array.isArray(schema['@graph'])
         ? schema['@graph'].some((s: any) => s['@type'] === 'FAQPage')
@@ -125,11 +125,11 @@ describe('SEO Metadata - Landing Page', () => {
     });
 
     it('JSON-LD deve ser JSON válido', () => {
-      const ldJson = metadata.script!.find(
+      const schemaItem = ldJson.find(
         (s: any) => s.type === 'application/ld+json'
       );
       expect(() => {
-        JSON.parse(ldJson.children);
+        JSON.parse(schemaItem.children);
       }).not.toThrow();
     });
   });

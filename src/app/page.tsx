@@ -80,53 +80,54 @@ export const metadata: Metadata = {
     description: 'Cardápio digital que funciona offline para restaurantes. Pedidos em tempo real, QR Codes por mesa. Teste grátis 14 dias.',
     images: ['/og-image.png'],
   },
-  script: [
-    {
-      type: 'application/ld+json',
-      children: JSON.stringify({
-        '@context': 'https://schema.org',
-        '@graph': [
-          {
-            '@type': 'WebSite',
-            '@id': `${BASE_URL}/#website`,
-            url: BASE_URL,
-            name: 'PediAI - Cardápio Digital para Restaurantes',
-            description: 'Cardápio digital que funciona offline para restaurantes. Pedidos em tempo real, QR Codes por mesa.',
-            publisher: {
-              '@id': `${BASE_URL}/#organization`,
-            },
-          },
-          {
-            '@type': 'Organization',
+} as Metadata;
+
+export const ldJson = [
+  {
+    type: 'application/ld+json' as const,
+    children: JSON.stringify({
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'WebSite',
+          '@id': `${BASE_URL}/#website`,
+          url: BASE_URL,
+          name: 'PediAI - Cardápio Digital para Restaurantes',
+          description: 'Cardápio digital que funciona offline para restaurantes. Pedidos em tempo real, QR Codes por mesa.',
+          publisher: {
             '@id': `${BASE_URL}/#organization`,
-            name: 'PediAI',
-            url: BASE_URL,
-            logo: {
-              '@type': 'ImageObject',
-              url: `${BASE_URL}/logo.png`,
+          },
+        },
+        {
+          '@type': 'Organization',
+          '@id': `${BASE_URL}/#organization`,
+          name: 'PediAI',
+          url: BASE_URL,
+          logo: {
+            '@type': 'ImageObject',
+            url: `${BASE_URL}/logo.png`,
+          },
+          sameAs: [
+            'https://twitter.com/pediai',
+            'https://instagram.com/pediai',
+          ],
+        },
+        {
+          '@type': 'FAQPage',
+          '@id': `${BASE_URL}/#faq`,
+          mainEntity: faqData.map((item) => ({
+            '@type': 'Question',
+            name: item.question,
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: item.answer,
             },
-            sameAs: [
-              'https://twitter.com/pediai',
-              'https://instagram.com/pediai',
-            ],
-          },
-          {
-            '@type': 'FAQPage',
-            '@id': `${BASE_URL}/#faq`,
-            mainEntity: faqData.map((item) => ({
-              '@type': 'Question',
-              name: item.question,
-              acceptedAnswer: {
-                '@type': 'Answer',
-                text: item.answer,
-              },
-            })),
-          },
-        ],
-      }),
-    },
-  ],
-};
+          })),
+        },
+      ],
+    }),
+  },
+];
 
 export default function Home() {
   return (

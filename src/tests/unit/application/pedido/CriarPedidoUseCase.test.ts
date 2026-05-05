@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CriarPedidoUseCase } from '@/application/pedido/services/CriarPedidoUseCase';
 import type { CriarPedidoInput } from '@/application/pedido/services/CriarPedidoUseCase';

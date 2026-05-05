@@ -2,7 +2,7 @@
 
 > Cardápio Digital para Restaurantes (offline-first, multi-tenant)
 >
-> **Versão:** 1.0.0 | **Atualizado em:** 2026-04-27
+> **Versão:** 1.1.0 | **Atualizado em:** 2026-05-04
 
 ## Project Responsibility
 
@@ -39,12 +39,24 @@ Pedi-AI é uma plataforma de cardápio digital que permite restaurantes gerencia
 | Directory | Responsabilidade | Status | Mapa Detalhado |
 |-----------|-----------------|--------|----------------|
 | `src/app/` | Next.js App Router — todas as rotas, layouts, API routes | ✅ Atual | [Ver Map](src/app/codemap.md) |
-| `src/domain/` | REGRAS DE NEGÓCIO - pure TypeScript, sem deps de framework | ✅ Implementado | Entidades, Value Objects, Aggregates, Events, Services, Repository interfaces |
+| `src/domain/` | REGRAS DE NEGÓCIO - pure TypeScript, sem deps de framework | ✅ Implementado | Ver codemaps por domínio abaixo |
 | `src/application/` | CASOS DE USO - orquestração | ✅ Implementado | Application services que coordinam domain + infrastructure |
 | `src/infrastructure/` | IMPLEMENTAÇÕES - adapters, repos | ✅ Implementado | Repository implementations, Supabase adapter, QR code crypto |
 | `src/presentation/` | NEXT.JS - UI, API routes | ⚠️ Parcial | Camada de apresentação (Next.js), mas domain/application são accessed diretamente |
 
-> **Nota**: A estrutura DDD **JÁ ESTÁ IMPLEMENTADA** em `src/domain/`, `src/application/`, `src/infrastructure/`. O `presentation/` coexiste com a estrutura tradicional. Voir `openspec/changes/archive/2026-04-25-implantacao-ddd/` para o plano de migração completo (em progresso).
+### Domain Codemaps
+
+Cada bounded context DDD possui seu próprio codemap:
+
+| Bounded Context | Codemap | Status |
+|-----------------|---------|--------|
+| `admin/` | [Ver](src/domain/admin/codemap.md) | ✅ |
+| `autenticacao/` | [Ver](src/domain/autenticacao/codemap.md) | ✅ |
+| `cardapio/` | [Ver](src/domain/cardapio/codemap.md) | ✅ |
+| `mesa/` | [Ver](src/domain/mesa/codemap.md) | ✅ |
+| `pagamento/` | [Ver](src/domain/pagamento/codemap.md) | ✅ |
+| `pedido/` | [Ver](src/domain/pedido/codemap.md) | ✅ |
+| `shared/` | [Ver](src/domain/shared/codemap.md) | ✅ |
 
 ---
 

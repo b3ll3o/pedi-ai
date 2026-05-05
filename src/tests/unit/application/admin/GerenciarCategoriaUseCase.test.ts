@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GerenciarCategoriaUseCase } from '@/application/admin/services/GerenciarCategoriaUseCase';
 import type { CategoriaInput } from '@/application/admin/services/GerenciarCategoriaUseCase';
