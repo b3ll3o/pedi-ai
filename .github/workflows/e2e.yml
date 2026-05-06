@@ -8,10 +8,29 @@ on:
   pull_request:
 
 jobs:
+  check-secrets:
+    name: Check E2E Secrets
+    runs-on: ubuntu-latest
+    outputs:
+      secrets_configured: ${{ steps.check.outputs.secrets_configured }}
+    steps:
+      - name: Check if secrets are configured
+        id: check
+        run: |
+          if [ -z "${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" ] || [ -z "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" ]; then
+            echo "secrets_configured=false" >> $GITHUB_OUTPUT
+            echo "⚠️ E2E secrets not configured. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in repository secrets."
+          else
+            echo "secrets_configured=true" >> $GITHUB_OUTPUT
+            echo "✅ E2E secrets are configured"
+          fi
+
   setup:
     name: Setup E2E
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    needs: check-secrets
+    if: needs.check-secrets.outputs.secrets_configured == 'true'
 
     steps:
       - name: Checkout code
@@ -68,7 +87,8 @@ jobs:
     name: E2E Tests (Shard ${{ matrix.shard }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: setup
+    needs: [check-secrets, setup]
+    if: needs.check-secrets.outputs.secrets_configured == 'true'
     strategy:
       fail-fast: false
       matrix:
