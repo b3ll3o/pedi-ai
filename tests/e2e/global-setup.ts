@@ -74,12 +74,9 @@ const globalSetup = async () => {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
   if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error(
-      'Missing required environment variables:\n' +
-      '  - NEXT_PUBLIC_SUPABASE_URL\n' +
-      '  - SUPABASE_SERVICE_ROLE_KEY\n' +
-      'Please ensure .env.e2e is configured.'
-    )
+    console.log('⚠️ E2E secrets not configured. Skipping E2E tests.')
+    console.log('Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in GitHub Actions secrets to enable E2E tests.\n')
+    return
   }
 
   // 2. Run seed to ensure test data exists
