@@ -2,8 +2,8 @@ import { PediDatabase } from '../database';
 import { ICarrinhoRepository } from '@/domain/pedido/repositories/ICarrinhoRepository';
 import { CarrinhoAggregate, type CarrinhoProps } from '@/domain/pedido/aggregates/CarrinhoAggregate';
 import { ItemPedido, type ItemPedidoProps } from '@/domain/pedido/entities/ItemPedido';
-import { Dinheiro } from '@/domain/pedido/value-objects/Dinheiro';
-import { MetodoPagamento } from '@/domain/pedido/value-objects/MetodoPagamento';
+import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
+import { MetodoPagamento } from '@/domain/pagamento/value-objects/MetodoPagamento';
 import { ModificadorSelecionado } from '@/domain/pedido/value-objects/ModificadorSelecionado';
 import type { CarrinhoDbModel } from '../types';
 

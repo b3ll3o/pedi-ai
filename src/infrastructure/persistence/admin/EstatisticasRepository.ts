@@ -1,5 +1,5 @@
 import { PediDatabase } from '../database';
-import { Dinheiro } from '@/domain/pedido/value-objects/Dinheiro';
+import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 import { StatusPedido } from '@/domain/pedido/value-objects/StatusPedido';
 
 /**

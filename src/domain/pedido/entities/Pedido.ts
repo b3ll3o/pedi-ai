@@ -1,6 +1,6 @@
 import { AggregateRootClass } from '@/domain/shared';
 import { StatusPedido } from '../value-objects/StatusPedido';
-import { Dinheiro } from '../value-objects/Dinheiro';
+import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 import { ItemPedido } from './ItemPedido';
 
 export interface PedidoProps {

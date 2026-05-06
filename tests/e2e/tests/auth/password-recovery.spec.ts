@@ -1,5 +1,7 @@
 import { test, expect } from '../shared/fixtures'
 import { CustomerLoginPage } from '../../pages/CustomerLoginPage'
+import { CustomerResetPasswordPage } from '../../pages/CustomerResetPasswordPage'
+import { AdminResetPasswordPage } from '../../pages/AdminResetPasswordPage'
 
 async function cleanupTest(page: Page) {
   try {
@@ -25,7 +27,7 @@ async function cleanupTest(page: Page) {
   } catch { /* ignore */ }
 }
 
-test.describe('Recuperação de Senha', () => {
+test.describe('Recuperação de Senha - Login Page', () => {
   let loginPage: CustomerLoginPage
 
   test.beforeEach(async ({ page }) => {
@@ -43,7 +45,6 @@ test.describe('Recuperação de Senha', () => {
 
   test('deve mostrar formulário de recuperação ao clicar em esqueci minha senha', async ({ page }) => {
     await loginPage.forgotPasswordLink.click()
-    // O formulário aparece na mesma página (sem redirect)
     await expect(loginPage.forgotPasswordEmailInput).toBeVisible()
     await expect(loginPage.forgotPasswordSubmitButton).toBeVisible()
   })
@@ -54,12 +55,9 @@ test.describe('Recuperação de Senha', () => {
   })
 
   test('deve exibir sucesso mesmo com email inexistente (segurança do Supabase)', async ({ page: _page }) => {
-    // Supabase não revela se email existe por segurança - sempre mostra sucesso
     await loginPage.forgotPassword('nonexistent@test.com')
     await _page.waitForTimeout(1000)
-    // Aguarda a resposta do Supabase
     const pageContent = await _page.content()
-    // Usuário ainda está na página de login ou já se inscreveu
     expect(
       pageContent.includes('login') ||
       pageContent.includes('esqueci') ||
@@ -72,21 +70,132 @@ test.describe('Recuperação de Senha', () => {
   test('deve ocultar campos de login quando formulário de recuperação está visível', async ({ page }) => {
     await loginPage.forgotPasswordLink.click()
     await expect(loginPage.forgotPasswordEmailInput).toBeVisible()
-    // Os campos de login padrão podem estar ocultos ou desabilitados
-    // Verifica que pelo menos um elemento de recuperação está visível
     const recoveryFormVisible = await loginPage.forgotPasswordEmailInput.isVisible()
     expect(recoveryFormVisible).toBe(true)
   })
+})
 
-  test('deve voltar ao login ao clicar em link de volta ao login (se existir)', async ({ page }) => {
-    await loginPage.forgotPasswordLink.click()
-    await expect(loginPage.forgotPasswordEmailInput).toBeVisible()
+test.describe('Página de Redefinição de Senha - Cliente', () => {
+  let resetPasswordPage: CustomerResetPasswordPage
 
-    // Tenta encontrar e clicar no link de volta ao login
-    const backToLoginLink = page.locator('[data-testid="back-to-login-link"]')
-    if (await backToLoginLink.isVisible()) {
-      await backToLoginLink.click()
-      await expect(page).toHaveURL(/\/login/)
-    }
+  test.beforeEach(async ({ page }) => {
+    resetPasswordPage = new CustomerResetPasswordPage(page)
+  })
+
+  test.afterEach(async ({ page }) => {
+    await cleanupTest(page)
+  })
+
+  test('deve exibir erro quando token não está presente', async ({ page }) => {
+    await resetPasswordPage.gotoWithoutToken()
+    await page.waitForLoadState('domcontentloaded')
+    await expect(page.locator('h1')).toContainText('Link inválido', { timeout: 15000 })
+  })
+
+  test('deve exibir formulário de redefinição com token válido', async ({ page }) => {
+    await resetPasswordPage.goto('valid-token-placeholder')
+    await page.waitForLoadState('domcontentloaded')
+    await expect(resetPasswordPage.novaSenhaInput).toBeVisible({ timeout: 15000 })
+    await expect(resetPasswordPage.confirmarSenhaInput).toBeVisible()
+    await expect(resetPasswordPage.submitButton).toBeVisible()
+  })
+
+  test('deve validar que senhas coincidem', async ({ page }) => {
+    await resetPasswordPage.goto('valid-token-placeholder')
+    await page.waitForLoadState('domcontentloaded')
+    await expect(resetPasswordPage.novaSenhaInput).toBeVisible({ timeout: 15000 })
+    await resetPasswordPage.fillForm('password123', 'differentpassword')
+    await resetPasswordPage.submit()
+    await expect(page.locator('[data-testid="confirmar-senha-error"]')).toContainText('não coincidem', { timeout: 5000 })
+  })
+
+  test('deve validar que senha tem pelo menos 6 caracteres', async ({ page }) => {
+    await resetPasswordPage.goto('valid-token-placeholder')
+    await page.waitForLoadState('domcontentloaded')
+    await expect(resetPasswordPage.novaSenhaInput).toBeVisible({ timeout: 15000 })
+    await resetPasswordPage.fillForm('123', '123')
+    await resetPasswordPage.submit()
+    await expect(page.locator('[data-testid="senha-error"]')).toContainText('pelo menos 6 caracteres', { timeout: 5000 })
+  })
+
+  test('deve ter botão de voltar para login', async ({ page }) => {
+    await resetPasswordPage.goto('valid-token-placeholder')
+    await page.waitForLoadState('domcontentloaded')
+    await expect(resetPasswordPage.backButton).toBeVisible({ timeout: 15000 })
+  })
+
+  test('deve ter link para fazer login no footer', async ({ page }) => {
+    await resetPasswordPage.goto('valid-token-placeholder')
+    await page.waitForLoadState('domcontentloaded')
+    const footerLink = page.locator('a[href="/login"]').last()
+    await expect(footerLink).toBeVisible({ timeout: 15000 })
+  })
+})
+
+test.describe('Página de Redefinição de Senha - Admin', () => {
+  let resetPasswordPage: AdminResetPasswordPage
+
+  test.beforeEach(async ({ page }) => {
+    resetPasswordPage = new AdminResetPasswordPage(page)
+  })
+
+  test.afterEach(async ({ page }) => {
+    await cleanupTest(page)
+  })
+
+  test('deve exibir erro quando token não está presente na página admin', async ({ page }) => {
+    await resetPasswordPage.gotoWithoutToken()
+    await page.waitForLoadState('domcontentloaded')
+    await expect(page.locator('h1')).toContainText('Link inválido', { timeout: 15000 })
+  })
+
+  test('deve exibir formulário de redefinição com token válido na página admin', async ({ page }) => {
+    await resetPasswordPage.goto('valid-token-placeholder')
+    await page.waitForLoadState('domcontentloaded')
+    await expect(resetPasswordPage.novaSenhaInput).toBeVisible({ timeout: 15000 })
+    await expect(resetPasswordPage.confirmarSenhaInput).toBeVisible()
+    await expect(resetPasswordPage.submitButton).toBeVisible()
+  })
+
+  test('deve validar que senhas coincidem na página admin', async ({ page }) => {
+    await resetPasswordPage.goto('valid-token-placeholder')
+    await page.waitForLoadState('domcontentloaded')
+    await expect(resetPasswordPage.novaSenhaInput).toBeVisible({ timeout: 15000 })
+    await resetPasswordPage.fillForm('password123', 'differentpassword')
+    await resetPasswordPage.submit()
+    await expect(page.locator('[data-testid="confirmar-senha-error"]')).toContainText('não coincidem', { timeout: 5000 })
+  })
+
+  test('deve validar que senha tem pelo menos 6 caracteres na página admin', async ({ page }) => {
+    await resetPasswordPage.goto('valid-token-placeholder')
+    await page.waitForLoadState('domcontentloaded')
+    await expect(resetPasswordPage.novaSenhaInput).toBeVisible({ timeout: 15000 })
+    await resetPasswordPage.fillForm('123', '123')
+    await resetPasswordPage.submit()
+    await expect(page.locator('[data-testid="senha-error"]')).toContainText('pelo menos 6 caracteres', { timeout: 5000 })
+  })
+})
+
+test.describe('Validação de Type Parameter na URL', () => {
+  let resetPasswordPage: CustomerResetPasswordPage
+
+  test.beforeEach(async ({ page }) => {
+    resetPasswordPage = new CustomerResetPasswordPage(page)
+  })
+
+  test.afterEach(async ({ page }) => {
+    await cleanupTest(page)
+  })
+
+  test('deve exibir erro quando type não é recovery', async ({ page }) => {
+    await page.goto('/reset-password?token=test&type=signup')
+    await page.waitForLoadState('domcontentloaded')
+    await expect(page.locator('h1')).toContainText('Link inválido', { timeout: 15000 })
+  })
+
+  test('deve exibir formulário quando type é recovery', async ({ page }) => {
+    await resetPasswordPage.goto('valid-token')
+    await page.waitForLoadState('domcontentloaded')
+    await expect(resetPasswordPage.novaSenhaInput).toBeVisible({ timeout: 15000 })
   })
 })

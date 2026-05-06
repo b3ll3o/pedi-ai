@@ -12,8 +12,9 @@ import type { Category } from '@/components/menu/CategoryList';
 import type { MenuResponse } from '@/hooks/useCardapio';
 import styles from './page.module.css';
 
-// Fixed UUID to match E2E seed data - in production this would come from table context
-const DEMO_RESTAURANT_ID = '00000000-0000-0000-0000-000000000001';
+interface MenuPageClientProps {
+  restaurantId: string;
+}
 
 // Transform domain categories to Category type expected by CategoryList
 function transformCategories(
@@ -27,8 +28,8 @@ function transformCategories(
   }));
 }
 
-export default function MenuPageClient() {
-  const { data, isLoading, error } = useCardapio(DEMO_RESTAURANT_ID);
+export default function MenuPageClient({ restaurantId }: MenuPageClientProps) {
+  const { data, isLoading, error } = useCardapio(restaurantId);
 
   const products = useMenuStore((state) => state.products);
   const searchQuery = useMenuStore((state) => state.searchQuery);
@@ -52,7 +53,6 @@ export default function MenuPageClient() {
 
   useEffect(() => {
     if (data?.categories) {
-      // Extrair todos os produtos de todas as categorias para o store
       const allProducts = data.categories.flatMap((cat) => cat.products);
       setProducts(allProducts);
     }
@@ -68,11 +68,11 @@ export default function MenuPageClient() {
   }, [products, searchQuery]);
 
   const handleCategoryClick = (categoryId: string) => {
-    window.location.href = `/menu/${categoryId}`;
+    window.location.href = `/menu/${categoryId}?restaurant=${restaurantId}`;
   };
 
   const handleProductClick = (productId: string) => {
-    window.location.href = `/product/${productId}`;
+    window.location.href = `/product/${productId}?restaurant=${restaurantId}`;
   };
 
   const isSearching = searchQuery.trim() !== '';
@@ -120,7 +120,7 @@ export default function MenuPageClient() {
                 <p>Nenhum produto encontrado.</p>
                 <p className={styles.noResultsHint}>
                   Tente buscar por outro termo ou{' '}
-                  <Link href="/menu" className={styles.clearLink}>
+                  <Link href={`/restaurantes/${restaurantId}/cardapio`} className={styles.clearLink}>
                     ver todas as categorias
                   </Link>
                   .

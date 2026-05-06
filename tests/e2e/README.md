@@ -32,6 +32,8 @@ Cobertura de testes end-to-end usando [Playwright](https://playwright.dev/).
 | offline | `tests/customer/offline.spec.ts` | — | ✅ |
 | combos | `tests/customer/combos.spec.ts` | — | ✅ |
 | modifier-groups | `tests/customer/modifier-groups.spec.ts` | — | ✅ |
+| password-recovery | `tests/auth/password-recovery.spec.ts` | — | ✅ |
+| reset-password | `tests/auth/password-recovery.spec.ts` | — | ✅ |
 
 ### Administrador
 

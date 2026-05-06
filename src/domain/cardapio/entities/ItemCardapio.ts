@@ -1,5 +1,5 @@
 import { EntityClass } from '@/domain/shared';
-import { Dinheiro } from '@/domain/pedido/value-objects/Dinheiro';
+import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 import { TipoItemCardapio } from '../value-objects/TipoItemCardapio';
 import { LabelDietetico, LabelDieteticoValue } from '../value-objects/LabelDietetico';
 

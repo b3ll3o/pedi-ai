@@ -192,11 +192,17 @@ The domain layer MUST contain value objects representing immutable domain concep
 - THEN a `StatusPedido.ts` value object MUST exist with allowed values: `pending_payment`, `paid`, `received`, `preparing`, `ready`, `delivered`, `rejected`, `cancelled`, `refunded`
 - AND the value object MUST be immutable
 
-#### Scenario: Dinheiro Value Object Exists
-- GIVEN the `src/domain/pedido/value-objects/` directory
-- WHEN the codebase is inspected
-- THEN a `Dinheiro.ts` value object MUST exist with `valor` property and methods for arithmetic operations
-- AND the value object MUST enforce decimal precision for monetary values
+#### Scenario: Dinheiro Value Object (from Shared)
+- GIVEN the `Pedido` aggregate needs monetary values
+- WHEN inspecting imports
+- THEN `Dinheiro` SHALL be imported from `@/domain/shared/value-objects/Dinheiro`
+- AND NOT from `@/domain/pedido/value-objects/` (it was moved to shared)
+
+#### Scenario: MetodoPagamento Value Object (from Pagamento)
+- GIVEN the `CarrinhoAggregate` needs to reference payment method
+- WHEN inspecting imports
+- THEN `MetodoPagamento` SHALL be imported from `@/domain/pagamento/value-objects/MetodoPagamento`
+- AND the `pagamento` context is the owner of this value object
 
 ### Requirement: Pedido Domain Layer — Aggregates
 The domain layer MUST contain aggregate roots that encapsulate invariants.
@@ -237,9 +243,16 @@ The domain layer MUST define domain events as immutable records.
 #### Scenario: Domain Events Exist
 - GIVEN the `src/domain/pedido/events/` directory
 - WHEN the codebase is inspected
-- THEN `PedidoCriadoEvent.ts`, `PedidoStatusAlteradoEvent.ts`, `PagamentoConfirmadoEvent.ts` event classes MUST exist
+- THEN `PedidoCriadoEvent.ts`, `PedidoStatusAlteradoEvent.ts` event classes MUST exist
+- AND `PagamentoConfirmadoEvent` SHALL NOT exist in pedido (it belongs to `pagamento` context)
 - AND each event MUST contain `occurredAt` timestamp and relevant payload
 - AND events MUST be serializable for infrastructure handling
+
+#### Scenario: Pedido Consumes PagamentoConfirmadoEvent
+- GIVEN the `pedido` context needs to react to payment confirmation
+- WHEN handling payment confirmation
+- THEN it SHALL consume `PagamentoConfirmadoEvent` from `@/domain/pagamento/events/`
+- AND it SHALL NOT define its own payment confirmation event
 
 ### Requirement: Pedido Application Layer — Use Cases
 The application layer MUST contain use case services that orchestrate domain logic.

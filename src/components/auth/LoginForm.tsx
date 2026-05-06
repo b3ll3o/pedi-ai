@@ -7,9 +7,10 @@ import { resetPassword, signUp } from '@/lib/supabase/auth';
 interface LoginFormProps {
   onSubmit?: (email: string, password: string) => Promise<void> | void;
   registeredSuccess?: boolean;
+  resetSuccess?: boolean;
 }
 
-export function LoginForm({ onSubmit, registeredSuccess }: LoginFormProps) {
+export function LoginForm({ onSubmit, registeredSuccess, resetSuccess }: LoginFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -150,6 +151,29 @@ export function LoginForm({ onSubmit, registeredSuccess }: LoginFormProps) {
               {resendError}
             </div>
           )}
+        </div>
+      )}
+      {resetSuccess && (
+        <div className={styles.success} role="alert" data-testid="reset-success">
+          <div className={styles.successContent}>
+            <svg
+              className={styles.successIcon}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+            <div className={styles.successText}>
+              <strong>Senha redefinida com sucesso!</strong>
+              <p>Faça login com sua nova senha.</p>
+            </div>
+          </div>
         </div>
       )}
       <div className={styles.field}>

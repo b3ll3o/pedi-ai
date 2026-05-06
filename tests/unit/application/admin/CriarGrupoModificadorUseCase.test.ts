@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ModificadorGrupo } from '@/domain/cardapio/entities/ModificadorGrupo'
 import { ModificadorValor } from '@/domain/cardapio/entities/ModificadorValor'
-import { Dinheiro } from '@/domain/pedido/value-objects/Dinheiro'
+import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro'
 
 // Mock data
 const mockRestaurante = { id: 'restaurante-123', nome: 'Restaurante Teste' }

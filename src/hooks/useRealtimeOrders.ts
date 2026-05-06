@@ -81,19 +81,17 @@ export function useRealtimeOrders({
 
     const supabase = createClient()
 
-    // Subscribe to orders table changes
     const channel = supabase
       .channel('admin-orders-changes')
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
           schema: 'public',
           table: 'orders',
           filter: `restaurant_id=eq.${restaurantId}`,
         },
         /* istanbul ignore next */ (_payload) => {
-          // Invalidate and refetch on any change
           queryClient.invalidateQueries({ queryKey: ['admin-orders', restaurantId] })
           setIsConnected(true)
         }
@@ -101,12 +99,46 @@ export function useRealtimeOrders({
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders',
+          filter: `restaurant_id=eq.${restaurantId}`,
+        },
+        /* istanbul ignore next */ (_payload) => {
+          queryClient.invalidateQueries({ queryKey: ['admin-orders', restaurantId] })
+          setIsConnected(true)
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
           schema: 'public',
           table: 'order_items',
         },
         /* istanbul ignore next */ (_payload) => {
-          // Also refetch if order items change
+          queryClient.invalidateQueries({ queryKey: ['admin-orders', restaurantId] })
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'order_items',
+        },
+        /* istanbul ignore next */ (_payload) => {
+          queryClient.invalidateQueries({ queryKey: ['admin-orders', restaurantId] })
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'order_items',
+        },
+        /* istanbul ignore next */ (_payload) => {
           queryClient.invalidateQueries({ queryKey: ['admin-orders', restaurantId] })
         }
       )

@@ -1,7 +1,7 @@
 import { PediDatabase } from '../database';
 import { IItemCardapioRepository } from '@/domain/cardapio/repositories/IItemCardapioRepository';
 import { ItemCardapio } from '@/domain/cardapio/entities/ItemCardapio';
-import { Dinheiro } from '@/domain/pedido/value-objects/Dinheiro';
+import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 import { TipoItemCardapio } from '@/domain/cardapio/value-objects/TipoItemCardapio';
 import { LabelDietetico } from '@/domain/cardapio/value-objects/LabelDietetico';
 import type { ItemCardapioDbModel } from '../types';

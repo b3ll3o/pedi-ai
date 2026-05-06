@@ -1,5 +1,5 @@
 import { UseCase } from '@/application/shared';
-import { Dinheiro } from '@/domain/pedido/value-objects/Dinheiro';
+import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 import { StatusPedido } from '@/domain/pedido/value-objects/StatusPedido';
 import { StatusPagamento } from '@/domain/pagamento/value-objects/StatusPagamento';
 

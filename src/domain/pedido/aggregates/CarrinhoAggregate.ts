@@ -1,8 +1,8 @@
 import { ItemPedido } from '../entities/ItemPedido';
 import { Pedido, PedidoProps } from '../entities/Pedido';
 import { StatusPedido } from '../value-objects/StatusPedido';
-import { Dinheiro } from '../value-objects/Dinheiro';
-import { MetodoPagamento } from '../value-objects/MetodoPagamento';
+import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
+import { MetodoPagamento } from '@/domain/pagamento/value-objects/MetodoPagamento';
 
 export interface CarrinhoProps {
   id: string;

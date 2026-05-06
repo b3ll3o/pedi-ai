@@ -7,7 +7,7 @@ import {
   CardapioAtualizadoEvent,
 } from '@/domain/cardapio';
 import { EventDispatcher } from '@/domain/shared';
-import { Dinheiro } from '@/domain/pedido';
+import { Dinheiro } from '@/domain/shared';
 
 export interface CriarComboInput {
   restauranteId: string;

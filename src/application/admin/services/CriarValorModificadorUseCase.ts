@@ -1,7 +1,7 @@
 import { UseCase } from '@/application/shared';
 import { ModificadorValor } from '@/domain/cardapio/entities/ModificadorValor';
 import { IModificadorGrupoRepository } from '@/domain/cardapio/repositories/IModificadorGrupoRepository';
-import { Dinheiro } from '@/domain/pedido/value-objects/Dinheiro';
+import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 
 /**
  * Input para criar valor de modificador

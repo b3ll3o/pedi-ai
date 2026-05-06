@@ -6,7 +6,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { Categoria } from '@/domain/cardapio/entities/Categoria';
 import { ItemCardapio } from '@/domain/cardapio/entities/ItemCardapio';
 import { ModificadorGrupo } from '@/domain/cardapio/entities/ModificadorGrupo';
-import { Dinheiro } from '@/domain/pedido/value-objects/Dinheiro';
+import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 import { TipoItemCardapio } from '@/domain/cardapio/value-objects/TipoItemCardapio';
 import { LabelDietetico } from '@/domain/cardapio/value-objects/LabelDietetico';
 

@@ -110,6 +110,7 @@ The domain layer MUST contain value objects for payment concepts.
 - GIVEN the `src/domain/pagamento/value-objects/` directory
 - WHEN the codebase is inspected
 - THEN a `MetodoPagamento.ts` value object MUST exist with value: `pix` only
+- AND this is the OWNING context — other contexts (e.g., `pedido`) SHALL import from here
 
 #### Scenario: StatusPagamento Value Object Exists
 - GIVEN the `src/domain/pagamento/value-objects/` directory
@@ -146,6 +147,7 @@ The domain layer MUST define domain events.
 - GIVEN the `src/domain/pagamento/events/` directory
 - WHEN the codebase is inspected
 - THEN `PagamentoConfirmadoEvent.ts`, `PagamentoFalhouEvent.ts`, `ReembolsoIniciadoEvent.ts`, `ReembolsoConfirmadoEvent.ts` event classes MUST exist
+- AND `PagamentoConfirmadoEvent` is OWNED by this context — other contexts (e.g., `pedido`) SHALL consume this event
 
 ### Requirement: Pagamento Application Layer — Use Cases
 The application layer MUST contain use case services.

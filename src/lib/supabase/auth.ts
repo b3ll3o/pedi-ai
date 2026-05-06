@@ -74,10 +74,14 @@ async function getUser(): Promise<User | null> {
 
 /**
  * Reset password for an email
+ * @param email - User's email address
+ * @param redirectTo - URL to redirect after clicking the reset link
  */
-async function resetPassword(email: string): Promise<void> {
+async function resetPassword(email: string, redirectTo?: string): Promise<void> {
   const supabase = createClient()
-  await supabase.auth.resetPasswordForEmail(email)
+  await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: redirectTo || `${process.env.NEXT_PUBLIC_BASE_URL}/reset-password`,
+  })
 }
 
 /**

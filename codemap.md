@@ -2,7 +2,7 @@
 
 > Cardápio Digital para Restaurantes (offline-first, multi-tenant)
 >
-> **Versão:** 1.1.0 | **Atualizado em:** 2026-05-04
+> **Versão:** 1.1.0 | **Atualizado em:** 2026-05-06
 
 ## Project Responsibility
 
@@ -42,7 +42,11 @@ Pedi-AI é uma plataforma de cardápio digital que permite restaurantes gerencia
 | `src/domain/` | REGRAS DE NEGÓCIO - pure TypeScript, sem deps de framework | ✅ Implementado | Ver codemaps por domínio abaixo |
 | `src/application/` | CASOS DE USO - orquestração | ✅ Implementado | Application services que coordinam domain + infrastructure |
 | `src/infrastructure/` | IMPLEMENTAÇÕES - adapters, repos | ✅ Implementado | Repository implementations, Supabase adapter, QR code crypto |
-| `src/presentation/` | NEXT.JS - UI, API routes | ⚠️ Parcial | Camada de apresentação (Next.js), mas domain/application são accessed diretamente |
+| `src/components/` | Componentes React organizados por domínio | ✅ Atual | UI components (admin, cart, menu, order, payment, kitchen) |
+| `src/hooks/` | Custom React hooks (useAuth, useRealtimeOrders, etc) | ✅ Atual | Reutilizáveis em toda a aplicação |
+| `src/lib/` | Utilitários (auth, offline, QR, supabase, feature-flags) | ✅ Atual | Módulos reutilizáveis |
+| `src/services/` | Lógica de negócio (adminOrderService, userService, etc) | ⚠️ Legacy | Migrar para DDD application/ |
+| `src/stores/` | Zustand stores (cart, menu, restaurant, table) | ⚠️ Legacy | Migrar para DDD gradually |
 
 ### Domain Codemaps
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { Dinheiro } from '@/domain/pedido/value-objects/Dinheiro'
+import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro'
 
 describe('Dinheiro', () => {
   describe('constantes', () => {

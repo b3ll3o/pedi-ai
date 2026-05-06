@@ -160,7 +160,7 @@ describe('QR Validator', () => {
       const result = validateQRPayload(payload, secretKey)
 
       expect(result.valid).toBe(false)
-      expect(result.error).toBe('Timestamp expired or invalid')
+      expect(result.error).toBe('QR code expired or invalid')
     })
 
     it('deve retornar inválido para timestamp negativo', () => {
@@ -174,7 +174,7 @@ describe('QR Validator', () => {
       const result = validateQRPayload(payload, secretKey)
 
       expect(result.valid).toBe(false)
-      expect(result.error).toBe('Timestamp expired or invalid')
+      expect(result.error).toBe('QR code expired or invalid')
     })
 
     it('deve retornar válido para secretKey diferente (rejeita assinatura)', () => {
@@ -212,7 +212,7 @@ describe('QR Validator', () => {
       const result = validateQRPayload(payload, secretKey)
 
       expect(result.valid).toBe(false)
-      expect(result.error).toBe('Timestamp expired or invalid')
+      expect(result.error).toBe('QR code expired or invalid')
     })
   })
 })

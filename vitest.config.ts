@@ -4,7 +4,7 @@ import path from 'path'
 export default defineConfig({
   test: {
     environment: 'jsdom',
-    setupFiles: ['./src/tests/setup.ts'],
+    setupFiles: [],
     include: ['**/*.test.ts', '**/*.test.tsx'],
     coverage: {
       provider: 'v8',
@@ -23,7 +23,6 @@ export default defineConfig({
         'src/**/*.d.ts',
         'src/**/*.stories.tsx',
         'src/styles/**',
-        'src/tests/**',
         'node_modules/**',
         // API routes
         'src/app/api/**',

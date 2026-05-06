@@ -1,0 +1,75 @@
+.container {
+  min-height: 100vh;
+  background: rgba(var(--color-surface-rgb), 0.95);
+  padding: var(--spacing-lg);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-lg);
+}
+
+.skeletonTitle {
+  height: 2rem;
+  width: 60%;
+  background: linear-gradient(90deg, var(--skeleton-base, #f0f0f0) 0%, var(--skeleton-highlight, #e0e0e0) 50%, var(--skeleton-base, #f0f0f0) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--border-radius-md);
+}
+
+.skeletonSubtitle {
+  height: 1rem;
+  width: 40%;
+  background: linear-gradient(90deg, var(--skeleton-base, #f0f0f0) 0%, var(--skeleton-highlight, #e0e0e0) 50%, var(--skeleton-base, #f0f0f0) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--border-radius-sm);
+}
+
+.search {
+  margin-bottom: var(--spacing-lg);
+}
+
+.skeletonSearch {
+  height: 3rem;
+  background: linear-gradient(90deg, var(--skeleton-base, #f0f0f0) 0%, var(--skeleton-highlight, #e0e0e0) 50%, var(--skeleton-base, #f0f0f0) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--border-radius-lg);
+}
+
+.categories {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-md);
+}
+
+.skeletonCategory {
+  height: 160px;
+  background: linear-gradient(90deg, var(--skeleton-base, #f0f0f0) 0%, var(--skeleton-highlight, #e0e0e0) 50%, var(--skeleton-base, #f0f0f0) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--border-radius-xl);
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .skeletonTitle,
+  .skeletonSubtitle,
+  .skeletonSearch,
+  .skeletonCategory {
+    background: linear-gradient(90deg, var(--skeleton-base, #2a2a2a) 0%, var(--skeleton-highlight, #3a3a3a) 50%, var(--skeleton-base, #2a2a2a) 100%);
+    background-size: 200% 100%;
+  }
+}

@@ -3,7 +3,7 @@ import { IPedidoRepository } from '@/domain/pedido/repositories/IPedidoRepositor
 import { Pedido } from '@/domain/pedido/entities/Pedido';
 import { ItemPedido, type ItemPedidoProps } from '@/domain/pedido/entities/ItemPedido';
 import { StatusPedido } from '@/domain/pedido/value-objects/StatusPedido';
-import { Dinheiro } from '@/domain/pedido/value-objects/Dinheiro';
+import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 import { ModificadorSelecionado } from '@/domain/pedido/value-objects/ModificadorSelecionado';
 import type { PedidoDbModel, StoredItemPedido } from './types';
 

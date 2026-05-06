@@ -1,5 +1,5 @@
 import { AggregateRootClass } from '@/domain/shared';
-import { Dinheiro } from '@/domain/pedido/value-objects/Dinheiro';
+import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 import { Pagamento, type PagamentoProps } from '../entities/Pagamento';
 import { Transacao } from '../entities/Transacao';
 import { PagamentoConfirmadoEvent } from '../events/PagamentoConfirmadoEvent';

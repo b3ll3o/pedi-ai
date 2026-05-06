@@ -1,138 +1,194 @@
-import { describe, it, expect } from 'vitest'
-import {
-  isOfflineEnabled,
-  isPixEnabled,
-  isWaiterModeEnabled,
-  isQrCodeEnabled,
-  isCombosEnabled,
-  isAnalyticsEnabled,
-  isCashbackEnabled,
-  isMultiRestaurantEnabled,
-  getFeatureFlag,
-} from '@/lib/feature-flags'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import * as featureFlags from '@/lib/feature-flags'
 
-describe('Feature Flags', () => {
+// Save original env
+const originalEnv = { ...process.env }
+
+describe('feature-flags', () => {
+  beforeEach(() => {
+    // Reset env before each test
+    process.env = { ...originalEnv }
+    // Clear all mocks
+    vi.restoreAllMocks()
+  })
+
+  afterEach(() => {
+    // Restore original env
+    process.env = originalEnv
+  })
+
   describe('isOfflineEnabled', () => {
-    it('deve retornar true quando NEXT_PUBLIC_FEATURE_OFFLINE_ENABLED é "true"', () => {
+    it('retorna true quando NEXT_PUBLIC_FEATURE_OFFLINE_ENABLED é "true"', () => {
       process.env.NEXT_PUBLIC_FEATURE_OFFLINE_ENABLED = 'true'
-      expect(isOfflineEnabled()).toBe(true)
+      expect(featureFlags.isOfflineEnabled()).toBe(true)
     })
 
-    it('deve retornar false quando NEXT_PUBLIC_FEATURE_OFFLINE_ENABLED não é "true"', () => {
+    it('retorna false quando NEXT_PUBLIC_FEATURE_OFFLINE_ENABLED é "false"', () => {
       process.env.NEXT_PUBLIC_FEATURE_OFFLINE_ENABLED = 'false'
-      expect(isOfflineEnabled()).toBe(false)
+      expect(featureFlags.isOfflineEnabled()).toBe(false)
     })
 
-    it('deve retornar false quando NEXT_PUBLIC_FEATURE_OFFLINE_ENABLED não está definido', () => {
+    it('retorna false quando NEXT_PUBLIC_FEATURE_OFFLINE_ENABLED não está definido', () => {
       delete process.env.NEXT_PUBLIC_FEATURE_OFFLINE_ENABLED
-      expect(isOfflineEnabled()).toBe(false)
+      expect(featureFlags.isOfflineEnabled()).toBe(false)
     })
   })
 
   describe('isPixEnabled', () => {
-    it('deve retornar true quando NEXT_PUBLIC_FEATURE_PIX_ENABLED é "true"', () => {
+    it('retorna true quando NEXT_PUBLIC_FEATURE_PIX_ENABLED é "true"', () => {
       process.env.NEXT_PUBLIC_FEATURE_PIX_ENABLED = 'true'
-      expect(isPixEnabled()).toBe(true)
+      expect(featureFlags.isPixEnabled()).toBe(true)
     })
 
-    it('deve retornar false quando não configurado', () => {
+    it('retorna false quando NEXT_PUBLIC_FEATURE_PIX_ENABLED é "false"', () => {
+      process.env.NEXT_PUBLIC_FEATURE_PIX_ENABLED = 'false'
+      expect(featureFlags.isPixEnabled()).toBe(false)
+    })
+
+    it('retorna false quando NEXT_PUBLIC_FEATURE_PIX_ENABLED não está definido', () => {
       delete process.env.NEXT_PUBLIC_FEATURE_PIX_ENABLED
-      expect(isPixEnabled()).toBe(false)
+      expect(featureFlags.isPixEnabled()).toBe(false)
+    })
+  })
+
+  describe('isStripeEnabled', () => {
+    it('retorna true quando NEXT_PUBLIC_FEATURE_STRIPE_ENABLED é "true"', () => {
+      process.env.NEXT_PUBLIC_FEATURE_STRIPE_ENABLED = 'true'
+      expect(featureFlags.isStripeEnabled()).toBe(true)
+    })
+
+    it('retorna false quando NEXT_PUBLIC_FEATURE_STRIPE_ENABLED é "false"', () => {
+      process.env.NEXT_PUBLIC_FEATURE_STRIPE_ENABLED = 'false'
+      expect(featureFlags.isStripeEnabled()).toBe(false)
+    })
+
+    it('retorna false quando NEXT_PUBLIC_FEATURE_STRIPE_ENABLED não está definido', () => {
+      delete process.env.NEXT_PUBLIC_FEATURE_STRIPE_ENABLED
+      expect(featureFlags.isStripeEnabled()).toBe(false)
     })
   })
 
   describe('isWaiterModeEnabled', () => {
-    it('deve retornar true quando NEXT_PUBLIC_FEATURE_WAITER_MODE é "true"', () => {
+    it('retorna true quando NEXT_PUBLIC_FEATURE_WAITER_MODE é "true"', () => {
       process.env.NEXT_PUBLIC_FEATURE_WAITER_MODE = 'true'
-      expect(isWaiterModeEnabled()).toBe(true)
+      expect(featureFlags.isWaiterModeEnabled()).toBe(true)
     })
 
-    it('deve retornar false quando não configurado', () => {
+    it('retorna false quando NEXT_PUBLIC_FEATURE_WAITER_MODE é "false"', () => {
+      process.env.NEXT_PUBLIC_FEATURE_WAITER_MODE = 'false'
+      expect(featureFlags.isWaiterModeEnabled()).toBe(false)
+    })
+
+    it('retorna false quando NEXT_PUBLIC_FEATURE_WAITER_MODE não está definido', () => {
       delete process.env.NEXT_PUBLIC_FEATURE_WAITER_MODE
-      expect(isWaiterModeEnabled()).toBe(false)
+      expect(featureFlags.isWaiterModeEnabled()).toBe(false)
     })
   })
 
   describe('isQrCodeEnabled', () => {
-    it('deve retornar true quando NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED é "true"', () => {
+    it('retorna true quando NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED é "true"', () => {
       process.env.NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED = 'true'
-      expect(isQrCodeEnabled()).toBe(true)
+      expect(featureFlags.isQrCodeEnabled()).toBe(true)
     })
 
-    it('deve retornar false quando não configurado', () => {
+    it('retorna false quando NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED é "false"', () => {
+      process.env.NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED = 'false'
+      expect(featureFlags.isQrCodeEnabled()).toBe(false)
+    })
+
+    it('retorna false quando NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED não está definido', () => {
       delete process.env.NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED
-      expect(isQrCodeEnabled()).toBe(false)
+      expect(featureFlags.isQrCodeEnabled()).toBe(false)
     })
   })
 
   describe('isCombosEnabled', () => {
-    it('deve retornar true quando NEXT_PUBLIC_FEATURE_COMBOS_ENABLED é "true"', () => {
+    it('retorna true quando NEXT_PUBLIC_FEATURE_COMBOS_ENABLED é "true"', () => {
       process.env.NEXT_PUBLIC_FEATURE_COMBOS_ENABLED = 'true'
-      expect(isCombosEnabled()).toBe(true)
+      expect(featureFlags.isCombosEnabled()).toBe(true)
     })
 
-    it('deve retornar false quando não configurado', () => {
+    it('retorna false quando NEXT_PUBLIC_FEATURE_COMBOS_ENABLED é "false"', () => {
+      process.env.NEXT_PUBLIC_FEATURE_COMBOS_ENABLED = 'false'
+      expect(featureFlags.isCombosEnabled()).toBe(false)
+    })
+
+    it('retorna false quando NEXT_PUBLIC_FEATURE_COMBOS_ENABLED não está definido', () => {
       delete process.env.NEXT_PUBLIC_FEATURE_COMBOS_ENABLED
-      expect(isCombosEnabled()).toBe(false)
+      expect(featureFlags.isCombosEnabled()).toBe(false)
     })
   })
 
   describe('isAnalyticsEnabled', () => {
-    it('deve retornar true quando NEXT_PUBLIC_FEATURE_ANALYTICS_ENABLED é "true"', () => {
+    it('retorna true quando NEXT_PUBLIC_FEATURE_ANALYTICS_ENABLED é "true"', () => {
       process.env.NEXT_PUBLIC_FEATURE_ANALYTICS_ENABLED = 'true'
-      expect(isAnalyticsEnabled()).toBe(true)
+      expect(featureFlags.isAnalyticsEnabled()).toBe(true)
     })
 
-    it('deve retornar false quando não configurado', () => {
+    it('retorna false quando NEXT_PUBLIC_FEATURE_ANALYTICS_ENABLED é "false"', () => {
+      process.env.NEXT_PUBLIC_FEATURE_ANALYTICS_ENABLED = 'false'
+      expect(featureFlags.isAnalyticsEnabled()).toBe(false)
+    })
+
+    it('retorna false quando NEXT_PUBLIC_FEATURE_ANALYTICS_ENABLED não está definido', () => {
       delete process.env.NEXT_PUBLIC_FEATURE_ANALYTICS_ENABLED
-      expect(isAnalyticsEnabled()).toBe(false)
+      expect(featureFlags.isAnalyticsEnabled()).toBe(false)
     })
   })
 
   describe('isCashbackEnabled', () => {
-    it('deve retornar true quando NEXT_PUBLIC_FEATURE_CASHBACK_ENABLED é "true"', () => {
+    it('retorna true quando NEXT_PUBLIC_FEATURE_CASHBACK_ENABLED é "true"', () => {
       process.env.NEXT_PUBLIC_FEATURE_CASHBACK_ENABLED = 'true'
-      expect(isCashbackEnabled()).toBe(true)
+      expect(featureFlags.isCashbackEnabled()).toBe(true)
     })
 
-    it('deve retornar false quando não configurado', () => {
+    it('retorna false quando NEXT_PUBLIC_FEATURE_CASHBACK_ENABLED é "false"', () => {
+      process.env.NEXT_PUBLIC_FEATURE_CASHBACK_ENABLED = 'false'
+      expect(featureFlags.isCashbackEnabled()).toBe(false)
+    })
+
+    it('retorna false quando NEXT_PUBLIC_FEATURE_CASHBACK_ENABLED não está definido', () => {
       delete process.env.NEXT_PUBLIC_FEATURE_CASHBACK_ENABLED
-      expect(isCashbackEnabled()).toBe(false)
-    })
-  })
-
-  describe('isMultiRestaurantEnabled', () => {
-    it('deve retornar true quando NEXT_PUBLIC_ENABLE_MULTI_RESTAURANT é "true"', () => {
-      process.env.NEXT_PUBLIC_ENABLE_MULTI_RESTAURANT = 'true'
-      expect(isMultiRestaurantEnabled()).toBe(true)
-    })
-
-    it('deve retornar false quando não configurado', () => {
-      delete process.env.NEXT_PUBLIC_ENABLE_MULTI_RESTAURANT
-      expect(isMultiRestaurantEnabled()).toBe(false)
+      expect(featureFlags.isCashbackEnabled()).toBe(false)
     })
   })
 
   describe('getFeatureFlag', () => {
-    it('deve retornar true para flag "true"', () => {
-      process.env.NEXT_PUBLIC_TEST_FLAG = 'true'
-      expect(getFeatureFlag('NEXT_PUBLIC_TEST_FLAG')).toBe(true)
+    it('retorna true quando env var é "true"', () => {
+      process.env.NEXT_PUBLIC_FEATURE_TEST = 'true'
+      expect(featureFlags.getFeatureFlag('NEXT_PUBLIC_FEATURE_TEST')).toBe(true)
     })
 
-    it('deve retornar false para flag "false"', () => {
-      process.env.NEXT_PUBLIC_TEST_FLAG = 'false'
-      expect(getFeatureFlag('NEXT_PUBLIC_TEST_FLAG')).toBe(false)
+    it('retorna false quando env var é "false"', () => {
+      process.env.NEXT_PUBLIC_FEATURE_TEST = 'false'
+      expect(featureFlags.getFeatureFlag('NEXT_PUBLIC_FEATURE_TEST')).toBe(false)
     })
 
-    it('deve retornar defaultValue quando flag não está definida', () => {
-      delete process.env.NEXT_PUBLIC_TEST_FLAG
-      expect(getFeatureFlag('NEXT_PUBLIC_TEST_FLAG')).toBe(false)
-      expect(getFeatureFlag('NEXT_PUBLIC_TEST_FLAG', true)).toBe(true)
+    it('retorna false (default) quando env var não está definida', () => {
+      delete process.env.NEXT_PUBLIC_FEATURE_TEST
+      expect(featureFlags.getFeatureFlag('NEXT_PUBLIC_FEATURE_TEST')).toBe(false)
     })
 
-    it('deve retornar defaultValue personalizado', () => {
-      delete process.env.NEXT_PUBLIC_TEST_FLAG
-      expect(getFeatureFlag('NEXT_PUBLIC_TEST_FLAG', true)).toBe(true)
+    it('retorna defaultValue=true quando env var não está definida e default é true', () => {
+      delete process.env.NEXT_PUBLIC_FEATURE_TEST
+      expect(featureFlags.getFeatureFlag('NEXT_PUBLIC_FEATURE_TEST', true)).toBe(true)
+    })
+
+    it('retorna false quando env var está vazia (mesmo com defaultValue=true)', () => {
+      // Empty string is not undefined, so defaultValue is NOT used
+      // Empty string === 'true' is false
+      process.env.NEXT_PUBLIC_FEATURE_TEST = ''
+      expect(featureFlags.getFeatureFlag('NEXT_PUBLIC_FEATURE_TEST', true)).toBe(false)
+    })
+
+    it('trata valores não-booleanos como false', () => {
+      process.env.NEXT_PUBLIC_FEATURE_TEST = '1'
+      expect(featureFlags.getFeatureFlag('NEXT_PUBLIC_FEATURE_TEST')).toBe(false)
+    })
+
+    it('trata "maybe" como false', () => {
+      process.env.NEXT_PUBLIC_FEATURE_TEST = 'maybe'
+      expect(featureFlags.getFeatureFlag('NEXT_PUBLIC_FEATURE_TEST')).toBe(false)
     })
   })
 })

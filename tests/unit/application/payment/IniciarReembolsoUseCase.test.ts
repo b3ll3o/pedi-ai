@@ -5,7 +5,7 @@ import { ITransacaoRepository } from '@/domain/pagamento/repositories';
 import { EventDispatcher } from '@/domain/shared';
 import { Pagamento } from '@/domain/pagamento/entities/Pagamento';
 import { Transacao } from '@/domain/pagamento/entities/Transacao';
-import { Dinheiro } from '@/domain/pedido/value-objects/Dinheiro';
+import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 import { MetodoPagamento } from '@/domain/pagamento/value-objects/MetodoPagamento';
 import { StatusPagamento } from '@/domain/pagamento/value-objects/StatusPagamento';
 

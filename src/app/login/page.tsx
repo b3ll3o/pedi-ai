@@ -13,6 +13,7 @@ function LoginContent() {
   const { signIn, isAuthenticated, session } = useAuth();
   const { destination, isLoading, hasDeterminedDestination } = useRedirectByRole(session?.user?.id ?? null, isAuthenticated);
   const registeredSuccess = searchParams.get('registered') === 'true';
+  const resetSuccess = searchParams.get('reset') === 'success';
 
   // Computa se deve mostrar loading: enquanto estiver verificando sessão E carregando profile
   // Quando isLoading ou hasDeterminedDestination muda, showLoading é recalculado
@@ -71,7 +72,7 @@ function LoginContent() {
             <h2 className={styles.logoTitle}>PediAI</h2>
             <p className={styles.subtitle}>Cardápio Digital</p>
           </div>
-          <LoginForm onSubmit={handleLogin} registeredSuccess={registeredSuccess} />
+          <LoginForm onSubmit={handleLogin} registeredSuccess={registeredSuccess} resetSuccess={resetSuccess} />
           <div className={styles.footer}>
             <p>
               Não tem conta?{' '}

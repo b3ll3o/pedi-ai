@@ -13,6 +13,7 @@ import styles from './page.module.css';
 
 interface CategoryPageClientProps {
   categoryId: string;
+  restaurantId: string;
 }
 
 // Map store dietary labels to component dietary labels
@@ -41,10 +42,7 @@ function toStoreDietaryLabel(label: DietaryLabel): import('@/stores/menuStore').
   return mapping[label] as import('@/stores/menuStore').DietaryLabel;
 }
 
-// Import DEMO_RESTAURANT_ID from MenuPageClient
-const DEMO_RESTAURANT_ID = '00000000-0000-0000-0000-000000000001';
-
-export default function CategoryPageClient({ categoryId }: CategoryPageClientProps) {
+export default function CategoryPageClient({ categoryId, restaurantId }: CategoryPageClientProps) {
   const router = useRouter();
   const categories = useMenuStore((state) => state.categories);
   const storeProducts = useMenuStore((state) => state.products);
@@ -64,7 +62,7 @@ export default function CategoryPageClient({ categoryId }: CategoryPageClientPro
       setError(null);
 
       try {
-        const response = await fetch(`/api/menu?restaurant_id=${DEMO_RESTAURANT_ID}`);
+        const response = await fetch(`/api/menu?restaurant_id=${restaurantId}`);
         if (!response.ok) throw new Error('Failed to fetch menu');
         const data = await response.json();
 
@@ -78,7 +76,7 @@ export default function CategoryPageClient({ categoryId }: CategoryPageClientPro
     }
 
     fetchMenuData();
-  }, [setCategories, setProducts, setIsLoading, setError]);
+  }, [restaurantId, setCategories, setProducts, setIsLoading, setError]);
 
   // Get category by ID
   const category = useMemo(() => {
@@ -151,7 +149,7 @@ export default function CategoryPageClient({ categoryId }: CategoryPageClientPro
       <div className={styles.container}>
         <div className={styles.notFound}>
           <h1>Categoria não encontrada</h1>
-          <Link href="/menu" className={styles.backLink}>
+          <Link href={`/restaurantes/${restaurantId}/cardapio`} className={styles.backLink}>
             Voltar ao menu
           </Link>
         </div>
@@ -165,7 +163,7 @@ export default function CategoryPageClient({ categoryId }: CategoryPageClientPro
       <nav className={styles.breadcrumb} aria-label="Breadcrumb">
         <ol className={styles.breadcrumbList}>
           <li>
-            <Link href="/menu" className={styles.breadcrumbLink}>
+            <Link href={`/restaurantes/${restaurantId}/cardapio`} className={styles.breadcrumbLink}>
               Menu
             </Link>
           </li>
@@ -179,7 +177,7 @@ export default function CategoryPageClient({ categoryId }: CategoryPageClientPro
       </nav>
 
       {/* Back Button */}
-      <Link href="/menu" className={styles.backButton}>
+      <Link href={`/restaurantes/${restaurantId}/cardapio`} className={styles.backButton}>
         <span aria-hidden="true">&larr;</span> Voltar ao menu
       </Link>
 

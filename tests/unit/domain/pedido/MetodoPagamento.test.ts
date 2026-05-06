@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { MetodoPagamento } from '@/domain/pedido/value-objects/MetodoPagamento'
+import { MetodoPagamento } from '@/domain/pagamento/value-objects/MetodoPagamento'
 
 describe('MetodoPagamento', () => {
   describe('valores estáticos', () => {

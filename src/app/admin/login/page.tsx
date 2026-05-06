@@ -1,14 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getSession, signIn } from '@/lib/supabase/auth';
 import { LoginForm } from '@/components/auth/LoginForm';
 import styles from './page.module.css';
 
-export default function LoginPage() {
+function AdminLoginContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isCheckingSession, setIsCheckingSession] = useState(true);
+  const resetSuccess = searchParams.get('reset') === 'success';
 
   useEffect(() => {
     const checkSession = async () => {
@@ -69,7 +71,7 @@ export default function LoginPage() {
             <p className={styles.subtitle}>Painel Administrativo</p>
           </div>
 
-          <LoginForm onSubmit={handleLogin} />
+          <LoginForm onSubmit={handleLogin} resetSuccess={resetSuccess} />
         </div>
 
         <footer className={styles.footer}>
@@ -77,5 +79,23 @@ export default function LoginPage() {
         </footer>
       </main>
     </div>
+  );
+}
+
+function AdminLoginFallback() {
+  return (
+    <div className={styles.container}>
+      <div className={styles.loadingContainer}>
+        <div className={styles.spinner} aria-label="Carregando..." />
+      </div>
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<AdminLoginFallback />}>
+      <AdminLoginContent />
+    </Suspense>
   );
 }

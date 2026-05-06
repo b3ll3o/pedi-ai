@@ -15,6 +15,9 @@ export type DietaryLabel =
   | 'kosher';
 
 export interface MenuState {
+  // Restaurant context
+  restaurantId: string | null;
+
   // Menu data
   categories: categories[];
   products: products[];
@@ -31,6 +34,9 @@ export interface MenuState {
 }
 
 export interface MenuActions {
+  // Restaurant context
+  setRestaurantId: (restaurantId: string | null) => void;
+
   // Data setters
   setCategories: (categories: categories[]) => void;
   setProducts: (products: products[]) => void;
@@ -55,6 +61,7 @@ export type MenuStore = MenuState & MenuActions;
 // ── Initial State ─────────────────────────────────────────────
 
 const initialState: MenuState = {
+  restaurantId: null,
   categories: [],
   products: [],
   modifierGroups: [],
@@ -70,6 +77,11 @@ const initialState: MenuState = {
 export const useMenuStore = create<MenuStore>()(
   immer((set) => ({
     ...initialState,
+
+    setRestaurantId: (restaurantId) =>
+      set((state) => {
+        state.restaurantId = restaurantId;
+      }),
 
     setCategories: (categories) =>
       set((state) => {
@@ -183,6 +195,7 @@ export async function hydrateFromCache(restaurantId: string): Promise<void> {
   const cached = await getCachedMenu(restaurantId);
   if (!cached) return;
 
+  useMenuStore.getState().setRestaurantId(restaurantId);
   useMenuStore.getState().setCategories(cached.categories as categories[]);
   useMenuStore.getState().setProducts(cached.products as products[]);
   useMenuStore.getState().setModifierGroups(cached.modifiers as modifier_groups[]);
@@ -200,6 +213,7 @@ export async function useHydratedMenu(restaurantId: string): Promise<{ success: 
     const cached = await getCachedMenu(restaurantId);
     if (!cached) return { success: false, fromCache: false };
 
+    useMenuStore.getState().setRestaurantId(restaurantId);
     useMenuStore.getState().setCategories(cached.categories as categories[]);
     useMenuStore.getState().setProducts(cached.products as products[]);
     useMenuStore.getState().setModifierGroups(cached.modifiers as modifier_groups[]);

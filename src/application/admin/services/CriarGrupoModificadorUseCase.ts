@@ -3,7 +3,7 @@ import { ModificadorGrupo } from '@/domain/cardapio/entities/ModificadorGrupo';
 import { ModificadorValor } from '@/domain/cardapio/entities/ModificadorValor';
 import { IModificadorGrupoRepository } from '@/domain/cardapio/repositories/IModificadorGrupoRepository';
 import { IRestauranteRepository } from '@/domain/admin/repositories/IRestauranteRepository';
-import { Dinheiro } from '@/domain/pedido/value-objects/Dinheiro';
+import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 
 /**
  * Input para criar grupo de modificadores

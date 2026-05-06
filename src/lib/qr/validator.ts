@@ -4,28 +4,41 @@ export interface QRPayload {
   restaurant_id: string
   table_id: string
   timestamp: number
+  nonce?: string
+  expiry?: number
   signature: string
 }
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-const EXPIRY_MS = 24 * 60 * 60 * 1000 // 24 hours
+const NONCE_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const QR_EXPIRY_MS = 4 * 60 * 60 * 1000 // 4 hours
+const LEGACY_GRACE_PERIOD_MS = 24 * 60 * 60 * 1000 // 24 hours for legacy QR codes
 
 function isValidUUID(value: string): boolean {
   return UUID_REGEX.test(value)
 }
 
-function isTimestampValid(timestamp: number): boolean {
+function isValidNonce(nonce: string | undefined): boolean {
+  if (!nonce) return false
+  return NONCE_REGEX.test(nonce)
+}
+
+function isTimestampValid(timestamp: number, hasNonce: boolean): boolean {
   const now = Date.now()
-  return timestamp > 0 && timestamp <= now && now - timestamp <= EXPIRY_MS
+  const expiryMs = hasNonce ? QR_EXPIRY_MS : LEGACY_GRACE_PERIOD_MS
+  return timestamp > 0 && timestamp <= now && now - timestamp <= expiryMs
 }
 
 function computeSignature(
   restaurantId: string,
   tableId: string,
   timestamp: number,
+  nonce: string | undefined,
   secretKey: string
 ): string {
-  const message = `${restaurantId}:${tableId}:${timestamp}`
+  const message = nonce
+    ? `${restaurantId}:${tableId}:${timestamp}:${nonce}`
+    : `${restaurantId}:${tableId}:${timestamp}`
   return createHmac('sha256', secretKey).update(message).digest('hex')
 }
 
@@ -39,7 +52,7 @@ function timingSafeCompare(a: string, b: string): boolean {
 }
 
 /**
- * Validates a QR payload signature and timestamp.
+ * Validates a QR payload signature, nonce, and timestamp.
  *
  * @param payload - The QR payload to validate
  * @param secretKey - The secret key used for HMAC verification
@@ -63,9 +76,30 @@ export function validateQRPayload(
     return { valid: false, error: 'Invalid table_id format' }
   }
 
-  // Validate timestamp
-  if (!isTimestampValid(payload.timestamp)) {
-    return { valid: false, error: 'Timestamp expired or invalid' }
+  // Check if this is a new QR code with nonce
+  const hasNonce = isValidNonce(payload.nonce)
+
+  // New QR codes must have nonce
+  if (!hasNonce && (payload.nonce !== undefined)) {
+    return { valid: false, error: 'Invalid nonce format' }
+  }
+
+  // Validate nonce presence for new QR codes
+  if (!hasNonce && payload.nonce === undefined) {
+    // This is a legacy QR code (no nonce) - accept it during grace period
+    // But we should still validate timestamp against grace period
+  }
+
+  // Validate timestamp (uses 4h for new QR, 24h for legacy)
+  if (!isTimestampValid(payload.timestamp, hasNonce)) {
+    return { valid: false, error: 'QR code expired or invalid' }
+  }
+
+  // Validate expiry if present (new QR codes)
+  if (hasNonce && payload.expiry !== undefined) {
+    if (Date.now() > payload.expiry) {
+      return { valid: false, error: 'QR code expired' }
+    }
   }
 
   // Recompute signature and compare
@@ -73,6 +107,7 @@ export function validateQRPayload(
     payload.restaurant_id,
     payload.table_id,
     payload.timestamp,
+    payload.nonce,
     secretKey
   )
 

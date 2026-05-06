@@ -97,9 +97,17 @@
 
   /* ============================================
      ALINHAMENTOS DE TEXTO (para compatibilidade)
-     ============================================ */
+      ============================================ */
   --color-text: var(--color-text-primary);
   --color-text-muted: var(--color-text-tertiary);
+
+  /* ============================================
+     SAFE AREA - iOS Notch/Dynamic Island
+      ============================================ */
+  --safe-area-top: env(safe-area-inset-top);
+  --safe-area-right: env(safe-area-inset-right);
+  --safe-area-bottom: env(safe-area-inset-bottom);
+  --safe-area-left: env(safe-area-inset-left);
 }
 
 @media (prefers-color-scheme: dark) {

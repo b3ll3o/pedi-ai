@@ -64,6 +64,7 @@ export interface SelectedModifier {
 
 export interface CartState {
   items: CartItem[];
+  restaurantId: string | null;
   isOpen: boolean;
 }
 
@@ -77,6 +78,7 @@ export interface ValidationResult {
 // ── Cart Actions ─────────────────────────────────────────────
 
 interface CartActions {
+  setRestaurantId: (restaurantId: string | null) => void;
   addItem: (item: Omit<CartItem, 'id' | 'createdAt'>) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
@@ -142,6 +144,7 @@ export async function hydrateCartFromIndexedDB() {
 
 const initialState: CartState = {
   items: [],
+  restaurantId: null,
   isOpen: false,
 };
 
@@ -152,6 +155,11 @@ export const useCartStore = create<CartStore>()(
     subscribeWithSelector(
       immer((set) => ({
         ...initialState,
+
+        setRestaurantId: (restaurantId) =>
+          set((state) => {
+            state.restaurantId = restaurantId;
+          }),
 
         addItem: (item) =>
           set((state) => {

@@ -6,3 +6,4 @@ export type { AggregateRoot } from './types/AggregateRoot';
 export { AggregateRootClass } from './types/AggregateRoot';
 export type { DomainEvent } from './events/DomainEvent';
 export { EventDispatcher } from './events/EventDispatcher';
+export { Dinheiro } from './value-objects/Dinheiro';

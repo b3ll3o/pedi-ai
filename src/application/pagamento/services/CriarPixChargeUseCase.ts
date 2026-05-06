@@ -2,7 +2,7 @@ import { UseCase } from '../../shared/types/UseCase';
 import { IPagamentoRepository } from '@/domain/pagamento/repositories';
 import { IPedidoRepository } from '@/domain/pedido';
 import { PagamentoAggregate, MetodoPagamento } from '@/domain/pagamento';
-import { Dinheiro } from '@/domain/pedido';
+import { Dinheiro } from '@/domain/shared';
 import { EventDispatcher } from '@/domain/shared';
 import { IPixAdapter, PixCharge } from './adapters/IPixAdapter';
 

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { ModificadorValor } from '@/domain/cardapio/entities/ModificadorValor'
-import { Dinheiro } from '@/domain/pedido/value-objects/Dinheiro'
+import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro'
 
 describe('ModificadorValor', () => {
   describe('criar', () => {
