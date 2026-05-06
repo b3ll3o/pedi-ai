@@ -2,7 +2,7 @@
 
 > Cardápio Digital para Restaurantes (offline-first, multi-tenant)
 >
-> **Versão:** 1.1.0 | **Atualizado em:** 2026-05-06
+> **Versão:** 1.2.0 | **Atualizado em:** 2026-05-06
 
 ## Project Responsibility
 
@@ -25,12 +25,21 @@ Pedi-AI é uma plataforma de cardápio digital que permite restaurantes gerencia
 | Rota | Descrição |
 |------|-----------|
 | `src/app/page.tsx` | Landing page (marketing) |
-| `src/app/(customer)/menu/page.tsx` | Cardápio digital (cliente) |
+| `src/app/restaurantes/page.tsx` | Lista pública de restaurantes (delivery) |
+| `src/app/restaurantes/[restaurantId]/cardapio/page.tsx` | Cardápio digital (cliente delivery) |
+| `src/app/(customer)/menu/page.tsx` | Cardápio digital legado (redireciona para `/restaurantes`) |
 | `src/app/admin/dashboard/page.tsx` | Painel administrativo |
 | `src/app/admin/restaurants/page.tsx` | Gestão de restaurantes (multi-tenant) |
 | `src/app/kitchen/page.tsx` | Display de cozinha |
 | `src/app/(waiter)/dashboard/page.tsx` | Dashboard garçom |
 | `src/middleware.ts` | Auth middleware — protege rotas admin |
+
+### API Routes Públicas
+
+| Rota | Descrição |
+|------|-----------|
+| `src/app/api/restaurants/route.ts` | GET — Lista restaurantes ativos |
+| `src/app/api/restaurants/[id]/route.ts` | GET — Detalhes do restaurante |
 
 ---
 
@@ -42,11 +51,12 @@ Pedi-AI é uma plataforma de cardápio digital que permite restaurantes gerencia
 | `src/domain/` | REGRAS DE NEGÓCIO - pure TypeScript, sem deps de framework | ✅ Implementado | Ver codemaps por domínio abaixo |
 | `src/application/` | CASOS DE USO - orquestração | ✅ Implementado | Application services que coordinam domain + infrastructure |
 | `src/infrastructure/` | IMPLEMENTAÇÕES - adapters, repos | ✅ Implementado | Repository implementations, Supabase adapter, QR code crypto |
-| `src/components/` | Componentes React organizados por domínio | ✅ Atual | UI components (admin, cart, menu, order, payment, kitchen) |
+| `src/components/` | Componentes React organizados por domínio | ✅ Atual | UI components (admin, cart, menu, order, payment, kitchen, restaurant) |
+| `src/components/restaurant/` | Componentes de listagem pública (RestaurantSearch, RestaurantCard, RestaurantList) | ✅ Novo | Listagem de restaurantes para delivery |
 | `src/hooks/` | Custom React hooks (useAuth, useRealtimeOrders, etc) | ✅ Atual | Reutilizáveis em toda a aplicação |
 | `src/lib/` | Utilitários (auth, offline, QR, supabase, feature-flags) | ✅ Atual | Módulos reutilizáveis |
 | `src/services/` | Lógica de negócio (adminOrderService, userService, etc) | ⚠️ Legacy | Migrar para DDD application/ |
-| `src/stores/` | Zustand stores (cart, menu, restaurant, table) | ⚠️ Legacy | Migrar para DDD gradually |
+| `src/stores/` | Zustand stores (cart, menu, restaurant, table) | ⚠️ Legacy | cartStore e menuStore possuem `restaurantId` para isolamento multi-tenant |
 
 ### Domain Codemaps
 
