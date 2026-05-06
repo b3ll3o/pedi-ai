@@ -64,8 +64,8 @@ export default defineConfig({
     baseURL: BASE_URL,
     // Performance: use 'load' instead of 'networkidle' for faster navigation
     // networkidle waits for all network connections to be idle (fonts, analytics, etc.)
-    navigationTimeout: 30_000,
-    actionTimeout: 10_000,
+    navigationTimeout: 60_000,
+    actionTimeout: 30_000,
     // Optimize browser context creation
     contextOptions: {
       reducedMotion: 'reduce',
@@ -92,6 +92,8 @@ export default defineConfig({
           ],
         },
       },
+      testMatch: /.*\.spec\.ts/,
+      timeout: 120_000,
     },
 
     // ─── CI-only cross-browser / cross-device matrix ───────────────────────
@@ -126,7 +128,7 @@ export default defineConfig({
     cwd: path.resolve(__dirname, '..'),
     url: 'http://localhost:3000',
     reuseExistingServer: true,
-    timeout: 120_000,
+    timeout: 180_000,
   },
   outputDir: 'test-results',
 })

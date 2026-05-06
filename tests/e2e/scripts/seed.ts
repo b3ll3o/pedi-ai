@@ -127,6 +127,17 @@ async function isSeedValid(): Promise<boolean> {
       return false
     }
 
+    // Also verify categories and products still exist
+    if (!result.categories || result.categories.length === 0) {
+      console.log('⚠️ Seed inválido - categorias ausentes')
+      return false
+    }
+
+    if (!result.products || result.products.length === 0) {
+      console.log('⚠️ Seed inválido - produtos ausentes')
+      return false
+    }
+
     console.log('✅ Seed válido encontrado - usando dados existentes do cache')
     console.log(`   Restaurant ID: ${result.restaurant.id}`)
     console.log(`   Shard: ${SHARD || 'default'}\n`)

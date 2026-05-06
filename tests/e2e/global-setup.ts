@@ -80,18 +80,35 @@ const globalSetup = async () => {
   }
 
   // 2. Run seed to ensure test data exists
-  console.log('🌱 Running E2E seed...')
+  // Skip seed if already done (cache valid) - check seed result file directly
+  const seedResultPath = path.join(__dirname, 'scripts', '.seed-result.json')
+  let seedValid = false
   try {
-    const { stdout, stderr } = await execAsync('pnpm test:e2e:seed', {
-      cwd: path.join(__dirname, '..'),
-      timeout: 180_000,
-    })
-    if (stdout) console.log(stdout)
-    if (stderr) console.warn(stderr)
-    console.log('✅ Seed completed successfully\n')
-  } catch (error) {
-    console.error('❌ Seed failed:', error)
-    throw error
+    if (fs.existsSync(seedResultPath)) {
+      const result = JSON.parse(fs.readFileSync(seedResultPath, 'utf-8'))
+      if (result.restaurant?.id && result.users?.customer?.id) {
+        console.log('✅ Seed cache valid, skipping seed execution')
+        seedValid = true
+      }
+    }
+  } catch {
+    // File doesn't exist or invalid JSON
+  }
+
+  if (!seedValid) {
+    console.log('🌱 Running E2E seed...')
+    try {
+      const { stdout, stderr } = await execAsync('pnpm test:e2e:seed', {
+        cwd: path.join(__dirname, '..'),
+        timeout: 180_000,
+      })
+      if (stdout) console.log(stdout)
+      if (stderr) console.warn(stderr)
+      console.log('✅ Seed completed successfully\n')
+    } catch (error) {
+      console.error('❌ Seed failed:', error)
+      throw error
+    }
   }
 
   // 3. Pre-warm browser with network blocking

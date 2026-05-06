@@ -34,7 +34,11 @@ export class AdminLoginPage {
   }
 
   async goto(): Promise<void> {
-    await this.page.goto('/admin/login')
+    // Check if page is still valid before navigating
+    if (this.page.isClosed()) {
+      throw new Error('Page is closed, cannot navigate')
+    }
+    await this.page.goto('/admin/login', { waitUntil: 'domcontentloaded', timeout: 30_000 })
   }
 
   async login(email: string, password: string): Promise<void> {

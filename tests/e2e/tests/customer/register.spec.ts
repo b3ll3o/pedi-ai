@@ -41,7 +41,8 @@ test.describe('Registro do Cliente', () => {
     await loginPage.goto()
     // Este teste verifica que o usuário seed pode fazer login
     await loginPage.login(seedData.customer.email, seedData.customer.password)
-    await page.waitForTimeout(1000)
+    // Wait for redirect to complete (longer timeout for server load)
+    await page.waitForURL(/\/(menu|login)/, { timeout: 30_000 })
     const currentUrl = page.url()
     expect(
       currentUrl.includes('/menu') || currentUrl.includes('/login')

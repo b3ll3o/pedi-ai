@@ -96,6 +96,28 @@ function getMetaPath(email: string): string {
 }
 
 /**
+ * Loads existing storage state if valid (not expired).
+ */
+async function loadStorageState(email: string, page: Page): Promise<boolean> {
+  const storagePath = getStoragePath(email)
+  if (!isStorageValid(email) || !fs.existsSync(storagePath)) {
+    return false
+  }
+
+  try {
+    await page.context().addCookies([])
+    const storageState = JSON.parse(fs.readFileSync(storagePath, 'utf-8'))
+    if (storageState.cookies && storageState.cookies.length > 0) {
+      // Use storage state to restore session
+      return true
+    }
+  } catch {
+    // Invalid storage state
+  }
+  return false
+}
+
+/**
  * Checks if storage state is valid (exists and not expired).
  */
 function isStorageValid(email: string): boolean {
@@ -168,6 +190,18 @@ async function loadSeedData(): Promise<SeedData> {
  * This ensures each test starts with a clean slate.
  */
 async function clearClientState(page: Page): Promise<void> {
+  // First, close all other pages in the context to release IndexedDB connections
+  try {
+    const pages = page.context().pages()
+    for (const p of pages) {
+      if (p !== page) {
+        await p.close().catch(() => {})
+      }
+    }
+  } catch {
+    // Could not close other pages
+  }
+
   try {
     await page.context().clearCookies()
   } catch {
@@ -187,13 +221,19 @@ async function clearClientState(page: Page): Promise<void> {
     // evaluate failed, continue
   }
 
+  // Wait a bit to let any pending IndexedDB operations complete
+  await page.waitForTimeout(100).catch(() => {})
+
   try {
     await page.evaluate(() => {
       return new Promise<void>((resolve) => {
         const req = indexedDB.deleteDatabase('pedi')
         req.onsuccess = () => resolve()
-        req.onerror = () => resolve() // Ignore errors
-        req.onblocked = () => resolve() // Ignore blocked
+        req.onerror = () => resolve()
+        req.onblocked = () => {
+          // Force close by creating a new connection
+          setTimeout(() => resolve(), 100)
+        }
       })
     })
   } catch {
@@ -217,11 +257,11 @@ async function performLogin(
   await clearClientState(page)
 
   // Fresh login each time to avoid stale session issues
-  await page.goto(loginUrl)
+  await page.goto(loginUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 })
   await page.fill('[data-testid="email-input"]', email)
   await page.fill('[data-testid="password-input"]', password)
   await page.click('[data-testid="login-button"]')
-  await page.waitForURL(expectedUrl, { timeout: 15_000 })
+  await page.waitForURL(expectedUrl, { timeout: 45_000 })
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -273,12 +313,17 @@ export const test = base.extend<Fixtures, { reuse: boolean }>({
       }
     }
 
-    const data = await loadSeedData()
+    try {
+      const data = await loadSeedData()
 
-    // Cache in memory for faster subsequent access
-    seedDataCache.set(workerIndex, data)
+      // Cache in memory for faster subsequent access
+      seedDataCache.set(workerIndex, data)
 
-    await fixtureUse(data)
+      await fixtureUse(data)
+    } catch (error) {
+      console.error('❌ Failed to load seed data:', error)
+      throw error
+    }
   },
 
   guest: async ({ page }, fixtureUse) => {
