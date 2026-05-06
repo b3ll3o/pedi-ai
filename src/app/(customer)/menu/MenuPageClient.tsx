@@ -40,7 +40,6 @@ export default function MenuPageClient({ restaurantId }: MenuPageClientProps) {
   const setProducts = useMenuStore((state) => state.setProducts);
   const _setSearchQuery = useMenuStore((state) => state.setSearchQuery);
 
-  const cartRestaurantId = useCartStore((state) => state.restaurantId);
   const setCartRestaurantId = useCartStore((state) => state.setRestaurantId);
   const clearCart = useCartStore((state) => state.clearCart);
 

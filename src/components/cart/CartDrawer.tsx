@@ -22,8 +22,8 @@ export function CartDrawer() {
   const updateQuantity = useCartStore((state) => state.updateQuantity);
   const clearCart = useCartStore((state) => state.clearCart);
 
-  const totalItems = getTotalItems({ items, isOpen });
-  const subtotal = getTotalPrice({ items, isOpen });
+  const totalItems = getTotalItems(useCartStore.getState());
+  const subtotal = getTotalPrice(useCartStore.getState());
   const tax = subtotal * SERVICE_TAX_RATE;
   const total = subtotal + tax;
 
