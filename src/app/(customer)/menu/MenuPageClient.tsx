@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { useCardapio } from '@/hooks/useCardapio';
 import { useMenuStore } from '@/stores/menuStore';
+import { useCartStore } from '@/stores/cartStore';
 import { SearchBar } from '@/components/menu/SearchBar';
 import { CategoryList } from '@/components/menu/CategoryList';
 import { ProductList } from '@/components/menu/ProductList';
@@ -31,11 +32,38 @@ function transformCategories(
 export default function MenuPageClient({ restaurantId }: MenuPageClientProps) {
   const { data, isLoading, error } = useCardapio(restaurantId);
 
+  const currentRestaurantId = useMenuStore((state) => state.restaurantId);
+  const setRestaurantId = useMenuStore((state) => state.setRestaurantId);
   const products = useMenuStore((state) => state.products);
   const searchQuery = useMenuStore((state) => state.searchQuery);
   const setCategories = useMenuStore((state) => state.setCategories);
   const setProducts = useMenuStore((state) => state.setProducts);
   const _setSearchQuery = useMenuStore((state) => state.setSearchQuery);
+
+  const cartRestaurantId = useCartStore((state) => state.restaurantId);
+  const setCartRestaurantId = useCartStore((state) => state.setRestaurantId);
+  const clearCart = useCartStore((state) => state.clearCart);
+
+  const isFirstRender = useRef(true);
+
+  // Set restaurantId and handle cart isolation
+  useEffect(() => {
+    // On first render, just set the restaurantId
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      setRestaurantId(restaurantId);
+      setCartRestaurantId(restaurantId);
+      return;
+    }
+
+    // If restaurant changed, clear cart
+    if (currentRestaurantId && currentRestaurantId !== restaurantId) {
+      clearCart();
+    }
+
+    setRestaurantId(restaurantId);
+    setCartRestaurantId(restaurantId);
+  }, [restaurantId, currentRestaurantId, setRestaurantId, setCartRestaurantId, clearCart]);
 
   // Transform categories to expected type
   const transformedCategories = useMemo(() => {

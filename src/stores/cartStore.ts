@@ -231,7 +231,7 @@ export const useCartStore = create<CartStore>()(
     ),
     {
       name: 'pedi-ai-cart',
-      partialize: (state) => ({ items: state.items }),
+      partialize: (state) => ({ items: state.items, restaurantId: state.restaurantId }),
     }
   )
 );
