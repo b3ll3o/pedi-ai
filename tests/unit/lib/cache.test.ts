@@ -1,4 +1,53 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+// Mock Dexie database
+const menuCacheData: Map<number, any> = new Map();
+let idCounter = 0;
+
+vi.mock('@/lib/offline/db', () => ({
+  db: {
+    menu_cache: {
+      clear: vi.fn(async () => { menuCacheData.clear(); idCounter = 0; }),
+      add: vi.fn(async (item: any) => {
+        const id = ++idCounter;
+        menuCacheData.set(id, { ...item, id });
+        return id;
+      }),
+      put: vi.fn(async (item: any) => {
+        if (item.id) {
+          menuCacheData.set(item.id, item);
+          return item.id;
+        }
+        const id = ++idCounter;
+        menuCacheData.set(id, { ...item, id });
+        return id;
+      }),
+      delete: vi.fn(async (id: number) => { menuCacheData.delete(id); }),
+      toArray: vi.fn(async () => Array.from(menuCacheData.values())),
+      where: vi.fn(() => ({
+        equals: vi.fn((rid: string) => {
+          const items = Array.from(menuCacheData.values()).filter(
+            (item) => item.restaurantId === rid
+          );
+          return {
+            first: async () => items[0] || null,
+            toArray: async () => items,
+          };
+        }),
+        eq: vi.fn((rid: string) => {
+          const items = Array.from(menuCacheData.values()).filter(
+            (item) => item.restaurantId === rid
+          );
+          return {
+            first: async () => items[0] || null,
+            toArray: async () => items,
+          };
+        }),
+      })),
+    },
+  },
+}));
+
 import {
   getCachedMenu,
   setCachedMenu,
@@ -6,8 +55,8 @@ import {
   isCacheStale,
   compressMenuData,
   decompressMenuData,
-} from '../../../lib/offline/cache';
-import { db } from '../../../lib/offline/db';
+} from '@/lib/offline/cache';
+import { db } from '@/lib/offline/db';
 
 describe('cache', () => {
   const restaurantId = 'rest-123';

@@ -33,6 +33,41 @@ vi.mock('@/lib/broadcast-channel', () => ({
   }),
 }));
 
+// Mock Dexie database - must be hoisted before cartStore import
+vi.mock('@/lib/offline/db', () => {
+  const cartData: Map<number, any> = new Map();
+  let idCounter = 0;
+
+  return {
+    db: {
+      cart: {
+        clear: vi.fn(async () => { cartData.clear(); idCounter = 0; }),
+        add: vi.fn(async (item: any) => {
+          const id = ++idCounter;
+          cartData.set(id, { ...item, id });
+          return id;
+        }),
+        put: vi.fn(async (item: any) => {
+          if (item.id) {
+            cartData.set(item.id, item);
+            return item.id;
+          }
+          const id = ++idCounter;
+          cartData.set(id, { ...item, id });
+          return id;
+        }),
+        delete: vi.fn(async (id: number) => { cartData.delete(id); }),
+        toArray: vi.fn(async () => Array.from(cartData.values())),
+        where: vi.fn(() => ({
+          id: vi.fn(() => ({
+            eq: vi.fn((id: number) => cartData.get(id)),
+          })),
+        })),
+      },
+    },
+  };
+});
+
 import { useCartStore, CartItem, SelectedModifier, getTotalItems, getTotalPrice, getSubtotal } from '@/stores/cartStore';
 import { db } from '@/lib/offline/db';
 

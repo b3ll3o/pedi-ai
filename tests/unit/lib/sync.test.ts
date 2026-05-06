@@ -1,12 +1,78 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { db } from '../../../lib/offline/db';
+
+// Use vi.hoisted to ensure mock variables are available when vi.mock runs
+const { pendingSyncData, mockDb } = vi.hoisted(() => {
+  const pendingSyncData: Map<number, any> = new Map();
+  let idCounter = 0;
+
+  const mockPendingSync = {
+    clear: vi.fn(async () => { pendingSyncData.clear(); idCounter = 0; }),
+    add: vi.fn(async (item: any) => {
+      const id = ++idCounter;
+      pendingSyncData.set(id, { ...item, id });
+      return id;
+    }),
+    put: vi.fn(async (item: any) => {
+      if (item.id) {
+        pendingSyncData.set(item.id, item);
+        return item.id;
+      }
+      const id = ++idCounter;
+      pendingSyncData.set(id, { ...item, id });
+      return id;
+    }),
+    delete: vi.fn(async (id: number) => { pendingSyncData.delete(id); }),
+    update: vi.fn(async (id: number, changes: any) => {
+      const existing = pendingSyncData.get(id);
+      if (existing) {
+        pendingSyncData.set(id, { ...existing, ...changes });
+      }
+    }),
+    toArray: vi.fn(async () => Array.from(pendingSyncData.values())),
+    where: vi.fn(() => ({
+      anyOf: vi.fn((values: string[]) => ({
+        toArray: vi.fn(async () =>
+          Array.from(pendingSyncData.values()).filter((item) =>
+            values.includes(item.status)
+          )
+        ),
+      })),
+      equals: vi.fn((value: string) => ({
+        toArray: vi.fn(async () =>
+          Array.from(pendingSyncData.values()).filter((item) =>
+            item.status === value
+          )
+        ),
+        modify: vi.fn(async (changes: any) => {
+          Array.from(pendingSyncData.values())
+            .filter((item) => item.status === value)
+            .forEach((item) => {
+              pendingSyncData.set(item.id, { ...item, ...changes });
+            });
+        }),
+      })),
+    })),
+  };
+
+  return {
+    pendingSyncData,
+    mockDb: { pending_sync: mockPendingSync },
+  };
+});
+
+// Mock Dexie database
+vi.mock('@/lib/offline/db', () => ({
+  db: mockDb,
+}));
+
+import { db } from '@/lib/offline/db';
 import {
   queueOrderForSync,
   processQueue,
   retryFailed,
   getSyncStatus,
   getFailedItems,
-} from '../../../lib/offline/sync';
+} from '@/lib/offline/sync';
 
 describe('sync queue', () => {
   beforeEach(async () => {

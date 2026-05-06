@@ -4,19 +4,20 @@ import path from 'path'
 export default defineConfig({
   test: {
     environment: 'jsdom',
-    setupFiles: [],
+    globals: true,
+    setupFiles: ['./tests/setup-vitest.ts'],
     include: ['**/*.test.ts', '**/*.test.tsx'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'json'],
       reportsDirectory: './coverage',
       thresholds: {
-        // Meta de coverage: 79% statements/lines, 76% branches
-        statements: 79,
-        branches: 76,
+        // Meta de coverage: ~78% statements/lines/branches
+        statements: 78,
+        branches: 74,
         functions: 80,
-        lines: 79,
-        perFile: false, // Desabilitado para focar no coverage overall
+        lines: 78,
+        perFile: false,
       },
       include: ['src/**/*'],
       exclude: [

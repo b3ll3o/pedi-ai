@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { IQRCodeValidationService } from '@/domain/mesa/services/QRCodeValidationService'
 import { QRCodePayload } from '@/domain/mesa/value-objects/QRCodePayload'
 
