@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { RestauranteRepository } from '@/infrastructure/persistence/admin/RestauranteRepository';
 import { UsuarioRestauranteRepository } from '@/infrastructure/persistence/admin/UsuarioRestauranteRepository';
 import { Restaurante } from '@/domain/admin/entities/Restaurante';
+import { UsuarioRestaurante } from '@/domain/admin/entities/UsuarioRestaurante';
 import { ConfiguracoesRestaurante } from '@/domain/admin/value-objects/ConfiguracoesRestaurante';
 import { createTestDatabase } from '../_test-helpers';
 
@@ -202,12 +203,12 @@ describe('RestauranteRepository', () => {
       await repository.create(restaurante, configuracoes);
 
       const usuarioRepo = new UsuarioRestauranteRepository(db);
-      await usuarioRepo.criarVinculo({
+      const vinculo = UsuarioRestaurante.criar({
         usuarioId: 'usuario-123',
         restauranteId: restaurante.id,
-        role: 'dono',
-        criadoEm: new Date(),
+        papel: 'dono',
       });
+      await usuarioRepo.save(vinculo);
 
       const resultado = await repository.findByUsuarioId('usuario-123');
 
