@@ -7,51 +7,39 @@ import { useAuth } from '@/hooks/useAuth';
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import styles from './page.module.css';
 
+// Timeout para detectar sessão lenta/falhou e exibir o formulário mesmo assim
+const SESSION_CHECK_TIMEOUT_MS = 5000;
+
 export default function CustomerRegisterPage() {
   const router = useRouter();
-  const [isCheckingSession, setIsCheckingSession] = useState(true);
+  const [sessionChecked, setSessionChecked] = useState(false);
   const { signUp, isAuthenticated } = useAuth();
 
   useEffect(() => {
-    let isMounted = true;
-    let timeoutId: ReturnType<typeof setTimeout>;
+    let cancelled = false;
 
-    const checkSession = async () => {
-      try {
-        // Timeout de 5 segundos para evitar carregamento infinito
-        const timeoutPromise = new Promise<null>((resolve) => {
-          timeoutId = setTimeout(() => resolve(null), 5000);
-        });
+    const timeoutId = setTimeout(() => {
+      if (!cancelled) {
+        setSessionChecked(true);
+      }
+    }, SESSION_CHECK_TIMEOUT_MS);
 
-        const sessionPromise = getSession();
-        const results = await Promise.race([sessionPromise, timeoutPromise]);
-
-        // Se Promise.race retornou null, foi timeout
-        if (results === null) {
-          console.warn('Session check timed out, continuing anyway');
-          if (isMounted) setIsCheckingSession(false);
-          return;
-        }
-
-        const session = results;
-        if (isMounted && session?.user) {
+    getSession()
+      .then((session) => {
+        if (cancelled) return;
+        if (session?.user) {
           router.replace('/menu');
           return;
         }
-      } catch (error) {
-        console.error('Session check failed:', error);
-      } finally {
-        if (isMounted) {
-          clearTimeout(timeoutId);
-          setIsCheckingSession(false);
-        }
-      }
-    };
-
-    checkSession();
+        setSessionChecked(true);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setSessionChecked(true);
+      });
 
     return () => {
-      isMounted = false;
+      cancelled = true;
       clearTimeout(timeoutId);
     };
   }, [router]);
@@ -77,7 +65,7 @@ export default function CustomerRegisterPage() {
     router.push(`/login?registered=true&intent=${intent}`);
   };
 
-  if (isCheckingSession) {
+  if (!sessionChecked) {
     return (
       <div className={styles.container}>
         <div className={styles.loadingContainer}>
