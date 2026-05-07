@@ -1,62 +1,65 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ObterDetalheProdutoUseCase } from '@/application/cardapio/services/ObterDetalheProdutoUseCase';
-import type { IItemCardapioRepository, IModificadorGrupoRepository } from '@/domain/cardapio';
-import { ItemCardapio } from '@/domain/cardapio/entities/ItemCardapio';
-import { ModificadorGrupo } from '@/domain/cardapio/entities/ModificadorGrupo';
-import { ModificadorValor } from '@/domain/cardapio/entities/ModificadorValor';
-import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
-import { TipoItemCardapio } from '@/domain/cardapio/value-objects/TipoItemCardapio';
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { ObterDetalheProdutoUseCase } from '@/application/cardapio/services/ObterDetalheProdutoUseCase'
+import type { IItemCardapioRepository } from '@/domain/cardapio/repositories/IItemCardapioRepository'
+import type { IModificadorGrupoRepository } from '@/domain/cardapio/repositories/IModificadorGrupoRepository'
+import { ItemCardapio } from '@/domain/cardapio/entities/ItemCardapio'
+import { ModificadorGrupo } from '@/domain/cardapio/entities/ModificadorGrupo'
+import { ModificadorValor } from '@/domain/cardapio/entities/ModificadorValor'
+import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro'
+import { TipoItemCardapio } from '@/domain/cardapio/value-objects/TipoItemCardapio'
+import { LabelDietetico } from '@/domain/cardapio/value-objects/LabelDietetico'
 
 describe('ObterDetalheProdutoUseCase', () => {
-  let useCase: ObterDetalheProdutoUseCase;
-  let mockItemCardapioRepo: IItemCardapioRepository;
-  let mockModificadorGrupoRepo: IModificadorGrupoRepository;
+  let useCase: ObterDetalheProdutoUseCase
+  let mockItemCardapioRepo: IItemCardapioRepository
+  let mockModificadorGrupoRepo: IModificadorGrupoRepository
 
-  const criarItemCardapio = (id: string, nome: string, preco: number): ItemCardapio => {
-    return ItemCardapio.reconstruir({
+  const criarMockProduto = (id: string, nome: string, precoEmCentavos: number) => {
+    return new ItemCardapio({
       id,
       categoriaId: 'cat-1',
-      restauranteId: 'restaurante-1',
+      restauranteId: 'rest-1',
       nome,
-      descricao: null,
-      preco: Dinheiro.criar(preco),
-      imagemUrl: null,
+      descricao: 'Descrição do produto',
+      preco: Dinheiro.criar(precoEmCentavos),
+      imagemUrl: 'https://exemplo.com/imagem.jpg',
       tipo: TipoItemCardapio.PRODUTO,
       labelsDieteticos: [],
       ativo: true,
-      criadoEm: new Date(),
-      atualizadoEm: new Date(),
-      deletedAt: null,
-      version: 1,
-    });
-  };
+    })
+  }
 
-  const criarModificadorGrupo = (id: string, nome: string, valores: ModificadorValor[], ativo: boolean = true): ModificadorGrupo => {
-    return ModificadorGrupo.reconstruir({
+  const criarMockModificadorGrupo = (
+    id: string,
+    produtoId: string,
+    nome: string,
+    valores: Array<{ id: string; nome: string; ativo: boolean }>
+  ) => {
+    const grupo = new ModificadorGrupo({
       id,
-      restauranteId: 'restaurante-1',
+      restauranteId: 'rest-1',
       nome,
       obrigatorio: false,
       minSelecoes: 0,
-      maxSelecoes: 1,
-      valores,
-      ativo,
-    });
-  };
-
-  const criarModificadorValor = (id: string, grupoId: string, nome: string, ativo: boolean = true): ModificadorValor => {
-    return ModificadorValor.reconstruir({
-      id,
-      modificadorGrupoId: grupoId,
-      restauranteId: 'restaurante-1',
-      nome,
-      ajustePreco: Dinheiro.criar(100),
-      ativo,
-    });
-  };
+      maxSelecoes: 3,
+      valores: valores.map((v) =>
+        new ModificadorValor({
+          id: v.id,
+          modificadorGrupoId: id,
+          restauranteId: 'rest-1',
+          nome: v.nome,
+          ajustePreco: Dinheiro.criar(100),
+          ativo: v.ativo,
+        })
+      ),
+      ativo: true,
+    })
+    return grupo
+  }
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.clearAllMocks()
+
     mockItemCardapioRepo = {
       buscarPorId: vi.fn(),
       buscarPorCategoria: vi.fn(),
@@ -66,7 +69,8 @@ describe('ObterDetalheProdutoUseCase', () => {
       salvar: vi.fn(),
       salvarMany: vi.fn(),
       excluir: vi.fn(),
-    };
+    }
+
     mockModificadorGrupoRepo = {
       buscarPorId: vi.fn(),
       buscarPorRestaurante: vi.fn(),
@@ -74,121 +78,123 @@ describe('ObterDetalheProdutoUseCase', () => {
       salvar: vi.fn(),
       salvarMany: vi.fn(),
       excluir: vi.fn(),
-    };
-    useCase = new ObterDetalheProdutoUseCase(mockItemCardapioRepo, mockModificadorGrupoRepo);
-  });
+    }
+
+    useCase = new ObterDetalheProdutoUseCase(mockItemCardapioRepo, mockModificadorGrupoRepo)
+  })
 
   describe('execute', () => {
-    it('deve retornar detalhe do produto com modificadores ativos', async () => {
-      // Arrange
-      const produto = criarItemCardapio('produto-1', 'Hambúrguer', 2500);
-      const valor1 = criarModificadorValor('val-1', 'grupo-1', 'Sem cebola', true);
-      const valor2 = criarModificadorValor('val-2', 'grupo-1', 'Com bacon', true);
-      const grupo = criarModificadorGrupo('grupo-1', 'Adicionais', [valor1, valor2]);
+    it('deve retornar detalhes do produto com modificadores ativos', async () => {
+      const produto = criarMockProduto('prod-1', 'Hambúrguer', 2500)
+      const grupo = criarMockModificadorGrupo('grp-1', 'prod-1', 'Adicionais', [
+        { id: 'val-1', nome: 'Bacon', ativo: true },
+        { id: 'val-2', nome: 'Queijo Extra', ativo: true },
+      ])
 
-      mockItemCardapioRepo.buscarPorId.mockResolvedValue(produto);
-      mockModificadorGrupoRepo.buscarPorProduto.mockResolvedValue([grupo]);
+      mockItemCardapioRepo.buscarPorId.mockResolvedValue(produto)
+      mockModificadorGrupoRepo.buscarPorProduto.mockResolvedValue([grupo])
 
-      // Act
-      const resultado = await useCase.execute({ produtoId: 'produto-1' });
+      const resultado = await useCase.execute({ produtoId: 'prod-1' })
 
-      // Assert
-      expect(resultado.produto).toBe(produto);
-      expect(resultado.produto.nome).toBe('Hambúrguer');
-      expect(resultado.modificadores).toHaveLength(1);
-      expect(resultado.modificadores[0].nome).toBe('Adicionais');
-    });
+      expect(resultado.produto).toEqual(produto)
+      expect(resultado.produto.nome).toBe('Hambúrguer')
+      expect(resultado.modificadores).toHaveLength(1)
+      expect(resultado.modificadores[0].nome).toBe('Adicionais')
+    })
 
     it('deve lançar erro quando produto não existe', async () => {
-      // Arrange
-      mockItemCardapioRepo.buscarPorId.mockResolvedValue(null);
+      mockItemCardapioRepo.buscarPorId.mockResolvedValue(null)
 
-      // Act & Assert
-      await expect(useCase.execute({ produtoId: 'nao-existe' }))
-        .rejects.toThrow('Produto nao-existe não encontrado');
-    });
+      await expect(useCase.execute({ produtoId: 'nao-existe' })).rejects.toThrow(
+        'Produto nao-existe não encontrado'
+      )
+    })
 
-    it('deve chamar buscarPorId do repositório com produtoId correto', async () => {
-      // Arrange
-      const produto = criarItemCardapio('produto-123', 'Pizza', 3500);
-      mockItemCardapioRepo.buscarPorId.mockResolvedValue(produto);
-      mockModificadorGrupoRepo.buscarPorProduto.mockResolvedValue([]);
+    it('deve filtrar modificadores sem valores ativos', async () => {
+      const produto = criarMockProduto('prod-1', 'Hambúrguer', 2500)
+      const grupoComAtivos = criarMockModificadorGrupo('grp-1', 'prod-1', 'Adicionais Ativos', [
+        { id: 'val-1', nome: 'Bacon', ativo: true },
+        { id: 'val-2', nome: 'Queijo', ativo: true },
+      ])
+      const grupoSemAtivos = criarMockModificadorGrupo('grp-2', 'prod-1', 'Opções Inativas', [
+        { id: 'val-3', nome: 'Inativo 1', ativo: false },
+        { id: 'val-4', nome: 'Inativo 2', ativo: false },
+      ])
 
-      // Act
-      await useCase.execute({ produtoId: 'produto-123' });
+      mockItemCardapioRepo.buscarPorId.mockResolvedValue(produto)
+      mockModificadorGrupoRepo.buscarPorProduto.mockResolvedValue([grupoComAtivos, grupoSemAtivos])
 
-      // Assert
-      expect(mockItemCardapioRepo.buscarPorId).toHaveBeenCalledWith('produto-123');
-    });
+      const resultado = await useCase.execute({ produtoId: 'prod-1' })
 
-    it('deve chamar buscarPorProduto do repositório após buscar produto', async () => {
-      // Arrange
-      const produto = criarItemCardapio('produto-1', 'Coca-Cola', 500);
-      mockItemCardapioRepo.buscarPorId.mockResolvedValue(produto);
-      mockModificadorGrupoRepo.buscarPorProduto.mockResolvedValue([]);
+      expect(resultado.modificadores).toHaveLength(1)
+      expect(resultado.modificadores[0].nome).toBe('Adicionais Ativos')
+    })
 
-      // Act
-      await useCase.execute({ produtoId: 'produto-1' });
+    it('deve retornar array vazio de modificadores quando produto não tem modificadores', async () => {
+      const produto = criarMockProduto('prod-1', 'Água', 300)
 
-      // Assert
-      expect(mockModificadorGrupoRepo.buscarPorProduto).toHaveBeenCalledWith('produto-1');
-    });
+      mockItemCardapioRepo.buscarPorId.mockResolvedValue(produto)
+      mockModificadorGrupoRepo.buscarPorProduto.mockResolvedValue([])
 
-    it('deve filtrar modificadores que não têm valores ativos', async () => {
-      // Arrange
-      const produto = criarItemCardapio('produto-1', 'Sanduíche', 1500);
+      const resultado = await useCase.execute({ produtoId: 'prod-1' })
 
-      const valorAtivo = criarModificadorValor('val-ativo', 'grupo-1', 'Ativo', true);
-      const valorInativo = criarModificadorValor('val-inativo', 'grupo-1', 'Inativo', false);
+      expect(resultado.produto.nome).toBe('Água')
+      expect(resultado.modificadores).toEqual([])
+    })
 
-      const grupoComAtivos = criarModificadorGrupo('grupo-1', 'Grupo Ativo', [valorAtivo, valorInativo], true);
-      const grupoVazio = criarModificadorGrupo('grupo-2', 'Grupo Vazio', [], true);
-      const grupoInativo = criarModificadorGrupo('grupo-3', 'Grupo Inativo', [], false);
+    it('deve chamar repositórios com os parâmetros corretos', async () => {
+      const produto = criarMockProduto('prod-xyz', 'Pizza', 4500)
+      mockItemCardapioRepo.buscarPorId.mockResolvedValue(produto)
+      mockModificadorGrupoRepo.buscarPorProduto.mockResolvedValue([])
 
-      mockItemCardapioRepo.buscarPorId.mockResolvedValue(produto);
-      mockModificadorGrupoRepo.buscarPorProduto.mockResolvedValue([grupoComAtivos, grupoVazio, grupoInativo]);
+      await useCase.execute({ produtoId: 'prod-xyz' })
 
-      // Act
-      const resultado = await useCase.execute({ produtoId: 'produto-1' });
+      expect(mockItemCardapioRepo.buscarPorId).toHaveBeenCalledWith('prod-xyz')
+      expect(mockModificadorGrupoRepo.buscarPorProduto).toHaveBeenCalledWith('prod-xyz')
+    })
 
-      // Assert
-      // grupoComAtivos tem valores ativos (1 valor ativo)
-      // grupoVazio tem valoresAtivos.length = 0 → filtrado
-      // grupoInativo tem ativo=false → filtrado por ativo mas também valoresAtivos.length=0
-      expect(resultado.modificadores).toHaveLength(1);
-      expect(resultado.modificadores[0].id).toBe('grupo-1');
-    });
+    it('deve incluir dados completos do produto no resultado', async () => {
+      const produto = new ItemCardapio({
+        id: 'prod-1',
+        categoriaId: 'cat-1',
+        restauranteId: 'rest-1',
+        nome: 'X-Tudo',
+        descricao: 'Hambúrguer completo',
+        preco: Dinheiro.criar(3500),
+        imagemUrl: 'https://exemplo.com/xtudo.jpg',
+        tipo: TipoItemCardapio.PRODUTO,
+        labelsDieteticos: [LabelDietetico.VEGANO as any],
+        ativo: true,
+      })
 
-    it('deve retornar modificadores ativos ordenados', async () => {
-      // Arrange
-      const produto = criarItemCardapio('produto-1', 'X-Bacon', 3000);
-      const valor1 = criarModificadorValor('val-1', 'grupo-1', 'Valor 1', true);
-      const grupo1 = criarModificadorGrupo('grupo-1', 'Adicional 1', [valor1], true);
-      const grupo2 = criarModificadorGrupo('grupo-2', 'Adicional 2', [], true);
+      mockItemCardapioRepo.buscarPorId.mockResolvedValue(produto)
+      mockModificadorGrupoRepo.buscarPorProduto.mockResolvedValue([])
 
-      mockItemCardapioRepo.buscarPorId.mockResolvedValue(produto);
-      mockModificadorGrupoRepo.buscarPorProduto.mockResolvedValue([grupo1, grupo2]);
+      const resultado = await useCase.execute({ produtoId: 'prod-1' })
 
-      // Act
-      const resultado = await useCase.execute({ produtoId: 'produto-1' });
+      expect(resultado.produto.id).toBe('prod-1')
+      expect(resultado.produto.nome).toBe('X-Tudo')
+      expect(resultado.produto.preco.valor).toBe(3500)
+      expect(resultado.produto.descricao).toBe('Hambúrguer completo')
+    })
 
-      // Assert
-      expect(resultado.modificadores).toHaveLength(1);
-    });
+    it('deve lidar com modificador que tem alguns valores ativos e outros inativos', async () => {
+      const produto = criarMockProduto('prod-1', 'Sanduíche', 2000)
+      const grupo = criarMockModificadorGrupo('grp-1', 'prod-1', 'Personalizar', [
+        { id: 'val-1', nome: 'Sem Cebola', ativo: true },
+        { id: 'val-2', nome: 'Sem Tomate', ativo: false },
+        { id: 'val-3', nome: 'Sem Alface', ativo: true },
+      ])
 
-    it('deve retornar produto mesmo quando não há modificadores', async () => {
-      // Arrange
-      const produto = criarItemCardapio('produto-1', 'Água', 200);
-      mockItemCardapioRepo.buscarPorId.mockResolvedValue(produto);
-      mockModificadorGrupoRepo.buscarPorProduto.mockResolvedValue([]);
+      mockItemCardapioRepo.buscarPorId.mockResolvedValue(produto)
+      mockModificadorGrupoRepo.buscarPorProduto.mockResolvedValue([grupo])
 
-      // Act
-      const resultado = await useCase.execute({ produtoId: 'produto-1' });
+      const resultado = await useCase.execute({ produtoId: 'prod-1' })
 
-      // Assert
-      expect(resultado.produto).toBe(produto);
-      expect(resultado.produto.id).toBe('produto-1');
-      expect(resultado.modificadores).toHaveLength(0);
-    });
-  });
-});
+      // Grupo tem valores ativos, então deve ser retornado
+      expect(resultado.modificadores).toHaveLength(1)
+      // Mas a filtragem é por grupo.ValoresAtivos.length > 0, então o grupo ainda aparece
+      expect(resultado.modificadores[0].valoresAtivos).toHaveLength(2)
+    })
+  })
+})

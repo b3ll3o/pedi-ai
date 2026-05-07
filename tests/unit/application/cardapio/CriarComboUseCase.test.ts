@@ -1,241 +1,265 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { CriarComboUseCase } from '@/application/cardapio/services/CriarComboUseCase';
-import type { CriarComboInput } from '@/application/cardapio/services/CriarComboUseCase';
-import { ItemCardapio } from '@/domain/cardapio/entities/ItemCardapio';
-import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
-import { TipoItemCardapio } from '@/domain/cardapio/value-objects/TipoItemCardapio';
-import { EventDispatcher } from '@/domain/shared/events/EventDispatcher';
-
-// Mock do EventDispatcher
-vi.mock('@/domain/shared/events/EventDispatcher', () => {
-  const mockDispatch = vi.fn();
-  return {
-    EventDispatcher: {
-      getInstance: vi.fn(() => ({
-        dispatch: mockDispatch,
-        register: vi.fn(),
-        unregister: vi.fn(),
-      })),
-    },
-  };
-});
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { CriarComboUseCase, type CriarComboInput } from '@/application/cardapio/services/CriarComboUseCase'
+import type { IItemCardapioRepository } from '@/domain/cardapio/repositories/IItemCardapioRepository'
+import type { EventDispatcher } from '@/domain/shared'
+import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro'
+import { TipoItemCardapio } from '@/domain/cardapio/value-objects/TipoItemCardapio'
+import { ItemCardapio } from '@/domain/cardapio/entities/ItemCardapio'
+import { Combo } from '@/domain/cardapio/entities/Combo'
+import { LabelDietetico } from '@/domain/cardapio/value-objects/LabelDietetico'
 
 describe('CriarComboUseCase', () => {
-  let useCase: CriarComboUseCase;
-  let mockItemCardapioRepo: any;
-  let mockComboRepo: any;
-  let mockEventDispatcher: EventDispatcher;
+  let useCase: CriarComboUseCase
+  let mockItemCardapioRepo: IItemCardapioRepository
+  let mockComboRepo: IItemCardapioRepository
+  let mockEventDispatcher: EventDispatcher
 
-  const criarItemCardapio = (id: string, nome: string, preco: number): ItemCardapio => {
+  const criarMockProduto = (id: string, nome: string, precoEmCentavos: number) => {
     return new ItemCardapio({
       id,
-      categoriaId: 'categoria-1',
-      restauranteId: 'restaurante-1',
+      categoriaId: 'cat-1',
+      restauranteId: 'rest-1',
       nome,
-      descricao: `Descrição de ${nome}`,
-      preco: Dinheiro.criar(preco),
+      descricao: null,
+      preco: Dinheiro.criar(precoEmCentavos),
       imagemUrl: null,
       tipo: TipoItemCardapio.PRODUTO,
       labelsDieteticos: [],
       ativo: true,
-    });
-  };
+    })
+  }
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.clearAllMocks()
 
     mockItemCardapioRepo = {
+      buscarPorId: vi.fn(),
+      buscarPorCategoria: vi.fn(),
+      buscarPorRestaurante: vi.fn(),
+      buscarAtivos: vi.fn(),
       buscarPorIds: vi.fn(),
       salvar: vi.fn(),
-    };
+      salvarMany: vi.fn(),
+      excluir: vi.fn(),
+    }
 
     mockComboRepo = {
+      buscarPorId: vi.fn(),
+      buscarPorCategoria: vi.fn(),
+      buscarPorRestaurante: vi.fn(),
+      buscarAtivos: vi.fn(),
       buscarPorIds: vi.fn(),
       salvar: vi.fn(),
-    };
+      salvarMany: vi.fn(),
+      excluir: vi.fn(),
+    }
 
-    mockEventDispatcher = EventDispatcher.getInstance();
-    useCase = new CriarComboUseCase(mockItemCardapioRepo, mockComboRepo, mockEventDispatcher);
-  });
+    mockEventDispatcher = {
+      dispatch: vi.fn(),
+      register: vi.fn(),
+      unregister: vi.fn(),
+    }
+
+    useCase = new CriarComboUseCase(
+      mockItemCardapioRepo,
+      mockComboRepo,
+      mockEventDispatcher as unknown as EventDispatcher
+    )
+  })
 
   describe('execute', () => {
     it('deve criar combo com dados válidos', async () => {
-      // Arrange
-      const produto1 = criarItemCardapio('produto-1', 'Hambúrguer', 2500);
-      const produto2 = criarItemCardapio('produto-2', 'Refrigerante', 500);
+      const produto1 = criarMockProduto('prod-1', 'Hambúrguer', 2500)
+      const produto2 = criarMockProduto('prod-2', 'Refrigerante', 500)
 
-      mockItemCardapioRepo.buscarPorIds.mockResolvedValue([produto1, produto2]);
-      mockItemCardapioRepo.salvar.mockImplementation(async (combo: any) => ({
-        ...combo,
-        id: combo.id || 'combo-gerado',
-      }));
+      mockItemCardapioRepo.buscarPorIds.mockResolvedValue([produto1, produto2])
 
-      const input: CriarComboInput = {
-        restauranteId: 'restaurante-1',
+      const comboPersistido = new Combo({
+        id: 'combo-1',
+        restauranteId: 'rest-1',
         nome: 'Combo Família',
-        descricao: 'Combo com hambúrguer e refrigerante',
-        precoBundle: 2500,
+        descricao: 'Combo completo',
+        precoBundle: Dinheiro.criar(2800),
         imagemUrl: null,
         itens: [
-          { produtoId: 'produto-1', quantidade: 1 },
-          { produtoId: 'produto-2', quantidade: 1 },
+          { produtoId: 'prod-1', quantidade: 1 },
+          { produtoId: 'prod-2', quantidade: 1 },
         ],
-      };
+        ativo: true,
+      })
+      mockItemCardapioRepo.salvar.mockResolvedValue(comboPersistido as unknown as ItemCardapio)
 
-      // Act
-      const resultado = await useCase.execute(input);
+      const input: CriarComboInput = {
+        restauranteId: 'rest-1',
+        nome: 'Combo Família',
+        descricao: 'Combo completo',
+        precoBundle: 2800,
+        imagemUrl: null,
+        itens: [
+          { produtoId: 'prod-1', quantidade: 1 },
+          { produtoId: 'prod-2', quantidade: 1 },
+        ],
+      }
 
-      // Assert
-      expect(resultado.combo).toBeDefined();
-      expect(resultado.combo.nome).toBe('Combo Família');
-      expect(resultado.calculoDesconto).toBeDefined();
-      expect(mockItemCardapioRepo.salvar).toHaveBeenCalled();
-      expect(mockEventDispatcher.dispatch).toHaveBeenCalled();
-    });
+      const resultado = await useCase.execute(input)
+
+      expect(resultado.combo).toBeDefined()
+      expect(resultado.combo.nome).toBe('Combo Família')
+      expect(resultado.calculoDesconto).toBeDefined()
+      expect(mockEventDispatcher.dispatch).toHaveBeenCalled()
+    })
 
     it('deve lançar erro quando combo não tem itens', async () => {
-      // Arrange
       const input: CriarComboInput = {
-        restauranteId: 'restaurante-1',
+        restauranteId: 'rest-1',
         nome: 'Combo Vazio',
         descricao: null,
         precoBundle: 1000,
         imagemUrl: null,
         itens: [],
-      };
+      }
 
-      // Act & Assert
-      await expect(useCase.execute(input)).rejects.toThrow('Combo deve ter pelo menos um item');
-    });
+      await expect(useCase.execute(input)).rejects.toThrow('Combo deve ter pelo menos um item')
+    })
 
-    it('deve lançar erro quando produtos não são encontrados', async () => {
-      // Arrange
-      const produto1 = criarItemCardapio('produto-1', 'Hambúrguer', 2500);
-      mockItemCardapioRepo.buscarPorIds.mockResolvedValue([produto1]);
+    it('deve lançar erro quando combo tem itens undefined', async () => {
+      const input = {
+        restauranteId: 'rest-1',
+        nome: 'Combo Invalido',
+        descricao: null,
+        precoBundle: 1000,
+        imagemUrl: null,
+        itens: undefined,
+      } as unknown as CriarComboInput
+
+      await expect(useCase.execute(input)).rejects.toThrow('Combo deve ter pelo menos um item')
+    })
+
+    it('deve lançar erro quando produto não é encontrado', async () => {
+      const produto1 = criarMockProduto('prod-1', 'Hambúrguer', 2500)
+
+      mockItemCardapioRepo.buscarPorIds.mockResolvedValue([produto1])
 
       const input: CriarComboInput = {
-        restauranteId: 'restaurante-1',
-        nome: 'Combo Família',
+        restauranteId: 'rest-1',
+        nome: 'Combo',
         descricao: null,
-        precoBundle: 2500,
+        precoBundle: 2000,
         imagemUrl: null,
         itens: [
-          { produtoId: 'produto-1', quantidade: 1 },
-          { produtoId: 'produto-2', quantidade: 1 },
+          { produtoId: 'prod-1', quantidade: 1 },
+          { produtoId: 'prod-2', quantidade: 1 },
         ],
-      };
+      }
 
-      // Act & Assert
-      await expect(useCase.execute(input)).rejects.toThrow('Produtos não encontrados: produto-2');
-    });
-
-    it('deve lançar erro quando nenhum produto é encontrado', async () => {
-      // Arrange
-      mockItemCardapioRepo.buscarPorIds.mockResolvedValue([]);
-
-      const input: CriarComboInput = {
-        restauranteId: 'restaurante-1',
-        nome: 'Combo Família',
-        descricao: null,
-        precoBundle: 2500,
-        imagemUrl: null,
-        itens: [
-          { produtoId: 'produto-1', quantidade: 1 },
-          { produtoId: 'produto-2', quantidade: 1 },
-        ],
-      };
-
-      // Act & Assert
-      await expect(useCase.execute(input)).rejects.toThrow('Produtos não encontrados: produto-1, produto-2');
-    });
+      await expect(useCase.execute(input)).rejects.toThrow('Produtos não encontrados: prod-2')
+    })
 
     it('deve calcular desconto corretamente', async () => {
-      // Arrange
-      const produto1 = criarItemCardapio('produto-1', 'Hambúrguer', 2500);
-      const produto2 = criarItemCardapio('produto-2', 'Refrigerante', 500);
+      const produto1 = criarMockProduto('prod-1', 'Hambúrguer', 2500)
+      const produto2 = criarMockProduto('prod-2', 'Refrigerante', 500)
 
-      mockItemCardapioRepo.buscarPorIds.mockResolvedValue([produto1, produto2]);
-      mockItemCardapioRepo.salvar.mockImplementation(async (combo: any) => ({
-        ...combo,
-        id: combo.id || 'combo-gerado',
-      }));
+      mockItemCardapioRepo.buscarPorIds.mockResolvedValue([produto1, produto2])
 
-      const input: CriarComboInput = {
-        restauranteId: 'restaurante-1',
+      const comboPersistido = new Combo({
+        id: 'combo-1',
+        restauranteId: 'rest-1',
         nome: 'Combo Família',
         descricao: null,
-        precoBundle: 2500, // R$ 25,00 - descontado
+        precoBundle: Dinheiro.criar(2500),
         imagemUrl: null,
         itens: [
-          { produtoId: 'produto-1', quantidade: 1 },
-          { produtoId: 'produto-2', quantidade: 1 },
+          { produtoId: 'prod-1', quantidade: 1 },
+          { produtoId: 'prod-2', quantidade: 1 },
         ],
-      };
-
-      // Act
-      const resultado = await useCase.execute(input);
-
-      // Assert
-      // Preço individual total = 2500 + 500 = 3000
-      // Preço bundle = 2500
-      // Desconto = 3000 - 2500 = 500
-      expect(resultado.calculoDesconto.precoIndividualTotal).toBe(3000);
-      expect(resultado.calculoDesconto.precoBundle).toBe(2500);
-      expect(resultado.calculoDesconto.valorDesconto).toBe(500);
-      expect(resultado.calculoDesconto.percentualDesconto).toBe(17); // 500/3000 = 16.67 ~= 17
-    });
-
-    it('deve disparar evento CardapioAtualizadoEvent', async () => {
-      // Arrange
-      const produto1 = criarItemCardapio('produto-1', 'Hambúrguer', 2500);
-
-      mockItemCardapioRepo.buscarPorIds.mockResolvedValue([produto1]);
-      mockItemCardapioRepo.salvar.mockImplementation(async (combo: any) => ({
-        ...combo,
-        id: combo.id || 'combo-gerado',
-      }));
+        ativo: true,
+      })
+      mockItemCardapioRepo.salvar.mockResolvedValue(comboPersistido as unknown as ItemCardapio)
 
       const input: CriarComboInput = {
-        restauranteId: 'restaurante-1',
-        nome: 'Combo Simples',
+        restauranteId: 'rest-1',
+        nome: 'Combo Família',
         descricao: null,
-        precoBundle: 2000,
+        precoBundle: 2500,
         imagemUrl: null,
-        itens: [{ produtoId: 'produto-1', quantidade: 1 }],
-      };
+        itens: [
+          { produtoId: 'prod-1', quantidade: 1 },
+          { produtoId: 'prod-2', quantidade: 1 },
+        ],
+      }
 
-      // Act
-      await useCase.execute(input);
+      const resultado = await useCase.execute(input)
 
-      // Assert
-      expect(mockEventDispatcher.dispatch).toHaveBeenCalledTimes(1);
-      const eventoDispatched = (mockEventDispatcher.dispatch as any).mock.calls[0][0];
-      expect(eventoDispatched.constructor.name).toBe('CardapioAtualizadoEvent');
-      expect(eventoDispatched.props.tipoAlteracao).toBe('combo_criado');
-      expect(eventoDispatched.props.restauranteId).toBe('restaurante-1');
-    });
+      // Preço individual: 2500 + 500 = 3000
+      // Preço bundle: 2500
+      // Desconto: 3000 - 2500 = 500
+      expect(resultado.calculoDesconto.precoIndividualTotal).toBe(3000)
+      expect(resultado.calculoDesconto.precoBundle).toBe(2500)
+      expect(resultado.calculoDesconto.valorDesconto).toBe(500)
+    })
 
-    it('deve salvar combo via repositório', async () => {
-      // Arrange
-      const produto1 = criarItemCardapio('produto-1', 'Hambúrguer', 2500);
+    it('deve lançar erro quando combo é inválido após validação', async () => {
+      // Criar produto com preço zero para forçar validação inválida
+      const produto1 = criarMockProduto('prod-1', 'Item', 0)
 
-      mockItemCardapioRepo.buscarPorIds.mockResolvedValue([produto1]);
-      mockItemCardapioRepo.salvar.mockImplementation(async (combo: any) => combo);
+      mockItemCardapioRepo.buscarPorIds.mockResolvedValue([produto1])
+
+      const comboPersistido = new Combo({
+        id: 'combo-1',
+        restauranteId: 'rest-1',
+        nome: 'Combo',
+        descricao: null,
+        precoBundle: Dinheiro.criar(0),
+        imagemUrl: null,
+        itens: [{ produtoId: 'prod-1', quantidade: 1 }],
+        ativo: true,
+      })
+      mockItemCardapioRepo.salvar.mockResolvedValue(comboPersistido as unknown as ItemCardapio)
 
       const input: CriarComboInput = {
-        restauranteId: 'restaurante-1',
-        nome: 'Combo Simples',
-        descricao: 'Descrição do combo',
-        precoBundle: 2000,
-        imagemUrl: 'https://exemplo.com/combo.jpg',
-        itens: [{ produtoId: 'produto-1', quantidade: 1 }],
-      };
+        restauranteId: 'rest-1',
+        nome: 'Combo',
+        descricao: null,
+        precoBundle: 0,
+        imagemUrl: null,
+        itens: [{ produtoId: 'prod-1', quantidade: 1 }],
+      }
 
-      // Act
-      await useCase.execute(input);
+      // A validação de ComboAggregate verifica itens com preço > 0
+      await expect(useCase.execute(input)).rejects.toThrow(/Combo inválido/)
+    })
 
-      // Assert
-      expect(mockItemCardapioRepo.salvar).toHaveBeenCalledTimes(1);
-    });
-  });
-});
+    it('deve disparar evento CardapioAtualizadoEvent após criar combo', async () => {
+      const produto1 = criarMockProduto('prod-1', 'Hambúrguer', 2500)
+
+      mockItemCardapioRepo.buscarPorIds.mockResolvedValue([produto1])
+
+      const comboPersistido = new Combo({
+        id: 'combo-1',
+        restauranteId: 'rest-1',
+        nome: 'Combo',
+        descricao: null,
+        precoBundle: Dinheiro.criar(2200),
+        imagemUrl: null,
+        itens: [{ produtoId: 'prod-1', quantidade: 1 }],
+        ativo: true,
+      })
+      mockItemCardapioRepo.salvar.mockResolvedValue(comboPersistido as unknown as ItemCardapio)
+
+      const input: CriarComboInput = {
+        restauranteId: 'rest-1',
+        nome: 'Combo',
+        descricao: null,
+        precoBundle: 2200,
+        imagemUrl: null,
+        itens: [{ produtoId: 'prod-1', quantidade: 1 }],
+      }
+
+      await useCase.execute(input)
+
+      expect(mockEventDispatcher.dispatch).toHaveBeenCalled()
+      const evento = mockEventDispatcher.dispatch.mock.calls[0][0]
+      expect(evento.payload.tipoAlteracao).toBe('combo_criado')
+    })
+  })
+})

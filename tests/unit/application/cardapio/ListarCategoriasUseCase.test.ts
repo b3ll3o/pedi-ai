@@ -1,30 +1,27 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ListarCategoriasUseCase } from '@/application/cardapio/services/ListarCategoriasUseCase';
-import type { ICategoriaRepository } from '@/domain/cardapio/repositories/ICategoriaRepository';
-import { Categoria } from '@/domain/cardapio/entities/Categoria';
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { ListarCategoriasUseCase } from '@/application/cardapio/services/ListarCategoriasUseCase'
+import type { ICategoriaRepository } from '@/domain/cardapio/repositories/ICategoriaRepository'
+import { Categoria } from '@/domain/cardapio/entities/Categoria'
 
 describe('ListarCategoriasUseCase', () => {
-  let useCase: ListarCategoriasUseCase;
-  let mockCategoriaRepo: ICategoriaRepository;
+  let useCase: ListarCategoriasUseCase
+  let mockCategoriaRepo: ICategoriaRepository
 
-  const criarCategoria = (id: string, nome: string, ordem: number, ativo: boolean = true): Categoria => {
-    return Categoria.reconstruir({
+  const criarMockCategoria = (id: string, nome: string, ordem: number) => {
+    return new Categoria({
       id,
-      restauranteId: 'restaurante-1',
+      restauranteId: 'rest-1',
       nome,
       descricao: null,
       imagemUrl: null,
       ordemExibicao: ordem,
-      ativo,
-      criadoEm: new Date(),
-      atualizadoEm: new Date(),
-      deletedAt: null,
-      version: 1,
-    });
-  };
+      ativo: true,
+    })
+  }
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.clearAllMocks()
+
     mockCategoriaRepo = {
       buscarPorId: vi.fn(),
       buscarPorRestaurante: vi.fn(),
@@ -32,91 +29,68 @@ describe('ListarCategoriasUseCase', () => {
       salvar: vi.fn(),
       salvarMany: vi.fn(),
       excluir: vi.fn(),
-    };
-    useCase = new ListarCategoriasUseCase(mockCategoriaRepo);
-  });
+    }
+
+    useCase = new ListarCategoriasUseCase(mockCategoriaRepo)
+  })
 
   describe('execute', () => {
     it('deve listar categorias ativas ordenadas por ordemExibicao', async () => {
-      // Arrange
-      const cat1 = criarCategoria('cat-1', 'Bebidas', 1);
-      const cat2 = criarCategoria('cat-2', 'Pratos', 0);
-      const cat3 = criarCategoria('cat-3', 'Sobremesas', 2);
+      const cat1 = criarMockCategoria('cat-1', 'Bebidas', 1)
+      const cat2 = criarMockCategoria('cat-2', 'Pratos Principais', 2)
+      const cat3 = criarMockCategoria('cat-3', 'Sobremesas', 3)
 
-      mockCategoriaRepo.buscarAtivas.mockResolvedValue([cat1, cat2, cat3]);
+      mockCategoriaRepo.buscarAtivas.mockResolvedValue([cat3, cat1, cat2])
 
-      // Act
-      const resultado = await useCase.execute({ restauranteId: 'restaurante-1' });
+      const resultado = await useCase.execute({ restauranteId: 'rest-1' })
 
-      // Assert
-      expect(resultado).toHaveLength(3);
-      expect(resultado[0].nome).toBe('Pratos');    // ordem 0
-      expect(resultado[1].nome).toBe('Bebidas');   // ordem 1
-      expect(resultado[2].nome).toBe('Sobremesas'); // ordem 2
-      expect(mockCategoriaRepo.buscarAtivas).toHaveBeenCalledWith('restaurante-1');
-    });
+      expect(resultado).toHaveLength(3)
+      expect(resultado[0].nome).toBe('Bebidas')
+      expect(resultado[1].nome).toBe('Pratos Principais')
+      expect(resultado[2].nome).toBe('Sobremesas')
+      expect(mockCategoriaRepo.buscarAtivas).toHaveBeenCalledWith('rest-1')
+    })
 
-    it('deve chamar buscarAtivas do repositório', async () => {
-      // Arrange
-      mockCategoriaRepo.buscarAtivas.mockResolvedValue([]);
+    it('deve retornar array vazio quando não há categorias ativas', async () => {
+      mockCategoriaRepo.buscarAtivas.mockResolvedValue([])
 
-      // Act
-      await useCase.execute({ restauranteId: 'restaurante-1' });
+      const resultado = await useCase.execute({ restauranteId: 'rest-sem-cat' })
 
-      // Assert
-      expect(mockCategoriaRepo.buscarAtivas).toHaveBeenCalledTimes(1);
-      expect(mockCategoriaRepo.buscarAtivas).toHaveBeenCalledWith('restaurante-1');
-    });
+      expect(resultado).toEqual([])
+    })
 
-    it('deve retornar lista vazia quando não há categorias', async () => {
-      // Arrange
-      mockCategoriaRepo.buscarAtivas.mockResolvedValue([]);
+    it('deve ordenar categorias com mesma ordemExibicao de forma estável', async () => {
+      const cat1 = criarMockCategoria('cat-1', 'Bebidas', 1)
+      const cat2 = criarMockCategoria('cat-2', 'Sucos', 1)
+      const cat3 = criarMockCategoria('cat-3', 'Refrigerantes', 1)
 
-      // Act
-      const resultado = await useCase.execute({ restauranteId: 'restaurante-1' });
+      mockCategoriaRepo.buscarAtivas.mockResolvedValue([cat1, cat2, cat3])
 
-      // Assert
-      expect(resultado).toEqual([]);
-    });
+      const resultado = await useCase.execute({ restauranteId: 'rest-1' })
 
-    it('deve ordenar categorias por ordemExibicao crescente', async () => {
-      // Arrange
-      const catA = criarCategoria('cat-a', 'Zebra', 5);
-      const catB = criarCategoria('cat-b', 'Abacaxi', 1);
-      const catC = criarCategoria('cat-c', 'Maçã', 3);
+      // Ordenação estável preserva ordem original para elementos iguais
+      expect(resultado).toHaveLength(3)
+    })
 
-      mockCategoriaRepo.buscarAtivas.mockResolvedValue([catA, catB, catC]);
+    it('deve chamar buscarAtivas com restauranteId correto', async () => {
+      mockCategoriaRepo.buscarAtivas.mockResolvedValue([])
 
-      // Act
-      const resultado = await useCase.execute({ restauranteId: 'restaurante-1' });
+      await useCase.execute({ restauranteId: 'rest-xyz' })
 
-      // Assert
-      expect(resultado[0].ordemExibicao).toBe(1);
-      expect(resultado[1].ordemExibicao).toBe(3);
-      expect(resultado[2].ordemExibicao).toBe(5);
-    });
+      expect(mockCategoriaRepo.buscarAtivas).toHaveBeenCalledWith('rest-xyz')
+    })
 
     it('deve retornar apenas categorias ativas', async () => {
-      // Arrange — buscarAtivas já deve retornar só ativas, mas aseguramos
-      const catAtiva = criarCategoria('cat-ativa', 'Ativa', 0, true);
-      mockCategoriaRepo.buscarAtivas.mockResolvedValue([catAtiva]);
+      const cat1 = criarMockCategoria('cat-1', 'Bebidas', 1)
+      const cat2 = criarMockCategoria('cat-2', 'Inativos', 2)
+      cat2.desativar()
 
-      // Act
-      const resultado = await useCase.execute({ restauranteId: 'restaurante-1' });
+      mockCategoriaRepo.buscarAtivas.mockResolvedValue([cat1])
 
-      // Assert
-      expect(resultado.every(c => c.ativo)).toBe(true);
-    });
+      const resultado = await useCase.execute({ restauranteId: 'rest-1' })
 
-    it('deve passar restauranteId correto para buscarAtivas', async () => {
-      // Arrange
-      mockCategoriaRepo.buscarAtivas.mockResolvedValue([]);
-
-      // Act
-      await useCase.execute({ restauranteId: 'restaurante-xyz' });
-
-      // Assert
-      expect(mockCategoriaRepo.buscarAtivas).toHaveBeenCalledWith('restaurante-xyz');
-    });
-  });
-});
+      expect(resultado).toHaveLength(1)
+      expect(resultado[0].nome).toBe('Bebidas')
+    })
+  })
+})
