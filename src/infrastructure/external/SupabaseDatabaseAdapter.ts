@@ -105,6 +105,7 @@ export class SupabaseDatabaseAdapter implements ISupabaseDatabaseAdapter {
 
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         query = query.eq(key, value as any);
       });
     }
@@ -135,6 +136,7 @@ export class SupabaseDatabaseAdapter implements ISupabaseDatabaseAdapter {
 
     const { data: result, error } = await this.supabase
       .from(supabaseTable)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .upsert(data as unknown as any[])
       .select();
 
@@ -173,6 +175,7 @@ export class SupabaseDatabaseAdapter implements ISupabaseDatabaseAdapter {
 
     const { data: result, error } = await this.supabase
       .from(supabaseTable)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .update(data as unknown as any)
       .match({ id: (data as { id: string }[]).map(d => d.id) });
 
@@ -329,6 +332,7 @@ export class SupabaseDatabaseAdapter implements ISupabaseDatabaseAdapter {
       const supabaseTable = this.tableMapping[tableName];
       const { error } = await this.supabase
         .from(supabaseTable)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .upsert(localData as unknown as any[]);
 
       if (error) {

@@ -3,20 +3,29 @@ import { createClient } from './client'
 
 /**
  * Sign up with email and password
+ * Includes a timeout to prevent infinite hanging.
  */
 async function signUp(email: string, password: string): Promise<AuthResponse> {
-  const supabase = createClient()
+  const TIMEOUT_MS = 30_000;
+
+  const timeoutPromise = new Promise<AuthResponse>((_, reject) =>
+    setTimeout(() => reject(new Error('Tempo limite de registro excedido')), TIMEOUT_MS)
+  );
+
+  const supabase = createClient();
   // Nota: emailConfirm não existe nos tipos TypeScript do Supabase v2,
   // mas a API aceita o parâmetro. O servidor confirma o email se
   // "Confirm email" estiver desabilitado nas configurações do projeto.
-  return supabase.auth.signUp({
+  const signUpPromise = supabase.auth.signUp({
     email,
     password,
     options: {
       emailConfirm: true,
     },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } as any)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } as any);
+
+  return Promise.race([signUpPromise, timeoutPromise]);
 }
 
 /**

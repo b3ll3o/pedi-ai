@@ -96,8 +96,8 @@ export function useCustomerOrderNotifications({
       return;
     }
 
-    // Limpa atualizações pendentes quando orderIds muda
-    // eslint-disable-next-line react-hooks/setstate-synchronously-in-effect
+    // Limpa atualizações pendentes quando orderIds mudou
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPendingUpdates([]);
 
     const supabase = createClient();
