@@ -96,6 +96,25 @@
   color: var(--color-error);
 }
 
+.userInfo {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  max-width: 15rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Desktop: user info between logo and logout button */
+@media (min-width: 40em) {
+  .userInfo {
+    position: absolute;
+    right: 5rem;
+    max-width: 12rem;
+  }
+}
+
 /* Dark mode */
 @media (prefers-color-scheme: dark) {
   .header {
