@@ -3,7 +3,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
 // GET /api/auth/profile - Obter perfil do usuário autenticado
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Criar client server para obter usuário autenticado via session cookies
     const cookieStore = await cookies()
