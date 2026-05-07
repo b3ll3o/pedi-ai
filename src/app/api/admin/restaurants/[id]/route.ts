@@ -181,10 +181,11 @@ export async function DELETE(
       );
     }
 
-    // Delete restaurant (cascade should handle related data)
+    // Soft delete restaurant - set deleted_at instead of actually deleting
+    // This respects the soft delete requirement: "n quero q nada sera deletado de fato"
     const { error: deleteError } = await supabaseAdmin
       .from('restaurants')
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq('id', restaurantId);
 
     if (deleteError) {
@@ -195,7 +196,7 @@ export async function DELETE(
       );
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, message: 'Restaurante removido com sucesso (soft delete)' });
   } catch (error) {
     console.error('Error in DELETE /api/admin/restaurants/[id]:', error);
     return NextResponse.json(

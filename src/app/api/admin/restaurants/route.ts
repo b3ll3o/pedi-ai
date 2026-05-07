@@ -64,11 +64,12 @@ export async function GET() {
     // Admin client for database operations (uses service role - bypasses RLS)
     const supabaseAdmin = getSupabaseAdmin();
 
-    // Get user's restaurants via users_profiles
+    // Get user's restaurants via users_profiles (filter out soft-deleted)
     const { data: profiles, error: profilesError } = await supabaseAdmin
       .from('users_profiles')
       .select('restaurant_id, role')
-      .eq('user_id', user.id);
+      .eq('user_id', user.id)
+      .is('deleted_at', null);
 
     if (profilesError) {
       console.error('Error fetching profiles:', JSON.stringify(profilesError, null, 2));
@@ -86,11 +87,12 @@ export async function GET() {
       return NextResponse.json({ restaurants: [] });
     }
 
-    // Get restaurant details
+    // Get restaurant details (filter out soft-deleted restaurants)
     const { data: restaurants, error: restaurantsError } = await supabaseAdmin
       .from('restaurants')
       .select('*')
-      .in('id', restaurantIds);
+      .in('id', restaurantIds)
+      .is('deleted_at', null);
 
     if (restaurantsError) {
       console.error('Error fetching restaurants:', restaurantsError);
@@ -191,6 +193,29 @@ export async function POST(request: NextRequest) {
         { error: 'Erro ao configurar restaurante' },
         { status: 500 }
       );
+    }
+
+    // Create subscription with 14-day free trial
+    const trialDays = 14;
+    const trialEndsAt = new Date();
+    trialEndsAt.setDate(trialEndsAt.getDate() + trialDays);
+
+    const { error: subscriptionError } = await supabaseAdmin
+      .from('subscriptions')
+      .insert({
+        restaurant_id: restaurant.id,
+        status: 'trial',
+        plan_type: 'monthly',
+        price_cents: 1999,
+        currency: 'BRL',
+        trial_days: trialDays,
+        trial_started_at: new Date().toISOString(),
+        trial_ends_at: trialEndsAt.toISOString(),
+      });
+
+    if (subscriptionError) {
+      console.error('Error creating subscription:', subscriptionError);
+      // Non-fatal: restaurant created, subscription failure shouldn't rollback
     }
 
     return NextResponse.json({ restaurant }, { status: 201 });

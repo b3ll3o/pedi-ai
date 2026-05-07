@@ -22,6 +22,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .select('*')
       .eq('id', id)
       .eq('restaurant_id', restaurantId)
+      .is('deleted_at', null)
       .single()
 
     if (error) {
@@ -62,12 +63,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     const supabase = await createClient()
 
-    // Check if table exists and belongs to user's restaurant
+    // Check if table exists and belongs to user's restaurant (filter soft-deleted)
     const { data: existingTable, error: fetchError } = await supabase
       .from('tables')
       .select('id, restaurant_id, number')
       .eq('id', id)
       .eq('restaurant_id', restaurantId)
+      .is('deleted_at', null)
       .single()
 
     if (fetchError || !existingTable) {
@@ -145,12 +147,13 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const restaurantId = getRestaurantId(authUser)
     const supabase = await createClient()
 
-    // Check if table exists and belongs to user's restaurant
+    // Check if table exists and belongs to user's restaurant (filter soft-deleted)
     const { data: existingTable, error: fetchError } = await supabase
       .from('tables')
       .select('id')
       .eq('id', id)
       .eq('restaurant_id', restaurantId)
+      .is('deleted_at', null)
       .single()
 
     if (fetchError || !existingTable) {
@@ -183,9 +186,11 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       )
     }
 
+    // Soft delete table - set deleted_at instead of actually deleting
+    // This respects the soft delete requirement: "n quero q nada sera deletado de fato"
     const { error } = await supabase
       .from('tables')
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq('id', id)
 
     if (error) {
@@ -196,7 +201,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, message: 'Mesa removida com sucesso (soft delete)' })
   } catch (error) {
     console.error('Unexpected error in /api/admin/tables/[id]:', error)
     return NextResponse.json(
