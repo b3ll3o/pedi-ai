@@ -16,11 +16,14 @@ async function signUp(email: string, password: string): Promise<AuthResponse> {
   // Nota: emailConfirm não existe nos tipos TypeScript do Supabase v2,
   // mas a API aceita o parâmetro. O servidor confirma o email se
   // "Confirm email" estiver desabilitado nas configurações do projeto.
+  // Para ambiente de desenvolvimento/producao sem SMTP configurado,
+  // desabilitamos a confirmacao de email. Em producao com SMTP,
+  // alterar para true e configurar SMTP no Supabase Dashboard.
   const signUpPromise = supabase.auth.signUp({
     email,
     password,
     options: {
-      emailConfirm: true,
+      emailConfirm: false,
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any);
