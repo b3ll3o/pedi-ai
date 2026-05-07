@@ -49,9 +49,9 @@ jobs:
         run: |
           if [ -z "${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" ] || [ -z "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" ]; then
             echo "::warning::E2E secrets not configured. Skipping tests."
-            echo "::set-output name=skip_tests::true"
+            echo "skip_tests=true" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=skip_tests::false"
+            echo "skip_tests=false" >> $GITHUB_OUTPUT
           fi
         id: check-secrets
 
