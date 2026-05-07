@@ -23,7 +23,7 @@ describe('ItemCardapioRepository', () => {
       descricao: 'Delicioso hambúrguer',
       preco: Dinheiro.criar(2590, 'BRL'),
       imagemUrl: null,
-      tipo: TipoItemCardapio.LANCHE(),
+      tipo: TipoItemCardapio.PRODUTO,
       labelsDieteticos: [],
       ativo: overrides?.ativo ?? true,
       id: overrides?.id,

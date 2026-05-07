@@ -18,7 +18,7 @@ describe('CarrinhoRepository', () => {
     return CarrinhoAggregate.criar({
       restauranteId: overrides?.restauranteId ?? 'rest-123',
       clienteId: 'cliente-abc',
-      id: overrides?.id,
+      id: overrides?.id ?? 'carrinho-test-001',
     });
   }
 

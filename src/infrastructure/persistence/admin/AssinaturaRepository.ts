@@ -101,7 +101,7 @@ export class AssinaturaRepository implements IAssinaturaRepository {
   /**
    * Converte record do banco para entidade Assinatura
    */
-  private recordToAssinatura(record: subscriptions): Assinatura {
+  private recordToAssinatura(record: Database['public']['Tables']['subscriptions']['Row']): Assinatura {
     const props: AssinaturaProps = {
       id: record.id,
       restauranteId: record.restaurant_id,
@@ -126,7 +126,7 @@ export class AssinaturaRepository implements IAssinaturaRepository {
   /**
    * Converte entidade Assinatura para record do banco
    */
-  private assinaturaToRecord(assinatura: Assinatura) {
-    return assinatura.toRecord();
+  private assinaturaToRecord(assinatura: Assinatura): Database['public']['Tables']['subscriptions']['Insert'] {
+    return assinatura.toRecord() as Database['public']['Tables']['subscriptions']['Insert'];
   }
 }

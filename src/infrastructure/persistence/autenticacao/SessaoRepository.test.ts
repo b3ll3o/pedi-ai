@@ -27,7 +27,7 @@ const createMockDb = () => ({
                 r => r.usuarioId === value
               );
             }),
-            below: vi.fn(async (): Record<string, unknown> => {
+            below: vi.fn(async (): Promise<Record<string, unknown>> => {
               return {
                 toArray: vi.fn(async () => {
                   const agora = new Date();

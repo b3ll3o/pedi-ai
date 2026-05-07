@@ -54,8 +54,8 @@ export class PedidoRepository implements IPedidoRepository {
 
     return {
       id: pedido.id,
-      clienteId: pedido.clienteId,
-      mesaId: pedido.mesaId,
+      clienteId: pedido.clienteId ?? undefined,
+      mesaId: pedido.mesaId ?? undefined,
       restauranteId: pedido.restauranteId,
       status: pedido.status.toString(),
       itens: itensSerialized,

@@ -21,7 +21,7 @@ const mockConfiguracoesTable = {
 
 const mockUserRestaurantsTable = {
   put: vi.fn(async (record: Record<string, unknown>) => {
-    const id = record.id ?? mockUserRestaurantsNextId++;
+    const id = (record.id as number | undefined) ?? mockUserRestaurantsNextId++;
     mockUserRestaurants.set(id, { ...record, id });
   }),
   where: vi.fn(() => ({
@@ -209,9 +209,17 @@ describe('RestauranteRepository', () => {
       await repository.create(restaurante, configuracoes);
 
       const restauranteAtualizado = Restaurante.reconstruir({
-        ...restaurante.props,
+        id: restaurante.id,
         nome: 'Pizzaria Atualizada',
+        cnpj: restaurante.cnpj,
+        endereco: restaurante.endereco,
+        telefone: restaurante.telefone,
+        logoUrl: restaurante.logoUrl,
+        ativo: restaurante.ativo,
+        criadoEm: restaurante.criadoEm,
         atualizadoEm: new Date(),
+        deletedAt: restaurante.deletedAt,
+        version: restaurante.version,
       });
 
       const resultado = await repository.update(restauranteAtualizado, configuracoes);

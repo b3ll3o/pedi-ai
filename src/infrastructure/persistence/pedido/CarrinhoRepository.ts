@@ -57,11 +57,11 @@ export class CarrinhoRepository implements ICarrinhoRepository {
 
     return {
       id: carrinho.id,
-      clienteId: carrinho.clienteId,
-      mesaId: carrinho.mesaId,
+      clienteId: carrinho.clienteId ?? undefined,
+      mesaId: carrinho.mesaId ?? undefined,
       restauranteId: carrinho.restauranteId,
       itens: itensSerialized,
-      metodoPagamento: carrinho.metodoPagamento?.toString(),
+      metodoPagamento: carrinho.metodoPagamento?.toString() ?? undefined,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

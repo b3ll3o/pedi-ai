@@ -15,9 +15,10 @@ describe('MesaRepository', () => {
   });
 
   function criarMesaValida(overrides?: Partial<{ id: string; restauranteId: string; label: string; ativo: boolean }>): Mesa {
-    const qrPayload = QRCodePayload.criar({
+    const qrPayload = QRCodePayload.reconstruir({
       restauranteId: overrides?.restauranteId ?? 'rest-123',
       mesaId: overrides?.id ?? 'mesa-001',
+      assinatura: 'dummy-signature',
     });
     return Mesa.criar({
       restauranteId: overrides?.restauranteId ?? 'rest-123',

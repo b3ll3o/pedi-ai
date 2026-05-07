@@ -189,7 +189,7 @@ describe('Fluxo PIX — Integração', () => {
   });
 
   describe('FSM de status do pedido', () => {
-    type StatusValue = 'pending_payment' | 'paid' | 'received' | 'preparing' | 'ready' | 'delivered';
+    type StatusValue = 'pending_payment' | 'paid' | 'received' | 'preparing' | 'ready' | 'delivered' | 'payment_failed' | 'cancelled';
 
     const transicoesValidas: Record<StatusValue, StatusValue[]> = {
       'pending_payment': ['paid', 'payment_failed', 'cancelled'],
@@ -198,6 +198,8 @@ describe('Fluxo PIX — Integração', () => {
       'preparing': ['ready', 'cancelled'],
       'ready': ['delivered'],
       'delivered': [],
+      'payment_failed': [],
+      'cancelled': [],
     };
 
     it('deve permitir transição de pending_payment para paid', () => {

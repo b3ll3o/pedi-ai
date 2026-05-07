@@ -17,13 +17,25 @@ describe('PagamentoRepository', () => {
   });
 
   function criarPagamentoValido(overrides?: Partial<{ id: string; pedidoId: string; status: StatusPagamento }>): Pagamento {
-    return Pagamento.criar({
+    const pagamento = Pagamento.criar({
       pedidoId: overrides?.pedidoId ?? 'pedido-123',
-      metodo: MetodoPagamento.PIX(),
+      metodo: MetodoPagamento.PIX,
       valor: Dinheiro.criar(5000, 'BRL'),
-      status: overrides?.status ?? StatusPagamento.PENDENTE(),
-      id: overrides?.id,
+      id: overrides?.id ?? 'pag-test-001',
     });
+    if (overrides?.status && !overrides.status.equals(StatusPagamento.PENDING)) {
+      if (overrides.status.equals(StatusPagamento.CONFIRMED)) {
+        pagamento.confirmar('transacao-confirmada');
+      } else if (overrides.status.equals(StatusPagamento.FAILED)) {
+        pagamento.falhar();
+      } else if (overrides.status.equals(StatusPagamento.REFUNDED)) {
+        pagamento.confirmar('transacao-reembolso');
+        pagamento.reembolsar();
+      } else if (overrides.status.equals(StatusPagamento.CANCELLED)) {
+        pagamento.cancelar();
+      }
+    }
+    return pagamento;
   }
 
   describe('salvar', () => {
@@ -94,8 +106,8 @@ describe('PagamentoRepository', () => {
 
   describe('listarPorStatus', () => {
     it('deve listar pagamentos por status', async () => {
-      const p1 = criarPagamentoValido({ id: 'pag-1', status: StatusPagamento.PENDENTE() });
-      const p2 = criarPagamentoValido({ id: 'pag-2', status: StatusPagamento.CONFIRMADO() });
+      const p1 = criarPagamentoValido({ id: 'pag-1', status: StatusPagamento.PENDING });
+      const p2 = criarPagamentoValido({ id: 'pag-2', status: StatusPagamento.CONFIRMED });
       await repository.salvar(p1);
       await repository.salvar(p2);
 

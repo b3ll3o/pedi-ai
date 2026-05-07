@@ -33,10 +33,10 @@ export class PagamentoRepository implements IPagamentoRepository {
         valor: pagamento.valor.valor,
         moeda: pagamento.valor.moeda,
       },
-      transacaoId: pagamento.transacaoId,
-      webhookId: pagamento.webhookId,
+      transacaoId: pagamento.transacaoId ?? undefined,
+      webhookId: pagamento.webhookId ?? undefined,
       createdAt: pagamento.createdAt,
-      confirmedAt: pagamento.confirmedAt,
+      confirmedAt: pagamento.confirmedAt ?? undefined,
     };
   }
 

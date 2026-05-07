@@ -81,7 +81,7 @@ describe('SessaoRepository', () => {
 
   describe('findByUsuarioId', () => {
     it('deve encontrar sessoes por usuarioId', async () => {
-      const s1 = criarSessaoValida({ token: 'token-1', id: 'sessao-1' });
+      const s1 = criarSessaoValida({ token: 'token-1', id: 'sessao-1', usuarioId: 'outro-usuario' });
       const s2 = criarSessaoValida({ token: 'token-2', id: 'sessao-2', usuarioId: 'usuario-123' });
       const s3 = criarSessaoValida({ token: 'token-3', id: 'sessao-3', usuarioId: 'outro-usuario' });
       await repository.create(s1);
