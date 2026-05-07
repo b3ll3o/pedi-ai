@@ -1,6 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { Assinatura, AssinaturaProps, StatusAssinatura } from '@/domain/admin/entities/Assinatura';
-import { Database, subscriptions } from '@/lib/supabase/types';
+import { Assinatura, AssinaturaProps, StatusAssinatura, TipoPlano } from '@/domain/admin/entities/Assinatura';
+import type { Database } from '@/lib/supabase/database.types';
 
 /**
  * Interface para repositório de assinaturas
@@ -106,7 +106,7 @@ export class AssinaturaRepository implements IAssinaturaRepository {
       id: record.id,
       restauranteId: record.restaurant_id,
       status: record.status as StatusAssinatura,
-      tipoPlano: record.plan_type,
+      tipoPlano: record.plan_type as TipoPlano,
       preçoCentavos: record.price_cents,
       moeda: record.currency,
       trialIniciadoEm: new Date(record.trial_started_at),
@@ -126,23 +126,7 @@ export class AssinaturaRepository implements IAssinaturaRepository {
   /**
    * Converte entidade Assinatura para record do banco
    */
-  private assinaturaToRecord(assinatura: Assinatura): subscriptions {
-    return {
-      id: assinatura.id,
-      restaurant_id: assinatura.props.restauranteId,
-      status: assinatura.props.status,
-      plan_type: assinatura.props.tipoPlano,
-      price_cents: assinatura.props.preçoCentavos,
-      currency: assinatura.props.moeda,
-      trial_started_at: assinatura.props.trialIniciadoEm.toISOString(),
-      trial_ends_at: assinatura.props.trialExpiraEm.toISOString(),
-      trial_days: assinatura.props.trialDias,
-      subscription_started_at: assinatura.props.assinaturaIniciadaEm?.toISOString() || null,
-      subscription_ends_at: assinatura.props.assinaturaExpiraEm?.toISOString() || null,
-      cancelled_at: assinatura.props.canceladaEm?.toISOString() || null,
-      created_at: assinatura.props.criadoEm.toISOString(),
-      updated_at: assinatura.props.atualizadoEm.toISOString(),
-      version: assinatura.props.versão,
-    };
+  private assinaturaToRecord(assinatura: Assinatura) {
+    return assinatura.toRecord();
   }
 }

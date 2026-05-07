@@ -86,6 +86,10 @@ export class ComboAggregate {
       if (!this.precosItens.has(item.produtoId)) {
         erros.push(`Preço não encontrado para produto ${item.produtoId}`);
       }
+      const preco = this.precosItens.get(item.produtoId);
+      if (preco && preco.valor <= 0) {
+        erros.push(`Preço inválido para produto ${item.produtoId}`);
+      }
     }
 
     return {

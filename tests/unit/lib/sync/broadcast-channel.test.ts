@@ -128,18 +128,19 @@ describe('BroadcastChannel', () => {
       })
 
       // Primeiro broadcast define lastBroadcastTimestamp
+      const broadcastTimestamp = Date.now()
       manager.broadcastCartUpdate(mockCartItems)
 
       const handler = mockAddEventListener.mock.calls.find(
         (call) => call[0] === 'message'
       )?.[1] as (event: MessageEvent<CartBroadcast>) => void
 
-      // Mensagem com timestamp menor ou igual ao último broadcast
+      // Mensagem com timestamp menor que o último broadcast para garantir anti-echo
       const ownMessage: MessageEvent<CartBroadcast> = {
         data: {
           type: 'CART_UPDATE',
           items: mockCartItems,
-          timestamp: Date.now(),
+          timestamp: broadcastTimestamp - 1,
         },
       } as unknown as MessageEvent<CartBroadcast>
 

@@ -9,6 +9,60 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      subscriptions: {
+        Row: {
+          id: string
+          restaurant_id: string
+          status: string
+          plan_type: string
+          price_cents: number
+          currency: string
+          trial_started_at: string
+          trial_ends_at: string
+          trial_days: number
+          subscription_started_at: string | null
+          subscription_ends_at: string | null
+          cancelled_at: string | null
+          created_at: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          id?: string
+          restaurant_id: string
+          status?: string
+          plan_type?: string
+          price_cents?: number
+          currency?: string
+          trial_started_at?: string
+          trial_ends_at: string
+          trial_days?: number
+          subscription_started_at?: string | null
+          subscription_ends_at?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          id?: string
+          restaurant_id?: string
+          status?: string
+          plan_type?: string
+          price_cents?: number
+          currency?: string
+          trial_started_at?: string
+          trial_ends_at?: string
+          trial_days?: number
+          subscription_started_at?: string | null
+          subscription_ends_at?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
       [table: string]: {
         Row: Record<string, Json>
         Insert: Record<string, Json>
@@ -35,4 +89,4 @@ export interface Database {
 }
 
 // Placeholder types - replace with actual schema types from Supabase
-// Generate types using: npx supabase gen types typescript --project-id <your-project-id>
+// Generate types using: npx supabase gen types typescript --project-id <your-project-id>"

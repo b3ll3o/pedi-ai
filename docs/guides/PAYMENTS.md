@@ -11,25 +11,16 @@ O Pedi-AI suporta dois provedores de pagamento para processar transações de cl
 | Provedor | Método | Caso de Uso | Status |
 |----------|--------|-------------|--------|
 | **Mercado Pago** | PIX | Pagamentos instantâneos, sem custo de transação | ✅ Implementado |
-| **Stripe** | Cartão de Crédito/Débito | Pagamentos com cartão, maior abrangência | 🟡 Parcial |
-| **Demo Mode** | Simulado | Testes sem custo real | ✅ Implementado |
+| **Demo Mode** | Simulado | Testes sem custo real (bypassa provedores reais) | ✅ Implementado |
+
+> **Nota:** Pagamento com cartão de crédito/débito (Stripe) não está implementado. O projeto suporta apenas PIX via Mercado Pago.
 
 ### Variáveis de Ambiente
 
 ```bash
 # Mercado Pago
 MERCADO_PAGO_ACCESS_TOKEN=    # Token de acesso do Mercado Pago
-MP_ACCESS_TOKEN=               # Alias para MERCADO_PAGO_ACCESS_TOKEN
-MP_WEBHOOK_SECRET=             # Secret para validar webhooks do Mercado Pago
-
-# Stripe
-STRIPE_SECRET_KEY=             # Chave secreta do Stripe
-STRIPE_WEBHOOK_SECRET=         # Webhook secret para validar assinaturas
-
-# Feature Flags (client-side)
-NEXT_PUBLIC_FEATURE_PIX_ENABLED=true     # Habilita PIX no checkout
-NEXT_PUBLIC_FEATURE_STRIPE_ENABLED=true  # Habilita Stripe no checkout
-NEXT_PUBLIC_DEMO_PAYMENT_MODE=true       # Bypassa pagamentos reais
+NEXT_PUBLIC_DEMO_PAYMENT_MODE=true       # Bypassa pagamentos reais (demo/simulado)
 ```
 
 ---
@@ -178,161 +169,7 @@ const statusMap: Record<string, string> = {
 
 ---
 
-## 3. Stripe (Cartão de Crédito/Débito)
-
-### 3.1 Fluxo Completo
-
-```
-┌─────────────┐   POST /api/payments/stripe/create-intent   ┌─────────────────────────┐
-│   Cliente    │ ─────────────────────────────────────────▶  │  Stripe Create Intent   │
-│  (Checkout)  │                                            │  (route.ts)              │
-└─────────────┘                                            └────────────┬──────────────┘
-                                                                              │
-                                                                  Stripe API
-                                                                           │
-                                                                          ▼
-┌─────────────┐   clientSecret                      ┌─────────────────────────┐
-│   Cliente    │ ◀─────────────────────────────────  │  PaymentIntent Created  │
-│  (Checkout)  │                                     │  (StripeAdapter)        │
-└─────────────┘                                     └─────────────────────────┘
-                                                                           │
-                                              Stripe Elements (Frontend)
-                                                                           │
-                                                                          ▼
-┌─────────────┐   Confirm Payment                  ┌─────────────────────────┐
-│   Cliente    │ ─────────────────────────────────▶  │  stripe.confirmPayment  │
-│  (Stripe.js) │                                     │  (Client-side)          │
-└─────────────┘                                     └────────────┬────────────┘
-                                                                              │
-                                                            Webhook POST
-                                                             │
-                                                             ▼
-┌─────────────┐                                        ┌─────────────────────────┐
-│   Stripe     │ ───────────────────────────────────▶  │  POST /api/webhooks/    │
-│   Server     │                                        │  stripe/webhook         │
-└─────────────┘                                        └────────────┬────────────┘
-                                                                          │
-                                                          Stripe.webhooks
-                                                          .constructEvent()
-                                                                          │
-                                                                          ▼
-                                                        ┌─────────────────────────┐
-                                                        │ ProcessarWebhookUseCase │
-                                                        │ (Application Layer)      │
-                                                        └────────────┬────────────┘
-                                                                              │
-                                                               Domain Events
-                                                               (PagamentoConfirmadoEvent)
-                                                                              │
-                                                                             ▼
-                                                        ┌─────────────────────────┐
-                                                        │ PagamentoAggregate      │
-                                                        │ confirmarPagamento()    │
-                                                        └─────────────────────────┘
-```
-
-### 3.2 Criação do PaymentIntent — `POST /api/payments/stripe/create-intent`
-
-**Endpoint:** `/api/payments/stripe/create-intent`
-
-**Request Body:**
-```json
-{
-  "order_id": "ord_123abc"
-}
-```
-
-**Fluxo:**
-1. Valida se `order_id` está presente
-2. Busca pedido no banco via Supabase
-3. Cria `PaymentIntent` via `StripeAdapter.criarPaymentIntent()`
-4. Retorna `clientSecret` para o frontend
-
-**Response:**
-```json
-{
-  "clientSecret": "pi_ord_123abc_secret_abc123"
-}
-```
-
-**Adapter (StripeAdapter):**
-```typescript
-async criarPaymentIntent(valorEmCentavos: number, pedidoId: string): Promise<StripePaymentIntent> {
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount: valorEmCentavos,
-    currency: 'brl',
-    metadata: { order_id: pedidoId },
-  })
-  return {
-    id: paymentIntent.id,
-    clientSecret: paymentIntent.client_secret,
-    valor: paymentIntent.amount,
-    status: paymentIntent.status,
-  }
-}
-```
-
-### 3.3 Webhook Stripe — `POST /api/webhooks/stripe/webhook`
-
-**Endpoint:** `/api/webhooks/stripe/webhook`
-
-**Headers required:**
-```
-stripe-signature: t=1714300000,v1=abc123,v0=def456
-```
-
-**Eventos processados:**
-- `payment_intent.succeeded` → Confirma pagamento
-- `payment_intent.payment_failed` → Registra falha
-
-**Validação de Assinatura:**
-
-```typescript
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
-
-try {
-  const event = Stripe.webhooks.constructEvent(body, signature, webhookSecret)
-} catch (err) {
-  return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
-}
-```
-
-O SDK do Stripe valida a assinatura automaticamente via `constructEvent()`.
-
-### 3.4 Processamento de Webhook — `ProcessarWebhookUseCase`
-
-O use case está em `src/application/pagamento/services/ProcessarWebhookUseCase.ts`.
-
-**Idempotência:**
-```typescript
-const transacaoExistente = await this.transacaoRepo.buscarPorProviderId(eventoId)
-if (transacaoExistente) {
-  return { sucesso: true, mensagem: 'Evento já processado anteriormente', eventoId }
-}
-```
-
-**Processamento de `payment_intent.succeeded`:**
-```typescript
-// 1. Adicionar transação webhook ao aggregate
-aggregate.adicionarTransacaoWebhook(eventoId, payload)
-
-// 2. Processar sucesso da transação de charge
-const transacaoCharge = aggregate.transacoes.find(t => t.providerId === paymentIntentId)
-if (transacaoCharge) {
-  aggregate.processarSucessoTransacao(transacaoCharge.id)
-}
-
-// 3. Salvar alterações
-await this.pagamentoRepo.salvar(aggregate.pagamento)
-
-// 4. Disparar eventos de domínio
-const eventos = aggregate.getEventos()
-eventos.forEach(evento => this.eventDispatcher.dispatch(evento))
-```
-
----
-
-## 4. Modo Demo (Pagamentos Simulados)
+## 3. Modo Demo (Pagamentos Simulados)
 
 Quando `NEXT_PUBLIC_DEMO_PAYMENT_MODE=true`, todos os pagamentos são simulados sem interação com provedores reais.
 
@@ -372,7 +209,7 @@ if (isDemoMode) {
 
 ---
 
-## 5. Segurança de Webhooks
+## 4. Segurança de Webhooks
 
 ### 5.1 Validação de Assinatura — PIX (Mercado Pago)
 
@@ -402,7 +239,7 @@ Todos os webhooks verificam se o evento já foi processadon antes de aplicar qua
 
 ---
 
-## 6. Status do Pedido
+## 5. Status do Pedido
 
 ### 6.1 Status de Pagamento (Domain)
 
@@ -453,9 +290,9 @@ type StatusPagamentoValue = 'pending' | 'confirmed' | 'failed' | 'refunded' | 'c
 
 ---
 
-## 7. Tratamento de Erros
+## 6. Tratamento de Erros
 
-### 7.1 Erros Comuns — PIX
+### 6.1 Erros Comuns — PIX
 
 | Erro | Causa | Tratamento |
 |------|-------|------------|
@@ -464,16 +301,7 @@ type StatusPagamentoValue = 'pending' | 'confirmed' | 'failed' | 'refunded' | 'c
 | `Failed to generate Pix QR code` | Falha na API do Mercado Pago | HTTP 500 |
 | `Missing order_id in payment metadata` | Metadata não enviada no create | Log + erro no webhook |
 
-### 7.2 Erros Comuns — Stripe
-
-| Erro | Causa | Tratamento |
-|------|-------|------------|
-| `Missing stripe-signature header` | Header ausente | HTTP 400 |
-| `Invalid signature` | Assinatura inválida | HTTP 400 |
-| `PaymentIntent ID não encontrado` | Payload malformado | HTTP 400 |
-| `Pagamento não encontrado para PaymentIntent` | Transação sem correspondência | HTTP 400 |
-
-### 7.3 Erros de Validação — Domain
+### 6.2 Erros de Validação — Domain
 
 | Erro | Condição |
 |------|----------|
@@ -482,7 +310,7 @@ type StatusPagamentoValue = 'pending' | 'confirmed' | 'failed' | 'refunded' | 'c
 | `Valor de reembolso não pode exceder o valor do pagamento` | Reembolso maior que valor |
 | `Pagamento já não está pendente` | Confirmação/falha de pagamento já processado |
 
-### 7.4 Códigos de Resposta HTTP
+### 6.3 Códigos de Resposta HTTP
 
 | Código | Uso |
 |--------|-----|
@@ -495,7 +323,7 @@ type StatusPagamentoValue = 'pending' | 'confirmed' | 'failed' | 'refunded' | 'c
 
 ---
 
-## 8. Flags de Feature
+## 7. Flags de Feature
 
 ### 8.1 Funções Disponíveis
 
@@ -541,7 +369,7 @@ import { isPixEnabled, isStripeEnabled } from '@/lib/feature-flags'
 
 ---
 
-## 9. Estrutura de Arquivos
+## 8. Estrutura de Arquivos
 
 ```
 src/
@@ -550,7 +378,7 @@ src/
 │   │   ├── Pagamento.ts          # Entidade de pagamento
 │   │   └── Transacao.ts          # Transação (charge, refund, webhook)
 │   ├── value-objects/
-│   │   ├── MetodoPagamento.ts    # pix | credito | debito
+│   │   ├── MetodoPagamento.ts    # pix (único método disponível)
 │   │   └── StatusPagamento.ts    # pending | confirmed | failed | refunded | cancelled
 │   ├── aggregates/
 │   │   └── PagamentoAggregate.ts # Aggregate root com invariantes
@@ -564,18 +392,15 @@ src/
 │       └── ITransacaoRepository.ts
 │
 ├── application/pagamento/services/
-│   ├── ProcessarWebhookUseCase.ts     # Processa webhooks de ambos provedores
-│   ├── CriarStripePaymentIntentUseCase.ts
+│   ├── ProcessarWebhookUseCase.ts     # Processa webhooks PIX
 │   ├── CriarPixChargeUseCase.ts
 │   ├── IniciarReembolsoUseCase.ts
 │   └── adapters/
-│       ├── IStripeAdapter.ts
 │       └── IPixAdapter.ts
 │
 ├── infrastructure/
 │   ├── external/
-│   │   ├── StripeAdapter.ts     # Implementação Stripe
-│   │   └── PixAdapter.ts        # Implementação Mercado Pago
+│   │   └── PixAdapter.ts        # Implementação Mercado Pago (stub - ver nota)
 │   └── persistence/pagamento/
 │       ├── PagamentoRepository.ts
 │       └── TransacaoRepository.ts
@@ -584,20 +409,19 @@ src/
 │   ├── pix/
 │   │   ├── create/route.ts              # POST - Criar PIX
 │   │   └── status/[orderId]/route.ts    # GET - Status PIX
-│   └── stripe/
-│       ├── create-intent/route.ts       # POST - Criar PaymentIntent
-│       └── webhook/route.ts             # POST - Webhook Stripe
 │
 └── supabase/functions/
     └── pix-webhook/
         └── index.ts                     # Edge function para webhooks MP
 ```
 
+> **Nota:** `PixAdapter.ts` é um stub que retorna dados simulados. A integração real com Mercado Pago está em `src/app/api/payments/pix/create/route.ts`.
+
 ---
 
-## 10. Testes
+## 9. Testes
 
-### 10.1 Testes Unitários
+### 9.1 Testes Unitários
 
 ```bash
 # Tests de domínio
@@ -610,48 +434,40 @@ npm run test -- src/tests/unit/infrastructure/payment/
 npm run test -- src/tests/unit/application/payment/
 ```
 
-### 10.2 Testes de Integração
+### 9.2 Testes de Integração
 
 ```bash
-# Webhooks
-npm run test -- tests/integration/api/webhooks.test.ts
-
-# Payments API
+# PIX API
 npm run test -- src/tests/integration/api/payments.test.ts
 ```
 
-### 10.3 Testes E2E
+### 9.3 Testes E2E
 
 ```bash
-# Fluxo completo de pagamento Stripe
-npx playwright test tests/e2e/tests/payment/stripe.spec.ts
-
-# Webhooks
-npx playwright test tests/e2e/tests/payment/webhook.spec.ts
+# Fluxo completo de pagamento PIX
+npx playwright test tests/e2e/tests/payment/pix.spec.ts
 ```
 
-### 10.4 Setup Local — Stripe CLI
+### 9.4 Setup Local — Mercado Pago
 
-Consulte `docs/STRIPE_CLI_SETUP.md` para configurar o reenvio de webhooks em desenvolvimento local.
+Para testar PIX em desenvolvimento, configure o token do Mercado Pago:
+```bash
+MERCADO_PAGO_ACCESS_TOKEN=APP_TEST-xxxxx
+NEXT_PUBLIC_DEMO_PAYMENT_MODE=false
+```
+
+Ou use o modo demo (`NEXT_PUBLIC_DEMO_PAYMENT_MODE=true`) para testar sem provedores reais.
 
 ---
 
-## 11. Variáveis de Ambiente Resumidas
+## 10. Variáveis de Ambiente Resumidas
 
 ```bash
 # === PRODUÇÃO ===
 
 # Mercado Pago
 MERCADO_PAGO_ACCESS_TOKEN=APP_TEST-xxxxx
-MP_ACCESS_TOKEN=APP_TEST-xxxxx
-MP_WEBHOOK_SECRET=your_webhook_secret
-
-# Stripe
-STRIPE_SECRET_KEY=sk_test_xxxxx
-STRIPE_WEBHOOK_SECRET=whsec_xxxxx
 
 # === DESENVOLVIMENTO ===
-NEXT_PUBLIC_FEATURE_PIX_ENABLED=true
-NEXT_PUBLIC_FEATURE_STRIPE_ENABLED=true
-NEXT_PUBLIC_DEMO_PAYMENT_MODE=true
+NEXT_PUBLIC_DEMO_PAYMENT_MODE=true       # Modo demo (pagamentos simulados)
 ```
