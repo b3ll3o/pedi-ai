@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 
     const supabaseAdmin = getSupabaseAdmin()
 
-    // Build query with restaurant_id from session
+    // Build query with restaurant_id from session (filter out soft-deleted)
     let query = supabaseAdmin
       .from('orders')
       .select(`
@@ -50,6 +50,7 @@ export async function GET(request: NextRequest) {
         items:order_items(id, product_id, combo_id, quantity, unit_price, total_price, notes)
       `, { count: 'exact' })
       .eq('restaurant_id', restaurantId)
+      .is('deleted_at', null)
 
     // Apply status filter
     if (status) {

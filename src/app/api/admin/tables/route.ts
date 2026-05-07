@@ -16,6 +16,7 @@ export async function GET(_request: NextRequest) {
       .from('tables')
       .select('*')
       .eq('restaurant_id', restaurantId)
+      .is('deleted_at', null)
       .order('number', { ascending: true })
 
     if (error) {

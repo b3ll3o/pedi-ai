@@ -31,6 +31,7 @@
 | [ROLES.md](guides/ROLES.md) | RBAC, multi-tenant, RLS, autenticação | Implementar/modificar controle de acesso |
 | [MOBILE_PWA.md](guides/MOBILE_PWA.md) | Mobile-first, PWA, safe areas iOS, CSS | Desenvolver UI responsiva |
 | [LIGHTHOUSE.md](guides/LIGHTHOUSE.md) | Auditoria de performance manual | Verificar performance e PWA |
+| [ORGANIZACAO.md](guides/ORGANIZACAO.md) | Hierarquia de agentes IA, CTO, reporting | Entender estrutura organizacional |
 
 ### Specs (OpenSpec)
 | Domínio | Localização | Descrição |

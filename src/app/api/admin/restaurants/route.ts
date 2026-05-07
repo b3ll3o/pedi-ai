@@ -64,11 +64,12 @@ export async function GET() {
     // Admin client for database operations (uses service role - bypasses RLS)
     const supabaseAdmin = getSupabaseAdmin();
 
-    // Get user's restaurants via users_profiles
+    // Get user's restaurants via users_profiles (filter out soft-deleted)
     const { data: profiles, error: profilesError } = await supabaseAdmin
       .from('users_profiles')
       .select('restaurant_id, role')
-      .eq('user_id', user.id);
+      .eq('user_id', user.id)
+      .is('deleted_at', null);
 
     if (profilesError) {
       console.error('Error fetching profiles:', JSON.stringify(profilesError, null, 2));
@@ -86,11 +87,12 @@ export async function GET() {
       return NextResponse.json({ restaurants: [] });
     }
 
-    // Get restaurant details
+    // Get restaurant details (filter out soft-deleted restaurants)
     const { data: restaurants, error: restaurantsError } = await supabaseAdmin
       .from('restaurants')
       .select('*')
-      .in('id', restaurantIds);
+      .in('id', restaurantIds)
+      .is('deleted_at', null);
 
     if (restaurantsError) {
       console.error('Error fetching restaurants:', restaurantsError);
@@ -193,33 +195,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Initialize 14-day trial for first restaurant (R$ 19,99/mês após trial)
-    const TRIAL_DAYS = 14;
-    const MONTHLY_PRICE_CENTS = 1999;
-    const now = new Date().toISOString();
+    // Create subscription with 14-day free trial
+    const trialDays = 14;
+    const trialEndsAt = new Date();
+    trialEndsAt.setDate(trialEndsAt.getDate() + trialDays);
 
-    const { data: existingSettings } = await supabaseAdmin
-      .from('restaurant_settings')
-      .select('id')
-      .eq('owner_id', user.id)
-      .single();
+    const { error: subscriptionError } = await supabaseAdmin
+      .from('subscriptions')
+      .insert({
+        restaurant_id: restaurant.id,
+        status: 'trial',
+        plan_type: 'monthly',
+        price_cents: 1999,
+        currency: 'BRL',
+        trial_days: trialDays,
+        trial_started_at: new Date().toISOString(),
+        trial_ends_at: trialEndsAt.toISOString(),
+      });
 
-    // Only initialize trial if this is the user's first restaurant
-    if (!existingSettings) {
-      const { error: settingsError } = await supabaseAdmin
-        .from('restaurant_settings')
-        .insert({
-          owner_id: user.id,
-          first_restaurant_created_at: now,
-          trial_days_remaining: TRIAL_DAYS,
-          subscription_status: 'trial',
-          monthly_price_cents: MONTHLY_PRICE_CENTS,
-        });
-
-      if (settingsError) {
-        console.error('Error initializing trial settings:', settingsError);
-        // Non-fatal: log but don't fail restaurant creation
-      }
+    if (subscriptionError) {
+      console.error('Error creating subscription:', subscriptionError);
+      // Non-fatal: restaurant created, subscription failure shouldn't rollback
     }
 
     return NextResponse.json({ restaurant }, { status: 201 });

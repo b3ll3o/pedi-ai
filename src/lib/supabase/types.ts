@@ -162,6 +162,24 @@ export type payment_intents = {
   created_at: string;
 };
 
+export type subscriptions = {
+  id: string;
+  restaurant_id: string;
+  status: string;
+  plan_type: string;
+  price_cents: number;
+  currency: string;
+  trial_started_at: string;
+  trial_ends_at: string;
+  trial_days: number;
+  subscription_started_at: string | null;
+  subscription_ends_at: string | null;
+  cancelled_at: string | null;
+  created_at: string;
+  updated_at: string;
+  version: number;
+};
+
 // ── Database Root Type ───────────────────────────────────────
 
 export type Database = {
@@ -271,6 +289,14 @@ export type Database = {
           created_at?: string;
         };
         Update: Partial<Omit<payment_intents, 'id'>>;
+      };
+      subscriptions: {
+        Row: subscriptions;
+        Insert: Omit<subscriptions, 'created_at' | 'updated_at'> & {
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Omit<subscriptions, 'id'>>;
       };
     };
     Enums: {

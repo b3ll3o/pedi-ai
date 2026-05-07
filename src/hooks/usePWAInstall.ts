@@ -20,21 +20,23 @@ export interface PWAInstallState {
 export function usePWAInstall(): PWAInstallState {
   const [installPromptEvent, setInstallPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalling, setIsInstalling] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(
+    () => typeof window !== 'undefined' ? window.matchMedia('(display-mode: standalone)').matches : false
+  );
 
   const canInstall = installPromptEvent !== null;
 
-  const isInstalled = typeof window !== 'undefined'
-    ? window.matchMedia('(display-mode: standalone)').matches
-    : false;
-
   useEffect(() => {
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setInstallPromptEvent(e as BeforeInstallPromptEvent);
-    };
-
+    // AppInstalled event fires after PWA is installed — update state
     const handleAppInstalled = () => {
       setInstallPromptEvent(null);
+      setIsInstalled(true);
+    };
+
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      // Only store the first event — prevent overwriting on subsequent fires
+      setInstallPromptEvent((current) => current ?? (e as BeforeInstallPromptEvent));
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);

@@ -38,6 +38,7 @@
 | **ROLES** | `./guides/ROLES.md` | RBAC, multi-tenant, Row Level Security (RLS), autenticação admin/cliente | Implementar/modificar controle de acesso |
 | **MOBILE_PWA** | `./guides/MOBILE_PWA.md` | Mobile-first, PWA, safe areas iOS, CSS responsive, touch targets | Desenvolver UI responsiva e PWA |
 | **LIGHTHOUSE** | `./guides/LIGHTHOUSE.md` | Auditoria de performance manual (FCP, LCP, CLS, TTI, PWA, A11y) | Verificar performance e PWA |
+| **ORGANIZACAO** | `./guides/ORGANIZACAO.md` | Hierarquia de agentes IA, CTO, reporting, fluxo de trabalho | Entender estrutura organizacional |
 
 ---
 
@@ -121,7 +122,8 @@ docs/
 │   ├── QR_CODE.md            # Segurança de QR Code
 │   ├── ROLES.md              # Sistema de funções
 │   ├── MOBILE_PWA.md        # Mobile-first e PWA
-│   └── LIGHTHOUSE.md         # Auditoria de performance
+│   ├── LIGHTHOUSE.md        # Auditoria de performance
+│   └── ORGANIZACAO.md       # Estrutura organizacional (CTO, hierarchy)
 │
 └── archive/                  # Documentação arquivada
     └── UNDOCUMENTED.md       # Features não documentadas (auto-gerado)
