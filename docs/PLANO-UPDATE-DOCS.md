@@ -288,8 +288,9 @@ Semana 2:
 | Papel | Responsabilidade |
 |-------|------------------|
 | Dev que implementa | Atualiza spec + docs |
-| Tech Lead | Review de docs críticos |
-| Tech Lead | Aprova changes de docs |
+| CTO (Tech Lead) | Review de docs críticos e especificação |
+| CTO (Tech Lead) | Aprova changes de docs |
+| CEO | Define prioridades e cria issues |
 
 ---
 
