@@ -46,7 +46,7 @@ export class GerenciarAssinaturaUseCase {
 
     return {
       ativo: assinatura.períodoAtivo,
-      status: assinatura.props.status,
+      status: assinatura.status,
       diasRestantes: assinatura.diasRestantesTrial,
       bloqueado: assinatura.bloqueado,
     };
