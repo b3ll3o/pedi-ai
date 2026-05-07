@@ -193,6 +193,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Initialize 14-day trial for first restaurant (R$ 19,99/mês após trial)
+    const TRIAL_DAYS = 14;
+    const MONTHLY_PRICE_CENTS = 1999;
+    const now = new Date().toISOString();
+
+    const { data: existingSettings } = await supabaseAdmin
+      .from('restaurant_settings')
+      .select('id')
+      .eq('owner_id', user.id)
+      .single();
+
+    // Only initialize trial if this is the user's first restaurant
+    if (!existingSettings) {
+      const { error: settingsError } = await supabaseAdmin
+        .from('restaurant_settings')
+        .insert({
+          owner_id: user.id,
+          first_restaurant_created_at: now,
+          trial_days_remaining: TRIAL_DAYS,
+          subscription_status: 'trial',
+          monthly_price_cents: MONTHLY_PRICE_CENTS,
+        });
+
+      if (settingsError) {
+        console.error('Error initializing trial settings:', settingsError);
+        // Non-fatal: log but don't fail restaurant creation
+      }
+    }
+
     return NextResponse.json({ restaurant }, { status: 201 });
   } catch (error) {
     console.error('Error in POST /api/admin/restaurants:', error);

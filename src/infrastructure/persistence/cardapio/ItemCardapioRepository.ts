@@ -77,6 +77,10 @@ export class ItemCardapioRepository implements IItemCardapioRepository {
       tipo: item.tipo.toString(),
       labelsDieteticos: JSON.stringify(item.labelsDieteticos.map(l => l.toString())),
       ativo: item.ativo,
+      criadoEm: item.criadoEm,
+      atualizadoEm: item.atualizadoEm,
+      deletedAt: item.deletedAt,
+      version: item.version,
     };
   }
 
@@ -95,6 +99,10 @@ export class ItemCardapioRepository implements IItemCardapioRepository {
       tipo: TipoItemCardapio.fromValue(dbModel.tipo),
       labelsDieteticos: LabelDietetico.fromArray(labelsArray),
       ativo: dbModel.ativo,
+      criadoEm: dbModel.criadoEm,
+      atualizadoEm: dbModel.atualizadoEm,
+      deletedAt: dbModel.deletedAt,
+      version: dbModel.version,
     });
   }
 }

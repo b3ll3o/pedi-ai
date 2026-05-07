@@ -12,11 +12,11 @@ export default defineConfig({
       reporter: ['text', 'html', 'json'],
       reportsDirectory: './coverage',
       thresholds: {
-        // Meta de coverage: ~78% statements/lines/branches
-        statements: 78,
-        branches: 74,
+        // Meta de coverage: 80% para todas as métricas (requisito do AGENTS.md)
+        statements: 80,
+        branches: 80,
         functions: 80,
-        lines: 78,
+        lines: 80,
         perFile: false,
       },
       include: ['src/**/*'],
@@ -61,8 +61,9 @@ export default defineConfig({
         'src/lib/auth/guest.ts',
         // BroadcastChannel - browser-only API
         'src/lib/broadcast-channel.ts',
-        // Infrastructure repositories - require complex DB mocking
-        'src/infrastructure/persistence/**',
+        // Infrastructure repositories - tested via unit tests with mocked Dexie
+        // NOTE: removed exclusion so tests count toward 80% coverage requirement
+        // 'src/infrastructure/persistence/**',
         // Application use cases - many require complex mocking
         'src/application/**/services/*.ts',
         // Domain events that require domain entities (hard to unit test)

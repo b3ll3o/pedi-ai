@@ -35,8 +35,8 @@ describe('Mesa', () => {
       expect(mesa.label).toBe('Mesa 1')
       expect(mesa.ativo).toBe(true)
       expect(mesa.qrCodePayload).toBeInstanceOf(QRCodePayload)
-      expect(mesa.createdAt).toBeInstanceOf(Date)
-      expect(mesa.updatedAt).toBeInstanceOf(Date)
+      expect(mesa.criadoEm).toBeInstanceOf(Date)
+      expect(mesa.atualizadoEm).toBeInstanceOf(Date)
     })
 
     it('deve criar mesa inativa quando ativo é false', () => {
@@ -91,21 +91,21 @@ describe('Mesa', () => {
 
     it('não deve alterar se já está desativada', () => {
       const mesa = criarMesa({ ativo: false })
-      const updatedAtOriginal = mesa.updatedAt
+      const atualizadoEmOriginal = mesa.atualizadoEm
 
       mesa.desativar()
 
       expect(mesa.ativo).toBe(false)
-      expect(mesa.updatedAt).toEqual(updatedAtOriginal)
+      expect(mesa.atualizadoEm).toEqual(atualizadoEmOriginal)
     })
 
     it('deve atualizar updatedAt ao desativar', () => {
       const mesa = criarMesa({ ativo: true })
-      const createdAt = mesa.createdAt
+      const criadoEm = mesa.criadoEm
 
       mesa.desativar()
 
-      expect(mesa.updatedAt.getTime()).toBeGreaterThanOrEqual(createdAt.getTime())
+      expect(mesa.atualizadoEm.getTime()).toBeGreaterThanOrEqual(createdAt.getTime())
     })
   })
 
@@ -120,21 +120,21 @@ describe('Mesa', () => {
 
     it('não deve alterar se já está ativa', () => {
       const mesa = criarMesa({ ativo: true })
-      const updatedAtOriginal = mesa.updatedAt
+      const atualizadoEmOriginal = mesa.atualizadoEm
 
       mesa.ativar()
 
       expect(mesa.ativo).toBe(true)
-      expect(mesa.updatedAt).toEqual(updatedAtOriginal)
+      expect(mesa.atualizadoEm).toEqual(atualizadoEmOriginal)
     })
 
     it('deve atualizar updatedAt ao ativar', () => {
       const mesa = criarMesa({ ativo: false })
-      const createdAt = mesa.createdAt
+      const criadoEm = mesa.criadoEm
 
       mesa.ativar()
 
-      expect(mesa.updatedAt.getTime()).toBeGreaterThanOrEqual(createdAt.getTime())
+      expect(mesa.atualizadoEm.getTime()).toBeGreaterThanOrEqual(createdAt.getTime())
     })
   })
 
@@ -149,21 +149,21 @@ describe('Mesa', () => {
 
     it('não deve alterar se label é o mesmo', () => {
       const mesa = criarMesa({ label: 'Mesa 1' })
-      const updatedAtOriginal = mesa.updatedAt
+      const atualizadoEmOriginal = mesa.atualizadoEm
 
       mesa.atualizarLabel('Mesa 1')
 
       expect(mesa.label).toBe('Mesa 1')
-      expect(mesa.updatedAt).toEqual(updatedAtOriginal)
+      expect(mesa.atualizadoEm).toEqual(atualizadoEmOriginal)
     })
 
     it('deve atualizar updatedAt ao alterar label', () => {
       const mesa = criarMesa({ label: 'Mesa 1' })
-      const createdAt = mesa.createdAt
+      const criadoEm = mesa.criadoEm
 
       mesa.atualizarLabel('Novo Label')
 
-      expect(mesa.updatedAt.getTime()).toBeGreaterThanOrEqual(createdAt.getTime())
+      expect(mesa.atualizadoEm.getTime()).toBeGreaterThanOrEqual(createdAt.getTime())
     })
   })
 
@@ -196,13 +196,13 @@ describe('Mesa', () => {
     it('deve retornar createdAt', () => {
       const mesa = criarMesa()
 
-      expect(mesa.createdAt).toBeInstanceOf(Date)
+      expect(mesa.criadoEm).toBeInstanceOf(Date)
     })
 
     it('deve retornar updatedAt', () => {
       const mesa = criarMesa()
 
-      expect(mesa.updatedAt).toBeInstanceOf(Date)
+      expect(mesa.atualizadoEm).toBeInstanceOf(Date)
     })
   })
 

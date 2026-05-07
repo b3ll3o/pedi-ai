@@ -13,8 +13,10 @@ export class MesaRepository implements IMesaRepository {
       label: record.label,
       qrCodePayload: QRCodePayload.reconstruir(record.qrCodePayload),
       ativo: record.ativo,
-      createdAt: record.createdAt,
-      updatedAt: record.updatedAt,
+      criadoEm: record.criadoEm,
+      atualizadoEm: record.atualizadoEm,
+      deletedAt: record.deletedAt,
+      version: record.version,
     };
     return new Mesa(props);
   }
@@ -30,8 +32,10 @@ export class MesaRepository implements IMesaRepository {
         assinatura: mesa.qrCodePayload.assinatura,
       },
       ativo: mesa.ativo,
-      createdAt: mesa.createdAt,
-      updatedAt: mesa.updatedAt,
+      criadoEm: mesa.criadoEm,
+      atualizadoEm: mesa.atualizadoEm,
+      deletedAt: mesa.deletedAt,
+      version: mesa.version,
     };
   }
 

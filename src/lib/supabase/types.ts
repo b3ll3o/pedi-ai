@@ -104,6 +104,8 @@ export type orders = {
   restaurant_id: string;
   table_id: string | null;
   customer_id: string | null;
+  customer_phone: string | null;
+  customer_name: string | null;
   status: Enum_order_status;
   subtotal: number;
   tax: number;

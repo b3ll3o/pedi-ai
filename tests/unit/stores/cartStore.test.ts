@@ -47,6 +47,15 @@ vi.mock('@/lib/offline/db', () => {
           cartData.set(id, { ...item, id });
           return id;
         }),
+        bulkAdd: vi.fn(async (items: any[]) => {
+          const ids: number[] = [];
+          for (const item of items) {
+            const id = ++idCounter;
+            cartData.set(id, { ...item, id });
+            ids.push(id);
+          }
+          return ids;
+        }),
         put: vi.fn(async (item: any) => {
           if (item.id) {
             cartData.set(item.id, item);

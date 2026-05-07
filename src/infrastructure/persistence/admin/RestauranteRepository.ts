@@ -21,6 +21,8 @@ export class RestauranteRepository implements IRestauranteRepository {
       ativo: restaurante.ativo,
       criadoEm: restaurante.criadoEm,
       atualizadoEm: restaurante.atualizadoEm,
+      deletedAt: restaurante.deletedAt,
+      version: restaurante.version,
     };
 
     await this.db.restaurantes.put(record);
@@ -63,6 +65,8 @@ export class RestauranteRepository implements IRestauranteRepository {
       ativo: restaurante.ativo,
       criadoEm: restaurante.criadoEm,
       atualizadoEm: restaurante.atualizadoEm,
+      deletedAt: restaurante.deletedAt,
+      version: restaurante.version,
     };
 
     await this.db.restaurantes.put(record);
@@ -121,6 +125,8 @@ export class RestauranteRepository implements IRestauranteRepository {
       ativo: record.ativo,
       criadoEm: record.criadoEm,
       atualizadoEm: record.atualizadoEm,
+      deletedAt: record.deletedAt,
+      version: record.version,
     });
   }
 }

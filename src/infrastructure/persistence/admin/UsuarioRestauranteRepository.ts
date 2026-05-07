@@ -57,11 +57,15 @@ export class UsuarioRestauranteRepository implements IUsuarioRestauranteReposito
       restauranteId: record.restaurant_id,
       papel: record.role,
       criadoEm: new Date(record.created_at),
+      atualizadoEm: new Date(record.created_at),
+      deletedAt: null,
+      version: 1,
     });
   }
 
   private entityToRecord(entity: UsuarioRestaurante): Partial<UsuarioRestauranteRecord> {
     return {
+      id: entity.id ? Number(entity.id) : undefined,
       user_id: entity.usuarioId,
       restaurant_id: entity.restauranteId,
       role: entity.papel,

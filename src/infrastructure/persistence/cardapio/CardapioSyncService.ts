@@ -99,6 +99,7 @@ export class CardapioSyncService {
         result.erros.push(`Erro ao buscar categorias: ${catError.message}`);
       } else if (categorias) {
         const categoriasEntities = categorias.map(cat => {
+          const now = new Date();
           return Categoria.reconstruir({
             id: cat.id,
             restauranteId: cat.restaurant_id,
@@ -107,6 +108,10 @@ export class CardapioSyncService {
             imagemUrl: cat.image_url,
             ordemExibicao: cat.sort_order,
             ativo: cat.active,
+            criadoEm: now,
+            atualizadoEm: now,
+            deletedAt: null,
+            version: 1,
           });
         });
         await this.categoriaRepo.salvarMany(categoriasEntities);
@@ -127,6 +132,7 @@ export class CardapioSyncService {
         const produtosFiltrados = produtos.filter(p => categoryIds.includes(p.category_id));
 
         const itensEntities = produtosFiltrados.map(prod => {
+          const now = new Date();
           return ItemCardapio.reconstruir({
             id: prod.id,
             categoriaId: prod.category_id,
@@ -139,6 +145,10 @@ export class CardapioSyncService {
               ? LabelDietetico.fromArray(prod.dietary_labels)
               : [],
             ativo: prod.available,
+            criadoEm: now,
+            atualizadoEm: now,
+            deletedAt: null,
+            version: 1,
           });
         });
         await this.itemRepo.salvarMany(itensEntities);
@@ -206,6 +216,7 @@ export class CardapioSyncService {
       // Sincronizar categorias
       if (data.categories && Array.isArray(data.categories)) {
         const categoriasEntities = data.categories.map((cat: CategoriaApiResponse) => {
+          const now = new Date();
           return Categoria.reconstruir({
             id: cat.id,
             restauranteId: cat.restaurant_id,
@@ -214,6 +225,10 @@ export class CardapioSyncService {
             imagemUrl: cat.image_url,
             ordemExibicao: cat.sort_order,
             ativo: cat.active,
+            criadoEm: now,
+            atualizadoEm: now,
+            deletedAt: null,
+            version: 1,
           });
         });
         await this.categoriaRepo.salvarMany(categoriasEntities);
@@ -223,6 +238,7 @@ export class CardapioSyncService {
       // Sincronizar produtos
       if (data.products && Array.isArray(data.products)) {
         const itensEntities = data.products.map((prod: ProdutoApiResponse) => {
+          const now = new Date();
           return ItemCardapio.reconstruir({
             id: prod.id,
             categoriaId: prod.category_id,
@@ -235,6 +251,10 @@ export class CardapioSyncService {
               ? LabelDietetico.fromArray(prod.dietary_labels)
               : [],
             ativo: prod.available,
+            criadoEm: now,
+            atualizadoEm: now,
+            deletedAt: null,
+            version: 1,
           });
         });
         await this.itemRepo.salvarMany(itensEntities);

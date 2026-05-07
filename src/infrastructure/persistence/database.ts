@@ -35,8 +35,10 @@ export interface MesaRecord {
     assinatura: string;
   };
   ativo: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  criadoEm: Date;
+  atualizadoEm: Date;
+  deletedAt: Date | null;
+  version: number;
 }
 
 export interface PagamentoRecord {
@@ -104,6 +106,10 @@ export interface CategoriaRecord {
   imagemUrl: string | null;
   ordemExibicao: number;
   ativo: boolean;
+  criadoEm: Date;
+  atualizadoEm: Date;
+  deletedAt: Date | null;
+  version: number;
 }
 
 export interface ItemCardapioRecord {
@@ -117,6 +123,10 @@ export interface ItemCardapioRecord {
   tipo: string;
   labelsDieteticos: string; // JSON array
   ativo: boolean;
+  criadoEm: Date;
+  atualizadoEm: Date;
+  deletedAt: Date | null;
+  version: number;
 }
 
 export interface ModificadorGrupoRecord {

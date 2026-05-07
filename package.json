@@ -26,10 +26,12 @@
     "test:coverage": "vitest --coverage",
     "test:ui": "vitest --ui",
     "mailpit": "mailpit",
-    "stripe:listen": "stripe listen --forward-to localhost:3000/api/webhooks/stripe"
+    "stripe:listen": "stripe listen --forward-to localhost:3000/api/webhooks/stripe",
+    "prepare": "husky"
   },
   "dependencies": {
     "@stripe/react-stripe-js": "^3.1.0",
+    "@stripe/stripe-js": "^9.4.0",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.103.3",
     "@tanstack/react-query": "^5.99.2",
@@ -61,11 +63,27 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
     "fake-indexeddb": "^6.2.5",
+    "husky": "^9.1.7",
     "jsdom": "^29.0.2",
+    "lint-staged": "^17.0.2",
     "prettier": "^3.8.3",
     "sharp": "^0.34.5",
     "tsx": "^4.21.0",
     "typescript": "^5",
     "vitest": "^4.1.4"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write",
+      "tsc --noEmit"
+    ],
+    "*.{js,mjs,cjs}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,mdx,css,scss}": [
+      "prettier --write"
+    ]
   }
 }

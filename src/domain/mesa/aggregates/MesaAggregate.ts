@@ -95,7 +95,7 @@ export class MesaAggregate {
   }
 
   static async criar(
-    props: Omit<MesaProps, 'createdAt' | 'updatedAt'>,
+    props: Omit<MesaProps, 'criadoEm' | 'atualizadoEm' | 'deletedAt' | 'version'>,
     repository: IMesaRepository,
     eventDispatcher: EventDispatcher,
     secret: string,

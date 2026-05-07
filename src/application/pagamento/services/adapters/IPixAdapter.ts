@@ -1,6 +1,6 @@
 /**
  * Interface para o adapter de Pix.
- * Será implementada por infrastructure/external/PixAdapter em Phase 4.
+ * Implementada por infrastructure/external/PixAdapter.
  */
 export interface PixCharge {
   id: string;
@@ -12,4 +12,5 @@ export interface PixCharge {
 
 export interface IPixAdapter {
   criarCobranca(valorEmCentavos: number, pedidoId: string): Promise<PixCharge>;
+  verificarStatus(cobrancaId: string): Promise<PixCharge>;
 }

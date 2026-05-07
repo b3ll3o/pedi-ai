@@ -14,6 +14,7 @@ export default function CheckoutClient() {
   const router = useRouter();
   const { signOut } = useAuth();
   const items = useCartStore((state) => state.items);
+  const restaurantId = useCartStore((state) => state.restaurantId);
   const validateCart = useCartStore((state) => state.validateCart);
   const clearCart = useCartStore((state) => state.clearCart);
 
@@ -30,7 +31,10 @@ export default function CheckoutClient() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        customer_id: '',
+        customer_id: data.customerPhone,
+        customer_phone: data.customerPhone,
+        customer_name: data.customerName,
+        restaurant_id: restaurantId || undefined,
         table_id: null,
         items: items.map((item) => ({
           product_id: item.productId,
@@ -72,7 +76,7 @@ export default function CheckoutClient() {
       }
 
       try {
-        const result = await validateCart('default-restaurant');
+        const result = await validateCart(restaurantId || 'default-restaurant');
         if (!result.valid) {
           setValidationError(result.errors.join(', '));
         }
@@ -84,7 +88,7 @@ export default function CheckoutClient() {
     };
 
     validate();
-  }, [items.length, validateCart, router]);
+  }, [items.length, validateCart, router, restaurantId]);
 
   if (isValidating) {
     return (

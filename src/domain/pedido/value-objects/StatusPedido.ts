@@ -9,7 +9,8 @@ export type StatusPedidoValue =
   | 'delivered'
   | 'rejected'
   | 'cancelled'
-  | 'refunded';
+  | 'refunded'
+  | 'payment_failed';
 
 export class StatusPedido extends ValueObjectClass<StatusPedidoValue> {
   static readonly PENDING_PAYMENT = new StatusPedido('pending_payment');
@@ -21,6 +22,7 @@ export class StatusPedido extends ValueObjectClass<StatusPedidoValue> {
   static readonly REJECTED = new StatusPedido('rejected');
   static readonly CANCELLED = new StatusPedido('cancelled');
   static readonly REFUNDED = new StatusPedido('refunded');
+  static readonly PAYMENT_FAILED = new StatusPedido('payment_failed');
 
   private constructor(value: StatusPedidoValue) {
     super(value);
@@ -54,4 +56,5 @@ const ALL_STATUSES: StatusPedido[] = [
   StatusPedido.REJECTED,
   StatusPedido.CANCELLED,
   StatusPedido.REFUNDED,
+  StatusPedido.PAYMENT_FAILED,
 ];

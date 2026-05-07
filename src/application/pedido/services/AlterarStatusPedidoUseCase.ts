@@ -28,6 +28,7 @@ const TRANSIÇÕES_VÁLIDAS: Record<StatusPedidoValue, StatusPedidoValue[]> = {
   rejected: [],
   cancelled: [],
   refunded: [],
+  payment_failed: ['pending_payment', 'cancelled'],
 };
 
 export class AlterarStatusPedidoUseCase implements UseCase<AlterarStatusPedidoInput, AlterarStatusPedidoOutput> {

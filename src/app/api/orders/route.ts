@@ -72,6 +72,9 @@ interface OrderItemInput {
 interface CreateOrderRequest {
   table_id: string | null
   customer_id: string
+  customer_phone?: string
+  customer_name?: string
+  restaurant_id?: string
   items: OrderItemInput[]
   payment_method: 'pix' | 'card'
   idempotency_key: string
@@ -144,7 +147,7 @@ export async function POST(request: NextRequest) {
     const tax = Math.round(subtotal * TAX_RATE * 100) / 100
     const total = Math.round((subtotal + tax) * 100) / 100
 
-    // Determine restaurant_id from table if provided, otherwise use first available
+    // Determine restaurant_id: from table > from body > first restaurant (fallback)
     let restaurantId: string | null = null
 
     if (body.table_id) {
@@ -165,7 +168,12 @@ export async function POST(request: NextRequest) {
       restaurantId = table.restaurant_id as string
     }
 
-    // If no table_id, get first restaurant (for customer orders without table)
+    // If no table_id, use restaurant_id from request body (for anonymous/phone orders)
+    if (!restaurantId && body.restaurant_id) {
+      restaurantId = body.restaurant_id
+    }
+
+    // Final fallback: get first restaurant (for customer orders without table)
     if (!restaurantId) {
       const { data: restaurants, error: restaurantError } = await supabase
         .from('restaurants')
@@ -185,15 +193,22 @@ export async function POST(request: NextRequest) {
     }
 
     // Insert order
+    // Map 'card' to 'credit_card' for Supabase enum compatibility
+    const paymentMethodMap: Record<'pix' | 'card', 'pix' | 'credit_card'> = {
+      pix: 'pix',
+      card: 'credit_card',
+    }
     const orderData = {
       restaurant_id: restaurantId,
       table_id: body.table_id || null,
-      customer_id: body.customer_id,
+      customer_id: body.customer_id ?? body.customer_phone ?? null,
+      customer_phone: body.customer_phone || null,
+      customer_name: body.customer_name || null,
       status: 'pending_payment' as const,
       subtotal,
       tax,
       total,
-      payment_method: body.payment_method as 'pix' | 'card',
+      payment_method: paymentMethodMap[body.payment_method],
       payment_status: 'pending' as const,
       idempotency_key: body.idempotency_key
     }

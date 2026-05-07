@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { requireAuth, requireRole } from '@/lib/auth/admin'
+import { createClient as createSupabaseAdmin } from '@supabase/supabase-js'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -19,7 +20,17 @@ const VALID_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   cancelled: [],
 }
 
-// PATCH /api/admin/orders/[id]/status - Update order status
+// Status display names in Portuguese
+const STATUS_LABELS: Record<OrderStatus, string> = {
+  pending_payment: 'Aguardando pagamento',
+  paid: 'Pago',
+  preparing: 'Preparando',
+  ready: 'Pronto',
+  delivered: 'Entregue',
+  cancelled: 'Cancelado',
+}
+
+// Valid order statuses based on DB enum
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const authUser = await requireAuth()

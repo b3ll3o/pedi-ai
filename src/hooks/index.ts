@@ -17,3 +17,5 @@ export type { CartItemDTO, CarrinhoDTO } from './useCarrinho';
 export { useListarMesas, useValidarQRCode, useMesa } from './useMesa';
 export { useCriarPixCharge } from './usePagamento';
 export type { PixCharge } from './usePagamento';
+export { useCustomerOrderNotifications, getStatusLabel } from './useCustomerOrderNotifications';
+export type { UseCustomerOrderNotificationsOptions, UseCustomerOrderNotificationsResult, OrderUpdatePayload, OrderStatus } from './useCustomerOrderNotifications';

@@ -99,6 +99,8 @@ async function sincronizarRestaurantes(userId: string): Promise<void> {
         ativo: true,
         criadoEm: restaurantData.created_at ? new Date(restaurantData.created_at) : new Date(),
         atualizadoEm: restaurantData.updated_at ? new Date(restaurantData.updated_at) : new Date(),
+        deletedAt: null,
+        version: 1,
       });
 
       // Salvar restaurante no IndexedDB

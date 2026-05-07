@@ -1,145 +1,241 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { PixAdapter } from '@/infrastructure/external/PixAdapter'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { PixAdapter } from '@/infrastructure/external/PixAdapter';
+import { Payment } from 'mercadopago';
+
+// Mock do módulo mercadopago
+vi.mock('mercadopago', () => {
+  const mockPaymentInstance = {
+    create: vi.fn(),
+    get: vi.fn(),
+  };
+  return {
+    MercadoPagoConfig: vi.fn().mockImplementation(() => ({})),
+    Payment: vi.fn(() => mockPaymentInstance),
+  };
+});
 
 describe('PixAdapter', () => {
-  let pixAdapter: PixAdapter
+  let pixAdapter: PixAdapter;
+  let mockPayment: jest.Mocked<Payment>;
 
   beforeEach(() => {
-    vi.clearAllMocks()
-  })
+    vi.clearAllMocks();
+    vi.stubEnv('NEXT_PUBLIC_DEMO_PAYMENT_MODE', 'false');
+    vi.stubEnv('MERCADOPAGO_ACCESS_TOKEN', 'TEST_TOKEN_123');
+
+    // Recria o adapter com token de teste
+    pixAdapter = new PixAdapter('TEST_TOKEN_123');
+
+    // Acessa o client interno via reflection (não exposto públicamente, mas necessário para mock)
+    mockPayment = (Payment as unknown as jest.Mock).mock.results[0]?.value as jest.Mocked<Payment>;
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
 
   describe('criarCobranca', () => {
-    it('deve criar cobrança Pix com valor e ID do pedido válidos', async () => {
+    it('deve criar cobrança Pix com dados válidos e retornar QR code', async () => {
       // Arrange
-      const valorEmCentavos = 5000 // R$ 50,00
-      const pedidoId = 'pedido-123'
-      pixAdapter = new PixAdapter('fake-token', 'https://api.mercadopago.com')
+      const valorEmCentavos = 5000; // R$ 50,00
+      const pedidoId = 'pedido-123';
+      const mockResponse = {
+        id: 1234567890,
+        transaction_amount: 50,
+        date_of_expiration: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+        point_of_interaction: {
+          transaction_data: {
+            qr_code_base64: 'MOCK_QR_CODE_BASE64',
+            qr_code: '00020126580014br.gov.bcb.pix0136pedido-123',
+          },
+        },
+      };
+
+      mockPayment.create.mockResolvedValue(mockResponse);
 
       // Act
-      const resultado = await pixAdapter.criarCobranca(valorEmCentavos, pedidoId)
+      const resultado = await pixAdapter.criarCobranca(valorEmCentavos, pedidoId);
 
       // Assert
-      expect(resultado).toBeDefined()
-      expect(resultado.id).toContain(pedidoId)
-      expect(resultado.valor).toBe(50) // Convertido de centavos para reais
-      expect(resultado.imagemQrCode).toBeDefined()
-      expect(resultado.codigoPix).toContain(pedidoId)
-      expect(resultado.expiracao).toBeInstanceOf(Date)
-    })
+      expect(mockPayment.create).toHaveBeenCalledWith({
+        body: {
+          transaction_amount: 50,
+          payment_method_id: 'pix',
+          description: `Pedido ${pedidoId}`,
+          external_reference: pedidoId,
+          notification_url: undefined,
+        },
+      });
+      expect(resultado.id).toBe('1234567890');
+      expect(resultado.valor).toBe(50);
+      expect(resultado.codigoPix).toBe('00020126580014br.gov.bcb.pix0136pedido-123');
+      expect(resultado.imagemQrCode).toBe('data:image/png;base64,MOCK_QR_CODE_BASE64');
+      expect(resultado.expiracao).toBeInstanceOf(Date);
+    });
 
-    it('deve retornar cobrança com id, valor, imagemQrCode e codigoPix', async () => {
+    it('deve converter valor de centavos para reais ao criar cobrança', async () => {
       // Arrange
-      const valorEmCentavos = 2500 // R$ 25,00
-      const pedidoId = 'pedido-456'
-      pixAdapter = new PixAdapter('fake-token')
+      const mockResponse = {
+        id: 999,
+        transaction_amount: 25.5,
+        date_of_expiration: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+        point_of_interaction: {
+          transaction_data: {
+            qr_code_base64: 'ABC123',
+            qr_code: 'pix_code_123',
+          },
+        },
+      };
+      mockPayment.create.mockResolvedValue(mockResponse);
 
       // Act
-      const resultado = await pixAdapter.criarCobranca(valorEmCentavos, pedidoId)
+      const resultado = await pixAdapter.criarCobranca(2550, 'pedido-456');
 
       // Assert
-      expect(resultado).toHaveProperty('id')
-      expect(resultado).toHaveProperty('valor')
-      expect(resultado).toHaveProperty('imagemQrCode')
-      expect(resultado).toHaveProperty('codigoPix')
-      expect(resultado).toHaveProperty('expiracao')
+      expect(resultado.valor).toBe(25.5);
+      expect(mockPayment.create).toHaveBeenCalledWith(
+        expect.objectContaining({ body: expect.objectContaining({ transaction_amount: 25.5 }) })
+      );
+    });
 
-      // Verifica que não são vazios
-      expect(resultado.id).toBeTruthy()
-      expect(resultado.imagemQrCode).toBeTruthy()
-      expect(resultado.codigoPix).toBeTruthy()
-    })
-
-    it('deve definir expiração para 30 minutos no futuro', async () => {
+    it('deve falhar quando API retorna erro', async () => {
       // Arrange
-      const valorEmCentavos = 1000
-      const pedidoId = 'pedido-expiracao'
-      pixAdapter = new PixAdapter()
-      const antes = new Date()
+      mockPayment.create.mockRejectedValue(new Error('Unauthorized'));
+
+      // Act & Assert
+      await expect(pixAdapter.criarCobranca(1000, 'pedido-erro'))
+        .rejects.toThrow('Falha ao criar cobrança Pix: Unauthorized');
+    });
+
+    it('deve usar NEXT_PUBLIC_DEMO_PAYMENT_MODE=true para retornar dados simulados', async () => {
+      // Arrange
+      vi.stubEnv('NEXT_PUBLIC_DEMO_PAYMENT_MODE', 'true');
+      vi.stubEnv('MERCADOPAGO_ACCESS_TOKEN', '');
+      const demoAdapter = new PixAdapter();
 
       // Act
-      const resultado = await pixAdapter.criarCobranca(valorEmCentavos, pedidoId)
-      const depois = new Date()
+      const resultado = await demoAdapter.criarCobranca(1000, 'pedido-demo');
 
       // Assert
-      const diffMs = resultado.expiracao.getTime() - antes.getTime()
-      const diffEsperado = 30 * 60 * 1000 // 30 minutos em ms
+      expect(resultado.id).toContain('pedido-demo');
+      expect(resultado.codigoPix).toContain('pedido-demo');
+      expect(resultado.imagemQrCode).toContain('data:image/png;base64');
+      expect(mockPayment.create).not.toHaveBeenCalled();
+    });
 
-      // A expiração deve ser aproximadamente 30 minutos no futuro (com margem de 1 segundo)
-      expect(diffMs).toBeGreaterThanOrEqual(diffEsperado - 1000)
-      expect(diffMs).toBeLessThanOrEqual(diffEsperado + 1000 + (depois.getTime() - antes.getTime()))
-    })
-  })
+    it('deve jogar erro quando token não está configurado (sem modo demo)', async () => {
+      // Arrange
+      vi.stubEnv('NEXT_PUBLIC_DEMO_PAYMENT_MODE', 'false');
+      vi.stubEnv('MERCADOPAGO_ACCESS_TOKEN', '');
+      const adapterSemToken = new PixAdapter('');
+
+      // Act & Assert
+      await expect(adapterSemToken.criarCobranca(1000, 'pedido-sem-token'))
+        .rejects.toThrow('Mercado Pago access token não configurado');
+    });
+  });
 
   describe('verificarStatus', () => {
-    it('deve retornar cobrança com ID fornecido', async () => {
+    it('deve verificar status de cobrança Pix existente', async () => {
       // Arrange
-      const cobrancaId = 'pix_pedido-123_1234567890'
-      pixAdapter = new PixAdapter()
+      const cobrancaId = '1234567890';
+      const mockResponse = {
+        id: 1234567890,
+        transaction_amount: 50,
+        date_of_expiration: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+        point_of_interaction: {
+          transaction_data: {
+            qr_code_base64: 'STATUS_QR_BASE64',
+            qr_code: 'status_qr_code',
+          },
+        },
+      };
+      mockPayment.get.mockResolvedValue(mockResponse);
 
       // Act
-      const resultado = await pixAdapter.verificarStatus(cobrancaId)
+      const resultado = await pixAdapter.verificarStatus(cobrancaId);
 
       // Assert
-      expect(resultado).toBeDefined()
-      expect(resultado.id).toBe(cobrancaId)
-      expect(resultado.expiracao).toBeInstanceOf(Date)
-    })
+      expect(mockPayment.get).toHaveBeenCalledWith({ id: 1234567890 });
+      expect(resultado.id).toBe('1234567890');
+      expect(resultado.valor).toBe(50);
+      expect(resultado.codigoPix).toBe('status_qr_code');
+      expect(resultado.imagemQrCode).toBe('data:image/png;base64,STATUS_QR_BASE64');
+    });
 
-    it('deve retornar cobrança com campos vazios para simulação de status pendente', async () => {
+    it('deve falhar quando API retorna erro ao verificar status', async () => {
       // Arrange
-      const cobrancaId = 'pix_teste_999'
-      pixAdapter = new PixAdapter()
+      mockPayment.get.mockRejectedValue(new Error('Not Found'));
+
+      // Act & Assert
+      await expect(pixAdapter.verificarStatus('999999'))
+        .rejects.toThrow('Falha ao verificar status Pix: Not Found');
+    });
+
+    it('deve usar modo demo quando NEXT_PUBLIC_DEMO_PAYMENT_MODE=true', async () => {
+      // Arrange
+      vi.stubEnv('NEXT_PUBLIC_DEMO_PAYMENT_MODE', 'true');
+      vi.stubEnv('MERCADOPAGO_ACCESS_TOKEN', '');
+      const demoAdapter = new PixAdapter();
 
       // Act
-      const resultado = await pixAdapter.verificarStatus(cobrancaId)
+      const resultado = await demoAdapter.verificarStatus('demo-cobranca-id');
 
       // Assert
-      expect(resultado.id).toBe(cobrancaId)
-      expect(resultado.valor).toBe(0)
-      expect(resultado.imagemQrCode).toBe('')
-      expect(resultado.codigoPix).toBe('')
-    })
-  })
+      expect(resultado.id).toBe('demo-cobranca-id');
+      expect(resultado.valor).toBe(0);
+      expect(resultado.codigoPix).toBe('');
+      expect(mockPayment.get).not.toHaveBeenCalled();
+    });
+  });
 
   describe('tratamento de erros', () => {
-    it('deve lidar com valores muito grandes', async () => {
+    it('deve lidar com qr_code_base64 ausente na resposta', async () => {
       // Arrange
-      const valorGrande = 999999999 // ~10 milhões de reais
-      const pedidoId = 'pedido-grande'
-      pixAdapter = new PixAdapter()
+      const mockResponse = {
+        id: 777,
+        transaction_amount: 10,
+        date_of_expiration: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+        point_of_interaction: {
+          transaction_data: {
+            qr_code: 'only_raw_qr',
+          },
+        },
+      };
+      mockPayment.create.mockResolvedValue(mockResponse);
 
       // Act
-      const resultado = await pixAdapter.criarCobranca(valorGrande, pedidoId)
+      const resultado = await pixAdapter.criarCobranca(1000, 'pedido-sem-qr-base64');
 
       // Assert
-      expect(resultado).toBeDefined()
-      expect(resultado.valor).toBe(999999999 / 100)
-    })
+      expect(resultado.imagemQrCode).toBe('');
+      expect(resultado.codigoPix).toBe('only_raw_qr');
+    });
 
-    it('deve funcionar sem accessToken (usa env var ou default)', async () => {
+    it('deve calcular expiração padrão quando date_of_expiration não vem na resposta', async () => {
       // Arrange
-      pixAdapter = new PixAdapter(undefined, 'https://api.mercadopago.com')
+      const mockResponse = {
+        id: 888,
+        transaction_amount: 15,
+        point_of_interaction: {
+          transaction_data: {
+            qr_code_base64: 'ABC',
+            qr_code: 'qr',
+          },
+        },
+      };
+      mockPayment.create.mockResolvedValue(mockResponse);
 
       // Act
-      const resultado = await pixAdapter.criarCobranca(1000, 'pedido-sem-token')
+      const antes = new Date();
+      const resultado = await pixAdapter.criarCobranca(1500, 'pedido-sem-expiracao');
+      const depois = new Date();
 
       // Assert
-      expect(resultado).toBeDefined()
-      expect(resultado.id).toContain('pedido-sem-token')
-    })
-
-    it('deve funcionar com valor mínimo (1 centavo)', async () => {
-      // Arrange
-      const valorMinimo = 1
-      const pedidoId = 'pedido-minimo'
-      pixAdapter = new PixAdapter()
-
-      // Act
-      const resultado = await pixAdapter.criarCobranca(valorMinimo, pedidoId)
-
-      // Assert
-      expect(resultado).toBeDefined()
-      expect(resultado.valor).toBe(0.01)
-    })
-  })
-})
+      const diffMs = resultado.expiracao.getTime() - antes.getTime();
+      const diffEsperado = 30 * 60 * 1000;
+      expect(diffMs).toBeGreaterThanOrEqual(diffEsperado - 2000);
+      expect(diffMs).toBeLessThanOrEqual(diffEsperado + 2000 + (depois.getTime() - antes.getTime()));
+    });
+  });
+});

@@ -44,6 +44,8 @@ function restauranteToProps(restaurante: Restaurante): RestauranteProps {
     ativo: restaurante.ativo,
     criadoEm: restaurante.criadoEm,
     atualizadoEm: restaurante.atualizadoEm,
+    deletedAt: restaurante.deletedAt,
+    version: restaurante.version,
   };
 }
 

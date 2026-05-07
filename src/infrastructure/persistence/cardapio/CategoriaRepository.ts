@@ -55,6 +55,10 @@ export class CategoriaRepository implements ICategoriaRepository {
       imagemUrl: categoria.imagemUrl,
       ordemExibicao: categoria.ordemExibicao,
       ativo: categoria.ativo,
+      criadoEm: categoria.criadoEm,
+      atualizadoEm: categoria.atualizadoEm,
+      deletedAt: categoria.deletedAt,
+      version: categoria.version,
     };
   }
 
@@ -67,6 +71,10 @@ export class CategoriaRepository implements ICategoriaRepository {
       imagemUrl: dbModel.imagemUrl,
       ordemExibicao: dbModel.ordemExibicao,
       ativo: dbModel.ativo,
+      criadoEm: dbModel.criadoEm,
+      atualizadoEm: dbModel.atualizadoEm,
+      deletedAt: dbModel.deletedAt,
+      version: dbModel.version,
     });
   }
 }

@@ -1,29 +1,20 @@
 import { test, expect, clearClientState } from '../shared/fixtures'
 
 /**
- * Testes de funcionalidade offline.
+ * Testes E2E de funcionalidade offline — PED-5.
  *
- * AVISO: Estes testes estão SKIPADOS porque os data-testids necessários não existem
- * nos componentes React:
+ * Critérios de aceite:
+ * - App funciona 100% offline (navegação, carrinho, pedidos)
+ * - Pedidos feitos offline são syncados automaticamente ao reconectar
+ * - Feedback visual de conectividade na UI
  *
- * Data-testids procurados vs existentes:
- * - offline-indicator          ✓ EXISTE (OfflineIndicator.tsx)
- * - offline-queue-indicator    ✗ NÃO EXISTE (existe: offline-queue)
- * - sync-success               ✗ NÃO EXISTE
- * - order-status               ✓ EXISTE (OrderStatus.tsx)
- * - submit-order-button        ✗ NÃO EXISTE (existe: checkout-submit)
- * - offline-error              ✗ NÃO EXISTE
- *
- * Para reabilitar estes testes, adicionar os data-testids faltantes aos componentes:
- * - SyncStatus.tsx: adicionar data-testid="offline-queue-indicator"
- * - SyncStatus.tsx: adicionar data-testid="sync-success" (quando sync completa)
- * - CheckoutForm.tsx: adicionar data-testid="submit-order-button"
- * - CheckoutForm.tsx: adicionar data-testid="offline-error"
- *
- * Data-testids já existentes e funcionais:
- * - offline-indicator (OfflineIndicator.tsx line 41)
- * - order-status (OrderStatus.tsx line 107)
- * - checkout-button (CartSummary.tsx line 57)
+ * Data-testids utilizados:
+ * - offline-indicator        → OfflineIndicator.tsx
+ * - offline-queue-indicator → SyncStatus.tsx (offline-queue-indicator)
+ * - sync-success            → SyncStatus.tsx
+ * - offline-error          → CheckoutForm.tsx
+ * - checkout-submit        → CheckoutForm.tsx (submit-order-button)
+ * - order-status            → OrderStatus.tsx
  */
 test.describe('Offline Functionality', () => {
   test.afterEach(async ({ page }) => {
