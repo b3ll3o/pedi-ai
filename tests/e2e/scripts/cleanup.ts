@@ -16,6 +16,7 @@ import * as path from 'path'
 dotenv.config({ path: path.join(process.cwd(), '.env.local') })
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import WebSocket from 'ws'
 
 // ============================================
 // Configuração
@@ -45,6 +46,9 @@ export function createAdminClient(): SupabaseClient {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
+    },
+    realtime: {
+      transport: WebSocket,
     },
   })
 }
