@@ -1,5 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Assinatura, AssinaturaProps, StatusAssinatura } from '@/domain/admin/entities/Assinatura';
+import { Database, subscriptions } from '@/lib/supabase/types';
 
 /**
  * Interface para repositório de assinaturas
@@ -13,34 +14,13 @@ export interface IAssinaturaRepository {
 }
 
 /**
- * Registro da tabela subscriptions no Supabase
- */
-interface SubscriptionRecord {
-  id: string;
-  restaurant_id: string;
-  status: string;
-  plan_type: string;
-  price_cents: number;
-  currency: string;
-  trial_started_at: string;
-  trial_ends_at: string;
-  trial_days: number;
-  subscription_started_at: string | null;
-  subscription_ends_at: string | null;
-  cancelled_at: string | null;
-  created_at: string;
-  updated_at: string;
-  version: number;
-}
-
-/**
  * Implementação do repositório de assinaturas usando Supabase
  */
 export class AssinaturaRepository implements IAssinaturaRepository {
-  private supabase;
+  private supabase: SupabaseClient<Database>;
 
-  constructor(supabaseClient?: ReturnType<typeof createClient>) {
-    this.supabase = supabaseClient || createClient(
+  constructor(supabaseClient?: SupabaseClient<Database>) {
+    this.supabase = supabaseClient || createClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
       {
@@ -121,7 +101,7 @@ export class AssinaturaRepository implements IAssinaturaRepository {
   /**
    * Converte record do banco para entidade Assinatura
    */
-  private recordToAssinatura(record: SubscriptionRecord): Assinatura {
+  private recordToAssinatura(record: subscriptions): Assinatura {
     const props: AssinaturaProps = {
       id: record.id,
       restauranteId: record.restaurant_id,
@@ -146,7 +126,7 @@ export class AssinaturaRepository implements IAssinaturaRepository {
   /**
    * Converte entidade Assinatura para record do banco
    */
-  private assinaturaToRecord(assinatura: Assinatura): SubscriptionRecord {
+  private assinaturaToRecord(assinatura: Assinatura): subscriptions {
     return {
       id: assinatura.id,
       restaurant_id: assinatura.props.restauranteId,
