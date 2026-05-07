@@ -13,6 +13,27 @@ export interface IAssinaturaRepository {
 }
 
 /**
+ * Registro da tabela subscriptions no Supabase
+ */
+interface SubscriptionRecord {
+  id: string;
+  restaurant_id: string;
+  status: string;
+  plan_type: string;
+  price_cents: number;
+  currency: string;
+  trial_started_at: string;
+  trial_ends_at: string;
+  trial_days: number;
+  subscription_started_at: string | null;
+  subscription_ends_at: string | null;
+  cancelled_at: string | null;
+  created_at: string;
+  updated_at: string;
+  version: number;
+}
+
+/**
  * Implementação do repositório de assinaturas usando Supabase
  */
 export class AssinaturaRepository implements IAssinaturaRepository {
@@ -100,7 +121,7 @@ export class AssinaturaRepository implements IAssinaturaRepository {
   /**
    * Converte record do banco para entidade Assinatura
    */
-  private recordToAssinatura(record: any): Assinatura {
+  private recordToAssinatura(record: SubscriptionRecord): Assinatura {
     const props: AssinaturaProps = {
       id: record.id,
       restauranteId: record.restaurant_id,
@@ -125,7 +146,7 @@ export class AssinaturaRepository implements IAssinaturaRepository {
   /**
    * Converte entidade Assinatura para record do banco
    */
-  private assinaturaToRecord(assinatura: Assinatura): any {
+  private assinaturaToRecord(assinatura: Assinatura): SubscriptionRecord {
     return {
       id: assinatura.id,
       restaurant_id: assinatura.props.restauranteId,
