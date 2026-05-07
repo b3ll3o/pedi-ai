@@ -42,6 +42,25 @@ export class UsuarioRestauranteRepository implements IUsuarioRestauranteReposito
     await this.db.table('user_restaurants').put(record);
   }
 
+  /**
+   * Cria um vínculo direto entre usuário e restaurante.
+   * Usado pelos testes e casos de uso.
+   */
+  async criarVinculo(params: {
+    usuarioId: string;
+    restauranteId: string;
+    role: string;
+    criadoEm: Date;
+  }): Promise<void> {
+    const { usuarioId, restauranteId, role } = params;
+    const entity = UsuarioRestaurante.criar({
+      usuarioId,
+      restauranteId,
+      papel: role as 'dono' | 'gerente' | 'atendente',
+    });
+    await this.save(entity);
+  }
+
   async delete(id: string): Promise<void> {
     // Converter id string para number (id do Dexie)
     const record = await this.db.table('user_restaurants').get(Number(id));

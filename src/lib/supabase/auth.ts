@@ -53,9 +53,10 @@ async function signOut(): Promise<void> {
 /**
  * Get the current session
  * Includes a timeout to prevent hanging in E2E/test environments.
+ * Reduced from 30s to 10s for faster UX on slow networks.
  */
 async function getSession(): Promise<Session | null> {
-  const TIMEOUT_MS = 30_000;
+  const TIMEOUT_MS = 10_000;
 
   const timeoutPromise = new Promise<null>((resolve) =>
     setTimeout(() => resolve(null), TIMEOUT_MS)

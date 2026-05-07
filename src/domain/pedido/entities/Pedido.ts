@@ -3,6 +3,22 @@ import { StatusPedido } from '../value-objects/StatusPedido';
 import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 import { ItemPedido } from './ItemPedido';
 
+type StatusValue = 'pending_payment' | 'paid' | 'received' | 'preparing' | 'ready' | 'delivered' | 'rejected' | 'cancelled' | 'refunded' | 'payment_failed';
+
+/** FSM de transições válidas de status do pedido */
+const TRANSICOES_VALIDAS: Record<StatusValue, StatusValue[]> = {
+  pending_payment: ['paid', 'payment_failed', 'cancelled'],
+  paid: ['received', 'cancelled', 'rejected', 'refunded'],
+  received: ['preparing', 'cancelled', 'rejected'],
+  preparing: ['ready', 'cancelled', 'rejected'],
+  ready: ['delivered', 'cancelled', 'rejected'],
+  delivered: [],
+  cancelled: [],
+  payment_failed: [],
+  refunded: [],
+  rejected: [],
+};
+
 export interface PedidoProps {
   id: string;
   clienteId?: string;
@@ -90,6 +106,14 @@ export class Pedido extends AggregateRootClass<PedidoProps> {
 
   alterarStatus(novoStatus: StatusPedido): void {
     if (this.props.status === novoStatus) return;
+
+    const atual = this.props.status.toString();
+    const proximo = novoStatus.toString();
+
+    const valido = TRANSICOES_VALIDAS[atual as StatusValue]?.includes(proximo as StatusValue);
+    if (!valido) {
+      throw new Error(`Transição inválida: ${atual} → ${proximo}`);
+    }
 
     Object.assign(this.props, { status: novoStatus });
     this.touch();
