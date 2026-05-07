@@ -54,8 +54,6 @@ export class PedidoRepository implements IPedidoRepository {
 
     return {
       id: pedido.id,
-      clienteId: pedido.clienteId ?? undefined,
-      mesaId: pedido.mesaId ?? undefined,
       restauranteId: pedido.restauranteId,
       status: pedido.status.toString(),
       itens: itensSerialized,
@@ -64,6 +62,8 @@ export class PedidoRepository implements IPedidoRepository {
       total: JSON.stringify({ valor: pedido.total.valor, moeda: pedido.total.moeda }),
       createdAt: pedido.createdAt,
       updatedAt: pedido.updatedAt,
+      ...(pedido.clienteId !== undefined ? { clienteId: pedido.clienteId } : {}),
+      ...(pedido.mesaId !== undefined ? { mesaId: pedido.mesaId } : {}),
     };
   }
 

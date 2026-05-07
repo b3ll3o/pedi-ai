@@ -155,6 +155,28 @@ export class TestPediDatabase extends Dexie {
       carrinhos: 'id, restauranteId',
       user_restaurants: '++id, user_id, restaurant_id, role',
     });
+
+    this.version(7).stores({
+      cart: '++id, productId, restaurantId, timestamp',
+      menu_cache: '++id, restaurantId, timestamp',
+      pending_sync: '++id, restaurantId, status, createdAt',
+      tables_info: '++id, tableId, restaurantId',
+      usuarios: 'id, email, restauranteId, papel',
+      sessoes: 'id, usuarioId, token, expiracao',
+      restaurantes: 'id, cnpj',
+      pedidos: 'id, restauranteId, status, createdAt, clienteId, mesaId',
+      mesas: 'id, restauranteId, label',
+      pagamentos: 'id, pedidoId, transacaoId, status',
+      transacoes: 'id, pagamentoId, providerId, status',
+      configuracoes_restaurante: 'restauranteId',
+      categorias: 'id, restauranteId',
+      itens_cardapio: 'id, categoriaId, restauranteId, tipo',
+      modificadores_grupo: 'id, restauranteId',
+      modificadores_valor: 'id, modificadorGrupoId',
+      combos: 'id, restauranteId',
+      carrinhos: 'id, restauranteId',
+      user_restaurants: '++id, user_id, restaurant_id, role',
+    });
   }
 }
 
