@@ -65,11 +65,15 @@ export default function CustomerRegisterPage() {
 
   const handleRegister = async (email: string, password: string, intent: 'gerenciar_restaurante' | 'fazer_pedidos') => {
     await signUp(email, password);
-    await fetch('/api/auth/register', {
+    const response = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, intent })
     });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Erro ao criar perfil' }));
+      throw new Error(errorData.error || 'Erro ao criar perfil');
+    }
     router.push(`/login?registered=true&intent=${intent}`);
   };
 
