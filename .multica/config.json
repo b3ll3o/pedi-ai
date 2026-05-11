@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "project": "pedi-ai",
   "mvp": {
     "name": "mvp-multica",
@@ -10,27 +10,32 @@
     "orchestrator": {
       "path": "agents/orchestrator",
       "role": "orchestrator",
-      "active": true
+      "active": true,
+      "skill": "multica"
     },
     "frontend": {
       "path": "agents/dev-frontend",
       "role": "frontend",
-      "active": true
+      "active": true,
+      "skills": ["nextjs-16", "mobile-first", "a11y", "pwa", "offline-first"]
     },
     "backend": {
       "path": "agents/dev-backend",
       "role": "backend",
-      "active": true
+      "active": true,
+      "skills": ["supabase", "ddd", "typescript"]
     },
     "qa": {
       "path": "agents/qa",
       "role": "qa",
-      "active": true
+      "active": true,
+      "skills": ["testing"]
     },
     "explorer": {
       "path": "agents/explorer",
       "role": "explorer",
-      "active": true
+      "active": true,
+      "skills": ["cartography"]
     }
   },
   "sdds": [
@@ -38,31 +43,36 @@
       "name": "checkout-sem-pagamento",
       "path": "specs/checkout-sem-pagamento",
       "priority": "high",
-      "status": "spec+design+tasks"
+      "status": "spec+design+tasks",
+      "skills": ["payments", "ddd-pedido"]
     },
     {
       "name": "kds-mvp",
       "path": "specs/kds-mvp",
       "priority": "high",
-      "status": "spec+design+tasks"
+      "status": "spec+design+tasks",
+      "skills": ["realtime", "ddd-pedido"]
     },
     {
       "name": "cardapio-publico",
       "path": "specs/cardapio-publico",
       "priority": "medium",
-      "status": "spec+design+tasks"
+      "status": "spec+design+tasks",
+      "skills": ["qr-code", "mobile-first"]
     },
     {
       "name": "acompanhamento-pedido",
       "path": "specs/acompanhamento-pedido",
       "priority": "medium",
-      "status": "spec+design+tasks"
+      "status": "spec+design+tasks",
+      "skills": ["ddd-pedido", "realtime"]
     },
     {
       "name": "qr-code-mesa",
       "path": "specs/qr-code-mesa",
       "priority": "low",
-      "status": "spec+design+tasks"
+      "status": "spec+design+tasks",
+      "skills": ["qr-code", "supabase"]
     }
   ],
   "issues": {
@@ -70,6 +80,11 @@
     "states": ["open", "in_progress", "review", "done", "blocked"]
   },
   "skills": {
-    "opencode": ".opencode/skills"
+    "opencode": ".opencode/skills",
+    "system": "multica"
+  },
+  "quality": {
+    "minCoverage": 80,
+    "requiredChecks": ["build", "test", "lint"]
   }
 }

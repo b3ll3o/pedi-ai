@@ -8,6 +8,7 @@ role: orchestrator
 adapter: multica
 project: mvp-multica
 status: active
+skill: multica
 ```
 
 ## Hierarquia
@@ -35,33 +36,41 @@ Supervises:
 
 ## Skills
 
-- `sdd-management` — Specification-Driven Development
-- `task-coordination` — Distribuir e acompanhar tasks
-- `agent-coordination` — Coordenar sub-agents
-- `verification` — Build, test, lint verification
+| Skill | Uso |
+|-------|-----|
+| `multica` | Orquestração principal |
+| `sdd-propose` | Criar proposals |
+| `sdd-spec` | Criar especificações |
+| `sdd-design` | Decisões arquiteturais |
+| `sdd-tasks` | Criar checklist de tarefas |
+| `sdd-apply` | Executar implementação |
+| `sdd-verify` | Verificar conformidade |
+| `sdd-archive` | Arquivar SDD concluído |
+| `executing-plans` | Execução de planos |
+| `plan-reviewer` | Revisar planos |
 
 ---
 
 ## SDDs do MVP Multica
 
-| SDD | Prioridade | Status |
-|-----|-----------|--------|
-| checkout-sem-pagamento | High | spec+design+tasks ✅ |
-| kds-mvp | High | spec+design+tasks ✅ |
-| cardapio-publico | Medium | spec+design+tasks ✅ |
-| acompanhamento-pedido | Medium | spec+design+tasks ✅ |
-| qr-code-mesa | Low | spec+design+tasks ✅ |
+| SDD | Prioridade | Status | Skills |
+|-----|-----------|--------|--------|
+| checkout-sem-pagamento | High | ✅ spec+design+tasks | payments, ddd-pedido |
+| kds-mvp | High | ✅ spec+design+tasks | realtime, ddd-pedido |
+| cardapio-publico | Medium | ✅ spec+design+tasks | qr-code, mobile-first |
+| acompanhamento-pedido | Medium | ✅ spec+design+tasks | ddd-pedido, realtime |
+| qr-code-mesa | Low | ✅ spec+design+tasks | qr-code, supabase |
 
 ---
 
 ## Agentes Subordinados
 
-| Agent | Role | Especialidade |
-|-------|------|---------------|
-| Dev-Frontend | frontend | UI, components, pages |
-| Dev-Backend | backend | Domain, APIs, DDD |
-| QA | qa | Tests, E2E, verification |
-| Explorer | explorer | Análise de código |
+| Agent | Role | Especialidade | Skills |
+|-------|------|---------------|--------|
+| Dev-Frontend | frontend | UI, components, pages | nextjs-16, mobile-first, a11y, pwa |
+| Dev-Backend | backend | Domain, APIs, DDD | supabase, ddd, typescript |
+| QA | qa | Tests, E2E, verification | testing |
+| Explorer | explorer | Análise de código | cartography |
 
 ---
 
@@ -70,7 +79,7 @@ Supervises:
 ```
 openspec/changes/mvp-multica/
 ├── AGENTS.md              # Sistema completo
-├── ORCHESTRATOR.md        # Definição do orchestrator
+├── ORCHESTRATOR.md        # Este arquivo
 ├── ROLES.md              # Papéis dos agents
 ├── tasks.md             # Tasks globais
 ├── specs/               # SDDs
@@ -94,37 +103,39 @@ openspec/changes/mvp-multica/
 ```
 1. DEMANDA DO USUÁRIO
        ↓
-2. CRIAR SDD
-   ├── proposal.md
-   ├── specs/*/spec.md
-   ├── specs/*/design.md
-   └── specs/*/tasks.md
+2. REQUISITOS (requirements-interview se necessário)
        ↓
-3. DISTRIBUIR TASKS (issues)
+3. SDD MANAGEMENT
+   ├── sdd-propose → proposal.md
+   ├── sdd-spec → specs/*/spec.md
+   ├── sdd-design → specs/*/design.md
+   └── sdd-tasks → specs/*/tasks.md
        ↓
-4. AGENTS EXECUTAM
+4. DISTRIBUIR TASKS (issues)
        ↓
-5. VERIFICAR (build, test, lint)
+5. AGENTS EXECUTAM
        ↓
-6. ENTREGAR (verify-report)
+6. VERIFICAÇÃO
+   └── sdd-verify → verify-report.md
+       ↓
+7. ENTREGAR (sdd-archive)
 ```
 
 ---
 
 ## Comandos
 
-| Comando | Ação |
-|---------|------|
-| `"Execute o SDD [nome]"` | Distribui tasks para agents |
-| `"Qual o progresso?"` | Reporta status |
-| `"Liste as tasks"` | Mostra tasks pendentes |
-| `"Crie issue para @frontend"` | Cria issue |
+| Comando | Ação | Skill |
+|---------|------|-------|
+| `"Execute o SDD [nome]"` | Distribui tasks para agents | executing-plans |
+| `"Qual o progresso?"` | Reporta status | - |
+| `"Liste as tasks"` | Mostra tasks pendentes | - |
+| `"Crie issue para @frontend"` | Cria issue | - |
+| `"/sdd-verify [sdd]"` | Verifica implementação | sdd-verify |
 
 ---
 
 ## Return Envelope
-
-Agents retornam:
 
 ```markdown
 ## Task Result
@@ -143,7 +154,21 @@ Agents retornam:
 - build: passed | failed
 - tests: passed | failed
 - lint: passed | failed
+- coverage: XX%
 ```
+
+---
+
+## Critérios de Qualidade
+
+Para considerar uma entrega como **completed**:
+
+- [ ] Build passa (`pnpm build`)
+- [ ] Tests passam (`pnpm test`)
+- [ ] Lint passa (`pnpm lint`)
+- [ ] Coverage >= 80%
+- [ ] Mobile-first verificado
+- [ ] Acessibilidade verificada
 
 ---
 
@@ -152,3 +177,4 @@ Agents retornam:
 - Specs: `openspec/changes/mvp-multica/specs/`
 - Tasks: `openspec/changes/mvp-multica/specs/*/tasks.md`
 - Issues: `openspec/changes/mvp-multica/issues/`
+- Config: `.multica/config.json`
