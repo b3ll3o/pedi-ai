@@ -93,7 +93,7 @@ describe('ProcessarWebhookUseCase', () => {
       processarSucessoTransacao: vi.fn(),
       getEventos: vi.fn(() => []),
     };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     (PagamentoAggregate.reconstituir as ReturnType<typeof vi.fn>).mockReturnValue(mockAggregate);
 
     useCase = new ProcessarWebhookUseCase(

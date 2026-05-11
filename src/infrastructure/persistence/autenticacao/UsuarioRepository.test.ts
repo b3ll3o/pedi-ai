@@ -55,7 +55,7 @@ describe('UsuarioRepository', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUsuarios.clear();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     repository = new UsuarioRepository(mockDb as any);
   });
 

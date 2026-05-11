@@ -62,7 +62,7 @@ describe('SessaoRepository', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockSessoes.clear();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     repository = new SessaoRepository(mockDb as any);
   });
 

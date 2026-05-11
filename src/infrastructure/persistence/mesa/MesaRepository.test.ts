@@ -51,7 +51,7 @@ describe('MesaRepository', () => {
     vi.clearAllMocks();
     mockMesas.clear();
     mockDb = createMockDb();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     repository = new MesaRepository(mockDb as any);
   });
 
