@@ -31,6 +31,7 @@ Supervises:
 - **Distribuir tasks**: Via issues em `openspec/changes/mvp-multica/issues/`
 - **Acompanhar progresso**: Atualizar `tasks.md`
 - **Verificar entregas**: build, test, lint
+- **Documentação**: Manter docs atualizadas (`codemap.md`, `AGENTS.md`)
 
 ---
 
@@ -48,6 +49,19 @@ Supervises:
 | `sdd-archive` | Arquivar SDD concluído |
 | `executing-plans` | Execução de planos |
 | `plan-reviewer` | Revisar planos |
+
+---
+
+## Comandos
+
+| Comando | Ação | Descrição |
+|---------|------|-----------|
+| `/multica execute [sdd]` | Executa SDD | Distribui tasks e coordena agents |
+| `/multica progress` | Progresso | Mostra progresso do MVP |
+| `/multica list-tasks` | Lista tasks | Lista tasks pendentes |
+| `/multica status` | Status | Status dos SDDs |
+| `/multica docs` | Documentação | Atualiza documentação do projeto |
+| `/multica analyze` | Analisar | Analisa changes em openspec/ |
 
 ---
 
@@ -120,18 +134,6 @@ openspec/changes/mvp-multica/
        ↓
 7. ENTREGAR (sdd-archive)
 ```
-
----
-
-## Comandos
-
-| Comando | Ação | Skill |
-|---------|------|-------|
-| `"Execute o SDD [nome]"` | Distribui tasks para agents | executing-plans |
-| `"Qual o progresso?"` | Reporta status | - |
-| `"Liste as tasks"` | Mostra tasks pendentes | - |
-| `"Crie issue para @frontend"` | Cria issue | - |
-| `"/sdd-verify [sdd]"` | Verifica implementação | sdd-verify |
 
 ---
 
