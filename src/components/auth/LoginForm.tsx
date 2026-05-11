@@ -34,6 +34,10 @@ export function LoginForm({ onSubmit, registeredSuccess, resetSuccess }: LoginFo
       setResendError('Por favor, insira seu email para reenviar a confirmação');
       return;
     }
+    if (!validateEmail(email)) {
+      setResendError('Por favor, insira um email válido');
+      return;
+    }
     setResendSuccess(false);
     setResendError('');
     setIsResending(true);
