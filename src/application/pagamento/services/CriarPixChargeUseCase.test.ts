@@ -12,13 +12,15 @@ import { Pedido } from '@/domain/pedido/entities/Pedido';
 
 // Mock do EventDispatcher
 const mockDispatch = vi.fn();
-vi.mock('@/domain/shared', () => ({
-  EventDispatcher: {
-    getInstance: vi.fn(() => ({
-      dispatch: mockDispatch,
-    })),
-  },
-}));
+vi.mock('@/domain/shared', async () => {
+  return {
+    EventDispatcher: {
+      getInstance: vi.fn(() => ({
+        dispatch: mockDispatch,
+      })),
+    },
+  };
+});
 
 // Mock do PagamentoAggregate
 vi.mock('@/domain/pagamento', () => ({

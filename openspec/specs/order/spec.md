@@ -95,16 +95,19 @@ O sistema DEVE implementar uma máquina de estados finitos para controlar transi
 
 O fluxo principal de status é:
 ```
-pending → confirmed → preparing → ready → delivered
+pending_payment → paid → received → preparing → ready → delivered
 ```
 
-Cancelamento pode ocorrer a partir de `pending`, `confirmed`, `preparing`, ou `ready`:
+Cancelamento pode ocorrer a partir de `pending_payment`, `paid`, `received`, `preparing`, ou `ready`:
 ```
-pending → cancelled
-confirmed → cancelled
+pending_payment → cancelled
+paid → cancelled
+received → cancelled
 preparing → cancelled
 ready → cancelled
 ```
+
+Estados rejeitados (`rejected`), falha de pagamento (`payment_failed`) e reembolsados (`refunded`) são terminais (sem transições saindo deles).
 
 #### Scenario: Invalid Status Transition Rejected
 - GIVEN um pedido está no status `delivered` ou `cancelled`
@@ -124,16 +127,28 @@ ready → cancelled
 - THEN o sistema SHALL marcar o pedido como `stale` (estale)
 - AND o sistema SHALL exibir alerta visual de tempo excedido
 
-#### Funções Relacionadas (Implementação em `src/services/adminOrderService.ts`)
+#### Funções Relacionadas (Implementação em `src/domain/pedido/entities/Pedido.ts`)
 
 | Função | Descrição |
 |--------|-----------|
-| `VALID_STATUS_TRANSITIONS` | Mapa de transições válidas: `{ pending: ['confirmed', 'cancelled'], confirmed: ['preparing', 'cancelled'], preparing: ['ready', 'cancelled'], ready: ['delivered', 'cancelled'], delivered: [], cancelled: [] }` |
-| `isValidStatusTransition(currentStatus, newStatus)` | Retorna `true` se a transição de `currentStatus` para `newStatus` é válida |
-| `getAllowedTransitions(currentStatus)` | Retorna array de status destino permitidos a partir do status atual |
-| `getOrderAge(order)` | Retorna idade do pedido em segundos desde a criação |
-| `getOrderAgeDisplay(seconds)` | Formata segundos em string legível: `Xs`, `Xm Ys`, `Xh Ym` |
-| `isOrderStale(order, thresholdSeconds=300)` | Retorna `true` se pedido excedeu o limiar de tempo (padrão: 300s = 5min) |
+| `TRANSICOES_VALIDAS` | Mapa de transições válidas em `Pedido.ts:9-20` |
+| `alterarStatus(novoStatus)` | Valida e aplica transição de status (lança erro se inválida) |
+
+**Mapa de transições implementadas:**
+```typescript
+const TRANSICOES_VALIDAS = {
+  pending_payment: ['paid', 'payment_failed', 'cancelled'],
+  paid: ['received', 'cancelled', 'rejected', 'refunded'],
+  received: ['preparing', 'cancelled', 'rejected'],
+  preparing: ['ready', 'cancelled', 'rejected'],
+  ready: ['delivered', 'cancelled', 'rejected'],
+  delivered: [],
+  cancelled: [],
+  payment_failed: [],
+  refunded: [],
+  rejected: [],
+}
+```
 
 ### Requirement: Waiter Order Notifications
 The system SHALL provide real-time notifications to waiters for new orders.

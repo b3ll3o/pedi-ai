@@ -1,0 +1,75 @@
+{
+  "version": "1.0.0",
+  "project": "pedi-ai",
+  "mvp": {
+    "name": "mvp-multica",
+    "description": "Cardápio Digital com Pedido na Mesa",
+    "path": "openspec/changes/mvp-multica"
+  },
+  "agents": {
+    "orchestrator": {
+      "path": "agents/orchestrator",
+      "role": "orchestrator",
+      "active": true
+    },
+    "frontend": {
+      "path": "agents/dev-frontend",
+      "role": "frontend",
+      "active": true
+    },
+    "backend": {
+      "path": "agents/dev-backend",
+      "role": "backend",
+      "active": true
+    },
+    "qa": {
+      "path": "agents/qa",
+      "role": "qa",
+      "active": true
+    },
+    "explorer": {
+      "path": "agents/explorer",
+      "role": "explorer",
+      "active": true
+    }
+  },
+  "sdds": [
+    {
+      "name": "checkout-sem-pagamento",
+      "path": "specs/checkout-sem-pagamento",
+      "priority": "high",
+      "status": "spec+design+tasks"
+    },
+    {
+      "name": "kds-mvp",
+      "path": "specs/kds-mvp",
+      "priority": "high",
+      "status": "spec+design+tasks"
+    },
+    {
+      "name": "cardapio-publico",
+      "path": "specs/cardapio-publico",
+      "priority": "medium",
+      "status": "spec+design+tasks"
+    },
+    {
+      "name": "acompanhamento-pedido",
+      "path": "specs/acompanhamento-pedido",
+      "priority": "medium",
+      "status": "spec+design+tasks"
+    },
+    {
+      "name": "qr-code-mesa",
+      "path": "specs/qr-code-mesa",
+      "priority": "low",
+      "status": "spec+design+tasks"
+    }
+  ],
+  "issues": {
+    "path": "issues",
+    "states": ["open", "in_progress", "review", "done", "blocked"]
+  },
+  "skills": {
+    "opencode": ".opencode/skills"
+  }
+}

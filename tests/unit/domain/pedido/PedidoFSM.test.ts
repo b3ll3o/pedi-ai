@@ -4,14 +4,15 @@ import { StatusPedido } from '@/domain/pedido/value-objects/StatusPedido';
 import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 
 /**
- * Unit tests para a FSM (Finite State Machine) de Pedido.
+ * Unit tests para a FSM (Finite State Machine) de Pedido — MVP Multica.
  * Valida as transições de status definidas em:
- *   pending_payment → paid → received → preparing → ready → delivered
- * E os fluxos de erro/cancelamento.
+ *   recebido → preparando → pronto → entregue
+ *
+ * O MVP não possui etapa de pagamento online - pedidos são criados
+ * diretamente com status 'recebido'.
  */
-describe('Pedido — FSM de Status', () => {
-  // Criar Pedido com new diretamente para controle total dos props
-  const criarPedido = (status: StatusPedido = StatusPedido.PENDING_PAYMENT): Pedido => {
+describe('Pedido — FSM de Status (MVP)', () => {
+  const criarPedido = (status: StatusPedido = StatusPedido.RECEIVED): Pedido => {
     const props: PedidoProps = {
       id: crypto.randomUUID(),
       restauranteId: 'restaurante-1',
@@ -27,22 +28,10 @@ describe('Pedido — FSM de Status', () => {
   };
 
   // ═══════════════════════════════════════════════════════════════
-  // Fluxo principal happy-path
+  // Fluxo principal MVP: sem pagamento
   // ═══════════════════════════════════════════════════════════════
 
-  describe('Fluxo principal (pagamento → entrega)', () => {
-    it('pending_payment → paid (PIX confirmado)', () => {
-      const pedido = criarPedido(StatusPedido.PENDING_PAYMENT);
-      pedido.alterarStatus(StatusPedido.PAID);
-      expect(pedido.status).toEqual(StatusPedido.PAID);
-    });
-
-    it('paid → received (restaurante aceitou o pedido)', () => {
-      const pedido = criarPedido(StatusPedido.PAID);
-      pedido.alterarStatus(StatusPedido.RECEIVED);
-      expect(pedido.status).toEqual(StatusPedido.RECEIVED);
-    });
-
+  describe('Fluxo principal MVP (recebido → entrega)', () => {
     it('received → preparing (cozinha iniciou preparo)', () => {
       const pedido = criarPedido(StatusPedido.RECEIVED);
       pedido.alterarStatus(StatusPedido.PREPARING);
@@ -63,34 +52,10 @@ describe('Pedido — FSM de Status', () => {
   });
 
   // ═══════════════════════════════════════════════════════════════
-  // Fluxo de pagamento rejeitado
-  // ═══════════════════════════════════════════════════════════════
-
-  describe('Fluxo de pagamento rejeitado', () => {
-    it('pending_payment → payment_failed (pagamento recusado)', () => {
-      const pedido = criarPedido(StatusPedido.PENDING_PAYMENT);
-      pedido.alterarStatus(StatusPedido.PAYMENT_FAILED);
-      expect(pedido.status).toEqual(StatusPedido.PAYMENT_FAILED);
-    });
-  });
-
-  // ═══════════════════════════════════════════════════════════════
   // Fluxos de cancelamento
   // ═══════════════════════════════════════════════════════════════
 
   describe('Fluxos de cancelamento', () => {
-    it('pending_payment → cancelled (cliente cancela antes do pagamento)', () => {
-      const pedido = criarPedido(StatusPedido.PENDING_PAYMENT);
-      pedido.alterarStatus(StatusPedido.CANCELLED);
-      expect(pedido.status).toEqual(StatusPedido.CANCELLED);
-    });
-
-    it('paid → cancelled (restaurante cancela após pagamento)', () => {
-      const pedido = criarPedido(StatusPedido.PAID);
-      pedido.alterarStatus(StatusPedido.CANCELLED);
-      expect(pedido.status).toEqual(StatusPedido.CANCELLED);
-    });
-
     it('received → cancelled', () => {
       const pedido = criarPedido(StatusPedido.RECEIVED);
       pedido.alterarStatus(StatusPedido.CANCELLED);
@@ -115,12 +80,6 @@ describe('Pedido — FSM de Status', () => {
   // ═══════════════════════════════════════════════════════════════
 
   describe('Fluxos de rejeição (restaurante recusa)', () => {
-    it('paid → rejected', () => {
-      const pedido = criarPedido(StatusPedido.PAID);
-      pedido.alterarStatus(StatusPedido.REJECTED);
-      expect(pedido.status).toEqual(StatusPedido.REJECTED);
-    });
-
     it('received → rejected', () => {
       const pedido = criarPedido(StatusPedido.RECEIVED);
       pedido.alterarStatus(StatusPedido.REJECTED);
@@ -135,20 +94,31 @@ describe('Pedido — FSM de Status', () => {
 
     it('ready → rejected', () => {
       const pedido = criarPedido(StatusPedido.READY);
+      pedido.alterarStatus(StatusPedido.READY);
       pedido.alterarStatus(StatusPedido.REJECTED);
       expect(pedido.status).toEqual(StatusPedido.REJECTED);
     });
   });
 
   // ═══════════════════════════════════════════════════════════════
-  // Fluxo de reembolso
+  // Estados terminais
   // ═══════════════════════════════════════════════════════════════
 
-  describe('Fluxo de reembolso', () => {
-    it('paid → refunded (estorno após pagamento)', () => {
-      const pedido = criarPedido(StatusPedido.PAID);
-      pedido.alterarStatus(StatusPedido.REFUNDED);
-      expect(pedido.status).toEqual(StatusPedido.REFUNDED);
+  describe('Estados terminais', () => {
+    it('delivered → any é inválido (estado terminal)', () => {
+      const pedido = criarPedido(StatusPedido.DELIVERED);
+      expect(() => pedido.alterarStatus(StatusPedido.CANCELLED)).toThrow();
+      expect(() => pedido.alterarStatus(StatusPedido.REJECTED)).toThrow();
+    });
+
+    it('cancelled → any é inválido (estado terminal)', () => {
+      const pedido = criarPedido(StatusPedido.CANCELLED);
+      expect(() => pedido.alterarStatus(StatusPedido.RECEIVED)).toThrow();
+    });
+
+    it('rejected → any é inválido (estado terminal)', () => {
+      const pedido = criarPedido(StatusPedido.REJECTED);
+      expect(() => pedido.alterarStatus(StatusPedido.RECEIVED)).toThrow();
     });
   });
 
@@ -157,47 +127,7 @@ describe('Pedido — FSM de Status', () => {
   // ═══════════════════════════════════════════════════════════════
 
   describe('Transições inválidas (devem lançar erro)', () => {
-    it('pending_payment → preparing é inválido (pula paid)', () => {
-      const pedido = criarPedido(StatusPedido.PENDING_PAYMENT);
-      expect(() => pedido.alterarStatus(StatusPedido.PREPARING)).toThrow();
-    });
-
-    it('pending_payment → ready é inválido', () => {
-      const pedido = criarPedido(StatusPedido.PENDING_PAYMENT);
-      expect(() => pedido.alterarStatus(StatusPedido.READY)).toThrow();
-    });
-
-    it('pending_payment → delivered é inválido', () => {
-      const pedido = criarPedido(StatusPedido.PENDING_PAYMENT);
-      expect(() => pedido.alterarStatus(StatusPedido.DELIVERED)).toThrow();
-    });
-
-    it('pending_payment → received é inválido (pula paid)', () => {
-      const pedido = criarPedido(StatusPedido.PENDING_PAYMENT);
-      expect(() => pedido.alterarStatus(StatusPedido.RECEIVED)).toThrow();
-    });
-
-    it('paid → preparing é inválido (pula received)', () => {
-      const pedido = criarPedido(StatusPedido.PAID);
-      expect(() => pedido.alterarStatus(StatusPedido.PREPARING)).toThrow();
-    });
-
-    it('paid → ready é inválido', () => {
-      const pedido = criarPedido(StatusPedido.PAID);
-      expect(() => pedido.alterarStatus(StatusPedido.READY)).toThrow();
-    });
-
-    it('paid → delivered é inválido', () => {
-      const pedido = criarPedido(StatusPedido.PAID);
-      expect(() => pedido.alterarStatus(StatusPedido.DELIVERED)).toThrow();
-    });
-
-    it('paid → pending_payment é inválido', () => {
-      const pedido = criarPedido(StatusPedido.PAID);
-      expect(() => pedido.alterarStatus(StatusPedido.PENDING_PAYMENT)).toThrow();
-    });
-
-    it('received → paid é inválido (não pode voltar)', () => {
+    it('received → paid é inválido (MVP não usa payment)', () => {
       const pedido = criarPedido(StatusPedido.RECEIVED);
       expect(() => pedido.alterarStatus(StatusPedido.PAID)).toThrow();
     });
@@ -217,54 +147,25 @@ describe('Pedido — FSM de Status', () => {
       expect(() => pedido.alterarStatus(StatusPedido.PREPARING)).toThrow();
     });
 
-    it('ready → paid é inválido', () => {
-      const pedido = criarPedido(StatusPedido.READY);
-      expect(() => pedido.alterarStatus(StatusPedido.PAID)).toThrow();
-    });
-
     it('delivered → any é inválido (estado terminal)', () => {
       const pedido = criarPedido(StatusPedido.DELIVERED);
-      expect(() => pedido.alterarStatus(StatusPedido.PAID)).toThrow();
       expect(() => pedido.alterarStatus(StatusPedido.CANCELLED)).toThrow();
       expect(() => pedido.alterarStatus(StatusPedido.REJECTED)).toThrow();
-    });
-
-    it('cancelled → any é inválido (estado terminal)', () => {
-      const pedido = criarPedido(StatusPedido.CANCELLED);
-      expect(() => pedido.alterarStatus(StatusPedido.PAID)).toThrow();
-      expect(() => pedido.alterarStatus(StatusPedido.PENDING_PAYMENT)).toThrow();
-    });
-
-    it('payment_failed → any é inválido (estado terminal)', () => {
-      const pedido = criarPedido(StatusPedido.PAYMENT_FAILED);
-      expect(() => pedido.alterarStatus(StatusPedido.PAID)).toThrow();
-      expect(() => pedido.alterarStatus(StatusPedido.PENDING_PAYMENT)).toThrow();
-    });
-
-    it('refunded → any é inválido (estado terminal)', () => {
-      const pedido = criarPedido(StatusPedido.REFUNDED);
-      expect(() => pedido.alterarStatus(StatusPedido.PAID)).toThrow();
-    });
-
-    it('rejected → any é inválido (estado terminal)', () => {
-      const pedido = criarPedido(StatusPedido.REJECTED);
-      expect(() => pedido.alterarStatus(StatusPedido.PAID)).toThrow();
-      expect(() => pedido.alterarStatus(StatusPedido.RECEIVED)).toThrow();
     });
   });
 
   // ═══════════════════════════════════════════════════════════════
-  // Não alterar se status é o mesmo
+  // Não altera se status é o mesmo
   // ═══════════════════════════════════════════════════════════════
 
   describe('Não altera se status é o mesmo', () => {
     it('não lança erro e não altera updatedAt quando status é idêntico', () => {
-      const pedido = criarPedido(StatusPedido.PAID);
+      const pedido = criarPedido(StatusPedido.RECEIVED);
       const updatedAtAntes = pedido.updatedAt;
 
-      pedido.alterarStatus(StatusPedido.PAID);
+      pedido.alterarStatus(StatusPedido.RECEIVED);
 
-      expect(pedido.status).toEqual(StatusPedido.PAID);
+      expect(pedido.status).toEqual(StatusPedido.RECEIVED);
       expect(pedido.updatedAt).toEqual(updatedAtAntes);
     });
   });
@@ -275,14 +176,14 @@ describe('Pedido — FSM de Status', () => {
 
   describe('Mensagem de erro da FSM', () => {
     it('inclui o status atual e o desejado na mensagem', () => {
-      const pedido = criarPedido(StatusPedido.PENDING_PAYMENT);
+      const pedido = criarPedido(StatusPedido.RECEIVED);
       try {
-        pedido.alterarStatus(StatusPedido.PREPARING);
+        pedido.alterarStatus(StatusPedido.PAID);
         expect.fail('Deveria ter lançado erro');
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
-        expect(msg).toContain('pending_payment');
-        expect(msg).toContain('preparing');
+        expect(msg).toContain('received');
+        expect(msg).toContain('paid');
       }
     });
   });

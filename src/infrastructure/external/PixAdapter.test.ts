@@ -1,13 +1,18 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { PixAdapter } from '@/infrastructure/external/PixAdapter';
 
-// Mock do módulo mercadopago
+const mockPaymentInstance = {
+  create: vi.fn(),
+  get: vi.fn(),
+};
+
 vi.mock('mercadopago', () => ({
-  MercadoPagoConfig: vi.fn().mockImplementation(() => ({})),
-  Payment: vi.fn().mockImplementation(() => ({
-    create: vi.fn(),
-    get: vi.fn(),
-  })),
+  MercadoPagoConfig: vi.fn().mockImplementation(function() {
+    return {};
+  }),
+  Payment: vi.fn().mockImplementation(function() {
+    return mockPaymentInstance;
+  }),
 }));
 
 describe('PixAdapter', () => {

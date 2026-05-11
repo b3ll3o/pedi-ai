@@ -26,7 +26,7 @@ export default function CheckoutClient() {
   const tax = subtotal * TAX_RATE;
   const total = subtotal + tax;
 
-  const handleSubmit = async (data: { customerName: string; customerPhone: string; paymentMethod: 'pix' }) => {
+  const handleSubmit = async (data: { customerName: string; customerPhone: string }) => {
     const response = await fetch('/api/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -42,7 +42,6 @@ export default function CheckoutClient() {
           unit_price: item.unitPrice,
           modifiers: item.modifiers.map((m) => ({ name: m.name, price: m.price_adjustment })),
         })),
-        payment_method: data.paymentMethod,
         idempotency_key: crypto.randomUUID(),
       }),
     });
@@ -54,7 +53,7 @@ export default function CheckoutClient() {
 
     const order = await response.json();
     clearCart();
-    router.push(`/order/${order.id}`);
+    router.push(`/pedido/${order.id}`);
   };
 
   const handleLogout = async () => {
@@ -138,7 +137,7 @@ export default function CheckoutClient() {
             <path d="M12 19l-7-7 7-7" />
           </svg>
         </button>
-        <h1 className={styles.title}>Finalizar Pedido</h1>
+        <h1 className={styles.title}>Enviar Pedido</h1>
         <button
           type="button"
           onClick={handleLogout}

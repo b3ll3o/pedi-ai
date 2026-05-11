@@ -3,7 +3,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/stores/cartStore';
-import { PaymentMethodSelector, type PaymentMethod } from '@/components/checkout/PaymentMethodSelector';
 import styles from './page.module.css';
 
 const TAX_RATE = 0.1;
@@ -13,7 +12,6 @@ export function CheckoutForm() {
   const items = useCartStore((state) => state.items);
   const clearCart = useCartStore((state) => state.clearCart);
 
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('pix');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,7 +33,6 @@ export function CheckoutForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           items,
-          paymentMethod,
           total,
         }),
       });
@@ -47,13 +44,13 @@ export function CheckoutForm() {
 
       const order = await response.json();
       clearCart();
-      router.push(`/payment/${order.id}`);
+      router.push(`/pedido/${order.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao criar pedido');
     } finally {
       setIsSubmitting(false);
     }
-  }, [items, paymentMethod, total, clearCart, router]);
+  }, [items, total, clearCart, router]);
 
   return (
     <form onSubmit={handleSubmit} className={styles.form}>
@@ -73,10 +70,6 @@ export function CheckoutForm() {
         </div>
       </div>
 
-      <div className={styles.section}>
-        <PaymentMethodSelector selected={paymentMethod} onChange={setPaymentMethod} />
-      </div>
-
       {error && <p className={styles.error}>{error}</p>}
 
       <button
@@ -84,7 +77,7 @@ export function CheckoutForm() {
         className={styles.submitButton}
         disabled={isSubmitting}
       >
-        {isSubmitting ? 'Processando...' : 'Confirmar pedido'}
+        {isSubmitting ? 'Enviando...' : 'Enviar Pedido'}
       </button>
     </form>
   );

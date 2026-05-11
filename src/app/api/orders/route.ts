@@ -76,7 +76,7 @@ interface CreateOrderRequest {
   customer_name?: string
   restaurant_id?: string
   items: OrderItemInput[]
-  payment_method: 'pix' | 'card'
+  payment_method?: 'pix' | 'card'
   idempotency_key: string
 }
 
@@ -90,13 +90,6 @@ export async function POST(request: NextRequest) {
     if (!body.customer_id || !body.items || body.items.length === 0) {
       return NextResponse.json(
         { error: 'customer_id and items are required' },
-        { status: 400 }
-      )
-    }
-
-    if (!body.payment_method || !['pix', 'card'].includes(body.payment_method)) {
-      return NextResponse.json(
-        { error: 'payment_method must be "pix" or "card"' },
         { status: 400 }
       )
     }
@@ -204,12 +197,12 @@ export async function POST(request: NextRequest) {
       customer_id: body.customer_id ?? body.customer_phone ?? null,
       customer_phone: body.customer_phone || null,
       customer_name: body.customer_name || null,
-      status: 'pending_payment' as const,
+      status: 'received' as const,
       subtotal,
       tax,
       total,
-      payment_method: paymentMethodMap[body.payment_method],
-      payment_status: 'pending' as const,
+      payment_method: null,
+      payment_status: 'not_applicable' as const,
       idempotency_key: body.idempotency_key
     }
 

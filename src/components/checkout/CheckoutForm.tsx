@@ -15,7 +15,6 @@ export interface CheckoutFormProps {
 export interface CheckoutData {
   customerName: string;
   customerPhone: string;
-  paymentMethod: 'pix';
 }
 
 const formatPrice = (value: number): string => {
@@ -34,7 +33,6 @@ export function CheckoutForm({
 }: CheckoutFormProps) {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
-  const [paymentMethod] = useState<'pix'>('pix');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ name?: string; phone?: string; offline?: string }>({});
 
@@ -63,7 +61,7 @@ export function CheckoutForm({
     setIsSubmitting(true);
     setErrors((prev) => ({ ...prev, offline: undefined }));
     try {
-      await onSubmit({ customerName, customerPhone, paymentMethod });
+      await onSubmit({ customerName, customerPhone });
     } catch (error) {
       if (navigator.onLine === false || (error instanceof Error && error.message.includes('offline'))) {
         setErrors((prev) => ({ ...prev, offline: 'Você está offline. O pedido será enviado quando a conexão for restaurada.' }));
@@ -152,25 +150,6 @@ export function CheckoutForm({
         </div>
       </div>
 
-      <div className={styles.section}>
-        <h2 className={styles.sectionTitle}>Forma de Pagamento</h2>
-        <div className={styles.paymentMethods} data-testid="payment-method-select">
-          <label className={`${styles.paymentOption} ${styles.paymentOptionSelected}`}>
-            <div className={styles.paymentIcon}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <path d="M7 7h.01M7 12h.01M7 17h.01M12 7h.01M12 12h.01M12 17h.01M17 7h.01M17 12h.01M17 17h.01" />
-              </svg>
-            </div>
-            <span className={styles.paymentName}>PIX</span>
-          </label>
-        </div>
-        <div className={styles.pixInfo} data-testid="pix-qr-code">
-          <p>Use o QR Code abaixo para pagar com PIX</p>
-        </div>
-        <div className={styles.paymentTimeoutMessage} data-testid="payment-timeout-message" />
-      </div>
-
       {errors.offline && (
         <div className={styles.offlineError} data-testid="offline-error">
           {errors.offline}
@@ -183,7 +162,7 @@ export function CheckoutForm({
         disabled={isSubmitting || items.length === 0}
         data-testid="checkout-submit submit-order-button"
       >
-        {isSubmitting ? 'Processando...' : 'Finalizar Pagamento'}
+        {isSubmitting ? 'Enviando...' : 'Enviar Pedido'}
       </button>
     </form>
   );

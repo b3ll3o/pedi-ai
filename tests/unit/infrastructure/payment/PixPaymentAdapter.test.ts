@@ -1,20 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { PixAdapter } from '@/infrastructure/external/PixAdapter';
 
-// Mock do módulo mercadopago
-vi.mock('mercadopago', () => {
-  const mockPaymentInstance = {
-    create: vi.fn(),
-    get: vi.fn(),
-  };
+const mockPaymentInstance = vi.hoisted(() => ({
+  create: vi.fn(),
+  get: vi.fn(),
+}));
 
+vi.mock('mercadopago', () => {
   class MockMercadoPagoConfig {
     constructor(_options: { accessToken: string }) {}
   }
 
   class MockPayment {
-    create: typeof mockPaymentInstance.create;
-    get: typeof mockPaymentInstance.get;
     constructor(_config: MockMercadoPagoConfig) {
       return mockPaymentInstance;
     }
@@ -29,24 +26,13 @@ vi.mock('mercadopago', () => {
 
 describe('PixAdapter', () => {
   let pixAdapter: PixAdapter;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let mockPayment: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubEnv('NEXT_PUBLIC_DEMO_PAYMENT_MODE', 'false');
     vi.stubEnv('MERCADOPAGO_ACCESS_TOKEN', 'TEST_TOKEN_123');
 
-    // Recria o adapter com token de teste
     pixAdapter = new PixAdapter('TEST_TOKEN_123');
-
-    // Acessa a instância mockada
-    const { __mockPaymentInstance } = require('mercadopago');
-    mockPayment = __mockPaymentInstance;
-  });
-
-  afterEach(() => {
-    vi.unstubAllEnvs();
   });
 
   afterEach(() => {
@@ -70,13 +56,13 @@ describe('PixAdapter', () => {
         },
       };
 
-      mockPayment.create.mockResolvedValue(mockResponse);
+      mockPaymentInstance.create.mockResolvedValue(mockResponse);
 
       // Act
       const resultado = await pixAdapter.criarCobranca(valorEmCentavos, pedidoId);
 
       // Assert
-      expect(mockPayment.create).toHaveBeenCalledWith({
+      expect(mockPaymentInstance.create).toHaveBeenCalledWith({
         body: {
           transaction_amount: 50,
           payment_method_id: 'pix',
@@ -105,21 +91,21 @@ describe('PixAdapter', () => {
           },
         },
       };
-      mockPayment.create.mockResolvedValue(mockResponse);
+      mockPaymentInstance.create.mockResolvedValue(mockResponse);
 
       // Act
       const resultado = await pixAdapter.criarCobranca(2550, 'pedido-456');
 
       // Assert
       expect(resultado.valor).toBe(25.5);
-      expect(mockPayment.create).toHaveBeenCalledWith(
+      expect(mockPaymentInstance.create).toHaveBeenCalledWith(
         expect.objectContaining({ body: expect.objectContaining({ transaction_amount: 25.5 }) })
       );
     });
 
     it('deve falhar quando API retorna erro', async () => {
       // Arrange
-      mockPayment.create.mockRejectedValue(new Error('Unauthorized'));
+      mockPaymentInstance.create.mockRejectedValue(new Error('Unauthorized'));
 
       // Act & Assert
       await expect(pixAdapter.criarCobranca(1000, 'pedido-erro'))
@@ -139,7 +125,7 @@ describe('PixAdapter', () => {
       expect(resultado.id).toContain('pedido-demo');
       expect(resultado.codigoPix).toContain('pedido-demo');
       expect(resultado.imagemQrCode).toContain('data:image/png;base64');
-      expect(mockPayment.create).not.toHaveBeenCalled();
+      expect(mockPaymentInstance.create).not.toHaveBeenCalled();
     });
 
     it('deve jogar erro quando token não está configurado (sem modo demo)', async () => {
@@ -169,13 +155,13 @@ describe('PixAdapter', () => {
           },
         },
       };
-      mockPayment.get.mockResolvedValue(mockResponse);
+      mockPaymentInstance.get.mockResolvedValue(mockResponse);
 
       // Act
       const resultado = await pixAdapter.verificarStatus(cobrancaId);
 
       // Assert
-      expect(mockPayment.get).toHaveBeenCalledWith({ id: 1234567890 });
+      expect(mockPaymentInstance.get).toHaveBeenCalledWith({ id: 1234567890 });
       expect(resultado.id).toBe('1234567890');
       expect(resultado.valor).toBe(50);
       expect(resultado.codigoPix).toBe('status_qr_code');
@@ -184,7 +170,7 @@ describe('PixAdapter', () => {
 
     it('deve falhar quando API retorna erro ao verificar status', async () => {
       // Arrange
-      mockPayment.get.mockRejectedValue(new Error('Not Found'));
+      mockPaymentInstance.get.mockRejectedValue(new Error('Not Found'));
 
       // Act & Assert
       await expect(pixAdapter.verificarStatus('999999'))
@@ -204,7 +190,7 @@ describe('PixAdapter', () => {
       expect(resultado.id).toBe('demo-cobranca-id');
       expect(resultado.valor).toBe(0);
       expect(resultado.codigoPix).toBe('');
-      expect(mockPayment.get).not.toHaveBeenCalled();
+      expect(mockPaymentInstance.get).not.toHaveBeenCalled();
     });
   });
 
@@ -221,7 +207,7 @@ describe('PixAdapter', () => {
           },
         },
       };
-      mockPayment.create.mockResolvedValue(mockResponse);
+      mockPaymentInstance.create.mockResolvedValue(mockResponse);
 
       // Act
       const resultado = await pixAdapter.criarCobranca(1000, 'pedido-sem-qr-base64');
@@ -243,7 +229,7 @@ describe('PixAdapter', () => {
           },
         },
       };
-      mockPayment.create.mockResolvedValue(mockResponse);
+      mockPaymentInstance.create.mockResolvedValue(mockResponse);
 
       // Act
       const antes = new Date();

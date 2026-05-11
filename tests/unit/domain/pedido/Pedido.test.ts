@@ -28,7 +28,7 @@ describe('Pedido', () => {
     const pedidoProps: PedidoProps = {
       id: crypto.randomUUID(),
       restauranteId: 'restaurante-1',
-      status: StatusPedido.PENDING_PAYMENT,
+      status: StatusPedido.RECEIVED,
       itens: [],
       subtotal: Dinheiro.ZERO,
       tax: Dinheiro.ZERO,
@@ -37,7 +37,7 @@ describe('Pedido', () => {
       updatedAt: now,
       clienteId: props.clienteId,
       mesaId: props.mesaId,
-      status: props.status ?? StatusPedido.PENDING_PAYMENT,
+      status: props.status ?? StatusPedido.RECEIVED,
       restauranteId: props.restauranteId ?? 'restaurante-1',
       itens: props.itens ?? [],
       subtotal: props.subtotal ?? Dinheiro.ZERO,
@@ -53,7 +53,7 @@ describe('Pedido', () => {
 
       expect(pedido.id).toBeDefined();
       expect(pedido.restauranteId).toBe('restaurante-1');
-      expect(pedido.status).toEqual(StatusPedido.PENDING_PAYMENT);
+      expect(pedido.status).toEqual(StatusPedido.RECEIVED);
       expect(pedido.itens).toHaveLength(0);
       expect(pedido.subtotal).toEqual(Dinheiro.ZERO);
       expect(pedido.tax).toEqual(Dinheiro.ZERO);
@@ -150,16 +150,16 @@ describe('Pedido', () => {
     it('deve alterar o status do pedido', () => {
       const pedido = criarPedido({});
 
-      pedido.alterarStatus(StatusPedido.PAID);
+      pedido.alterarStatus(StatusPedido.PREPARING);
 
-      expect(pedido.status).toEqual(StatusPedido.PAID);
+      expect(pedido.status).toEqual(StatusPedido.PREPARING);
     });
 
     it('deve não alterar se status é o mesmo', () => {
-      const pedido = criarPedido({ status: StatusPedido.PENDING_PAYMENT });
+      const pedido = criarPedido({ status: StatusPedido.RECEIVED });
       const updatedAt = pedido.updatedAt;
 
-      pedido.alterarStatus(StatusPedido.PENDING_PAYMENT);
+      pedido.alterarStatus(StatusPedido.RECEIVED);
 
       expect(pedido.updatedAt).toEqual(updatedAt);
     });

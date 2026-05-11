@@ -3,11 +3,10 @@ import { StatusPedido } from '../value-objects/StatusPedido';
 import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 import { ItemPedido } from './ItemPedido';
 
-type StatusValue = 'pending_payment' | 'paid' | 'received' | 'preparing' | 'ready' | 'delivered' | 'rejected' | 'cancelled' | 'refunded' | 'payment_failed';
+type StatusValue = 'paid' | 'received' | 'preparing' | 'ready' | 'delivered' | 'rejected' | 'cancelled' | 'refunded' | 'payment_failed';
 
-/** FSM de transições válidas de status do pedido */
+/** FSM de transições válidas de status do pedido — MVP: sem pagamento */
 const TRANSICOES_VALIDAS: Record<StatusValue, StatusValue[]> = {
-  pending_payment: ['paid', 'payment_failed', 'cancelled'],
   paid: ['received', 'cancelled', 'rejected', 'refunded'],
   received: ['preparing', 'cancelled', 'rejected'],
   preparing: ['ready', 'cancelled', 'rejected'],

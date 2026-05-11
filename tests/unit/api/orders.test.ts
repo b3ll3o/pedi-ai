@@ -69,7 +69,7 @@ describe('POST /api/orders', () => {
     expect(res.status).toBe(400)
   })
 
-  it('retorna 400 quando payment_method inválido', async () => {
+  it('retorna 400 quando payment_method inválido (MVP: ignorado)', async () => {
     const body = { ...validBody, payment_method: 'bitcoin' }
     const req = makeRequest('POST', 'http://localhost/api/orders', body)
     const res = await POST(req)
