@@ -105,7 +105,7 @@ describe('Mesa', () => {
 
       mesa.desativar()
 
-      expect(mesa.atualizadoEm.getTime()).toBeGreaterThanOrEqual(createdAt.getTime())
+      expect(mesa.atualizadoEm.getTime()).toBeGreaterThanOrEqual(criadoEm.getTime())
     })
   })
 
@@ -134,7 +134,7 @@ describe('Mesa', () => {
 
       mesa.ativar()
 
-      expect(mesa.atualizadoEm.getTime()).toBeGreaterThanOrEqual(createdAt.getTime())
+      expect(mesa.atualizadoEm.getTime()).toBeGreaterThanOrEqual(criadoEm.getTime())
     })
   })
 
@@ -163,7 +163,7 @@ describe('Mesa', () => {
 
       mesa.atualizarLabel('Novo Label')
 
-      expect(mesa.atualizadoEm.getTime()).toBeGreaterThanOrEqual(createdAt.getTime())
+      expect(mesa.atualizadoEm.getTime()).toBeGreaterThanOrEqual(criadoEm.getTime())
     })
   })
 

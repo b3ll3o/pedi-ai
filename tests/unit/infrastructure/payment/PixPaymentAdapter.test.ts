@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { PixAdapter } from '@/infrastructure/external/PixAdapter';
-import { Payment } from 'mercadopago';
 
 // Mock do módulo mercadopago
 vi.mock('mercadopago', () => {
@@ -8,15 +7,30 @@ vi.mock('mercadopago', () => {
     create: vi.fn(),
     get: vi.fn(),
   };
+
+  class MockMercadoPagoConfig {
+    constructor(_options: { accessToken: string }) {}
+  }
+
+  class MockPayment {
+    create: typeof mockPaymentInstance.create;
+    get: typeof mockPaymentInstance.get;
+    constructor(_config: MockMercadoPagoConfig) {
+      return mockPaymentInstance;
+    }
+  }
+
   return {
-    MercadoPagoConfig: vi.fn().mockImplementation(() => ({})),
-    Payment: vi.fn(() => mockPaymentInstance),
+    MercadoPagoConfig: MockMercadoPagoConfig,
+    Payment: MockPayment,
+    __mockPaymentInstance: mockPaymentInstance,
   };
 });
 
 describe('PixAdapter', () => {
   let pixAdapter: PixAdapter;
-  let mockPayment: jest.Mocked<Payment>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let mockPayment: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -26,8 +40,13 @@ describe('PixAdapter', () => {
     // Recria o adapter com token de teste
     pixAdapter = new PixAdapter('TEST_TOKEN_123');
 
-    // Acessa o client interno via reflection (não exposto públicamente, mas necessário para mock)
-    mockPayment = (Payment as unknown as jest.Mock).mock.results[0]?.value as jest.Mocked<Payment>;
+    // Acessa a instância mockada
+    const { __mockPaymentInstance } = require('mercadopago');
+    mockPayment = __mockPaymentInstance;
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   afterEach(() => {
