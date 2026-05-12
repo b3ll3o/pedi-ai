@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Playwright reports (generated, not source code)
+    "tests/e2e/playwright-report/**",
+    "test-results/**",
+    "playwright-traces/**",
   ]),
   // DDD Domain Layer Rules - Block cross-layer imports
   {

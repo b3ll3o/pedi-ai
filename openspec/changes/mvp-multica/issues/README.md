@@ -94,14 +94,20 @@ Agent cria próximo issue se houver dependência
 ## Formato de Filename
 
 ```
-YYYY-MM-DD-{tipo}-{descricao-curta}.md
+YYYY-MM-DD-PED-{numero}-{tipo}-{descricao-curta}.md
 ```
 
 Exemplos:
-- `2026-05-11-frontend-cardapio-publico.md`
-- `2026-05-11-backend-checkout-sem-pagamento.md`
-- `2026-05-11-qa-testes-e2e-cliente.md`
-- `2026-05-11-explorer-analise-kds.md`
+- `2026-05-11-PED-001-frontend-cardapio-publico.md`
+- `2026-05-11-PED-002-backend-checkout-sem-pagamento.md`
+- `2026-05-11-PED-003-qa-testes-e2e-cliente.md`
+- `2026-05-11-PED-004-explorer-analise-kds.md`
+
+### Numeração Sequencial
+
+- Usar `PED-{numero}` com 3 dígitos (001, 002, etc.)
+- Próximo número disponível: verificar maior número em `issues/` e adicionar 1
+- Manter consistência: não renomear issues existentes`
 
 ---
 

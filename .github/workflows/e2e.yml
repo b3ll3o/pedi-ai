@@ -61,26 +61,6 @@ jobs:
         env:
           NODE_ENV: e2e
 
-      - name: Start dev server
-        if: steps.check-secrets.outputs.skip_tests != 'true'
-        run: pnpm dev &
-        env:
-          NODE_ENV: e2e
-
-      - name: Wait for dev server
-        if: steps.check-secrets.outputs.skip_tests != 'true'
-        run: |
-          for i in {1..30}; do
-            if curl -s http://localhost:3000 > /dev/null 2>&1; then
-              echo "Dev server is ready"
-              exit 0
-            fi
-            echo "Waiting for dev server... ($i/30)"
-            sleep 2
-          done
-          echo "Dev server failed to start"
-          exit 1
-
       - name: Run E2E tests (Shard ${{ matrix.shard }})
         if: steps.check-secrets.outputs.skip_tests != 'true'
         run: pnpm test:e2e --shard=${{ matrix.shard }}/4
