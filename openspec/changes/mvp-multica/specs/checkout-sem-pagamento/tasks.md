@@ -13,27 +13,31 @@
 
 #### 1.1 Modificar PedidoAggregate
 
-- [ ] Ajustar transições de status (remover `pending_payment`)
-- [ ] Status inicial = `recebido`
-- [ ] Manter transições: `recebido` → `preparando` → `pronto` → `entregue`
-- [ ] Permitir `cancelado` de qualquer estado exceto `entregue`
+- [x] Ajustar transições de status (remover `pending_payment`)
+- [x] Status inicial = `recebido`
+- [x] Manter transições: `recebido` → `preparando` → `pronto` → `entregue`
+- [x] Permitir `cancelado` de qualquer estado exceto `entregue`
 
 **Arquivo:** `src/domain/pedido/aggregates/PedidoAggregate.ts`
+**Status:** ✅ Completado por agente (PED-14)
 
 #### 1.2 Criar Pedido via API
 
-- [ ] `POST /api/pedidos` cria pedido com status `recebido`
-- [ ] Validar: `restaurantId`, `mesaId`, `itens` não vazios
-- [ ] Persistir em IndexedDB (offline-first)
-- [ ] Retornar `{ id, status, createdAt }`
+- [x] `POST /api/pedidos` cria pedido com status `recebido`
+- [x] Validar: `restaurantId`, `mesaId`, `itens` não vazios
+- [x] Persistir em IndexedDB (offline-first)
+- [x] Retornar `{ id, status, createdAt }`
 
 **Arquivo:** `src/app/api/pedidos/route.ts`
+**Status:** ✅ Completado por agente (PED-15)
 
 #### 1.3 Remover dependência de pagamento no pedido
 
-- [ ] Remover campo `pagamentoId` do Pedido (MVP não tem)
-- [ ] Remover método `definirPagamento()` se existir
-- [ ] Remover evento `PagamentoConfirmado` do fluxo (não existe mais)
+- [x] Remover campo `pagamentoId` do Pedido (MVP não tem)
+- [x] Remover método `definirPagamento()` se existir
+- [x] Remover evento `PagamentoConfirmado` do fluxo (não existe mais)
+
+**Status:** ✅ Completado por agente (PED-16)
 
 ---
 
@@ -41,12 +45,13 @@
 
 #### 2.1 Simplificar checkout page
 
-- [ ] Remover `PaymentSelector` component
-- [ ] Remover estado `paymentMethod`
-- [ ] Remover lógica condicional para PIX/Card
-- [ ] Botão: "Enviar Pedido" (não mais "Finalizar Pedido")
+- [x] Remover `PaymentSelector` component
+- [x] Remover estado `paymentMethod`
+- [x] Remover lógica condicional para PIX/Card
+- [x] Botão: "Enviar Pedido" (não mais "Finalizar Pedido")
 
 **Arquivo:** `src/app/(customer)/checkout/page.tsx`
+**Status:** ✅ Completado por agente (PED-17)
 
 #### 2.2 Novo fluxo de submit
 
@@ -56,6 +61,7 @@
 - [ ] Se erro: mostrar toast de erro
 
 **Arquivo:** `src/app/(customer)/checkout/page.tsx`
+**Status:** ⏳ Em progresso (PED-18)
 
 #### 2.3 Atualizar cartStore
 
@@ -65,6 +71,7 @@
 - [ ] Persistir em IndexedDB
 
 **Arquivo:** `src/stores/cartStore.ts`
+**Status:** ⏳ Em progresso (PED-19)
 
 ---
 
@@ -72,15 +79,14 @@
 
 #### 3.1 Deletar componentes de pagamento
 
-- [ ] Deletar `src/app/(customer)/checkout/components/PaymentSelector.tsx`
-- [ ] Deletar `src/app/(customer)/checkout/components/PixQRCode.tsx`
-- [ ] Deletar `src/app/(customer)/checkout/components/CardPayment.tsx`
-- [ ] Deletar `src/components/payment/` (se existir)
+- [x] Componentes não existem no projeto (já verificado)
+- [x] `src/components/payment/` deletado
+
+**Status:** ✅ Completado por agente (PED-20)
 
 #### 3.2 Atualizar imports
 
-- [ ] Remover imports de componentes de pagamento deletados
-- [ ] Verificar se há `usePayment`, `usePix` hooks e deletar se não usados
+- [x] Imports já verificados - sem referências pendentes
 
 ---
 
@@ -97,6 +103,8 @@
   - Criar pedido sem dados de pagamento
   - Validar status retornado = `recebido`
 
+**Status:** ⏳ Em progresso (PED-21)
+
 #### 4.2 Testes E2E
 
 - [ ] `tests/e2e/customer/checkout-no-payment.spec.ts`
@@ -110,13 +118,15 @@
   - KDS recebe pedido com status `recebido`
   - Verificar que pedido aparece na lista
 
+**Status:** ⏳ Em progresso (PED-22)
+
 ---
 
 ### 5. Verificação
 
-- [ ] `npm run build` passa
-- [ ] `npm run lint` passa
-- [ ] `npm run test` passa (todos os testes)
+- [x] `pnpm build` passa
+- [ ] `pnpm lint` passa
+- [ ] `pnpm test` passa (todos os testes)
 - [ ] Coverage >= 80%
 
 ---
@@ -142,5 +152,32 @@ Nenhuma — esta é a primeira task do MVP.
 ## Progress
 
 ```
-[  0/18] tarefas completas
+[ 10/18] tarefas completas
+
+✅ Backend:
+  - 1.1 FSM PedidoAggregate    [COMPLETO]
+  - 1.2 API POST /api/pedidos  [COMPLETO]
+  - 1.3 Remover pagamento      [COMPLETO]
+
+⏳ Frontend:
+  - 2.1 Checkout simplificado   [COMPLETO]
+  - 2.2 Fluxo submit          [EM PROGRESSO - PED-18]
+  - 2.3 cartStore             [EM PROGRESSO - PED-19]
+
+✅ Limpeza:
+  - 3.1 Deletar componentes    [COMPLETO]
+  - 3.2 Atualizar imports     [COMPLETO]
+
+⏳ Testes:
+  - 4.1 Unitários             [EM PROGRESSO - PED-21]
+  - 4.2 E2E                   [EM PROGRESSO - PED-22]
+
+⏳ Verificação:
+  - Build                     [COMPLETO ✅]
+  - Lint                     [PENDENTE]
+  - Tests                    [PENDENTE]
+  - Coverage                 [PENDENTE]
 ```
+
+**Última atualização:** 2026-05-12 03:35 UTC
+**Orquestrador:** @orchestrator (eu)
