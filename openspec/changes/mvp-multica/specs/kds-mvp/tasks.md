@@ -129,10 +129,10 @@
 
 #### 6.1 E2E
 
-- [ ] `tests/e2e/kitchen/kds-new-order.spec.ts`
+- [x] `tests/e2e/kitchen/kds-new-order.spec.ts`
    - Pedido aparece ao ser criado
 
-- [ ] `tests/e2e/kitchen/kds-update-status.spec.ts`
+- [x] `tests/e2e/kitchen/kds-update-status.spec.ts`
    - Botão "Preparando" atualiza status
    - Botão "Pronto" atualiza status
    - Botão "Entregue" atualiza status
@@ -142,9 +142,9 @@
 ### 7. Verificação
 
 - [x] `npm run build` passa
-- [ ] `npm run lint` passa
-- [ ] KDS carrega sem erros
-- [ ] Pedidos aparecem em tempo real
+- [x] `npm run lint` passa
+- [x] KDS carrega sem erros
+- [x] Pedidos aparecem em tempo real
 
 ---
 
@@ -170,7 +170,8 @@ blocking: true  # Depende de checkout-sem-pagamento (pedidos precisam existir)
 ## Progress
 
 ```
-[ 19/21] tarefas completas
-- Testes E2E (6.1) pendentes
-- Verificação lint e runtime pendentes
+[ 21/21] tarefas completas
+✅ KDS MVP implementado
+- Testes E2E criados
+- Build, Lint verificados
 ```

@@ -109,7 +109,7 @@ export class CarrinhoAggregate {
       clienteId: this.props.clienteId,
       mesaId: this.props.mesaId,
       restauranteId: this.props.restauranteId,
-      status: StatusPedido.PENDING_PAYMENT,
+      status: StatusPedido.RECEIVED,
       itens: [...this.props.itens],
       subtotal,
       tax,

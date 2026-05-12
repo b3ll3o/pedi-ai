@@ -87,6 +87,7 @@ describe('CriarPedidoUseCase', () => {
       expect(resultado.pedido).toBeDefined();
       expect(resultado.pedido.clienteId).toBe('cliente-456');
       expect(resultado.pedido.mesaId).toBe('mesa-789');
+      expect(resultado.pedido.status.toString()).toBe('received');
       expect(mockPedidoRepo.create).toHaveBeenCalled();
       expect(mockCarrinhoRepo.clear).toHaveBeenCalled();
     });

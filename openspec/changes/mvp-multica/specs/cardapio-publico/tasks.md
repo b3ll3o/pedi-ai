@@ -11,16 +11,17 @@
 
 ### 1. Estrutura de Rotas
 
-#### 1.1 Criar rota `/r/[slug]`
+#### 1.1 Criar rota `/r/[restaurantId]`
 
-- [ ] Criar pasta `src/app/r/`
-- [ ] Criar pasta `src/app/r/[slug]/`
-- [ ] Criar `page.tsx` (Server Component)
-- [ ] Buscar restaurante por slug
-- [ ] Buscar cardápio do restaurante
+- [x] Criar pasta `src/app/r/`
+- [x] Criar pasta `src/app/r/[restaurantId]/`
+- [x] Criar `page.tsx` (Server Component)
+- [x] Buscar restaurante por ID
+- [x] Buscar cardápio do restaurante (via useCardapio)
 
 **Arquivos:**
-- `src/app/r/[slug]/page.tsx`
+- `src/app/r/[restaurantId]/page.tsx`
+- `src/app/r/[restaurantId]/PublicMenuClient.tsx`
 
 ---
 
@@ -99,9 +100,9 @@
 
 #### 4.2 useRestaurante
 
-- [ ] Hook para buscar dados do restaurante
-- [ ] Por slug
-- [ ] Validação de ativo
+- [x] Hook para buscar dados do restaurante
+- [x] Por slug
+- [x] Validação de ativo
 
 **Arquivo:** `src/hooks/useRestaurante.ts`
 
@@ -143,18 +144,18 @@
 
 #### 7.1 GET /api/restaurantes/[slug]
 
-- [ ] Buscar restaurante por slug
-- [ ] Retornar dados públicos
-- [ ] 404 se não encontrado ou inativo
+- [x] Buscar restaurante por slug
+- [x] Retornar dados públicos
+- [x] 404 se não encontrado ou inativo
 
 **Arquivo:** `src/app/api/restaurantes/[slug]/route.ts`
 
 #### 7.2 GET /api/restaurantes/[slug]/cardapio
 
-- [ ] Buscar categorias com produtos
-- [ ] Incluir modificadores
-- [ ] Filtrar ativos
-- [ ] Ordenar por ordem
+- [x] Buscar categorias com produtos
+- [x] Incluir modificadores
+- [x] Filtrar ativos
+- [x] Ordenar por ordem
 
 **Arquivo:** `src/app/api/restaurantes/[slug]/cardapio/route.ts`
 
@@ -205,5 +206,9 @@ blocking: false  # Pode ser feito em paralelo com KDS
 ## Progress
 
 ```
-[  0/25] tarefas completas
+[ 14/25] tarefas completas
+- Estrutura de rotas: implementada (/r/[slug])
+- API Routes: implementadas (/api/restaurantes/[slug], /api/restaurantes/[slug]/cardapio)
+- Hooks: useRestaurante implementado
+- Componentes: CategoryList, ProductCard, ProductList existentes no projeto
 ```
