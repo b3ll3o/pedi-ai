@@ -19,3 +19,5 @@ export { useCriarPixCharge } from './usePagamento';
 export type { PixCharge } from './usePagamento';
 export { useCustomerOrderNotifications, getStatusLabel } from './useCustomerOrderNotifications';
 export type { UseCustomerOrderNotificationsOptions, UseCustomerOrderNotificationsResult, OrderUpdatePayload, OrderStatus } from './useCustomerOrderNotifications';
+export { usePedidosKDS } from './usePedidosKDS';
+export type { PedidoKDS, UsePedidosKDSOptions, UsePedidosKDSResult } from './usePedidosKDS';

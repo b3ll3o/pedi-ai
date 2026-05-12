@@ -13,18 +13,18 @@
 
 #### 1.1 Verificar KDS existente
 
-- [ ] Verificar `src/app/kitchen/page.tsx`
-- [ ] Verificar `src/components/kitchen/` ou `src/components/kds/`
-- [ ] Mapear o que já existe vs precisa criar
+- [x] Verificar `src/app/kitchen/page.tsx`
+- [x] Verificar `src/components/kitchen/` ou `src/components/kds/`
+- [x] Mapear o que já existe vs precisa criar
 
 **Arquivos:** `src/app/kitchen/page.tsx`
 
 #### 1.2 Adaptar page para MVP
 
-- [ ] Remover lógica de pagamento (não existe mais)
-- [ ] Adicionar filtros por status
-- [ ] Integrar real-time
-- [ ] Adicionar audio alert
+- [x] Remover lógica de pagamento (não existe mais)
+- [x] Adicionar filtros por status
+- [x] Integrar real-time
+- [x] Adicionar audio alert
 
 **Arquivos:** `src/app/kitchen/page.tsx`
 
@@ -34,37 +34,37 @@
 
 #### 2.1 OrderCard
 
-- [ ] Criar componente `OrderCard`
-- [ ] Exibir número do pedido, mesa, itens
-- [ ] Exibir tempo desde criação
-- [ ] Exibir botão de ação baseado no status
-- [ ] Hook para som ao receber novo pedido
+- [x] Criar componente `OrderCard`
+- [x] Exibir número do pedido, mesa, itens
+- [x] Exibir tempo desde criação
+- [x] Exibir botão de ação baseado no status
+- [x] Hook para som ao receber novo pedido
 
 **Arquivo:** `src/components/kds/OrderCard.tsx`
 
 #### 2.2 Timer
 
-- [ ] Criar componente `Timer`
-- [ ] Atualizar automaticamente
-- [ ] Formatar: "X min" ou "Xh Ymin"
-- [ ] Cor baseada no tempo (verde/amarelo/vermelho)
+- [x] Criar componente `Timer`
+- [x] Atualizar automaticamente
+- [x] Formatar: "X min" ou "Xh Ymin"
+- [x] Cor baseada no tempo (verde/amarelo/vermelho)
 
 **Arquivo:** `src/components/kds/Timer.tsx`
 
 #### 2.3 OrderList
 
-- [ ] Criar componente `OrderList`
-- [ ] Receber lista de pedidos
-- [ ] Renderizar OrderCards
-- [ ] Agrupar por status em colunas (desktop)
+- [x] Criar componente `OrderList`
+- [x] Receber lista de pedidos
+- [x] Renderizar OrderCards
+- [x] Agrupar por status em colunas (desktop)
 
 **Arquivo:** `src/components/kds/OrderList.tsx`
 
 #### 2.4 StatusFilter
 
-- [ ] Criar componente `StatusFilter`
-- [ ] Botões para filtrar: Todos, Recebido, Preparando, Pronto
-- [ ] Estado ativo visual
+- [x] Criar componente `StatusFilter`
+- [x] Botões para filtrar: Todos, Recebido, Preparando, Pronto
+- [x] Estado ativo visual
 
 **Arquivo:** `src/components/kds/StatusFilter.tsx`
 
@@ -74,26 +74,26 @@
 
 #### 3.1 Listar pedidos
 
-- [ ] Hook `usePedidosKDS()`
-- [ ] Buscar pedidos com status `recebido`, `preparando`, `pronto`
-- [ ] Ordenar por `createdAt`
-- [ ] Incluir dados da mesa
+- [x] Hook `usePedidosKDS()`
+- [x] Buscar pedidos com status `paid`, `preparando`, `pronto` (adaptado ao DB enum)
+- [x] Ordenar por `createdAt`
+- [x] Incluir dados da mesa
 
 **Arquivo:** `src/hooks/usePedidosKDS.ts`
 
 #### 3.2 Atualizar status
 
-- [ ] Função `atualizarStatusPedido(id, status)`
-- [ ] Chamar `PATCH /api/pedidos/[id]/status`
-- [ ] Atualizar store local
+- [x] Função `atualizarStatusPedido(id, status)`
+- [x] Chamar `PATCH /api/admin/orders/[id]/status`
+- [x] Atualizar store local
 
 **Arquivo:** `src/hooks/usePedidosKDS.ts`
 
 #### 3.3 Real-time
 
-- [ ] Configurar Supabase Realtime subscription
-- [ ] Atualizar lista quando houver mudanças
-- [ ] Tocar som quando novo pedido chega
+- [x] Configurar Supabase Realtime subscription
+- [x] Atualizar lista quando houver mudanças
+- [x] Tocar som quando novo pedido chega
 
 **Arquivo:** `src/hooks/usePedidosKDS.ts`
 
@@ -103,9 +103,9 @@
 
 #### 4.1 Alert de novo pedido
 
-- [ ] Adicionar arquivo de som `/public/sounds/new-order.mp3`
-- [ ] Hook ou util para tocar som
-- [ ] Tocar quando `recebido` é adicionado
+- [x] Adicionar arquivo de som `/public/sounds/new-order.mp3`
+- [x] Hook ou util para tocar som
+- [x] Tocar quando `paid` é adicionado (usando Web Audio API)
 
 ---
 
@@ -113,15 +113,15 @@
 
 #### 5.1 Responsive
 
-- [ ] Mobile: 1 coluna
-- [ ] Tablet: 2 colunas
-- [ ] Desktop: 3 colunas (status分组)
+- [x] Mobile: 1 coluna
+- [x] Tablet: 2 colunas
+- [x] Desktop: 3 colunas (status分组)
 
 #### 5.2 Visual
 
-- [ ] Animação ao receber novo pedido (highlight)
-- [ ] Cores para cada status
-- [ ] Indicador de tempo crítico (>10min)
+- [x] Animação ao receber novo pedido (highlight)
+- [x] Cores para cada status
+- [x] Indicador de tempo crítico (>10min)
 
 ---
 
@@ -130,18 +130,18 @@
 #### 6.1 E2E
 
 - [ ] `tests/e2e/kitchen/kds-new-order.spec.ts`
-  - Pedido aparece ao ser criado
+   - Pedido aparece ao ser criado
 
 - [ ] `tests/e2e/kitchen/kds-update-status.spec.ts`
-  - Botão "Preparando" atualiza status
-  - Botão "Pronto" atualiza status
-  - Botão "Entregue" atualiza status
+   - Botão "Preparando" atualiza status
+   - Botão "Pronto" atualiza status
+   - Botão "Entregue" atualiza status
 
 ---
 
 ### 7. Verificação
 
-- [ ] `npm run build` passa
+- [x] `npm run build` passa
 - [ ] `npm run lint` passa
 - [ ] KDS carrega sem erros
 - [ ] Pedidos aparecem em tempo real
@@ -170,5 +170,7 @@ blocking: true  # Depende de checkout-sem-pagamento (pedidos precisam existir)
 ## Progress
 
 ```
-[  0/21] tarefas completas
+[ 19/21] tarefas completas
+- Testes E2E (6.1) pendentes
+- Verificação lint e runtime pendentes
 ```

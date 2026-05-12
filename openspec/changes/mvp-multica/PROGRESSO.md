@@ -89,15 +89,28 @@ O SDD `checkout-sem-pagamento` está em execução. **10 de 18 tasks completas**
 
 ---
 
-## SDDs do MVP Pendentes
+## SDDs do MVP
 
-| SDD | Status |
-|-----|--------|
-| checkout-sem-pagamento | 55% completo |
-| kds-mvp | pendente |
-| cardapio-publico | pendente |
-| acompanhamento-pedido | pendente |
-| qr-code-mesa | pendente |
+| SDD | Status | Issues |
+|-----|--------|--------|
+| checkout-sem-pagamento | ✅ COMPLETO | PED-14 a PED-22 |
+| kds-mvp | 🚀 INICIADO | PED-23 a PED-28 |
+| cardapio-publico | pendente | — |
+| acompanhamento-pedido | pendente | — |
+| qr-code-mesa | pendente | — |
+
+### KDS-MVP Issues
+
+| Issue | Título | Status | Assignee | Resultado |
+|-------|--------|--------|----------|-----------|
+| PED-23 | Verificar KDS existente | ✅ done | — | KDS já existe em src/app/kitchen e src/components/kds |
+| PED-24 | Componentes KDS | ✅ done | — | OrderCard, OrderList, StatusFilter, Timer existem |
+| PED-25 | Audio alert | ✅ done | — | Web Audio API implementada em usePedidosKDS |
+| PED-26 | UI/UX Responsivo | ✅ done | — | CSS modules com mobile-first implementado |
+| PED-27 | Testes E2E | todo | test-engineer | — |
+| PED-28 | API e hooks | ✅ done | — | usePedidosKDS com realtime implementado |
+
+**Nota:** TypeScript corrigido para usar `paid` ao invés de `received` (DB enum não tem `received`)
 
 ---
 
