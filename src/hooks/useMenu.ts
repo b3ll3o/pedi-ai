@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import type { categories, products, restaurants } from '@/lib/supabase/types';
 import { getCachedMenu } from '@/lib/offline/cache';
-import { useMenuStore } from '@/stores/menuStore';
+import { useMenuStore } from '@/infrastructure/persistence/menuStore';
 
 export type MenuResponse = {
   restaurant: restaurants;

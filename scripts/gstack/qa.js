@@ -17,7 +17,7 @@ console.log('1. Verificando se servidor está rodando...')
 try {
   execSync(`curl -s ${url} > /dev/null`, { stdio: 'pipe' })
   console.log('   ✅ Servidor está respondendo\n')
-} catch (e) {
+} catch (_e) {
   console.log('   ❌ Servidor não está respondendo')
   console.log('   Execute: pnpm dev\n')
   process.exit(1)
@@ -30,7 +30,7 @@ try {
     stdio: 'inherit'
   })
   console.log('\n   ✅ E2E tests passaram\n')
-} catch (e) {
+} catch (_e) {
   console.log('\n   ❌ E2E tests falharam\n')
   process.exit(1)
 }
@@ -41,7 +41,7 @@ try {
     cwd: ROOT,
     stdio: 'pipe'
   })
-} catch (e) {
+} catch (_e) {
   console.log('   Relatório disponível em: playwright-report/index.html')
 }
 

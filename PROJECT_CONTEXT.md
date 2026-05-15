@@ -104,9 +104,9 @@ src/
 Cliente escaneia QR code
   → Validação de mesa (src/lib/qr.ts com HMAC-SHA256)
   → Navega cardápio (src/app/(customer)/menu/)
-  → Adiciona itens ao carrinho (src/stores/cartStore.ts)
+  → Adiciona itens ao carrinho (src/infrastructure/persistence/cartStore.ts)
   → Checkout via Pix ou Stripe (src/components/payment/)
-  → Pedido criado (src/services/orderService.ts)
+  → Pedido criado (src/application/pedido/services/CriarPedidoUseCase.ts)
   → Sincronização offline se sem conexão (src/lib/offline/)
 ```
 
@@ -115,7 +115,7 @@ Cliente escaneia QR code
 ```
 Admin faz login (src/lib/auth/)
   → Dashboard admin (src/app/admin/dashboard/)
-  → Gerencia categorias, produtos, combos, modificadores (src/services/)
+  → Gerencia categorias, produtos, combos, modificadores (src/application/admin/services/)
   → Acompanha pedidos em tempo real (Supabase Realtime)
   → Atualiza status de pedidos
 ```

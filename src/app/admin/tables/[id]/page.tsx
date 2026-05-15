@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { getTable, updateTable } from '@/services/tableService'
+import { getTable, updateTable } from '@/application/services/tableService'
 import { getSession } from '@/lib/supabase/auth'
 import type { tables } from '@/lib/supabase/types'
 import styles from './page.module.css'

@@ -23,7 +23,7 @@
  */
 import { defineConfig, devices } from '@playwright/test'
 import path from 'path'
-import os from 'os'
+import _os from 'os'
 import * as dotenv from 'dotenv'
 
 // Load .env.e2e BEFORE evaluating process.env.BASE_URL

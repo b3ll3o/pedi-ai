@@ -6,7 +6,7 @@ import { KitchenDisplay } from './KitchenDisplay'
 import { OrderNotification } from './OrderNotification'
 import { ConnectionStatus } from './ConnectionStatus'
 import { useKitchenOrders } from '@/hooks/useKitchenOrders'
-import { updateOrderStatus } from '@/services/adminOrderService'
+import { updateOrderStatus } from '@/application/services/adminOrderService'
 import styles from './WaiterDashboard.module.css'
 
 interface WaiterDashboardProps {

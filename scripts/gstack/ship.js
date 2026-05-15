@@ -30,7 +30,7 @@ for (const step of steps) {
     try {
       execSync(step.cmd, { cwd: ROOT, stdio: 'pipe' })
       console.log(`   ✅ ${step.name} passou`)
-    } catch (e) {
+    } catch (_e) {
       console.log(`   ❌ ${step.name} falhou`)
       console.log(`   Comando: ${step.cmd}`)
       process.exit(1)

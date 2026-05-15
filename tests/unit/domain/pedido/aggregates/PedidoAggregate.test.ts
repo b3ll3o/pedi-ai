@@ -85,7 +85,7 @@ describe('PedidoAggregate', () => {
     });
 
     it('deve despachar PedidoCriadoEvent ao criar aggregate', () => {
-      const aggregate = PedidoAggregate.criar({
+      const _aggregate = PedidoAggregate.criar({
         id: crypto.randomUUID(),
         restauranteId: 'restaurante-123',
         status: StatusPedido.RECEIVED,
@@ -227,7 +227,7 @@ describe('PedidoAggregate', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      const pedido = new Pedido({ ...props });
+      const _pedido = new Pedido({ ...props });
 
       const aggregate = PedidoAggregate.reconstruir(props);
 

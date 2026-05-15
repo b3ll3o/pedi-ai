@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useValidarQRCode } from '@/hooks/useMesa';
-import { useTableStore } from '@/stores/tableStore';
+import { useTableStore } from '@/infrastructure/persistence/tableStore';
 import Logo from '@/app/components/Logo';
 import styles from './page.module.css';
 

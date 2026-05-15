@@ -61,16 +61,16 @@ async function clearIndexedDB(page: import('@playwright/test').Page): Promise<vo
   await page.evaluate(() => indexedDB.deleteDatabase('pedi'))
 }
 
-async function getOfflineBanner(page: import('@playwright/test').Page): Promise<boolean> {
+async function _getOfflineBanner(page: import('@playwright/test').Page): Promise<boolean> {
   return page.locator('[data-testid="offline-indicator"]').isVisible()
 }
 
-async function waitForOnlineToast(page: import('@playwright/test').Page, timeout = 5000): Promise<void> {
+async function _waitForOnlineToast(page: import('@playwright/test').Page, timeout = 5000): Promise<void> {
   await expect(page.locator('[data-testid="online-indicator"]')).toBeVisible({ timeout })
 }
 
 test.describe('Offline Flow — PED-5', () => {
-  test.beforeEach(async ({ browser }) => {
+  test.beforeEach(async ({ _browser}) => {
     const seedData = loadSeedData()
     const storagePath = getStoragePath(seedData.customer.email)
     if (!fs.existsSync(storagePath)) {
@@ -264,7 +264,7 @@ test.describe('Offline Flow — PED-5', () => {
 
     const page = await context.newPage()
     const menuPage = new MenuPage(page)
-    const cartPage = new CartPage(page)
+    const _cartPage = new CartPage(page)
     const checkoutPage = new CheckoutPage(page)
 
     // Online: add item
@@ -393,7 +393,7 @@ test.describe('Offline Flow — PED-5', () => {
     const tabB = await context.newPage()
 
     const menuPageA = new MenuPage(tabA)
-    const cartPageA = new CartPage(tabA)
+    const _cartPageA = new CartPage(tabA)
     const cartPageB = new CartPage(tabB)
 
     // Tab A: load menu online

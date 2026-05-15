@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 // Use vi.hoisted to ensure mock variables are available when vi.mock runs
-const { pendingSyncData, mockDb } = vi.hoisted(() => {
+const { _pendingSyncData, mockDb } = vi.hoisted(() => {
   const pendingSyncData: Map<number, any> = new Map();
   let idCounter = 0;
 

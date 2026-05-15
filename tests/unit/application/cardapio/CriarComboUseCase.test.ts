@@ -6,7 +6,7 @@ import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro'
 import { TipoItemCardapio } from '@/domain/cardapio/value-objects/TipoItemCardapio'
 import { ItemCardapio } from '@/domain/cardapio/entities/ItemCardapio'
 import { Combo } from '@/domain/cardapio/entities/Combo'
-import { LabelDietetico } from '@/domain/cardapio/value-objects/LabelDietetico'
+import { _LabelDietetico } from '@/domain/cardapio/value-objects/LabelDietetico'
 
 describe('CriarComboUseCase', () => {
   let useCase: CriarComboUseCase

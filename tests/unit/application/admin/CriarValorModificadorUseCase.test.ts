@@ -58,7 +58,7 @@ describe('CriarValorModificadorUseCase', () => {
     it('deve criar valor de modificador com dados válidos', async () => {
       // Arrange
       const grupoData = criarGrupoValido()
-      const grupo = ModificadorGrupo.criar(grupoData)
+      const _grupo = ModificadorGrupo.criar(grupoData)
       mockGrupoRepo.buscarPorId.mockResolvedValue(ModificadorGrupo.reconstruir(criarGrupoValido()))
       mockGrupoRepo.salvar.mockImplementation(async (g) => g)
 
@@ -81,7 +81,7 @@ describe('CriarValorModificadorUseCase', () => {
     it('deve retornar valor criado com ID', async () => {
       // Arrange
       const grupoData = criarGrupoValido()
-      const grupo = ModificadorGrupo.criar(grupoData)
+      const _grupo = ModificadorGrupo.criar(grupoData)
       mockGrupoRepo.buscarPorId.mockResolvedValue(ModificadorGrupo.reconstruir(criarGrupoValido()))
       mockGrupoRepo.salvar.mockImplementation(async (g) => g)
 
@@ -115,7 +115,7 @@ describe('CriarValorModificadorUseCase', () => {
     it('deve lançar erro se nome estiver vazio', async () => {
       // Arrange
       const grupoData = criarGrupoValido()
-      const grupo = ModificadorGrupo.criar(grupoData)
+      const _grupo = ModificadorGrupo.criar(grupoData)
       mockGrupoRepo.buscarPorId.mockResolvedValue(ModificadorGrupo.reconstruir(criarGrupoValido()))
 
       const { CriarValorModificadorUseCase } = await import('@/application/admin/services/CriarValorModificadorUseCase')
@@ -130,7 +130,7 @@ describe('CriarValorModificadorUseCase', () => {
     it('deve criar valor com ajuste de preço correto', async () => {
       // Arrange
       const grupoData = criarGrupoValido()
-      const grupo = ModificadorGrupo.criar(grupoData)
+      const _grupo = ModificadorGrupo.criar(grupoData)
       mockGrupoRepo.buscarPorId.mockResolvedValue(ModificadorGrupo.reconstruir(criarGrupoValido()))
       mockGrupoRepo.salvar.mockImplementation(async (g) => g)
 

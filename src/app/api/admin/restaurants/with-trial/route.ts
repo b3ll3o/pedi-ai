@@ -9,7 +9,7 @@ const MONTHLY_PRICE = 19.99; // R$ 19,99
  * Get trial and subscription info for the current user's restaurants
  * GET /api/admin/restaurants/with-trial
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
  * Initialize trial when first restaurant is created
  * POST /api/admin/restaurants/with-trial
  */
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();

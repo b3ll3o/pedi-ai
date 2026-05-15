@@ -50,11 +50,11 @@ import {
   getPeakHours,
   getPedidosPorPeriodo,
   type AnalyticsFilters,
-} from '@/services/analyticsService'
+} from '@/application/services/analyticsService'
 
 // ── Types for getPedidosPorPeriodo ────────────────────────────────────────────
 
-interface PedidosPorPeriodoResponse {
+interface _PedidosPorPeriodoResponse {
   orders_by_period: {
     day?: Record<string, { count: number; revenue: number }>
     week?: Record<string, { count: number; revenue: number }>

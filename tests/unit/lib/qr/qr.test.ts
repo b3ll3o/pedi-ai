@@ -30,7 +30,7 @@ describe('QR Generator', () => {
     })
 
     it('deve gerar signature consistente para mesma entrada', () => {
-      const timestamp = 1700000000000
+      const _timestamp = 1700000000000
       // Não é possível testar sem mockar Date.now(), mas o teste de validateQRPayload serve como proxy
       expect(true).toBe(true)
     })

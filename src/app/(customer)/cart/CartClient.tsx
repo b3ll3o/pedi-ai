@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { useCartStore } from '@/stores/cartStore';
+import { useCartStore } from '@/infrastructure/persistence/cartStore';
 import { CartItem } from '@/components/cart/CartItem';
 import { CartSummary } from '@/components/cart/CartSummary';
 import { CustomerHeader } from '@/components/customer/CustomerHeader';

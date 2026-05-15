@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { PedidoRepository } from '@/infrastructure/persistence/pedido/PedidoRepository';
 import { Pedido } from '@/domain/pedido/entities/Pedido';
 import { StatusPedido } from '@/domain/pedido/value-objects/StatusPedido';
-import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
+import { _Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 import { createTestDatabase } from '../_test-helpers';
 
 describe('PedidoRepository', () => {
@@ -20,7 +20,7 @@ describe('PedidoRepository', () => {
       restauranteId: overrides?.restauranteId ?? 'rest-123',
       itens: [],
       status: overrides?.status ?? StatusPedido.RECEIVED,
-      id: overrides?.id,
+      id: overrides?.id ?? 'pedido-001',
     });
   }
 

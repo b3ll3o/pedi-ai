@@ -6,7 +6,7 @@
 import { useEffect, useCallback, useState, useRef } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
-import type { OrderWithItems } from '@/services/adminOrderService'
+import type { OrderWithItems } from '@/application/services/adminOrderService'
 
 const POLLING_INTERVAL = 10000 // 10 seconds fallback
 

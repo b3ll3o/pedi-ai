@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import type { OrderWithItems, OrderStatus } from '@/services/adminOrderService'
+import type { OrderWithItems, OrderStatus } from '@/application/services/adminOrderService'
 import styles from './OrderList.module.css'
 
 interface OrderListProps {

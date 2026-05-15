@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { LogOut } from 'lucide-react';
-import { useCartStore } from '@/stores/cartStore';
+import { useCartStore } from '@/infrastructure/persistence/cartStore';
 import { useAuth } from '@/hooks/useAuth';
 import { CheckoutForm } from '@/components/checkout/CheckoutForm';
 import styles from './page.module.css';

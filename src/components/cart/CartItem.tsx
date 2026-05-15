@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import type { CartItem as CartItemType } from '@/stores/cartStore';
+import type { CartItem as CartItemType } from '@/infrastructure/persistence/cartStore';
 import styles from './CartItem.module.css';
 
 interface CartItemProps {

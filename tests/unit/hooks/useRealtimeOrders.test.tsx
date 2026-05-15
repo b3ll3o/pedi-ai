@@ -5,7 +5,7 @@ import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 import { useRealtimeOrders, useRealtimeConnection } from '@/hooks/useRealtimeOrders'
-import type { OrderWithItems } from '@/services/adminOrderService'
+import type { OrderWithItems } from '@/application/services/adminOrderService'
 
 // ── Mocks ─────────────────────────────────────────────────────
 

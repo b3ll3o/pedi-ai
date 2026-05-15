@@ -1,4 +1,4 @@
-import { test, expect, Page, BrowserContext } from '@playwright/test'
+import { test, expect, _Page, BrowserContext } from '@playwright/test'
 import * as fs from 'fs'
 import * as path from 'path'
 import { MenuPage } from '../../pages/MenuPage'
@@ -44,7 +44,7 @@ async function createAuthenticatedContext(browser: import('@playwright/test').Br
 }
 
 test.describe('Cross-Tab Cart Sync', () => {
-  test.beforeEach(async ({ browser }) => {
+  test.beforeEach(async ({ _browser}) => {
     const seedData = loadSeedData()
     // Ensure storage state exists by checking
     const storagePath = getStoragePath(seedData.customer.email)

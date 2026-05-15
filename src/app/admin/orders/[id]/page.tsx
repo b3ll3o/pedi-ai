@@ -3,9 +3,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { OrderDetailAdmin } from '@/components/admin/OrderDetailAdmin'
-import { getOrder, updateOrderStatus, type OrderStatus } from '@/services/adminOrderService'
+import { getOrder, updateOrderStatus, type OrderStatus } from '@/application/services/adminOrderService'
 import { getSession } from '@/lib/supabase/auth'
-import type { OrderWithItems } from '@/services/adminOrderService'
+import type { OrderWithItems } from '@/application/services/adminOrderService'
 
 export default function OrderDetailPage() {
   const params = useParams()

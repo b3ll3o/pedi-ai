@@ -157,7 +157,7 @@ const RESTAURANT_NAME = 'Restaurant E2E Test'
 const SHARD = process.env.SHARD || ''
 const SHARD_MATCH = SHARD.match(/^(\d+)\/(\d+)$/)
 const SHARD_CURRENT = SHARD_MATCH ? Number(SHARD_MATCH[1]) : 0
-const SHARD_TOTAL = SHARD_MATCH ? Number(SHARD_MATCH[2]) : 0
+const _SHARD_TOTAL = SHARD_MATCH ? Number(SHARD_MATCH[2]) : 0
 const IS_SHARD_MODE = SHARD_CURRENT > 0
 
 // Get shard-specific suffix for emails and prefix for names

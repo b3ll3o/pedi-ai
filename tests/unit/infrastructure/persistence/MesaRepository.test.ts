@@ -25,7 +25,7 @@ describe('MesaRepository', () => {
       label: overrides?.label ?? 'Mesa 01',
       qrCodePayload: qrPayload,
       ativo: overrides?.ativo ?? true,
-      id: overrides?.id,
+      id: overrides?.id ?? 'mesa-001',
     });
   }
 

@@ -26,7 +26,7 @@ describe('ItemCardapioRepository', () => {
       tipo: TipoItemCardapio.PRODUTO,
       labelsDieteticos: [],
       ativo: overrides?.ativo ?? true,
-      id: overrides?.id,
+      id: overrides?.id ?? 'item-001',
     });
   }
 
@@ -97,9 +97,11 @@ describe('ItemCardapioRepository', () => {
     it('deve buscar múltiplos itens por ids', async () => {
       const i1 = criarItemValido({ id: 'item-1' });
       const i2 = criarItemValido({ id: 'item-2' });
-      await repository.salvarMany([i1, i2]);
+      // ItemCardapio.criar() ignora id passado e gera UUID, então buscamos pelos ids retornados
+      const salvos = await repository.salvarMany([i1, i2]);
+      const idsReais = salvos.map(item => item.id);
 
-      const resultado = await repository.buscarPorIds(['item-1', 'item-2']);
+      const resultado = await repository.buscarPorIds(idsReais);
 
       expect(resultado).toHaveLength(2);
     });

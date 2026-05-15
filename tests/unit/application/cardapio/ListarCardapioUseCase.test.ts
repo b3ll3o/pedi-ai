@@ -6,7 +6,7 @@ import { Categoria } from '@/domain/cardapio/entities/Categoria'
 import { ItemCardapio } from '@/domain/cardapio/entities/ItemCardapio'
 import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro'
 import { TipoItemCardapio } from '@/domain/cardapio/value-objects/TipoItemCardapio'
-import { LabelDietetico } from '@/domain/cardapio/value-objects/LabelDietetico'
+import { _LabelDietetico } from '@/domain/cardapio/value-objects/LabelDietetico'
 
 describe('ListarCardapioUseCase', () => {
   let useCase: ListarCardapioUseCase

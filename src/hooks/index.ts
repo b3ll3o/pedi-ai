@@ -21,3 +21,7 @@ export { useCustomerOrderNotifications, getStatusLabel } from './useCustomerOrde
 export type { UseCustomerOrderNotificationsOptions, UseCustomerOrderNotificationsResult, OrderUpdatePayload, OrderStatus } from './useCustomerOrderNotifications';
 export { usePedidosKDS } from './usePedidosKDS';
 export type { PedidoKDS, UsePedidosKDSOptions, UsePedidosKDSResult } from './usePedidosKDS';
+export { useEstatisticas } from './useEstatisticas';
+export type { UseEstatisticasResult } from './useEstatisticas';
+export { useRedirectByRole } from './useRedirectByRole';
+export type { UseRedirectByRoleResult } from './useRedirectByRole';

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { act } from 'react-dom/test-utils'
 
-import { useTableStore } from '@/stores/tableStore'
+import { useTableStore } from '@/infrastructure/persistence/tableStore'
 
 // ── Test isolation ────────────────────────────────────────────────────────────
 

@@ -15,20 +15,20 @@ describe('ModificadorGrupoRepository', () => {
     repository = new ModificadorGrupoRepository(db);
   });
 
-  function criarModificadorValido(overrides?: Partial<{ id: string; nome: string; ativo: boolean }>): ModificadorGrupo {
+  function criarModificadorValido(overrides?: Partial<{ id: string; nome: string; ativo: boolean; restauranteId: string }>): ModificadorGrupo {
     const valor = ModificadorValor.criar({
       nome: 'Borda Recheada',
       ajustePreco: Dinheiro.criar(500, 'BRL'),
     });
     return ModificadorGrupo.criar({
-      restauranteId: 'rest-123',
+      restauranteId: overrides?.restauranteId ?? 'rest-123',
       nome: overrides?.nome ?? 'Adicionais',
       obrigatorio: false,
       minSelecoes: 0,
       maxSelecoes: 3,
       valores: [valor],
       ativo: overrides?.ativo ?? true,
-      id: overrides?.id,
+      id: overrides?.id ?? 'mod-grupo-001',
     });
   }
 

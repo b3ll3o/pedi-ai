@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { QRCodeCryptoService } from '@/infrastructure/services/QRCodeCryptoService';
+import { logger } from '@/lib/logger';
+
 
 const QR_CODE_EXPIRY_HOURS = 24;
 
-interface ValidateQRQuery {
+interface _ValidateQRQuery {
   restaurantId: string;
   tableId: string;
   timestamp: string;
@@ -104,7 +106,10 @@ export async function GET(request: NextRequest) {
       assinatura: signature,
     };
 
-    const secret = process.env.QR_CODE_SECRET || 'default-secret-change-in-production';
+    const secret = process.env.QR_CODE_SECRET;
+    if (!secret) {
+      throw new Error('Variável de ambiente QR_CODE_SECRET não está configurada');
+    }
     const isValidSignature = cryptoService.validarAssinatura(payload, secret);
 
     if (!isValidSignature) {
@@ -128,7 +133,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Erro ao validar QR code:', error);
+    logger.error("mesa", "Erro ao validar QR code:", { error: error });
     return NextResponse.json(
       { error: 'Erro interno ao validar QR code' },
       { status: 500 }

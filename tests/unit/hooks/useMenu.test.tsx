@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
 import { useMenu } from '@/hooks/useMenu';
-import { useMenuStore } from '@/stores/menuStore';
+import { useMenuStore } from '@/infrastructure/persistence/menuStore';
 import type { MenuResponse } from '@/hooks/useMenu';
 
 // ── Mocks ───────────────────────────────────────────────────

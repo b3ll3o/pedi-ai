@@ -12,8 +12,10 @@ import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 
 // Mock do EventDispatcher
 const mockDispatch = vi.fn();
-vi.mock('@/domain/shared', async () => {
+vi.mock('@/domain/shared', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/domain/shared')>();
   return {
+    ...actual,
     EventDispatcher: {
       getInstance: vi.fn(() => ({
         dispatch: mockDispatch,
@@ -23,11 +25,15 @@ vi.mock('@/domain/shared', async () => {
 });
 
 // Mock do PagamentoAggregate
-vi.mock('@/domain/pagamento', () => ({
-  PagamentoAggregate: {
-    reconstituir: vi.fn(),
-  },
-}));
+vi.mock('@/domain/pagamento', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/domain/pagamento')>();
+  return {
+    ...actual,
+    PagamentoAggregate: {
+      reconstituir: vi.fn(),
+    },
+  };
+});
 
 describe('ProcessarWebhookUseCase', () => {
   let useCase: ProcessarWebhookUseCase;

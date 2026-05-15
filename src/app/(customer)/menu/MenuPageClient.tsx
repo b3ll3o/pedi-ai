@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { useCardapio } from '@/hooks/useCardapio';
-import { useMenuStore } from '@/stores/menuStore';
-import { useCartStore } from '@/stores/cartStore';
+import { useMenuStore } from '@/infrastructure/persistence/menuStore';
+import { useCartStore } from '@/infrastructure/persistence/cartStore';
 import { SearchBar } from '@/components/menu/SearchBar';
 import { CategoryList } from '@/components/menu/CategoryList';
 import { ProductList } from '@/components/menu/ProductList';

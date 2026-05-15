@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import type { payment_intents } from '@/lib/supabase/types';
+import { logger } from '@/lib/logger';
+
 
 const isDemoMode = process.env.NEXT_PUBLIC_DEMO_PAYMENT_MODE === 'true';
 
@@ -40,7 +42,7 @@ export async function GET(
       .single<payment_intents>();
 
     if (intentError && intentError.code !== 'PGRST116') {
-      console.error('Erro ao buscar payment intent:', intentError);
+      logger.error("payments/pix", "Erro ao buscar payment intent:", { error: intentError });
       return NextResponse.json(
         { status: 'pending', updated_at: new Date().toISOString() },
         { status: 500 },
@@ -92,7 +94,7 @@ export async function GET(
         });
     }
   } catch (error) {
-    console.error('Erro ao verificar status PIX:', error);
+    logger.error("payments/pix", "Erro ao verificar status PIX:", { error: error });
     return NextResponse.json(
       { status: 'pending', updated_at: new Date().toISOString() },
       { status: 500 },

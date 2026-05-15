@@ -56,6 +56,11 @@ vi.mock('@/lib/offline/db', () => {
           }
           return ids;
         }),
+        bulkPut: vi.fn(async (items: any[]) => {
+          for (const item of items) {
+            if (item.id) cartData.set(item.id, item);
+          }
+        }),
         put: vi.fn(async (item: any) => {
           if (item.id) {
             cartData.set(item.id, item);
@@ -77,7 +82,7 @@ vi.mock('@/lib/offline/db', () => {
   };
 });
 
-import { useCartStore, CartItem, SelectedModifier, getTotalItems, getTotalPrice, getSubtotal } from '@/stores/cartStore';
+import { useCartStore, CartItem, SelectedModifier, getTotalItems, getTotalPrice, getSubtotal } from '@/infrastructure/persistence/cartStore';
 import { db } from '@/lib/offline/db';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -799,7 +804,7 @@ describe('cartStore (real store)', () => {
         createdAt: new Date(),
       });
 
-      const { hydrateCartFromIndexedDB } = await import('@/stores/cartStore');
+      const { hydrateCartFromIndexedDB } = await import('@/infrastructure/persistence/cartStore');
 
       await act(async () => {
         await hydrateCartFromIndexedDB();
@@ -816,7 +821,7 @@ describe('cartStore (real store)', () => {
     it('returns early when IndexedDB is empty', async () => {
       await db.cart.clear();
 
-      const { hydrateCartFromIndexedDB } = await import('@/stores/cartStore');
+      const { hydrateCartFromIndexedDB } = await import('@/infrastructure/persistence/cartStore');
 
       // Set some items in store first
       await act(async () => {

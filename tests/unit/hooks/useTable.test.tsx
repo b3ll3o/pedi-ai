@@ -9,7 +9,7 @@ import type { QRPayload } from '@/lib/qr/validator'
 // ── Mocks ─────────────────────────────────────────────────────
 
 // Mock useTableStore
-vi.mock('@/stores/tableStore', () => ({
+vi.mock('@/infrastructure/persistence/tableStore', () => ({
   useTableStore: vi.fn(() => ({
     restaurantId: null,
     tableId: null,
@@ -19,7 +19,7 @@ vi.mock('@/stores/tableStore', () => ({
   })),
 }))
 
-import { useTableStore } from '@/stores/tableStore'
+import { useTableStore } from '@/infrastructure/persistence/tableStore'
 
 // Mock fetch
 const mockFetch = vi.fn()

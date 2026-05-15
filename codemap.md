@@ -55,8 +55,8 @@ Pedi-AI é uma plataforma de cardápio digital que permite restaurantes gerencia
 | `src/components/restaurant/` | Componentes de listagem pública (RestaurantSearch, RestaurantCard, RestaurantList) | ✅ Novo | Listagem de restaurantes para delivery |
 | `src/hooks/` | Custom React hooks (useAuth, useRealtimeOrders, etc) | ✅ Atual | Reutilizáveis em toda a aplicação |
 | `src/lib/` | Utilitários (auth, offline, QR, supabase, feature-flags) | ✅ Atual | Módulos reutilizáveis |
-| `src/services/` | Lógica de negócio (adminOrderService, userService, etc) | ⚠️ Legacy | Migrar para DDD application/ |
-| `src/stores/` | Zustand stores (cart, menu, restaurant, table) | ⚠️ Legacy | cartStore e menuStore possuem `restaurantId` para isolamento multi-tenant |
+| `src/application/services/` | Lógica de negócio (adminOrderService, userService, etc) | ✅ DDD |antigamente em `src/services/`, migrado 2025-05-15 |
+| `src/infrastructure/persistence/` | Zustand stores (cart, menu, restaurant, table) | ✅ DDD |antigamente em `src/stores/`, migrado 2025-05-15 |
 
 ### Domain Codemaps
 
@@ -82,9 +82,9 @@ Cada bounded context DDD possui seu próprio codemap:
 Cliente escaneia QR code
   → Validação de mesa (src/lib/qr.ts)
   → Navega cardápio (src/app/(customer)/menu/)
-  → Adiciona itens ao carrinho (src/stores/cartStore.ts)
+  → Adiciona itens ao carrinho (src/infrastructure/persistence/cartStore.ts)
   → Checkout via Pix ou Stripe (src/components/payment/)
-  → Pedido criado (src/services/orderService.ts)
+  → Pedido criado (src/application/pedido/services/CriarPedidoUseCase.ts)
   → Sincronização offline se sem conexão (src/lib/offline/)
 ```
 
@@ -93,7 +93,7 @@ Cliente escaneia QR code
 ```
 Admin faz login (src/lib/auth/)
   → Dashboard admin (src/app/admin/dashboard/)
-  → Gerencia categorias, produtos, combos, modificadores (src/services/)
+  → Gerencia categorias, produtos, combos, modificadores (src/application/admin/services/)
   → Acompanha pedidos em tempo real (Supabase Realtime)
   → Atualiza status de pedidos
 ```
@@ -103,7 +103,7 @@ Admin faz login (src/lib/auth/)
 ```
 Cozinha recebe pedido via realtime (src/hooks/useRealtimeOrders.ts)
   → Atualiza status do pedido (pending → preparing → ready)
-  → Garçom é notificado (src/stores/tableStore.ts)
+  → Garçom é notificado (src/infrastructure/persistence/tableStore.ts)
   → Entrega ao cliente
 ```
 
@@ -121,12 +121,12 @@ Cozinha recebe pedido via realtime (src/hooks/useRealtimeOrders.ts)
 ## Arquitetura de Dados Offline
 
 ```
-┌─────────────────┐     ┌─────────────────┐
-│   Dexie (IDB)   │────▶│   Zustand       │
-│  - menus        │     │  - menuStore    │
-│  - orders       │     │  - cartStore    │
-│  - tables       │     │  - tableStore   │
-└─────────────────┘     └─────────────────┘
+┌─────────────────┐     ┌─────────────────────────────┐
+│   Dexie (IDB)   │────▶│   Zustand (infrastructure/) │
+│  - menus        │     │  - cartStore               │
+│  - orders       │     │  - menuStore               │
+│  - tables       │     │  - tableStore              │
+└─────────────────┘     └─────────────────────────────┘
          │                     │
          ▼                     ▼
 ┌─────────────────────────────────────┐

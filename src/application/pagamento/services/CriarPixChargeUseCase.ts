@@ -31,11 +31,10 @@ export class CriarPixChargeUseCase implements UseCase<CriarPixChargeInput, PixCh
       throw new Error(`Já existe um pagamento confirmado ou cancelado para este pedido`);
     }
 
-    // Criar pagamento via Pix
+    // Se já existe pagamento pendente, criar nova cobrança (o手机上展示QR需要charge)
     const valorEmCentavos = pedido.total.valor;
     const pixCharge = await this.pixAdapter.criarCobranca(valorEmCentavos, input.pedidoId);
 
-    // Criar ou atualizar pagamento
     if (!pagamentoExistente) {
       const pagamentoAggregate = PagamentoAggregate.criar({
         id: crypto.randomUUID(),
@@ -44,14 +43,12 @@ export class CriarPixChargeUseCase implements UseCase<CriarPixChargeInput, PixCh
         valor: Dinheiro.criar(valorEmCentavos),
       });
 
-      // Adicionar transação de charge
       pagamentoAggregate.adicionarTransacaoCharge(pixCharge.id, {
         qrCode: pixCharge.codigoPix,
         imagemQrCode: pixCharge.imagemQrCode,
         expiracao: pixCharge.expiracao.toISOString(),
       } as Record<string, unknown>);
 
-      // Persistir pagamento
       await this.pagamentoRepo.salvar(pagamentoAggregate.pagamento);
     }
 

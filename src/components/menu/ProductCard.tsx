@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import type { products } from '@/lib/supabase/types';
-import { useCartStore } from '@/stores/cartStore';
+import { useCartStore } from '@/infrastructure/persistence/cartStore';
 import styles from './ProductCard.module.css';
 
 interface ProductCardProps {

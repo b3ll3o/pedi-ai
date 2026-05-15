@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createSupabaseAdmin } from '@supabase/supabase-js';
 import { createHmac, timingSafeEqual } from 'crypto';
+import { logger } from '@/lib/logger';
 
 /**
  * Webhook handler for Mercado Pago PIX notifications.
@@ -26,7 +27,7 @@ function getSupabaseAdmin() {
 
 function validateSignature(payload: { id: string }, signature: string): boolean {
   if (!MP_WEBHOOK_SECRET) {
-    console.error('[webhooks/pix] MP_WEBHOOK_SECRET não configurado');
+    logger.error("webhooks/pix", "MP_WEBHOOK_SECRET não configurado");
     return false;
   }
 
@@ -125,7 +126,7 @@ export async function POST(request: NextRequest) {
     }
     mpPayment = await mpResponse.json();
   } catch (err) {
-    console.error('[webhooks/pix] Erro ao buscar payment details:', err);
+    logger.error("webhooks/pix", "Erro ao buscar payment details:", { error: err });
     return NextResponse.json({ error: 'Erro ao buscar detalhes do pagamento' }, { status: 500 });
   }
 
@@ -143,7 +144,7 @@ export async function POST(request: NextRequest) {
     .eq('id', orderId);
 
   if (updateError) {
-    console.error('[webhooks/pix] Erro ao atualizar pedido:', updateError);
+    logger.error("webhooks/pix", "Erro ao atualizar pedido:", { error: updateError });
     return NextResponse.json({ error: 'Erro ao atualizar pedido' }, { status: 500 });
   }
 
@@ -187,7 +188,7 @@ export async function POST(request: NextRequest) {
     await supabase.removeChannel(realtimeChannel)
   } catch (broadcastErr) {
     // Non-fatal: log but don't fail the webhook
-    console.warn('[webhooks/pix] Falha ao broadcast event:', broadcastErr)
+    logger.warn("webhooks/pix", "Falha ao broadcast event:", { error: broadcastErr })
   }
 
   return NextResponse.json({ status: 'success' }, { status: 200 });

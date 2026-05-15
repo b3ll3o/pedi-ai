@@ -225,7 +225,7 @@ Cliente acessa /carrinho ou clica no badge
 ```
 
 **Arquivos:**
-- `src/stores/cartStore.ts`
+- `src/infrastructure/persistence/cartStore.ts`
 - `src/infrastructure/persistence/pedido/CarrinhoRepository.ts`
 
 ### 6.2 Editar Quantidade

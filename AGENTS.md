@@ -199,7 +199,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 ## Arquitetura DDD (Domain-Driven Design)
 
 > ✅ **STATUS**: A arquitetura DDD está **MAJORITARIAMENTE IMPLEMENTADA**. A estrutura DDD existe em `src/domain/`, `src/application/`, e `src/infrastructure/`.
-> A estrutura coexiste com código em `src/components/`, `src/hooks/`, `src/lib/`, e `src/services/` (legacy).
+> A estrutura coexiste com código em `src/components/`, `src/hooks/`, e `src/lib/` (legacy).
 > Ver: `openspec/changes/archive/2026-04-25-implantacao-ddd/` para histórico da migração.
 
 ### Bounded Contexts Implementados
@@ -221,7 +221,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Entidades, value objects, aggregates e events são pura lógica de negócio em TypeScript
 - Casos de uso no **application/** orchestrating domínio e infra
 - **presentation/** (Next.js) **SÓ** faz renderização e coleta input do usuário
-- **Migração gradual**: código legacy em `src/services/`, `src/stores/` será migrado conforme necessidade
+- **Migração gradual**: código legacy em `src/lib/` será migrado conforme necessidade
 
 ### Estrutura de Diretórios
 
@@ -297,9 +297,7 @@ src/
 ├── app/                    # Next.js App Router - páginas e API routes
 ├── components/             # Componentes React organizados por domínio
 ├── hooks/                  # Custom React hooks
-├── lib/                    # Módulos reutilizáveis (auth, offline, QR, supabase)
-├── services/               # Lógica de negócio (services) - migrar para DDD
-└── stores/                # Zustand stores (estado global) - migrar gradualmente
+└── lib/                    # Módulos reutilizáveis (auth, offline, QR, supabase, logger)
 ```
 
 | Camada Legacy | Responsabilidade | Status DDD |
@@ -308,15 +306,11 @@ src/
 | `components/` | Componentes UI | - |
 | `hooks/` | Lógica de interface (React hooks) | - |
 | `lib/` | Utilitários e integrações (auth, supabase, offline) | ⚠️ Legacy |
-| `services/` | Regras de negócio | 🔄 Migração em progresso |
-| `stores/` | Estado global (Zustand) | 🔄 Migração em progresso |
 
 ### Progresso da Migração DDD
 
-> ✅ **Estrutura base**: Implementada em todos os bounded contexts
-> 🔄 **Camada application**: Use cases implementados
-> 🔄 **Infraestrutura**: Repos e adapters em progresso
-> 📋 **Presentation**: Migrar stores e services legacy
+> ✅ **COMPLETO**: `src/services/` migrado para `src/application/services/`
+> ✅ **COMPLETO**: `src/stores/` migrado para `src/infrastructure/persistence/`
 
 <!-- END:pedi-ai-rules -->
 

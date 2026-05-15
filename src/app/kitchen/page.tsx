@@ -5,7 +5,7 @@ import { usePedidosKDS } from '@/hooks/usePedidosKDS'
 import { OrderList } from '@/components/kds/OrderList'
 import { StatusFilter } from '@/components/kds/StatusFilter'
 import { ConnectionStatus } from '@/components/kitchen/ConnectionStatus'
-import type { OrderStatus } from '@/services/adminOrderService'
+import type { OrderStatus } from '@/application/services/adminOrderService'
 import styles from './page.module.css'
 
 type FilterStatus = OrderStatus | 'all'

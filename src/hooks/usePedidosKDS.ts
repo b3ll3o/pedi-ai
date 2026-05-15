@@ -6,8 +6,8 @@
 import { useEffect, useCallback, useState, useRef, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
-import type { OrderWithItems, OrderStatus } from '@/services/adminOrderService'
-import { getOrderAge, getOrderAgeDisplay, isOrderStale } from '@/services/adminOrderService'
+import type { OrderWithItems, OrderStatus } from '@/application/services/adminOrderService'
+import { getOrderAge, getOrderAgeDisplay, isOrderStale } from '@/application/services/adminOrderService'
 
 export interface PedidoKDS extends OrderWithItems {
   age_seconds: number
@@ -67,7 +67,6 @@ export function usePedidosKDS({
   const queryClient = useQueryClient()
   const [isConnected, setIsConnected] = useState(false)
   const [error, setError] = useState<Error | null>(null)
-  const audioContextRef = useRef<AudioContext | null>(null)
   const soundPlayedRef = useRef<Set<string>>(new Set())
 
   const { data, isLoading, refetch } = useQuery({

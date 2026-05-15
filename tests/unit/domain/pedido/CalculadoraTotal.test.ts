@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, _vi, beforeEach } from 'vitest'
 import { CalculadoraTotal } from '@/domain/pedido/services/CalculadoraTotal'
 import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro'
 import type { ItemPedido } from '@/domain/pedido/entities/ItemPedido'

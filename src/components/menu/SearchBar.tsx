@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useMenuStore } from '@/stores/menuStore';
+import { useMenuStore } from '@/infrastructure/persistence/menuStore';
 import styles from './SearchBar.module.css';
 
 interface SearchBarProps {

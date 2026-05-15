@@ -3,8 +3,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { getSession } from '@/lib/supabase/auth'
-import { useRestaurantStore } from '@/stores/restaurantStore'
-import { getOrders, updateOrderStatus, type OrderWithItems, type OrderStatus } from '@/services/adminOrderService'
+import { useRestaurantStore } from '@/infrastructure/persistence/restaurantStore'
+import { getOrders, updateOrderStatus, type OrderWithItems, type OrderStatus } from '@/application/services/adminOrderService'
 import { OrderList } from '@/components/admin/OrderList'
 import { OrderDetailAdmin } from '@/components/admin/OrderDetailAdmin'
 import styles from './page.module.css'
@@ -88,11 +88,6 @@ export default function OrdersPage() {
       alert(err instanceof Error ? err.message : 'Erro ao cancelar pedido')
     }
   }, [fetchOrders])
-
-  const handleCloseModal = useCallback(() => {
-    setIsDetailsModalOpen(false)
-    setSelectedOrderId(null)
-  }, [])
 
   if (loading) {
     return (

@@ -18,7 +18,7 @@ import {
   LogOut,
 } from 'lucide-react';
 import { RestaurantSelector } from '@/components/admin/RestaurantSelector';
-import { useRestaurantStore } from '@/stores/restaurantStore';
+import { useRestaurantStore } from '@/infrastructure/persistence/restaurantStore';
 import { Restaurante } from '@/domain/admin/entities/Restaurante';
 import { UsuarioRestaurante } from '@/domain/admin/entities/UsuarioRestaurante';
 import { ConfiguracoesRestaurante } from '@/domain/admin/value-objects/ConfiguracoesRestaurante';

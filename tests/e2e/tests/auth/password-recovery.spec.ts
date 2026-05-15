@@ -43,7 +43,7 @@ test.describe('Recuperação de Senha - Login Page', () => {
     await expect(loginPage.forgotPasswordLink).toBeVisible()
   })
 
-  test('deve mostrar formulário de recuperação ao clicar em esqueci minha senha', async ({ page }) => {
+  test('deve mostrar formulário de recuperação ao clicar em esqueci minha senha', async ({ _page}) => {
     await loginPage.forgotPasswordLink.click()
     await expect(loginPage.forgotPasswordEmailInput).toBeVisible()
     await expect(loginPage.forgotPasswordSubmitButton).toBeVisible()
@@ -67,7 +67,7 @@ test.describe('Recuperação de Senha - Login Page', () => {
     ).toBe(true)
   })
 
-  test('deve ocultar campos de login quando formulário de recuperação está visível', async ({ page }) => {
+  test('deve ocultar campos de login quando formulário de recuperação está visível', async ({ _page}) => {
     await loginPage.forgotPasswordLink.click()
     await expect(loginPage.forgotPasswordEmailInput).toBeVisible()
     const recoveryFormVisible = await loginPage.forgotPasswordEmailInput.isVisible()

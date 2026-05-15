@@ -103,6 +103,7 @@ async function persistCartToIndexedDB(items: CartItem[]) {
   if (items.length === 0) return;
 
   const dbItems: DBCartItem[] = items.map((item) => ({
+    id: parseInt(item.id, 10) || undefined,
     productId: item.productId,
     quantity: item.quantity,
     modifiers: item.modifiers as unknown as Record<string, unknown>,
@@ -110,7 +111,7 @@ async function persistCartToIndexedDB(items: CartItem[]) {
     createdAt: item.createdAt,
   }));
 
-  await db.cart.bulkAdd(dbItems);
+  await db.cart.bulkPut(dbItems);
 }
 
 export async function hydrateCartFromIndexedDB() {

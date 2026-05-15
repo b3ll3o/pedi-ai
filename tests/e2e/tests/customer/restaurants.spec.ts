@@ -14,7 +14,7 @@ test.describe('Restaurants - Navegação Pública', () => {
     await clearClientState(page)
   })
 
-  test('deve exibir página de restaurantes com lista de restaurantes', { tag: ['@smoke', '@critical'] }, async ({ seedData }) => {
+  test('deve exibir página de restaurantes com lista de restaurantes', { tag: ['@smoke', '@critical'] }, async ({ _seedData}) => {
     await restaurantsPage.goto()
 
     await expect(restaurantsPage.restaurantList).toBeVisible()
@@ -50,7 +50,7 @@ test.describe('Restaurants - Navegação Pública', () => {
     await expect(restaurantMenuPage.pageTitle).toContainText('Cardápio')
   })
 
-  test('deve filtrar restaurantes por nome na busca', { tag: '@critical' }, async ({ seedData }) => {
+  test('deve filtrar restaurantes por nome na busca', { tag: '@critical' }, async ({ _seedData}) => {
     await restaurantsPage.goto()
     await restaurantsPage.waitForList()
 

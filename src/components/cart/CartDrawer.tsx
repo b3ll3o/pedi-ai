@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useCartStore, getTotalItems, getTotalPrice } from '@/stores/cartStore';
+import { useCartStore, getTotalItems, getTotalPrice } from '@/infrastructure/persistence/cartStore';
 import { CartSummary } from './CartSummary';
 import styles from './CartDrawer.module.css';
 

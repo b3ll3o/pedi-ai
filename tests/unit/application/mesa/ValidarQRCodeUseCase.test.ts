@@ -7,7 +7,7 @@ describe('ValidarQRCodeUseCase', () => {
   let useCase: ValidarQRCodeUseCase
   let mockQrCodeValidationService: IQRCodeValidationService
   let mockMesaRepository: IMesaRepository
-  let mockSupabase: any
+  let _mockSupabase: any
 
   const validPayload = {
     restauranteId: 'rest-123',
@@ -31,7 +31,7 @@ describe('ValidarQRCodeUseCase', () => {
       delete: vi.fn(),
     }
 
-    mockSupabase = {
+    _mockSupabase = {
       from: vi.fn().mockReturnValue({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),

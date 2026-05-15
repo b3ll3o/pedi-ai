@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect } from 'react';
-import { hydrateCartFromIndexedDB } from '@/stores/cartStore';
+import { hydrateCartFromIndexedDB } from '@/infrastructure/persistence/cartStore';
 import { processQueue } from '@/lib/offline/sync';
 
 const STORE_KEY = 'pedi-ai-cart';

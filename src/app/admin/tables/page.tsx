@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSession } from '@/lib/supabase/auth';
-import { useRestaurantStore } from '@/stores/restaurantStore';
+import { useRestaurantStore } from '@/infrastructure/persistence/restaurantStore';
 import { TableManagement } from '@/components/admin/TableManagement';
 import { TableQRCode } from '@/components/admin/TableQRCode';
 import type { tables } from '@/lib/supabase/types';

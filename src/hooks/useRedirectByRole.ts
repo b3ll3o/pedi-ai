@@ -23,7 +23,7 @@ interface ProfileResponse {
   restaurant_id: string | null;
 }
 
-export function useRedirectByRole(userId: string | null, isAuthenticated: boolean): UseRedirectByRoleResult {
+export function useRedirectByRole(userId: string | null, _isAuthenticated: boolean): UseRedirectByRoleResult {
   const [destination, setDestination] = useState<'/admin/dashboard' | '/admin/restaurants/new' | '/menu'>(() => {
     if (!userId) return '/menu';
     return '/menu';

@@ -36,7 +36,7 @@ export function getSnapshotPath(testName: string, snapshotName: string): string 
 // Custom Snapshot Matchers
 // ============================================
 
-interface SnapshotMatchers {
+interface _SnapshotMatchers {
   toMatchMenuSnapshot(): Promise<void>
   toMatchCheckoutSnapshot(): Promise<void>
   toMatchOrderSnapshot(): Promise<void>
@@ -47,8 +47,8 @@ interface SnapshotMatchers {
 /**
  * Custom matchers for common page snapshots.
  */
-export const snapshotMatchers = {
-  async toMatchMenuSnapshot(this: { page: Page }, ...args: unknown[]): Promise<void> {
+export const _snapshotMatchers = {
+  async toMatchMenuSnapshot(this: { page: Page }, ..._args: unknown[]): Promise<void> {
     const page = (this as { page?: Page }).page
     if (!page) throw new Error('Page not available')
 
@@ -57,7 +57,7 @@ export const snapshotMatchers = {
     })
   },
 
-  async toMatchCheckoutSnapshot(this: { page: Page }, ...args: unknown[]): Promise<void> {
+  async toMatchCheckoutSnapshot(this: { page: Page }, ..._args: unknown[]): Promise<void> {
     const page = (this as { page?: Page }).page
     if (!page) throw new Error('Page not available')
 
@@ -66,7 +66,7 @@ export const snapshotMatchers = {
     })
   },
 
-  async toMatchOrderSnapshot(this: { page: Page }, ...args: unknown[]): Promise<void> {
+  async toMatchOrderSnapshot(this: { page: Page }, ..._args: unknown[]): Promise<void> {
     const page = (this as { page?: Page }).page
     if (!page) throw new Error('Page not available')
 
@@ -75,7 +75,7 @@ export const snapshotMatchers = {
     })
   },
 
-  async toMatchAdminDashboardSnapshot(this: { page: Page }, ...args: unknown[]): Promise<void> {
+  async toMatchAdminDashboardSnapshot(this: { page: Page }, ..._args: unknown[]): Promise<void> {
     const page = (this as { page?: Page }).page
     if (!page) throw new Error('Page not available')
 
@@ -84,12 +84,12 @@ export const snapshotMatchers = {
     })
   },
 
-  async toMatchAccessibilitySnapshot(this: { page: Page }, ...args: unknown[]): Promise<void> {
+  async toMatchAccessibilitySnapshot(this: { page: Page }, ..._args: unknown[]): Promise<void> {
     const page = (this as { page?: Page }).page
     if (!page) throw new Error('Page not available')
 
     // Capture accessibility tree as snapshot
-    const snapshot = await page.accessibility.snapshot()
+    const _snapshot = await page.accessibility.snapshot()
     await expect(page).toMatchSnapshot('accessibility-tree.json', {
       timeout: 30000,
     })
@@ -237,7 +237,7 @@ export async function captureA11ySnapshot(
   tree: unknown
   violations: string[]
 }> {
-  const snapshot = await page.accessibility.snapshot()
+  const _snapshot = await page.accessibility.snapshot()
   const violations: string[] = []
 
   // Check for common a11y issues

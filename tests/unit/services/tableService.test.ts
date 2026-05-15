@@ -7,7 +7,7 @@ import {
   deleteTable,
   generateTableQR,
   validateTableQR,
-} from '@/services/tableService'
+} from '@/application/services/tableService'
 
 // Mock fetch
 const mockFetch = vi.fn()

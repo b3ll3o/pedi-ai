@@ -105,7 +105,7 @@ export function isSeedCompatibleWithShard(): boolean {
 
   try {
     const data = JSON.parse(fs.readFileSync(SEED_RESULT_PATH, 'utf-8'))
-    const config = getShardConfig()
+    const _config = getShardConfig()
 
     // Check if seed data includes shard marker
     // Seeds created with shard suffix will have '+sh' in emails

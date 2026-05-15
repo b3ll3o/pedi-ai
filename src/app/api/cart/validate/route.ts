@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import type { CartItem, SelectedModifier } from '@/stores/cartStore'
+import type { CartItem, SelectedModifier } from '@/infrastructure/persistence/cartStore'
 
 interface ValidateCartRequest {
   items: CartItem[]

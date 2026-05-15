@@ -1186,19 +1186,15 @@ src/infrastructure/
 - [ ] Verificar ESLint rules para imports inválidos
 
 #### Phase 7: Cleanup
-- [ ] Remover arquivos deprecated em `src/services/`
-- [ ] Remover arquivos deprecated em `src/stores/` (lógica migrada)
+- [x] ~~Remover arquivos deprecated em `src/services/`~~ ✅ Migrado para `src/application/services/`
+- [x] ~~Remover arquivos deprecated em `src/stores/`~~ ✅ Migrado para `src/infrastructure/persistence/`
 - [ ] Remover `src/lib/qr.ts` (lógica migrada para domain)
 - [ ] Atualizar imports em toda a codebase
 
 ### 8.6 Arquivos Legados (ainda não migrados)
 
-| Arquivo | Responsabilidade Original | Status |
+|| Arquivo | Responsabilidade Original | Status |
 |---------|------------------------|--------|
-| `src/services/orderService.ts` | Lógica de pedido | ⚠️ Deprecated, usar domain/application |
-| `src/services/tableService.ts` | Lógica de mesa | ⚠️ Deprecated, usar domain/application |
-| `src/stores/cartStore.ts` | Estado do carrinho | ⚠️ UI state apenas, lógica em domain |
-| `src/stores/menuStore.ts` | Estado do cardápio | ⚠️ UI state apenas, lógica em domain |
 | `src/lib/qr.ts` | Validação QR code | ⚠️ Deprecated, usar MesaAggregate |
 | `src/lib/auth/` | Autenticação | ⚠️ Deprecated, usar SupabaseAuthAdapter |
 

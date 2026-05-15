@@ -98,7 +98,7 @@ function getMetaPath(email: string): string {
 /**
  * Loads existing storage state if valid (not expired).
  */
-async function loadStorageState(email: string, page: Page): Promise<boolean> {
+async function _loadStorageState(email: string, page: Page): Promise<boolean> {
   const storagePath = getStoragePath(email)
   if (!isStorageValid(email) || !fs.existsSync(storagePath)) {
     return false
@@ -136,7 +136,7 @@ function isStorageValid(email: string): boolean {
 /**
  * Saves storage metadata (creation timestamp).
  */
-function writeStorageMeta(email: string): void {
+function _writeStorageMeta(email: string): void {
   const meta: StorageMeta = { createdAt: Date.now(), email }
   fs.writeFileSync(getMetaPath(email), JSON.stringify(meta))
 }
@@ -265,7 +265,7 @@ async function performLogin(
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyPage = any
+type _AnyPage = any
 
 export const test = base.extend<Fixtures, { reuse: boolean }>({
   reuse: [true, { scope: 'worker', option: true }],

@@ -1,7 +1,7 @@
 'use client'
 
 import type { users_profiles, Enum_user_role } from '@/lib/supabase/types'
-import { getRoleLabel, getRoleColor } from '@/services/userService'
+import { getRoleLabel, getRoleColor } from '@/application/services/userService'
 import styles from './UserManagement.module.css'
 
 interface UserManagementProps {

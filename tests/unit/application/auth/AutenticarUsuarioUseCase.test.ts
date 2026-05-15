@@ -68,7 +68,7 @@ describe('AutenticarUsuarioUseCase', () => {
 
     it('deve criar sessão com expiração de 24 horas', async () => {
       // Arrange
-      const beforeExecute = new Date();
+      const _beforeExecute = new Date();
       mockAutenticar.mockResolvedValue({
         token: 'jwt-token-123',
         usuarioId: 'user-id-456',

@@ -21,7 +21,7 @@ const results = {
   missingCodemaps: [],
 };
 
-function walk(dir, extensions = ['.md']) {
+function _walk(dir, extensions = ['.md']) {
   const files = [];
   const entries = fs.readdirSync(dir, { withFileTypes: true });
 

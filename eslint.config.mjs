@@ -16,6 +16,8 @@ const eslintConfig = defineConfig([
     "tests/e2e/playwright-report/**",
     "test-results/**",
     "playwright-traces/**",
+    // Coverage reports
+    "coverage/**",
   ]),
   // DDD Domain Layer Rules - Block cross-layer imports
   {

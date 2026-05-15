@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSession } from '@/lib/supabase/auth';
-import { useRestaurantStore } from '@/stores/restaurantStore';
+import { useRestaurantStore } from '@/infrastructure/persistence/restaurantStore';
 import { ProductList } from '@/components/admin/ProductList';
 import { ProductForm, type ProductInput } from '@/components/admin/ProductForm';
 import type { products, categories } from '@/lib/supabase/types';

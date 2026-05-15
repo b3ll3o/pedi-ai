@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { AdminLayout } from '@/components/admin/AdminLayout'
 import { UserManagement } from '@/components/admin/UserManagement'
 import { UserForm } from '@/components/admin/UserForm'
-import { getUsers, inviteUser, deleteUser, updateUser, type UserRole } from '@/services/userService'
+import { getUsers, inviteUser, deleteUser, updateUser, type UserRole } from '@/application/services/userService'
 import { requireAuth } from '@/lib/auth/client-admin'
 import type { users_profiles } from '@/lib/supabase/types'
 

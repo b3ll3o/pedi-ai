@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { ModificadorGrupo } from '@/domain/cardapio/entities/ModificadorGrupo'
-import { ModificadorValor } from '@/domain/cardapio/entities/ModificadorValor'
-import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro'
+import { _ModificadorGrupo } from '@/domain/cardapio/entities/ModificadorGrupo'
+import { _ModificadorValor } from '@/domain/cardapio/entities/ModificadorValor'
+import { _Dinheiro } from '@/domain/shared/value-objects/Dinheiro'
 
 // Mock data
 const mockRestaurante = { id: 'restaurante-123', nome: 'Restaurante Teste' }
@@ -32,7 +32,7 @@ const mockEventDispatcher = {
 }
 
 // Test data builders
-const criarValorModificador = (overrides: Partial<{
+const _criarValorModificador = (overrides: Partial<{
   id: string;
   nome: string;
   ajustePreco: number;

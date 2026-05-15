@@ -5,7 +5,7 @@ import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 import { useKitchenOrders } from '@/hooks/useKitchenOrders'
-import type { OrderWithItems } from '@/services/adminOrderService'
+import type { OrderWithItems } from '@/application/services/adminOrderService'
 
 // ── Mock Data ─────────────────────────────────────────────────
 

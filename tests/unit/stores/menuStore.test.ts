@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { useMenuStore, getFilteredProducts, getProductsByCategory, hydrateFromCache, useHydratedMenu } from '@/stores/menuStore';
+import { useMenuStore, getFilteredProducts, getProductsByCategory, hydrateFromCache, useHydratedMenu } from '@/infrastructure/persistence/menuStore';
 import type { categories, products, modifier_groups } from '@/lib/supabase/types';
 
 // ── Mock getCachedMenu ───────────────────────────────────────────────────────

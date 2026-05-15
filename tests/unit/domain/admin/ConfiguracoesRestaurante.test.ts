@@ -95,7 +95,7 @@ describe('ConfiguracoesRestaurante', () => {
     })
 
     it('deve retornar false se dia não existe nos horários', () => {
-      const config = ConfiguracoesRestaurante.criarPadrao()
+      const _config = ConfiguracoesRestaurante.criarPadrao()
       //domingo é dia 0 mas só二次tem segunda (1) e não tem sábado (6) no horariosPadrao curto
     })
 

@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/client';
-import type { ISupabaseDatabaseAdapter, SyncResult, SupabaseTable } from '@/application/shared/services/adapters/ISupabaseDatabaseAdapter';
-import { db } from '@/infrastructure/persistence/database';
+import type { ISupabaseDatabaseAdapter, SyncResult } from '@/application/shared/services/adapters/ISupabaseDatabaseAdapter';
+import { db, type PediDatabase } from '@/infrastructure/persistence/database';
 
 /**
  * Adapter de sincronização entre Dexie (IndexedDB local) e Supabase (PostgreSQL remoto).
@@ -105,8 +105,7 @@ export class SupabaseDatabaseAdapter implements ISupabaseDatabaseAdapter {
 
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        query = query.eq(key, value as any);
+        query = query.eq(key, value as string | number | boolean);
       });
     }
 
@@ -137,22 +136,21 @@ export class SupabaseDatabaseAdapter implements ISupabaseDatabaseAdapter {
     const { data: result, error } = await this.supabase
       .from(supabaseTable)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .upsert(data as unknown as any[])
-      .select();
+      .upsert(data as unknown as any)
+      .select() as { data: unknown[] | null; error: unknown };
 
     if (error) {
       return {
         success: false,
         syncedCount: 0,
         failedCount: data.length,
-        errors: [`Erro ao enviar dados: ${error.message}`],
+        errors: [`Erro ao enviar dados: ${(error as Error).message}`],
       };
     }
 
     return {
       success: true,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      syncedCount: (result as any)?.length ?? data.length,
+      syncedCount: result?.length ?? data.length,
       failedCount: 0,
       errors: [],
     };
@@ -177,21 +175,20 @@ export class SupabaseDatabaseAdapter implements ISupabaseDatabaseAdapter {
       .from(supabaseTable)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .update(data as unknown as any)
-      .match({ id: (data as { id: string }[]).map(d => d.id) });
+      .match({ id: (data as { id: string }[]).map(d => d.id) }) as { data: unknown[] | null; error: unknown };
 
     if (error) {
       return {
         success: false,
         syncedCount: 0,
         failedCount: data.length,
-        errors: [`Erro ao atualizar dados: ${error.message}`],
+        errors: [`Erro ao atualizar dados: ${(error as Error).message}`],
       };
     }
 
     return {
       success: true,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      syncedCount: (result as any)?.length ?? data.length,
+      syncedCount: result?.length ?? data.length,
       failedCount: 0,
       errors: [],
     };
@@ -248,6 +245,16 @@ export class SupabaseDatabaseAdapter implements ISupabaseDatabaseAdapter {
   }
 
   /**
+   * Obtém uma tabela Dexie dinamicamente pelo nome.
+   * Usamos type assertion pois Dexie não suporta acesso por string index.
+   * Esta é a única forma de fazer acesso dinámico a tabelas com a API do Dexie.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private getDexieTable(tableName: string): any {
+    return (db as PediDatabase)[tableName as keyof PediDatabase];
+  }
+
+  /**
    * Realiza pull de dados de uma tabela específica do Supabase para Dexie.
    */
   private async pullTable(tableName: string): Promise<SyncResult> {
@@ -285,8 +292,7 @@ export class SupabaseDatabaseAdapter implements ISupabaseDatabaseAdapter {
       }
 
       // Inserir dados no Dexie (ignorando erros de duplicação)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const dexieTable = (db as any)[tableName];
+      const dexieTable = this.getDexieTable(tableName);
       if (dexieTable?.bulkPut) {
         await dexieTable.bulkPut(data);
       }
@@ -313,8 +319,7 @@ export class SupabaseDatabaseAdapter implements ISupabaseDatabaseAdapter {
    */
   private async pushTable(tableName: string): Promise<SyncResult> {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const dexieTable = (db as any)[tableName];
+      const dexieTable = this.getDexieTable(tableName);
       if (!dexieTable?.toArray) {
         return {
           success: false,
@@ -333,14 +338,14 @@ export class SupabaseDatabaseAdapter implements ISupabaseDatabaseAdapter {
       const { error } = await this.supabase
         .from(supabaseTable)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .upsert(localData as unknown as any[]);
+        .upsert(localData as unknown as any);
 
       if (error) {
         return {
           success: false,
           syncedCount: 0,
           failedCount: localData.length,
-          errors: [`Erro ao fazer push: ${error.message}`],
+          errors: [`Erro ao fazer push: ${(error as Error).message}`],
         };
       }
 

@@ -16,9 +16,10 @@ describe('TransacaoRepository', () => {
   function criarTransacaoValida(overrides?: Partial<{ id: string; pagamentoId: string; tipo: TipoTransacaoValue; status: 'pending' | 'success' | 'failure' }>): Transacao {
     return Transacao.criar({
       pagamentoId: overrides?.pagamentoId ?? 'pag-123',
-      tipo: overrides?.tipo ?? 'pix_payment',
+      tipo: overrides?.tipo ?? 'charge',
       providerId: 'provider-xyz',
-      id: overrides?.id,
+      payload: {},
+      id: overrides?.id ?? 'transacao-001',
     });
   }
 

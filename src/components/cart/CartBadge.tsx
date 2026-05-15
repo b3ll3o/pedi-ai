@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useCartStore } from '@/stores/cartStore';
+import { useCartStore } from '@/infrastructure/persistence/cartStore';
 import styles from './CartBadge.module.css';
 
 export function CartBadge() {

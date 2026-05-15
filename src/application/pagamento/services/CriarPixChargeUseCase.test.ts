@@ -12,8 +12,10 @@ import { Pedido } from '@/domain/pedido/entities/Pedido';
 
 // Mock do EventDispatcher
 const mockDispatch = vi.fn();
-vi.mock('@/domain/shared', async () => {
+vi.mock('@/domain/shared', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/domain/shared')>();
   return {
+    ...actual,
     EventDispatcher: {
       getInstance: vi.fn(() => ({
         dispatch: mockDispatch,
@@ -23,26 +25,30 @@ vi.mock('@/domain/shared', async () => {
 });
 
 // Mock do PagamentoAggregate
-vi.mock('@/domain/pagamento', () => ({
-  PagamentoAggregate: {
-    criar: vi.fn(() => ({
-      pagamento: {
-        id: 'pag-new',
-        pedidoId: 'pedido-123',
-        metodo: MetodoPagamento.PIX,
-        status: StatusPagamento.PENDING,
-        valor: Dinheiro.criar(5000),
-        createdAt: new Date(),
-      },
-      adicionarTransacaoCharge: vi.fn(),
-      getEventos: vi.fn(() => []),
-    })),
-  },
-  MetodoPagamento: {
-    PIX: { toString: () => 'pix' },
-    fromValue: vi.fn(() => MetodoPagamento.PIX),
-  },
-}));
+vi.mock('@/domain/pagamento', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/domain/pagamento')>();
+  return {
+    ...actual,
+    PagamentoAggregate: {
+      criar: vi.fn(() => ({
+        pagamento: {
+          id: 'pag-new',
+          pedidoId: 'pedido-123',
+          metodo: MetodoPagamento.PIX,
+          status: StatusPagamento.PENDING,
+          valor: Dinheiro.criar(5000),
+          createdAt: new Date(),
+        },
+        adicionarTransacaoCharge: vi.fn(),
+        getEventos: vi.fn(() => []),
+      })),
+    },
+    MetodoPagamento: {
+      PIX: { toString: () => 'pix' },
+      fromValue: vi.fn(() => MetodoPagamento.PIX),
+    },
+  };
+});
 
 describe('CriarPixChargeUseCase', () => {
   let useCase: CriarPixChargeUseCase;
@@ -135,7 +141,7 @@ describe('CriarPixChargeUseCase', () => {
       mockPagamentoRepo.buscarPorPedidoId = vi.fn(async () => pagamentoConfirmado);
 
       await expect(useCase.execute({ pedidoId: 'pedido-123' }))
-        .rejects.toThrow('já existe um pagamento confirmado ou cancelado');
+        .rejects.toThrow('Já existe um pagamento confirmado ou cancelado para este pedido');
     });
 
     it('deve criar PixCharge com sucesso para novo pagamento', async () => {
@@ -161,12 +167,12 @@ describe('CriarPixChargeUseCase', () => {
       });
 
       mockPagamentoRepo.buscarPorPedidoId = vi.fn(async () => pagamentoPendente);
-      mockPixAdapter.criarCobranca = vi.fn();
+      mockPixAdapter.criarCobranca = vi.fn(async () => mockPixCharge);
 
       const result = await useCase.execute({ pedidoId: 'pedido-123' });
 
       expect(result.id).toBe('pix_charge_123');
-      expect(mockPixAdapter.criarCobranca).not.toHaveBeenCalled();
+      expect(mockPixAdapter.criarCobranca).toHaveBeenCalledWith(5000, 'pedido-123');
       expect(mockPagamentoRepo.salvar).not.toHaveBeenCalled();
     });
 

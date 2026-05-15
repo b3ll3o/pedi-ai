@@ -26,7 +26,7 @@ if (diff) {
 
     console.log('\n✨ Para fazer review detalhado, use Claude Code com o prompt:\n')
     console.log('"Faça code review dos seguintes arquivos:", seguida da lista acima')
-  } catch (e) {
+  } catch (_e) {
     console.log('Erro ao obter diff:', e.message)
   }
 } else {
@@ -36,7 +36,7 @@ if (diff) {
   try {
     execSync('pnpm build', { cwd: ROOT, stdio: 'pipe' })
     console.log('   ✅ Build passou\n')
-  } catch (e) {
+  } catch (_e) {
     console.log('   ❌ Build falhou\n')
   }
 
@@ -44,7 +44,7 @@ if (diff) {
   try {
     execSync('pnpm lint', { cwd: ROOT, stdio: 'pipe' })
     console.log('   ✅ Lint passou\n')
-  } catch (e) {
+  } catch (_e) {
     console.log('   ⚠️ Lint tem warnings\n')
   }
 
@@ -52,7 +52,7 @@ if (diff) {
   try {
     execSync('pnpm tsc --noEmit', { cwd: ROOT, stdio: 'pipe' })
     console.log('   ✅ Type check passou\n')
-  } catch (e) {
+  } catch (_e) {
     console.log('   ❌ Type check falhou\n')
   }
 
@@ -60,7 +60,7 @@ if (diff) {
   try {
     execSync('pnpm test:coverage', { cwd: ROOT, stdio: 'pipe' })
     console.log('   ✅ Coverage passou\n')
-  } catch (e) {
+  } catch (_e) {
     console.log('   ⚠️ Coverage abaixo do limiar\n')
   }
 

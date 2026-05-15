@@ -13,7 +13,7 @@ const MP_WEBHOOK_SECRET = Deno.env.get('MP_WEBHOOK_SECRET') ?? ''
  * Mercado Pago signs notifications using HMAC-SHA256
  * Signature format: sha256=base64(hmac_sha256(webhook_id + "." + body, secret))
  */
-async function validateSignature(req: Request, payload: { id: string }): Promise<boolean> {
+async function _validateSignature(req: Request, payload: { id: string }): Promise<boolean> {
   const signature = req.headers.get('X-Signature')
   if (!signature || !MP_WEBHOOK_SECRET) {
     return false

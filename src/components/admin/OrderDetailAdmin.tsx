@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import type { OrderWithItems, OrderStatus } from '@/services/adminOrderService'
+import type { OrderWithItems, OrderStatus } from '@/application/services/adminOrderService'
 import styles from './OrderDetailAdmin.module.css'
 
 interface OrderDetailAdminProps {

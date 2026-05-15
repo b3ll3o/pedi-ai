@@ -13,7 +13,7 @@ const mockGrupoRepo = {
 }
 
 // Test data builders
-const criarValorModificador = (overrides: Partial<{
+const _criarValorModificador = (overrides: Partial<{
   id: string;
   nome: string;
   ajustePreco: number;

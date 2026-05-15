@@ -12,7 +12,7 @@ import {
   VALID_STATUS_TRANSITIONS,
   type OrderFilters,
   type OrderWithItems,
-} from '@/services/adminOrderService'
+} from '@/application/services/adminOrderService'
 
 // ── Mock fetch ──────────────────────────────────────────────────────
 

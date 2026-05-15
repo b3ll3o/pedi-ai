@@ -333,7 +333,7 @@ Quando um usuário faz login:
 
 ## 8. Store de Restaurante (Zustand)
 
-O estado do restaurante selecionado é gerenciado em `src/stores/restaurantStore.ts`:
+O estado do restaurante selecionado é gerenciado em `src/infrastructure/persistence/restaurantStore.ts`:
 
 ```typescript
 interface RestaurantState {
@@ -397,6 +397,6 @@ CREATE TYPE user_role AS ENUM ('dono', 'gerente', 'atendente', 'cliente');
 | `supabase/migrations/0021_rename_roles_to_ptbr.sql` | Políticas RLS (pt-BR) |
 | `src/lib/supabase/auth.ts` | Funções de autenticação |
 | `src/lib/supabase/middleware.ts` | Middleware Supabase |
-| `src/stores/restaurantStore.ts` | Store Zustand de restaurantes |
+| `src/infrastructure/persistence/restaurantStore.ts` | Store Zustand de restaurantes |
 | `tests/e2e/tests/admin/auth.spec.ts` | Testes E2E de auth admin |
 | `tests/e2e/tests/customer/auth.spec.ts` | Testes E2E de auth cliente |

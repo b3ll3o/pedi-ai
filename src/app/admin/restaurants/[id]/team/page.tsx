@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { getSession } from '@/lib/supabase/auth';
 import { TeamManagement } from '@/components/admin/TeamManagement';
-import { useRestaurantStore } from '@/stores/restaurantStore';
+import { useRestaurantStore } from '@/infrastructure/persistence/restaurantStore';
 import { Restaurante, type RestauranteProps } from '@/domain/admin/entities/Restaurante';
 import type { restaurants, users_profiles, Enum_user_role } from '@/lib/supabase/types';
 import styles from './page.module.css';

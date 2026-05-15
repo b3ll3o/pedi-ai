@@ -5,8 +5,8 @@
 
 import { useMemo } from 'react'
 import { useRealtimeOrders, type UseRealtimeOrdersOptions } from './useRealtimeOrders'
-import type { OrderWithItems } from '@/services/adminOrderService'
-import { getOrderAge, getOrderAgeDisplay, isOrderStale } from '@/services/adminOrderService'
+import type { OrderWithItems } from '@/application/services/adminOrderService'
+import { getOrderAge, getOrderAgeDisplay, isOrderStale } from '@/application/services/adminOrderService'
 
 export interface KitchenOrder extends OrderWithItems {
   age_seconds: number

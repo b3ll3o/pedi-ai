@@ -6,7 +6,7 @@
  * respecting the maxRetentionTime of 24 hours.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, _beforeEach } from 'vitest';
 
 // ── Types ───────────────────────────────────────────────────────────
 
@@ -310,8 +310,8 @@ describe('BackgroundSyncPlugin', () => {
       }
 
       let processedCount = 0;
-      let entry;
-      while ((entry = await plugin.queue.shiftRequest())) {
+      let _entry;
+      while ((_entry = await plugin.queue.shiftRequest())) {
         processedCount++;
       }
 

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useTableStore } from "@/stores/tableStore"
+import { useTableStore } from "@/infrastructure/persistence/tableStore"
 import type { order_items, order_status_history } from "@/lib/supabase/types"
 
 interface OrderDetailProps {

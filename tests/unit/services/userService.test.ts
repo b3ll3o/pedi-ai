@@ -8,7 +8,7 @@ import {
   canManageRole,
   getRoleLabel,
   getRoleColor,
-} from '@/services/userService'
+} from '@/application/services/userService'
 
 // Mock fetch
 const mockFetch = vi.fn()

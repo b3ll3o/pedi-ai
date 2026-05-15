@@ -4,7 +4,7 @@ import { useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useMenuStore } from '@/stores/menuStore';
+import { useMenuStore } from '@/infrastructure/persistence/menuStore';
 import { DietaryFilter } from '@/components/menu/DietaryFilter';
 import { ProductList } from '@/components/menu/ProductList';
 import { SearchBar } from '@/components/menu/SearchBar';
@@ -30,7 +30,7 @@ function toComponentDietaryLabel(label: string): DietaryLabel | null {
 }
 
 // Map component dietary labels to store dietary labels
-function toStoreDietaryLabel(label: DietaryLabel): import('@/stores/menuStore').DietaryLabel {
+function toStoreDietaryLabel(label: DietaryLabel): import('@/infrastructure/persistence/menuStore').DietaryLabel {
   const mapping: Record<DietaryLabel, string> = {
     vegetarian: 'vegetarian',
     vegan: 'vegan',
@@ -39,7 +39,7 @@ function toStoreDietaryLabel(label: DietaryLabel): import('@/stores/menuStore').
     'sugar-free': 'sugar_free',
     organic: 'organic',
   };
-  return mapping[label] as import('@/stores/menuStore').DietaryLabel;
+  return mapping[label] as import('@/infrastructure/persistence/menuStore').DietaryLabel;
 }
 
 export default function CategoryPageClient({ categoryId, restaurantId }: CategoryPageClientProps) {

@@ -3,7 +3,7 @@ import { metadata, ldJson } from '@/app/page';
 
 describe('SEO Metadata - Landing Page', () => {
   const EXPECTED_TITLE = 'Cardápio Digital para Restaurantes | Pedi-AI - Funciona Offline';
-  const MAX_TITLE_LENGTH = 60;
+  const _MAX_TITLE_LENGTH = 60;
 
   describe('7.1.1 - Page Title', () => {
     it('deve ter título "Cardápio Digital para Restaurantes | Pedi-AI - Funciona Offline"', () => {

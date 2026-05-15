@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { CartItem } from '@/stores/cartStore';
+import type { CartItem } from '@/infrastructure/persistence/cartStore';
 import styles from './CheckoutForm.module.css';
 
 export interface CheckoutFormProps {

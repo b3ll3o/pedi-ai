@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { logger } from '@/lib/logger';
+
 
 type Intent = 'gerenciar_restaurante' | 'fazer_pedidos'
 type Role = 'dono' | 'cliente'
@@ -105,7 +107,7 @@ export async function POST(request: NextRequest) {
       })
 
     if (insertError) {
-      console.error('Error creating user profile:', insertError)
+      logger.error("auth", "Error creating user profile:", { error: insertError })
       return NextResponse.json(
         { error: 'Falha ao criar perfil do usuário' },
         { status: 500 }
@@ -114,7 +116,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true }, { status: 201 })
   } catch (error) {
-    console.error('Unexpected error in /api/auth/register:', error)
+    logger.error("auth", "Unexpected error in /api/auth/register:", { error: error })
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

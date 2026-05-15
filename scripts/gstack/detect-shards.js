@@ -8,4 +8,5 @@ const shards = Math.max(1, Math.min(cpus, 8))
 console.log(`Detected ${cpus} CPUs, using ${shards} shards`)
 console.log(`SHARD_TOTAL=${shards}`)
 
-export default { total: shards }
+const result = { total: shards };
+export default result;

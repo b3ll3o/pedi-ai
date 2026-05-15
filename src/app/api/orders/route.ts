@@ -101,6 +101,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    if (body.payment_method !== undefined && !['pix', 'card'].includes(body.payment_method)) {
+      return NextResponse.json(
+        { error: 'Invalid payment_method. Must be pix or card' },
+        { status: 400 }
+      )
+    }
+
     const supabase = await createClient()
     const supabaseAdmin = getSupabaseAdmin()
 
@@ -186,11 +193,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Insert order
-    // Map 'card' to 'credit_card' for Supabase enum compatibility
-    const paymentMethodMap: Record<'pix' | 'card', 'pix' | 'credit_card'> = {
-      pix: 'pix',
-      card: 'credit_card',
-    }
     const orderData = {
       restaurant_id: restaurantId,
       table_id: body.table_id || null,

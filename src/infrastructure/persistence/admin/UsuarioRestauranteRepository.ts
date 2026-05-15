@@ -83,12 +83,17 @@ export class UsuarioRestauranteRepository implements IUsuarioRestauranteReposito
   }
 
   private entityToRecord(entity: UsuarioRestaurante): Partial<UsuarioRestauranteRecord> {
-    return {
-      id: entity.id ? Number(entity.id) : undefined,
+    const record: Partial<UsuarioRestauranteRecord> = {
       user_id: entity.usuarioId,
       restaurant_id: entity.restauranteId,
       role: entity.papel,
       created_at: entity.criadoEm.toISOString(),
     };
+    // Only include numeric id if entity.id is a valid number (for auto-increment)
+    // For UUID-based ids, let the database auto-generate the numeric id
+    if (entity.id && !isNaN(Number(entity.id))) {
+      record.id = Number(entity.id);
+    }
+    return record;
   }
 }

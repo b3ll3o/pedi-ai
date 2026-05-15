@@ -31,7 +31,6 @@ export function OrderStatus({ orderId }: OrderStatusProps) {
     try {
       const response = await fetch(`/api/orders/${orderId}/status`)
       if (response.ok) {
-        const data = await response.json()
         // History not available via API yet, keep using supabase for now
         const { data: historyData } = await supabase
           .from("order_status_history")

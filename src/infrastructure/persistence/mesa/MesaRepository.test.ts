@@ -67,7 +67,7 @@ describe('MesaRepository', () => {
 
   describe('findById', () => {
     it('deve retornar mesa quando encontrada', async () => {
-      const mesa = createMesa();
+      const _mesa = createMesa();
       mockMesas.set('mesa-001', {
         id: 'mesa-001',
         restauranteId: 'rest-001',

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { MercadoPagoConfig, Payment } from 'mercadopago'
 import { createClient } from '@/lib/supabase/server'
 import type { orders } from '@/lib/supabase/types'
+import { logger } from '@/lib/logger';
+
 
 // Demo mode check
 const isDemoMode = process.env.NEXT_PUBLIC_DEMO_PAYMENT_MODE === 'true'
@@ -109,23 +111,32 @@ export async function POST(request: NextRequest) {
     const expiresAt = new Date()
     expiresAt.setMinutes(expiresAt.getMinutes() + 30) // Mercado Pago Pix expires in 30 minutes
 
-    const { error: intentError } = await supabase.from('payment_intents').insert({
-      id: payment.id?.toString(),
+    const paymentIntentId = payment.id?.toString()
+    if (!paymentIntentId) {
+      return NextResponse.json(
+        { error: 'Mercado Pago returned an invalid payment ID' },
+        { status: 500 }
+      )
+    }
+
+    const paymentIntentInsert = {
+      id: paymentIntentId,
       order_id: dbOrder.id,
       restaurant_id: dbOrder.restaurant_id,
       amount: dbOrder.total,
       currency: 'BRL',
-      status: 'pending',
-      payment_method: 'pix',
-      Mercado_pago_payment_id: payment.id?.toString(),
+      status: 'pending' as const,
+      payment_method: 'pix' as const,
+      Mercado_pago_payment_id: paymentIntentId,
       qr_code: pixData.qr_code,
       qr_code_base64: pixData.qr_code_base64 ?? null,
       expires_at: expiresAt.toISOString(),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any)
+    }
+
+    const { error: intentError } = await supabase.from('payment_intents').insert(paymentIntentInsert)
 
     if (intentError) {
-      console.error('Error storing payment intent:', intentError)
+      logger.error("payments/pix", "Error storing payment intent:", { error: intentError })
       // Continue anyway - the payment was created successfully
     }
 
@@ -143,7 +154,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(response)
   } catch (error) {
-    console.error('Error creating Pix payment:', error)
+    logger.error("payments/pix", "Error creating Pix payment:", { error: error })
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

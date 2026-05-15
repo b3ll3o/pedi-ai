@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ChevronDown, Store, Loader2 } from 'lucide-react';
-import { useRestaurantStore } from '@/stores/restaurantStore';
+import { useRestaurantStore } from '@/infrastructure/persistence/restaurantStore';
 import { Restaurante, type RestauranteProps } from '@/domain/admin/entities/Restaurante';
 import styles from './RestaurantSelector.module.css';
 

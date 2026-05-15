@@ -1,5 +1,4 @@
 import { UseCase } from '@/application/shared';
-import { ModificadorGrupo } from '@/domain/cardapio/entities/ModificadorGrupo';
 import { IModificadorGrupoRepository } from '@/domain/cardapio/repositories/IModificadorGrupoRepository';
 
 /**

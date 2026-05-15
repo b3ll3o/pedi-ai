@@ -10,7 +10,7 @@ interface ResetPasswordFormProps {
   isAdmin?: boolean;
 }
 
-export function ResetPasswordForm({ token, onSuccess, onError, isAdmin = false }: ResetPasswordFormProps) {
+export function ResetPasswordForm({ token, onSuccess, onError }: ResetPasswordFormProps) {
   const [novaSenha, setNovaSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
   const [error, setError] = useState('');

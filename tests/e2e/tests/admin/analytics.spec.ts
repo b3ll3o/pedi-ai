@@ -102,7 +102,7 @@ test.describe('Admin Analytics', () => {
     test.skip('should update data when changing date range', async ({ admin: _admin }) => {
       await analyticsPage.selectDateRange('7d')
       await analyticsPage.waitForLoading()
-      const orders7d = await analyticsPage.getSummaryTotalOrders()
+      const _orders7d = await analyticsPage.getSummaryTotalOrders()
       await analyticsPage.selectDateRange('30d')
       await analyticsPage.waitForLoading()
       const orders30d = await analyticsPage.getSummaryTotalOrders()

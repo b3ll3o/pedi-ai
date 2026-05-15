@@ -7,7 +7,7 @@
  * Este hook se inscreve nesse canal e notifica o cliente.
  */
 
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 export type OrderStatus = 'pending_payment' | 'paid' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
@@ -71,6 +71,8 @@ export function useCustomerOrderNotifications({
 }: UseCustomerOrderNotificationsOptions): UseCustomerOrderNotificationsResult {
   const [pendingUpdates, setPendingUpdates] = useState<OrderUpdatePayload[]>([]);
 
+  const orderIdsKey = useMemo(() => orderIds.join(','), [orderIds]);
+
   const handleOrderUpdated = useCallback(
     (payload: OrderUpdatePayload) => {
       // Ignora se o pedido não for um dos que estamos monitorando
@@ -92,7 +94,7 @@ export function useCustomerOrderNotifications({
   }, []);
 
   useEffect(() => {
-    if (!enabled || orderIds.length === 0) {
+    if (!enabled || !orderIdsKey) {
       return;
     }
 
@@ -114,7 +116,7 @@ export function useCustomerOrderNotifications({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [enabled, orderIds.join(','), handleOrderUpdated]);
+  }, [enabled, orderIdsKey, handleOrderUpdated]);
 
   return {
     pendingUpdates,

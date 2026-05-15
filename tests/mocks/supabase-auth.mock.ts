@@ -105,10 +105,10 @@ export function createMockSupabaseAuth(config?: MockSupabaseAuthConfig): {
   const defaultAuthResponse = createMockAuthResponse()
 
   // Callback storage for onAuthStateChange
-  let storedCallback: ((event: string, session: Session | null) => void) | null = null
+  const _storedCallback: ((event: string, session: Session | null) => void) | null = null
 
   const mock = {
-    signUp: vi.fn(async (email: string, password: string): Promise<AuthResponse> => {
+    signUp: vi.fn(async (_email: string, _password: string): Promise<AuthResponse> => {
       const partial = config?.signUp?.respostaParcial
       if (partial) {
         return {
@@ -126,7 +126,7 @@ export function createMockSupabaseAuth(config?: MockSupabaseAuthConfig): {
       } as AuthResponse
     }),
 
-    signIn: vi.fn(async (email: string, password: string): Promise<AuthResponse> => {
+    signIn: vi.fn(async (_email: string, _password: string): Promise<AuthResponse> => {
       const partial = config?.signIn?.respostaParcial
       if (partial) {
         return {
@@ -157,7 +157,7 @@ export function createMockSupabaseAuth(config?: MockSupabaseAuthConfig): {
       return config?.getUser?.user ?? MockUser
     }),
 
-    resetPassword: vi.fn(async (email: string): Promise<void> => {
+    resetPassword: vi.fn(async (_email: string): Promise<void> => {
       const error = config?.resetPassword?.error
       if (error) throw error
     }),
@@ -185,7 +185,7 @@ export const SupabaseAuthMock = {
   /**
    * Sessão de usuário autenticado
    */
-  sessionAutenticado: (email: string = 'usuario@mock.com'): { session: Session; user: User } => {
+  sessionAutenticado: (_email: string = 'usuario@mock.com'): { session: Session; user: User } => {
     const user = { ...MockUser, email }
     return {
       session: createMockSession(user),

@@ -2,11 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CriarPedidoUseCase } from '@/application/pedido/services/CriarPedidoUseCase';
 import type { CriarPedidoInput } from '@/application/pedido/services/CriarPedidoUseCase';
 import { CarrinhoAggregate } from '@/domain/pedido/aggregates/CarrinhoAggregate';
-import { PedidoAggregate } from '@/domain/pedido/aggregates/PedidoAggregate';
+import { _PedidoAggregate } from '@/domain/pedido/aggregates/PedidoAggregate';
 import { Pedido } from '@/domain/pedido/entities/Pedido';
 import { ItemPedido } from '@/domain/pedido/entities/ItemPedido';
 import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
-import { StatusPedido } from '@/domain/pedido/value-objects/StatusPedido';
+import { _StatusPedido } from '@/domain/pedido/value-objects/StatusPedido';
 import { EventDispatcher } from '@/domain/shared/events/EventDispatcher';
 
 // Mock do EventDispatcher

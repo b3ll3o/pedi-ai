@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { CarrinhoRepository } from '@/infrastructure/persistence/pedido/CarrinhoRepository';
 import { CarrinhoAggregate } from '@/domain/pedido/aggregates/CarrinhoAggregate';
-import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
+import { _Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 import { createTestDatabase } from '../_test-helpers';
 
 describe('CarrinhoRepository', () => {

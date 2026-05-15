@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { validateQRPayload } from '@/lib/qr/validator'
+import { logger } from '@/lib/logger';
+
 
 
 interface ValidateRequest {
@@ -33,7 +35,7 @@ export async function POST(request: NextRequest) {
     // Get secret key from environment
     const secretKey = process.env.QR_SECRET_KEY
     if (!secretKey) {
-      console.error('QR_SECRET_KEY environment variable is not set')
+      logger.error("mesa", "QR_SECRET_KEY environment variable is not set");
       return NextResponse.json(
         { valid: false, error: 'Erro interno de configuração' },
         { status: 500 }
@@ -77,7 +79,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ valid: true, table: tableResponse })
   } catch (error) {
-    console.error('Unexpected error in /api/tables/validate:', error)
+    logger.error("mesa", "Unexpected error in /api/tables/validate:", { error: error })
     return NextResponse.json(
       { valid: false, error: 'Erro interno do servidor' },
       { status: 500 }

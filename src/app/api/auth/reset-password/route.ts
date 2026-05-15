@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { logger } from '@/lib/logger';
+
 
 type ResetPasswordResponse = {
   success: boolean
@@ -52,7 +54,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ResetPass
     })
 
     if (updateError) {
-      console.error('Error updating password:', updateError)
+      logger.error("auth", "Error updating password:", { error: updateError })
       return NextResponse.json(
         { success: false, error: 'Falha ao redefinir senha' },
         { status: 500 }
@@ -64,7 +66,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ResetPass
       { status: 200 }
     )
   } catch (error) {
-    console.error('Unexpected error in /api/auth/reset-password:', error)
+    logger.error("auth", "Unexpected error in /api/auth/reset-password:", { error: error })
     return NextResponse.json(
       { success: false, error: 'Erro interno do servidor' },
       { status: 500 }

@@ -8,7 +8,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 // Use vi.hoisted to ensure mock variables are available when vi.mock runs
-const { pendingSyncData, mockDb } = vi.hoisted(() => {
+const { _pendingSyncData, mockDb } = vi.hoisted(() => {
   const pendingSyncData: Map<number, any> = new Map();
   let idCounter = 0;
 
@@ -88,7 +88,7 @@ import {
 // Constants matching the implementation
 const INITIAL_BACKOFF_MS = 1000;
 const MAX_BACKOFF_MS = 30000;
-const MAX_RETRIES = 3;
+const _MAX_RETRIES = 3;
 
 // Extended timeout for tests that involve multiple retries with delays
 const RETRY_TEST_TIMEOUT = 15000;
