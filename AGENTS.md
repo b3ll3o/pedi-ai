@@ -203,7 +203,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
   - Fluxos de edge cases e tratamento de erros
 - **Antes de.merge de PR**: Todos os testes E2E DEVEM passar localmente
 - **CI/CD**: Pipeline E2E deve bloquear merge se testes falharem
-- **Cobertura de fluxos**: Manter inventário atualizado de fluxos cobertos em `tests/e2e/README.md`
+- **Cobertura de fluxos**: Manter inventário atualizado de fluxos cobertos em `apps/web/tests/e2e/README.md`
 
 ## Arquitetura DDD (Domain-Driven Design)
 
@@ -301,6 +301,8 @@ pedi-ai/
 │   │       ├── realtime/     # Socket.io gateway
 │   │       └── prisma/      # Database schema
 │   └── web/                  # Next.js 16 + TypeScript (cardápio digital)
+│       ├── public/           # Arquivos estáticos (sw.js, manifest, robots.txt)
+│       ├── tests/            # Vitest (unit + integration) + Playwright (E2E)
 │       └── src/
 │           ├── app/          # App Router (páginas, layouts, API routes)
 │           ├── components/   # Componentes React
@@ -314,7 +316,6 @@ pedi-ai/
 │       └── src/
 │           ├── constants/    # Feature flags, constantes de negócio
 │           └── utils/        # Logger, helpers puros
-├── tests/                    # Vitest (unit + integration) + Playwright (E2E)
 └── docs/                     # Guias e documentação
 ```
 

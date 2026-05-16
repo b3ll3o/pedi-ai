@@ -49,9 +49,10 @@ pedi-ai/
 ├── apps/
 │   ├── api/       # NestJS backend (admin, orders, realtime websocket)
 │   └── web/      # Next.js frontend (cardápio digital, cliente)
+│       ├── public/  # Arquivos estáticos (sw.js, manifest, robots.txt)
+│       └── tests/   # Vitest + Playwright
 ├── packages/
 │   └── shared/   # Código compartilhado (@pedi-ai/shared)
-├── tests/         # Vitest + Playwright
 └── docs/          # Documentação
 ```
 

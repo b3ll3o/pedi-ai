@@ -50,7 +50,7 @@ Admin acessa /login (ou /admin/login)
 - `apps/web/src/lib/auth/` — Módulo de autenticação
 - `apps/web/src/lib/supabase/middleware.ts` — Proteção de rotas admin
 
-**Fluxos E2E:** `tests/admin/auth.spec.ts`
+**Fluxos E2E:** `apps/web/apps/web/tests/admin/auth.spec.ts`
 
 ### 1.2 Logout
 
@@ -87,7 +87,7 @@ Owner/Manager acessa /admin/restaurants
 - Owner com 1 restaurante: Redireciona direto para o restaurante
 - Owner com múltiplos restaurantes: Mostra lista para seleção
 
-**Fluxos E2E:** `tests/admin/multi-restaurant.spec.ts`
+**Fluxos E2E:** `apps/web/apps/web/tests/admin/multi-restaurant.spec.ts`
 
 ### 2.2 Criar Restaurante
 
@@ -136,7 +136,7 @@ Owner acessa configurações do restaurante desativado
   → Restaurante volta a aparecer na lista pública
 ```
 
-**Fluxos E2E:** `tests/admin/restaurant-reactivate.spec.ts`
+**Fluxos E2E:** `apps/web/apps/web/tests/admin/restaurant-reactivate.spec.ts`
 
 ---
 
@@ -252,7 +252,7 @@ Admin acessa /admin/categories
   → Exibe: nome, descrição, número de produtos, status (ativa/inativa)
 ```
 
-**Fluxos E2E:** `tests/admin/categories.spec.ts`
+**Fluxos E2E:** `apps/web/apps/web/tests/admin/categories.spec.ts`
 
 ### 5.2 Criar Categoria
 
@@ -317,7 +317,7 @@ Admin acessa /admin/products
   → Exibe: nome, preço, categoria, labels dietéticos, status
 ```
 
-**Fluxos E2E:** `tests/admin/products.spec.ts`
+**Fluxos E2E:** `apps/web/apps/web/tests/admin/products.spec.ts`
 
 ### 6.2 Criar Produto
 
@@ -425,7 +425,7 @@ Modificador marcado como required
   → Produto não é adicionado ao carrinho
 ```
 
-**Fluxos E2E:** `tests/admin/modifier-groups.spec.ts`
+**Fluxos E2E:** `apps/web/apps/web/tests/admin/modifier-groups.spec.ts`
 
 ---
 
@@ -456,7 +456,7 @@ Admin acessa /admin/combos/new
   → Preço bundle exibido no cardápio do cliente
 ```
 
-**Fluxos E2E:** `tests/admin/combos-admin.spec.ts`
+**Fluxos E2E:** `apps/web/apps/web/tests/admin/combos-admin.spec.ts`
 
 ### 8.3 Editar Combo
 
@@ -488,7 +488,7 @@ Admin acessa /admin/tables
   → Exibe: label, status (ativa/inativa), QR code gerado?, número de pedidos
 ```
 
-**Fluxos E2E:** `tests/admin/table-qr.spec.ts`
+**Fluxos E2E:** `apps/web/apps/web/tests/admin/table-qr.spec.ts`
 
 ### 9.2 Criar Mesa
 
@@ -558,7 +558,7 @@ Admin acessa /admin/orders
   → Exibe: número do pedido, mesa, status, total, data
 ```
 
-**Fluxos E2E:** `tests/admin/orders.spec.ts`
+**Fluxos E2E:** `apps/web/apps/web/tests/admin/orders.spec.ts`
 
 ### 10.2 Ver Detalhes do Pedido
 
@@ -662,7 +662,7 @@ Cozinha acessa /kitchen ou /admin/kitchen
     - Indicador de "stale" (> 5 min)
 ```
 
-**Fluxos E2E:** `tests/waiter/kitchen.spec.ts`
+**Fluxos E2E:** `apps/web/apps/web/tests/waiter/kitchen.spec.ts`
 
 ### 11.2 Receber Notificação de Novo Pedido
 
@@ -714,7 +714,7 @@ Admin acessa /admin/orders ou /kitchen
     → Admin recebe atualização instantânea
 ```
 
-**Fluxos E2E:** `tests/admin/realtime-updates.spec.ts`
+**Fluxos E2E:** `apps/web/apps/web/tests/admin/realtime-updates.spec.ts`
 
 ### 12.2 Fallback de Polling
 
@@ -753,7 +753,7 @@ Owner/Manager acessa /admin/dashboard
     - Itens mais vendidos (top 10)
 ```
 
-**Fluxos E2E:** `tests/admin/analytics.spec.ts`
+**Fluxos E2E:** `apps/web/apps/web/tests/admin/analytics.spec.ts`
 
 ### 13.2 Visualizar Pedidos por Período
 
@@ -876,19 +876,19 @@ getRoleColor(role): string  // Retorna cor hex do badge
 
 | Fluxo                 | Spec File                                   | Tags              |
 | --------------------- | ------------------------------------------- | ----------------- |
-| auth (admin)          | `tests/admin/auth.spec.ts`                  | @smoke, @critical |
-| multi-restaurant      | `tests/admin/multi-restaurant.spec.ts`      | —                 |
-| restaurant-reactivate | `tests/admin/restaurant-reactivate.spec.ts` | —                 |
-| categories            | `tests/admin/categories.spec.ts`            | —                 |
-| products              | `tests/admin/products.spec.ts`              | —                 |
-| modifier-groups       | `tests/admin/modifier-groups.spec.ts`       | —                 |
-| combos-admin          | `tests/admin/combos-admin.spec.ts`          | —                 |
-| table-qr              | `tests/admin/table-qr.spec.ts`              | —                 |
-| orders                | `tests/admin/orders.spec.ts`                | —                 |
-| realtime-updates      | `tests/admin/realtime-updates.spec.ts`      | —                 |
-| analytics             | `tests/admin/analytics.spec.ts`             | —                 |
-| kitchen (garçom)      | `tests/waiter/kitchen.spec.ts`              | @slow             |
-| offline-restaurant    | `tests/admin/offline-restaurant.spec.ts`    | —                 |
+| auth (admin)          | `apps/web/apps/web/tests/admin/auth.spec.ts`                  | @smoke, @critical |
+| multi-restaurant      | `apps/web/apps/web/tests/admin/multi-restaurant.spec.ts`      | —                 |
+| restaurant-reactivate | `apps/web/apps/web/tests/admin/restaurant-reactivate.spec.ts` | —                 |
+| categories            | `apps/web/apps/web/tests/admin/categories.spec.ts`            | —                 |
+| products              | `apps/web/apps/web/tests/admin/products.spec.ts`              | —                 |
+| modifier-groups       | `apps/web/apps/web/tests/admin/modifier-groups.spec.ts`       | —                 |
+| combos-admin          | `apps/web/apps/web/tests/admin/combos-admin.spec.ts`          | —                 |
+| table-qr              | `apps/web/apps/web/tests/admin/table-qr.spec.ts`              | —                 |
+| orders                | `apps/web/apps/web/tests/admin/orders.spec.ts`                | —                 |
+| realtime-updates      | `apps/web/apps/web/tests/admin/realtime-updates.spec.ts`      | —                 |
+| analytics             | `apps/web/apps/web/tests/admin/analytics.spec.ts`             | —                 |
+| kitchen (garçom)      | `apps/web/apps/web/tests/waiter/kitchen.spec.ts`              | @slow             |
+| offline-restaurant    | `apps/web/apps/web/tests/admin/offline-restaurant.spec.ts`    | —                 |
 
 ---
 

@@ -189,7 +189,7 @@ tables_info: '++id, tableId, restaurantId';
 
 ## 4. Service Worker (Workbox)
 
-O Service Worker está em `public/sw.js` e utiliza Workbox para estratégias de caching.
+O Service Worker está em `apps/web/public/sw.js` e utiliza Workbox para estratégias de caching.
 
 ### Estratégias por Tipo de Recurso
 

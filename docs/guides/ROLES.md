@@ -397,7 +397,7 @@ CREATE TYPE user_role AS ENUM ('dono', 'gerente', 'atendente', 'cliente');
 1. **Sempre verificar role no frontend E no backend**: O RLS é a camada final de segurança, mas validações no frontend melhoram UX
 2. **Definir `app.current_restaurant_id`**: Antes de qualquer query, certifique-se de que o contexto do restaurante está definido
 3. **Manter roles atualizados**: Quando um usuário muda de função, atualizar tanto `users_profiles` quanto `user_restaurants`
-4. **Testar fluxos de acesso**: Utilizar os testes E2E em `tests/e2e/tests/admin/auth.spec.ts` e `tests/e2e/tests/customer/auth.spec.ts`
+4. **Testar fluxos de acesso**: Utilizar os testes E2E em `apps/web/tests/admin/auth.spec.ts` e `apps/web/tests/customer/auth.spec.ts`
 5. **Não confiar apenas em UI**: Permissões baseadas em UI podem ser burladas — RLS é obrigatório
 
 ---
@@ -413,5 +413,5 @@ CREATE TYPE user_role AS ENUM ('dono', 'gerente', 'atendente', 'cliente');
 | `apps/web/src/lib/supabase/auth.ts`                          | Funções de autenticação       |
 | `apps/web/src/lib/supabase/middleware.ts`                    | Middleware Supabase           |
 | `apps/web/src/infrastructure/persistence/restaurantStore.ts` | Store Zustand de restaurantes |
-| `tests/e2e/tests/admin/auth.spec.ts`                         | Testes E2E de auth admin      |
-| `tests/e2e/tests/customer/auth.spec.ts`                      | Testes E2E de auth cliente    |
+| `apps/web/tests/admin/auth.spec.ts`                         | Testes E2E de auth admin      |
+| `apps/web/tests/customer/auth.spec.ts`                      | Testes E2E de auth cliente    |

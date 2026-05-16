@@ -1,0 +1,738 @@
+{
+  "config": {
+    "configFile": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/playwright.config.ts",
+    "rootDir": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/tests",
+    "forbidOnly": true,
+    "fullyParallel": false,
+    "globalSetup": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/global-setup.ts",
+    "globalTeardown": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/global-teardown.ts",
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/test-results",
+        "repeatEach": 1,
+        "retries": 2,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium-headless-shell",
+        "name": "chromium-headless-shell",
+        "testDir": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "/.*\\.spec\\.ts/"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/test-results",
+        "repeatEach": 1,
+        "retries": 2,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/test-results",
+        "repeatEach": 1,
+        "retries": 2,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "firefox",
+        "name": "firefox",
+        "testDir": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/test-results",
+        "repeatEach": 1,
+        "retries": 2,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "webkit",
+        "name": "webkit",
+        "testDir": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/test-results",
+        "repeatEach": 1,
+        "retries": 2,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "Mobile Chrome",
+        "name": "Mobile Chrome",
+        "testDir": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/test-results",
+        "repeatEach": 1,
+        "retries": 2,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "Mobile Safari",
+        "name": "Mobile Safari",
+        "testDir": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "html",
+        {
+          "outputFolder": "playwright-report"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "playwright-results.json"
+        }
+      ],
+      [
+        "list",
+        null
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": {
+      "current": 1,
+      "total": 4
+    },
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.59.1",
+    "workers": 1,
+    "webServer": {
+      "command": "pnpm dev",
+      "cwd": "/home/leo/Documentos/projetos/pedi-ai/tests",
+      "url": "http://localhost:3000",
+      "reuseExistingServer": true,
+      "timeout": 180000
+    }
+  },
+  "suites": [
+    {
+      "title": "admin/analytics.spec.ts",
+      "file": "admin/analytics.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Admin Analytics",
+          "file": "admin/analytics.spec.ts",
+          "line": 4,
+          "column": 6,
+          "specs": [],
+          "suites": [
+            {
+              "title": "View popular items report",
+              "file": "admin/analytics.spec.ts",
+              "line": 54,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should display top 10 products when selecting Produtos tab",
+                  "ok": true,
+                  "tags": [
+                    "smoke"
+                  ],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/tests/admin/analytics.spec.ts",
+                            "line": 55,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium-headless-shell",
+                      "projectName": "chromium-headless-shell",
+                      "results": [
+                        {
+                          "workerIndex": -1,
+                          "parallelIndex": -1,
+                          "status": "skipped",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-05-11T20:21:27.451Z",
+                          "annotations": [
+                            {
+                              "type": "skip",
+                              "location": {
+                                "file": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/tests/admin/analytics.spec.ts",
+                                "line": 55,
+                                "column": 10
+                              }
+                            }
+                          ],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "32d68c0d826a2417ffb5-286b0fde77a82df5cbc9",
+                  "file": "admin/analytics.spec.ts",
+                  "line": 55,
+                  "column": 10
+                }
+              ]
+            },
+            {
+              "title": "View orders per period",
+              "file": "admin/analytics.spec.ts",
+              "line": 84,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should display orders grouped by day when selecting date range",
+                  "ok": true,
+                  "tags": [
+                    "smoke"
+                  ],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/tests/admin/analytics.spec.ts",
+                            "line": 85,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium-headless-shell",
+                      "projectName": "chromium-headless-shell",
+                      "results": [
+                        {
+                          "workerIndex": -1,
+                          "parallelIndex": -1,
+                          "status": "skipped",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-05-11T20:21:27.452Z",
+                          "annotations": [
+                            {
+                              "type": "skip",
+                              "location": {
+                                "file": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/tests/admin/analytics.spec.ts",
+                                "line": 85,
+                                "column": 10
+                              }
+                            }
+                          ],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "32d68c0d826a2417ffb5-04c95bc77f19b48f47d6",
+                  "file": "admin/analytics.spec.ts",
+                  "line": 85,
+                  "column": 10
+                },
+                {
+                  "title": "should calculate total revenue correctly for selected period",
+                  "ok": true,
+                  "tags": [
+                    "smoke"
+                  ],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/tests/admin/analytics.spec.ts",
+                            "line": 93,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium-headless-shell",
+                      "projectName": "chromium-headless-shell",
+                      "results": [
+                        {
+                          "workerIndex": -1,
+                          "parallelIndex": -1,
+                          "status": "skipped",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-05-11T20:21:27.452Z",
+                          "annotations": [
+                            {
+                              "type": "skip",
+                              "location": {
+                                "file": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/tests/admin/analytics.spec.ts",
+                                "line": 93,
+                                "column": 10
+                              }
+                            }
+                          ],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "32d68c0d826a2417ffb5-0a6313cfdb83a5ae2ce7",
+                  "file": "admin/analytics.spec.ts",
+                  "line": 93,
+                  "column": 10
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "admin/auth.spec.ts",
+      "file": "admin/auth.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Admin Authentication",
+          "file": "admin/auth.spec.ts",
+          "line": 29,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should login with valid admin credentials",
+              "ok": true,
+              "tags": [
+                "smoke",
+                "critical"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-headless-shell",
+                  "projectName": "chromium-headless-shell",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 63210,
+                      "error": {
+                        "message": "TimeoutError: page.waitForURL: Timeout 60000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"/admin/dashboard\" until \"load\"\n============================================================",
+                        "stack": "TimeoutError: page.waitForURL: Timeout 60000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"/admin/dashboard\" until \"load\"\n============================================================\n    at AdminLoginPage.waitForDashboard (/home/leo/Documentos/projetos/pedi-ai/tests/e2e/pages/AdminLoginPage.ts:55:21)\n    at /home/leo/Documentos/projetos/pedi-ai/tests/e2e/tests/admin/auth.spec.ts:49:21",
+                        "location": {
+                          "file": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/pages/AdminLoginPage.ts",
+                          "column": 21,
+                          "line": 55
+                        },
+                        "snippet": "   at ../pages/AdminLoginPage.ts:55\n\n\u001b[0m \u001b[90m 53 |\u001b[39m\n \u001b[90m 54 |\u001b[39m   \u001b[36masync\u001b[39m waitForDashboard()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 55 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForURL(\u001b[32m'/admin/dashboard'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m60\u001b[39m_000 })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 56 |\u001b[39m   }\n \u001b[90m 57 |\u001b[39m\n \u001b[90m 58 |\u001b[39m   \u001b[36masync\u001b[39m gotoResetPassword(token\u001b[33m:\u001b[39m string)\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/pages/AdminLoginPage.ts",
+                            "column": 21,
+                            "line": 55
+                          },
+                          "message": "TimeoutError: page.waitForURL: Timeout 60000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"/admin/dashboard\" until \"load\"\n============================================================\n\n   at ../pages/AdminLoginPage.ts:55\n\n  53 |\n  54 |   async waitForDashboard(): Promise<void> {\n> 55 |     await this.page.waitForURL('/admin/dashboard', { timeout: 60_000 })\n     |                     ^\n  56 |   }\n  57 |\n  58 |   async gotoResetPassword(token: string): Promise<void> {\n    at AdminLoginPage.waitForDashboard (/home/leo/Documentos/projetos/pedi-ai/tests/e2e/pages/AdminLoginPage.ts:55:21)\n    at /home/leo/Documentos/projetos/pedi-ai/tests/e2e/tests/admin/auth.spec.ts:49:21"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-11T20:21:28.030Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/test-results/admin-auth-Admin-Authentic-a849c-ith-valid-admin-credentials-chromium-headless-shell/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/test-results/admin-auth-Admin-Authentic-a849c-ith-valid-admin-credentials-chromium-headless-shell/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/test-results/admin-auth-Admin-Authentic-a849c-ith-valid-admin-credentials-chromium-headless-shell/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/pages/AdminLoginPage.ts",
+                        "column": 21,
+                        "line": 55
+                      }
+                    },
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6526,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "⏳ Seed not found, running automatic seed...\n"
+                        },
+                        {
+                          "text": "\n> pedi-ai@0.1.0 test:e2e:seed /home/leo/Documentos/projetos/pedi-ai\n> tsx tests/e2e/scripts/seed.ts\n\n◇ injected env (0) from .env.e2e // tip: ⌘ override existing { override: true }\n========================================\n🚀 SEED E2E - Iniciando...\n========================================\n\n🧹 Limpando dados de teste existentes...\n✅ Cleanup concluído\n\n👥 Criando usuários de teste...\n   Processando customer: e2e+customer@pedi-ai.test\n🏪 Criando restaurant de teste...\n   Restaurant criado: 00000000-0000-0000-0000-000000000001 (Restaurant E2E Test)\n\n   Processando admin: e2e+admin@pedi-ai.test\n   Processando waiter: e2e+waiter@pedi-ai.test\n✅ Usuários criados\n\n📂 Criando categorias de teste...\n🪑 Criando mesas de teste...\n🏷️  Criando modifier groups de teste...\n👤 Criando perfis de usuário...\n   Perfis criados para customer, admin e waiter\n\n   Tamanho: a460dd4e-7993-4598-8736-b5e55698b279 (required=true)\n   Extras: 1397dd06-522b-4e2a-9a62-5929890ebdd8 (required=false)\n\n   Mesa 1: E2E-TABLE-001 (0eaff340-17b5-400c-95d7-4726ce8cf6ba)\n   Mesa 2: E2E-TABLE-002 (69b63b86-0cfb-44ad-92e3-24f096a9126f)\n   Mesa 3: E2E-TABLE-003 (343a98ee-02b1-4971-bfa3-5e3c9378bf23)\n   Mesa 4: E2E-TABLE-004 (f3422bb5-08a0-428f-ad52-bb18cc2d611f)\n\n   Categoria: Bebidas (8804d76b-49d5-44b4-b639-a2d8e7115ca7)\n   Categoria: Pratos Principais (f489b86d-24cd-42ec-ab73-48439f95e0d0)\n   Categoria: Sobremesas (1933054d-2ef0-4e76-b276-56b8f9c1b72d)\n\n🍽️  Criando produtos de teste...\n   Produto: Coca-Cola - R$ 5.99 (5936c045-8b05-4c7f-aea4-edc859fbd631)\n   Produto: Suco de Laranja - R$ 7.99 (54ce2254-9ffa-4ddb-a2cf-17810af27ca7)\n   Produto: Água Mineral - R$ 3.99 (edf143e2-7022-454d-aafa-7df034ce24d2)\n   Produto: Picanha 300g - R$ 45.99 (04070d11-2005-4e3b-b10a-56584fd792bc)\n   Produto: Salmão Grelhado - R$ 38.99 (663b8966-ff46-43cf-a096-f109686c1947)\n   Produto: Salada Caesar - R$ 22.99 (d817487c-d36d-4559-b7b8-394556d5468e)\n   Produto: Tiramisu - R$ 15.99 (f708e11d-a543-402d-ab79-81de07b40ce2)\n   Produto: Pudim - R$ 12.99 (970a8ad5-cad0-4089-90a4-b715ba74fd44)\n   Produto: Sorvete - R$ 9.99 (6e40e2bd-f123-44ef-9263-e959ce22fea6)\n\n📝 Criando pedidos de teste...\n   Pedido: ad1fe0f9... - pending_payment\n   Pedido: b3169f2c... - paid\n   Pedido: 443f401e... - preparing\n\n🏷️  Criando modifier values de teste...\n🔗 Associando modifier groups a produtos...\n🎁 Criando combos de teste...\n   Combo: Combo Picanha - R$ 45.00 (cce5c130-b774-4f4b-bbe2-f6559a7471f7)\n   Tamanho: Pequeno (R$ 0), Médio (R$ +3), Grande (R$ +6)\n   Extras: Bacon (R$ +5), Queijo Extra (R$ +3), Cebola (R$ +2)\n\n   ⚠️  Não foi possível associar modifier groups.\n   ⚠️  Associação de modifier groups ignorada.\n\n   Itens: Picanha 300g (1x) + Coca-Cola (1x)\n\n========================================\n✅ SEED E2E - Concluído com sucesso!\n========================================\n\n📋 Credenciais de teste:\n   Customer: e2e+customer@pedi-ai.test / E2ETestPassword123!\n   Admin: e2e+admin@pedi-ai.test / E2ETestPassword123!\n   Garçom: e2e+waiter@pedi-ai.test / E2ETestPassword123!\n\n📍 Restaurant ID: 00000000-0000-0000-0000-000000000001\n📍 Restaurant Name: Restaurant E2E Test\n\n🏷️  Modifier Groups:\n   Tamanho (required): a460dd4e-7993-4598-8736-b5e55698b279\n   Extras (optional): 1397dd06-522b-4e2a-9a62-5929890ebdd8\n\n🎁 Combo Picanha: cce5c130-b774-4f4b-bbe2-f6559a7471f7\n\n💾 Dados salvos em: tests/e2e/scripts/.seed-result.json\n\n✅ Seed finalizado\n\n"
+                        },
+                        {
+                          "text": "✅ Automatic seed completed\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-05-11T20:22:31.899Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/test-results/admin-auth-Admin-Authentic-a849c-ith-valid-admin-credentials-chromium-headless-shell-retry1/trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "flaky"
+                }
+              ],
+              "id": "2fe3792949e79613868e-288a467d669b69d59256",
+              "file": "admin/auth.spec.ts",
+              "line": 47,
+              "column": 7
+            },
+            {
+              "title": "should logout and redirect to login",
+              "ok": true,
+              "tags": [
+                "smoke",
+                "critical"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-headless-shell",
+                  "projectName": "chromium-headless-shell",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1900,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-11T20:22:38.612Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2fe3792949e79613868e-5bd692d297a06ebf99d4",
+              "file": "admin/auth.spec.ts",
+              "line": 64,
+              "column": 7
+            },
+            {
+              "title": "should redirect to login when accessing protected route",
+              "ok": true,
+              "tags": [
+                "smoke",
+                "critical"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-headless-shell",
+                  "projectName": "chromium-headless-shell",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 707,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-11T20:22:40.529Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2fe3792949e79613868e-a4a5ff9fcea28b1e0292",
+              "file": "admin/auth.spec.ts",
+              "line": 69,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "admin/orders.spec.ts",
+      "file": "admin/orders.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Admin Orders",
+          "file": "admin/orders.spec.ts",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should display orders list",
+              "ok": true,
+              "tags": [
+                "smoke"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/tests/admin/orders.spec.ts",
+                        "line": 16,
+                        "column": 8
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium-headless-shell",
+                  "projectName": "chromium-headless-shell",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-11T20:22:41.261Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/tests/admin/orders.spec.ts",
+                            "line": 16,
+                            "column": 8
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "9216327811c2a1ea79fc-d7d7408615eb17f59e4a",
+              "file": "admin/orders.spec.ts",
+              "line": 16,
+              "column": 8
+            },
+            {
+              "title": "should view order details",
+              "ok": true,
+              "tags": [
+                "smoke"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/tests/admin/orders.spec.ts",
+                        "line": 31,
+                        "column": 8
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium-headless-shell",
+                  "projectName": "chromium-headless-shell",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-11T20:22:41.261Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/tests/admin/orders.spec.ts",
+                            "line": 31,
+                            "column": 8
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "9216327811c2a1ea79fc-1100b41fbf15abb7060a",
+              "file": "admin/orders.spec.ts",
+              "line": 31,
+              "column": 8
+            },
+            {
+              "title": "should update order status to paid",
+              "ok": true,
+              "tags": [
+                "smoke"
+              ],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/tests/admin/orders.spec.ts",
+                        "line": 39,
+                        "column": 8
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium-headless-shell",
+                  "projectName": "chromium-headless-shell",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-11T20:22:41.261Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/home/leo/Documentos/projetos/pedi-ai/tests/e2e/tests/admin/orders.spec.ts",
+                            "line": 39,
+                            "column": 8
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "9216327811c2a1ea79fc-9cb72d031dc53e472340",
+              "file": "admin/orders.spec.ts",
+              "line": 39,
+              "column": 8
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-05-11T20:21:19.414Z",
+    "duration": 84511.234,
+    "expected": 2,
+    "skipped": 6,
+    "unexpected": 0,
+    "flaky": 1
+  }
+}
