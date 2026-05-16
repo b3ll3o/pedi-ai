@@ -1,0 +1,17 @@
+.timer {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.normal {
+  color: var(--color-text-secondary);
+}
+
+.warning {
+  color: var(--color-warning-dark);
+}
+
+.critical {
+  color: var(--color-error);
+  font-weight: 600;
+}

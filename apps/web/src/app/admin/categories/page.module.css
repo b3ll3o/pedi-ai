@@ -1,0 +1,308 @@
+.container {
+  padding: 1.5rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.restaurantIndicator {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  background: var(--color-background);
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  border: 1px solid var(--color-border);
+}
+
+.title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.addButton {
+  padding: 0.5rem 1rem;
+  background: var(--color-success);
+  color: var(--color-surface);
+  border: none;
+  border-radius: var(--border-radius-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.addButton:hover {
+  background: var(--color-success-dark);
+}
+
+/* No restaurant selected prompt */
+.noRestaurantPrompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 24px;
+  text-align: center;
+  background: var(--color-background);
+  border-radius: 12px;
+  border: 2px dashed var(--color-border);
+  margin-top: 48px;
+}
+
+.noRestaurantIcon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.noRestaurantTitle {
+  margin: 0 0 8px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.noRestaurantText {
+  margin: 0 0 24px 0;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.selectRestaurantButton {
+  padding: 12px 24px;
+  background: var(--color-primary);
+  color: var(--color-surface);
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.selectRestaurantButton:hover {
+  background: var(--color-primary-dark);
+}
+
+.placeholder {
+  padding: 48px;
+  text-align: center;
+  color: var(--color-text-secondary);
+  background: var(--color-background);
+  border-radius: 8px;
+  border: 2px dashed var(--color-border);
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal > div {
+  background: var(--color-surface);
+  padding: 24px;
+  border-radius: 8px;
+  min-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal input,
+.modal select {
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.modal button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.modal button[data-testid='save-button'],
+.modal button:first-of-type:not([data-testid]) {
+  background: var(--color-success);
+  color: var(--color-surface);
+  border: none;
+}
+
+.modal button[data-testid='cancel-button'] {
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.modal button[data-testid='confirm-delete-button'] {
+  background: var(--color-error);
+  color: var(--color-surface);
+  border: none;
+}
+
+.modal button[data-testid='cancel-delete-button'] {
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+/* Toast notifications */
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 2000;
+  animation: slideIn 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.toastSuccess {
+  background: var(--color-success-light);
+  color: var(--color-success-dark);
+  border: 1px solid var(--color-success);
+}
+
+.toastError {
+  background: var(--color-error-light);
+  color: var(--color-error-dark);
+  border: 1px solid var(--color-error);
+}
+
+/* Modal content */
+.modalContent {
+  background: var(--color-surface);
+  padding: 24px;
+  border-radius: 12px;
+  min-width: 400px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Delete confirmation modal */
+.deleteTitle {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.deleteText {
+  margin: 0 0 20px 0;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.deleteActions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.cancelButton {
+  padding: 10px 20px;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.cancelButton:hover:not(:disabled) {
+  background: var(--color-background);
+}
+
+.cancelButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.confirmDeleteButton {
+  padding: 10px 20px;
+  background: var(--color-error);
+  color: var(--color-surface);
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.confirmDeleteButton:hover:not(:disabled) {
+  background: var(--color-error-dark);
+}
+
+.confirmDeleteButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Error state */
+.errorState {
+  text-align: center;
+  padding: 48px;
+  background: var(--color-error-light);
+  border-radius: 8px;
+  border: 1px solid var(--color-error);
+}
+
+.errorState p {
+  margin: 0 0 16px 0;
+  color: var(--color-error-dark);
+}
+
+.retryButton {
+  padding: 8px 16px;
+  background: var(--color-error);
+  color: var(--color-surface);
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.retryButton:hover {
+  background: var(--color-error-dark);
+}

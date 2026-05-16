@@ -69,3 +69,15 @@ Thumbs.db
 .playwright-mcp
 supabase/.temp
 pnpm-lock.yamldata/
+
+# Workspace node_modules (pnpm hoists to root)
+apps/*/node_modules
+packages/*/node_modules
+apps/api/.next
+apps/web/.next
+apps/web/node_modules
+
+# Local SQLite dev database
+apps/web/data/*.db
+apps/web/data/*.db-shm
+apps/web/data/*.db-wal

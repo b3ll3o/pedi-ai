@@ -1,0 +1,337 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding-top: 72px;
+  background-color: var(--color-background);
+}
+
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  transition: var(--transition-fast);
+}
+
+.backButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  transition: background-color 0.15s ease;
+}
+
+.backButton:hover {
+  background-color: var(--color-hover);
+}
+
+.backButton:active {
+  background-color: var(--color-border);
+}
+
+.backButton:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.backButton svg,
+.logoutButton svg {
+  width: 24px;
+  height: 24px;
+}
+
+.logoutButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  min-height: 40px;
+  border: none;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  border-radius: var(--border-radius-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  box-shadow: var(--shadow-primary);
+}
+
+.logoutButton:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-primary-lg);
+}
+
+.logoutButton:active:not(:disabled) {
+  background-color: var(--color-border);
+}
+
+.logoutButton:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.logoutButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.logoutText {
+  font-size: 14px;
+  font-weight: 500;
+  margin-left: 4px;
+}
+
+.logoutSpinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.backButton svg {
+  width: 24px;
+  height: 24px;
+}
+
+.title {
+  flex: 1;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.main {
+  flex: 1;
+  padding: 20px;
+  max-width: 600px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.section {
+  background: var(--color-surface);
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+}
+
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 16px 0;
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  margin-bottom: 8px;
+}
+
+.summaryRow:last-child {
+  margin-bottom: 0;
+}
+
+.summaryRow.total {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.error {
+  color: var(--color-error);
+  font-size: 14px;
+  text-align: center;
+  margin: 0;
+}
+
+.submitButton {
+  padding: 16px;
+  background: var(--color-primary);
+  color: var(--color-surface);
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    transform 0.1s ease;
+}
+
+.submitButton:hover {
+  background: var(--color-primary-hover);
+}
+
+.submitButton:active {
+  transform: scale(0.98);
+}
+
+.submitButton:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.submitButton:disabled {
+  background: var(--color-disabled);
+  cursor: not-allowed;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  font-size: 16px;
+  color: var(--color-text-secondary);
+}
+
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.errorTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin: 0 0 8px 0;
+}
+
+.errorMessage {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  margin: 0 0 24px 0;
+}
+
+.backButtonBottom {
+  padding: 14px 28px;
+  background: var(--color-primary);
+  color: var(--color-surface);
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    transform 0.1s ease;
+}
+
+.backButtonBottom:hover {
+  background: var(--color-primary-hover);
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .container {
+    background-color: var(--color-dark-bg);
+  }
+
+  .header {
+    background: var(--color-dark-surface);
+    border-bottom-color: var(--color-dark-border);
+  }
+
+  .backButton {
+    color: var(--color-dark-text);
+  }
+
+  .backButton:hover {
+    background-color: var(--color-dark-hover);
+  }
+
+  .backButton:active {
+    background-color: var(--color-dark-border);
+  }
+
+  .logoutButton {
+    color: var(--color-dark-text);
+  }
+
+  .logoutButton:hover:not(:disabled) {
+    background-color: var(--color-dark-hover);
+  }
+
+  .logoutButton:active:not(:disabled) {
+    background-color: var(--color-dark-border);
+  }
+
+  .logoutButton:disabled {
+    opacity: 0.7;
+  }
+
+  .title {
+    color: var(--color-dark-text);
+  }
+
+  .section {
+    background: var(--color-dark-surface);
+    border-color: var(--color-dark-border);
+  }
+
+  .sectionTitle {
+    color: var(--color-dark-text);
+  }
+
+  .summaryRow {
+    color: var(--color-dark-text-secondary);
+  }
+
+  .summaryRow.total {
+    border-top-color: var(--color-dark-border);
+    color: var(--color-dark-text);
+  }
+
+  .errorTitle {
+    color: var(--color-dark-text);
+  }
+
+  .errorMessage {
+    color: var(--color-dark-text-secondary);
+  }
+}

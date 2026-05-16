@@ -1,10 +1,13 @@
 <!-- BEGIN:nextjs-agent-rules -->
+
 # This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
+
 <!-- END:nextjs-agent-rules -->
 
 <!-- BEGIN:pedi-ai-rules -->
+
 # Pedi-AI — Application Rules
 
 ## Idioma / Language
@@ -35,12 +38,14 @@ This version has breaking changes — APIs, conventions, and file structure may 
 ## CSS Best Practices
 
 ### Unidades Relativas (Preferir sempre que possível)
+
 - **Usar `rem` para tamanhos de fonte e espaçamento**: `1rem = 16px` base, permite scaling correto quando usuário muda tamanho de fonte do navegador
 - **Usar `em` para valores que devem escalar em relação ao elemento pai**: margens, paddings relativos
 - **Evitar `px` para tamanhos de fonte**: `px` não escala com preferências do usuário
 - **Exceção**: valores muito pequenos (< 4px), bordas (`1px`), sombras e valores que precisam ser exatamente `0` podem usar `px`
 
 ### Regras Gerais de CSS
+
 - **Usar CSS Custom Properties (variáveis)**: Definir cores, espaçamentos e valores reutilizáveis em `:root`
   ```css
   :root {
@@ -58,6 +63,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **Minificar e usar sourcemaps em produção**
 
 ### Breakpoints
+
 - Mobile: < 640px
 - Tablet: 640px - 1024px
 - Desktop: > 1024px
@@ -91,6 +97,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 ### Estrutura Recomendada por Tipo de Página
 
 **Landing Page / Página de Marketing:**
+
 ```
 <header><nav aria-label="Navegação principal">...</nav></header>
 <main>
@@ -102,6 +109,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 ```
 
 **Páginas de Lista/Grid:**
+
 ```
 <main>
   <header><h1>Título da Página</h1></header>
@@ -115,6 +123,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 ```
 
 **FAQ:**
+
 ```
 <section aria-labelledby="faq-title">
   <h2 id="faq-title">Perguntas Frequentes</h2>
@@ -198,21 +207,21 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## Arquitetura DDD (Domain-Driven Design)
 
-> ✅ **STATUS**: A arquitetura DDD está **MAJORITARIAMENTE IMPLEMENTADA**. A estrutura DDD existe em `src/domain/`, `src/application/`, e `src/infrastructure/`.
-> A estrutura coexiste com código em `src/components/`, `src/hooks/`, e `src/lib/` (legacy).
+> ✅ **STATUS**: A arquitetura DDD está **MAJORITARIAMENTE IMPLEMENTADA**. A estrutura DDD existe em `apps/web/src/domain/`, `apps/web/src/application/`, e `apps/web/src/infrastructure/`.
+> A estrutura coexiste com código em `apps/web/src/components/`, `apps/web/src/hooks/`, e `apps/web/src/lib/` (legacy).
 > Ver: `openspec/changes/archive/2026-04-25-implantacao-ddd/` para histórico da migração.
 
 ### Bounded Contexts Implementados
 
-| Bounded Context | Status | Entities | Value Objects | Events | Repos |
-|-----------------|--------|----------|---------------|--------|-------|
-| `admin/` | ✅ | Restaurante, UsuarioRestaurante | ConfiguracoesRestaurante, PapelRestaurante | 7 events | ✅ |
-| `autenticacao/` | ✅ | Usuario, Sessao | Papel, Credenciais | 3 events | ✅ |
-| `cardapio/` | ✅ | Categoria, Produto, GrupoModificador | Preco, Alergeno, ValorModificador | - | ✅ |
-| `mesa/` | ✅ | Mesa | NumeroMesa | - | ✅ |
-| `pagamento/` | ✅ | Pagamento, Transacao | StatusPagamento, MetodoPagamento | 4 events | ✅ |
-| `pedido/` | ✅ | Pedido, ItemPedido | StatusPedido, Dinheiro, MetodoPagamento | 3 events | ✅ |
-| `shared/` | ✅ | AggregateRootClass | Excecoes, Types | - | - |
+| Bounded Context | Status | Entities                             | Value Objects                              | Events   | Repos |
+| --------------- | ------ | ------------------------------------ | ------------------------------------------ | -------- | ----- |
+| `admin/`        | ✅     | Restaurante, UsuarioRestaurante      | ConfiguracoesRestaurante, PapelRestaurante | 7 events | ✅    |
+| `autenticacao/` | ✅     | Usuario, Sessao                      | Papel, Credenciais                         | 3 events | ✅    |
+| `cardapio/`     | ✅     | Categoria, Produto, GrupoModificador | Preco, Alergeno, ValorModificador          | -        | ✅    |
+| `mesa/`         | ✅     | Mesa                                 | NumeroMesa                                 | -        | ✅    |
+| `pagamento/`    | ✅     | Pagamento, Transacao                 | StatusPagamento, MetodoPagamento           | 4 events | ✅    |
+| `pedido/`       | ✅     | Pedido, ItemPedido                   | StatusPedido, Dinheiro, MetodoPagamento    | 3 events | ✅    |
+| `shared/`       | ✅     | AggregateRootClass                   | Excecoes, Types                            | -        | -     |
 
 ### Regras Obrigatórias
 
@@ -221,12 +230,12 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Entidades, value objects, aggregates e events são pura lógica de negócio em TypeScript
 - Casos de uso no **application/** orchestrating domínio e infra
 - **presentation/** (Next.js) **SÓ** faz renderização e coleta input do usuário
-- **Migração gradual**: código legacy em `src/lib/` será migrado conforme necessidade
+- **Migração gradual**: código legacy em `apps/web/src/lib/` será migrado conforme necessidade
 
 ### Estrutura de Diretórios
 
 ```
-src/
+apps/web/src/
 ├── domain/                    # REGRAS DE NEGÓCIO - puro, testável, sem deps
 │   ├── [bounded-context]/    # ex: pedido/, cardapio/, mesa/
 │   │   ├── entities/         # Entidades com identity
@@ -249,23 +258,23 @@ src/
     └── hooks/
 ```
 
-> **Nota**: A estrutura DDD **JÁ ESTÁ IMPLEMENTADA** em `src/domain/`, `src/application/`, `src/infrastructure/`. O `presentation/` coexiste com a estrutura tradicional. Voir `openspec/changes/archive/2026-04-25-implantacao-ddd/` para o plano de migração completo (em progresso).
+> **Nota**: A estrutura DDD **JÁ ESTÁ IMPLEMENTADA** em `apps/web/src/domain/`, `apps/web/src/application/`, `apps/web/src/infrastructure/`. O `presentation/` coexiste com a estrutura tradicional. Voir `openspec/changes/archive/2026-04-25-implantacao-ddd/` para o plano de migração completo (em progresso).
 
 ### O que vai em cada camada
 
-| Camada | Responsabilidade | Dependências |
-|--------|------------------|--------------|
-| **domain/** | Entidades, regras, validações, eventos | Nenhuma (puro) |
-| **application/** | Casos de uso, coordena domain + infra | domain, interfaces da infra |
-| **infrastructure/** | Implementações concretas | domain, libraries externas |
-| **presentation/** | UI, input do usuário, API routes | application, components |
+| Camada              | Responsabilidade                       | Dependências                |
+| ------------------- | -------------------------------------- | --------------------------- |
+| **domain/**         | Entidades, regras, validações, eventos | Nenhuma (puro)              |
+| **application/**    | Casos de uso, coordena domain + infra  | domain, interfaces da infra |
+| **infrastructure/** | Implementações concretas               | domain, libraries externas  |
+| **presentation/**   | UI, input do usuário, API routes       | application, components     |
 
 ### Regras de Dependência
 
-- **domain/** não pode importar de **application/**, **infrastructure/**, ou **presentation/**
-- **application/** só importa de **domain/** e interfaces (não implementations)
-- **infrastructure/** implementa interfaces definidas em **domain/**
-- **presentation/** depende de **application/** — nunca acessa **domain/** diretamente
+- **apps/web/src/domain/** não pode importar de **apps/web/src/application/**, **apps/web/src/infrastructure/**, ou **apps/web/src/presentation/**
+- **apps/web/src/application/** só importa de **apps/web/src/domain/** e interfaces (não implementations)
+- **apps/web/src/infrastructure/** implementa interfaces definidas em **apps/web/src/domain/**
+- **apps/web/src/presentation/** depende de **apps/web/src/application/** — nunca acessa **apps/web/src/domain/** diretamente
 
 ### Naming
 
@@ -278,12 +287,41 @@ src/
 
 ## Arquitetura Atual do Projeto
 
-O projeto atualmente segue uma arquitetura **híbrida**:
+O projeto é um **monorepo pnpm** com três workspaces:
+
+```
+pedi-ai/
+├── apps/
+│   ├── api/                  # NestJS + Prisma + PostgreSQL (admin dashboard, websocket)
+│   │   └── src/
+│   │       ├── auth/         # JWT authentication
+│   │       ├── orders/       # Orders module
+│   │       ├── payments/     # Payments (Stripe/Pix)
+│   │       ├── restaurants/  # Restaurant CRUD
+│   │       ├── realtime/     # Socket.io gateway
+│   │       └── prisma/      # Database schema
+│   └── web/                  # Next.js 16 + TypeScript (cardápio digital)
+│       └── src/
+│           ├── app/          # App Router (páginas, layouts, API routes)
+│           ├── components/   # Componentes React
+│           ├── hooks/       # Custom hooks
+│           ├── lib/          # Utilitários (auth, offline, QR, supabase, logger)
+│           ├── domain/       # DDD: entidades, value objects, events
+│           ├── application/  # DDD: use cases
+│           └── infrastructure/ # DDD: repositories, adapters
+├── packages/
+│   └── shared/               # Código compartilhado (sem deps de framework)
+│       └── src/
+│           ├── constants/    # Feature flags, constantes de negócio
+│           └── utils/        # Logger, helpers puros
+├── tests/                    # Vitest (unit + integration) + Playwright (E2E)
+└── docs/                     # Guias e documentação
+```
 
 ### Estrutura DDD (Recomendada para novo código)
 
 ```
-src/
+apps/web/src/
 ├── domain/                 # REGRAS DE NEGÓCIO - puro, testável, sem deps
 ├── application/            # CASOS DE USO - orquestração
 ├── infrastructure/         # IMPLEMENTAÇÕES - adapters, repos
@@ -293,24 +331,24 @@ src/
 ### Estrutura Legacy (Em migração gradual)
 
 ```
-src/
+apps/web/src/
 ├── app/                    # Next.js App Router - páginas e API routes
 ├── components/             # Componentes React organizados por domínio
 ├── hooks/                  # Custom React hooks
-└── lib/                    # Módulos reutilizáveis (auth, offline, QR, api-client, logger)
+└── lib/                    # Módulos reutilizáveis (auth, offline, QR, logger)
 ```
 
-| Camada Legacy | Responsabilidade | Status DDD |
-|---------------|-----------------|-------------|
-| `app/` | Rotas, layouts, API routes | - |
-| `components/` | Componentes UI | - |
-| `hooks/` | Lógica de interface (React hooks) | - |
-| `lib/` | Utilitários e integrações (auth, api-client, offline) | ⚠️ Legacy |
+| Camada Legacy | Responsabilidade                                        | Status DDD              |
+| ------------- | ------------------------------------------------------- | ----------------------- |
+| `app/`        | Rotas, layouts, API routes                              | -                       |
+| `components/` | Componentes UI                                          | -                       |
+| `hooks/`      | Lógica de interface (React hooks)                       | -                       |
+| `lib/`        | Utilitários e integrações (auth, offline, qr, supabase) | ⚠️ Parcialmente migrado |
 
 ### Progresso da Migração DDD
 
-> ✅ **COMPLETO**: `src/services/` migrado para `src/application/services/`
-> ✅ **COMPLETO**: `src/stores/` migrado para `src/infrastructure/persistence/`
+> ✅ **COMPLETO**: `apps/web/src/services/` migrado para `apps/web/src/application/services/`
+> ✅ **COMPLETO**: `apps/web/src/stores/` migrado para `apps/web/src/infrastructure/persistence/`
 
 <!-- END:pedi-ai-rules -->
 
@@ -319,6 +357,7 @@ src/
 A full codemap is available at `codemap.md` in the project root.
 
 Before working on any task, read `codemap.md` to understand:
+
 - Project architecture and entry points
 - Directory responsibilities and design patterns
 - Data flow and integration points between modules

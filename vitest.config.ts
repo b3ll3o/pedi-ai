@@ -1,5 +1,5 @@
-import { defineConfig } from 'vitest/config'
-import path from 'path'
+import { defineConfig } from 'vitest/config';
+import path from 'path';
 
 export default defineConfig({
   test: {
@@ -19,7 +19,7 @@ export default defineConfig({
         lines: 80,
         perFile: false,
       },
-      include: ['src/**/*'],
+      include: ['apps/web/src/**/*'],
       exclude: [
         'src/**/*.d.ts',
         'src/**/*.stories.tsx',
@@ -102,7 +102,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      '@': path.resolve(__dirname, './apps/web/src'),
     },
   },
-})
+});

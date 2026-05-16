@@ -1,0 +1,224 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding-top: 72px;
+  background-color: var(--color-background);
+}
+
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  transition: var(--transition-fast);
+}
+
+.backButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  transition: background-color 0.15s ease;
+}
+
+.backButton:hover {
+  background-color: var(--color-background);
+}
+
+.backButton:active {
+  background-color: var(--color-border);
+}
+
+.backButton:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.backButton svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.title {
+  flex: 1;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.clearButton {
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-error);
+  transition: background-color 0.15s ease;
+}
+
+.clearButton:hover {
+  background-color: var(--color-error-light);
+}
+
+.clearButton:active {
+  background-color: var(--color-error);
+}
+
+.clearButton:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 1.25rem;
+  padding: 1.25rem;
+  max-width: 37.5rem;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.itemsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.summaryContainer {
+  margin-top: auto;
+  padding-top: 0.5rem;
+}
+
+/* Empty State */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 2.5rem 1.25rem;
+  text-align: center;
+}
+
+.emptyIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 5rem;
+  height: 5rem;
+  margin-bottom: 1.25rem;
+  background-color: var(--color-background);
+  border-radius: 50%;
+  color: var(--color-text-tertiary);
+}
+
+.emptyIcon svg {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.emptyTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin: 0 0 0.5rem 0;
+}
+
+.emptyText {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  margin: 0 0 1.5rem 0;
+}
+
+.emptyButton {
+  padding: 0.875rem 1.75rem;
+  background: var(--color-primary);
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    transform 0.1s ease;
+}
+
+.emptyButton:hover {
+  background: var(--color-primary-dark);
+}
+
+.emptyButton:active {
+  transform: scale(0.98);
+}
+
+.emptyButton:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .container {
+    background-color: var(--color-background);
+  }
+
+  .header {
+    background: var(--color-surface);
+    border-bottom-color: var(--color-border);
+  }
+
+  .backButton {
+    color: var(--color-text-primary);
+  }
+
+  .backButton:hover {
+    background-color: var(--color-surface-elevated);
+  }
+
+  .backButton:active {
+    background-color: var(--color-border);
+  }
+
+  .title {
+    color: var(--color-text-primary);
+  }
+
+  .clearButton:hover {
+    background-color: rgba(220, 38, 38, 0.2);
+  }
+
+  .emptyIcon {
+    background-color: var(--color-surface);
+    color: var(--color-text-tertiary);
+  }
+
+  .emptyTitle {
+    color: var(--color-text-primary);
+  }
+
+  .emptyText {
+    color: var(--color-text-tertiary);
+  }
+}
