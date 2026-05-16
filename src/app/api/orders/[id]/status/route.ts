@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db, isDevDatabase, getSupabaseAdmin } from '@/infrastructure/database'
 import { orders, orderStatusHistory } from '@/infrastructure/database/schema'
-import { eq } from 'drizzle-orm'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -18,7 +17,6 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
 }
 
 type OrderStatus = 'pending_payment' | 'paid' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
-type PaymentStatus = 'pending' | 'paid' | 'refunded' | 'failed';
 
 // GET /api/orders/[id]/status - Get order status
 export async function GET(request: NextRequest, { params }: RouteParams) {

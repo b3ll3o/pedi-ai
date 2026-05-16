@@ -1,8 +1,5 @@
 import { test, expect } from '../shared/fixtures'
 import { AdminDashboardPage } from '../../pages/AdminDashboardPage'
-import { AdminCategoriesPage } from '../../pages/AdminCategoriesPage'
-import { AdminProductsPage } from '../../pages/AdminProductsPage'
-import { AdminOrdersPage } from '../../pages/AdminOrdersPage'
 
 test.describe('Admin Dashboard', () => {
   let dashboardPage: AdminDashboardPage
@@ -39,7 +36,6 @@ test.describe('Admin Dashboard', () => {
   })
 
   test('should navigate to categories', async () => {
-    const categoriesPage = new AdminCategoriesPage(dashboardPage.page)
     await dashboardPage.navigateToCategories()
     await expect(dashboardPage.page).toHaveURL('/admin/categories')
   })
@@ -54,7 +50,7 @@ test.describe('Admin Dashboard', () => {
     await expect(dashboardPage.page).toHaveURL('/admin/orders')
   })
 
-  test('should display restaurant indicator', async ({ seedData }) => {
+  test('should display restaurant indicator', async ({}) => {
     // Should show which restaurant is selected
     await expect(dashboardPage.page.locator('text=📍')).toBeVisible()
   })

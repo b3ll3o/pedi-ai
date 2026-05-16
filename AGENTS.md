@@ -297,7 +297,7 @@ src/
 ├── app/                    # Next.js App Router - páginas e API routes
 ├── components/             # Componentes React organizados por domínio
 ├── hooks/                  # Custom React hooks
-└── lib/                    # Módulos reutilizáveis (auth, offline, QR, supabase, logger)
+└── lib/                    # Módulos reutilizáveis (auth, offline, QR, api-client, logger)
 ```
 
 | Camada Legacy | Responsabilidade | Status DDD |
@@ -305,7 +305,7 @@ src/
 | `app/` | Rotas, layouts, API routes | - |
 | `components/` | Componentes UI | - |
 | `hooks/` | Lógica de interface (React hooks) | - |
-| `lib/` | Utilitários e integrações (auth, supabase, offline) | ⚠️ Legacy |
+| `lib/` | Utilitários e integrações (auth, api-client, offline) | ⚠️ Legacy |
 
 ### Progresso da Migração DDD
 

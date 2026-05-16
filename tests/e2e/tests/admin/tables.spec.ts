@@ -145,7 +145,7 @@ test.describe('Admin Tables Management', () => {
     await expect(page).toHaveURL(/\/admin\/login/)
   })
 
-  test('should list tables for selected restaurant', async ({ seedData }) => {
+  test('should list tables for selected restaurant', async ({}) => {
     // Tables should be loaded for the seed restaurant
     const tableCount = await tablesPage.getTableCount()
     expect(tableCount).toBeGreaterThanOrEqual(0)

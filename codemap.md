@@ -2,7 +2,7 @@
 
 > Cardápio Digital para Restaurantes (offline-first, multi-tenant)
 >
-> **Versão:** 1.2.0 | **Atualizado em:** 2026-05-06
+> **Versão:** 1.3.0 | **Atualizado em:** 2026-05-16
 
 ## Project Responsibility
 
@@ -12,11 +12,11 @@ Pedi-AI é uma plataforma de cardápio digital que permite restaurantes gerencia
 
 | Camada | Tecnologia |
 |--------|------------|
-| Framework | Next.js 16 + TypeScript + React 19 |
-| Backend | Supabase (Auth, Database, Realtime, Storage) |
+| Frontend | Next.js 16 + TypeScript + React 19 |
+| Backend | NestJS + Fastify + Prisma ORM + PostgreSQL |
 | Offline | Service Worker (Workbox) + IndexedDB (Dexie) |
 | Estado | Zustand + React Query |
-| Testes | Vitest (1427 testes, 1406 passing, 21 failing) + Playwright (32 specs E2E) |
+| Testes | Vitest (1523 testes) + Playwright (19 specs E2E) |
 
 ---
 
@@ -50,11 +50,11 @@ Pedi-AI é uma plataforma de cardápio digital que permite restaurantes gerencia
 | `src/app/` | Next.js App Router — todas as rotas, layouts, API routes | ✅ Atual | [Ver Map](src/app/codemap.md) |
 | `src/domain/` | REGRAS DE NEGÓCIO - pure TypeScript, sem deps de framework | ✅ Implementado | Ver codemaps por domínio abaixo |
 | `src/application/` | CASOS DE USO - orquestração | ✅ Implementado | Application services que coordinam domain + infrastructure |
-| `src/infrastructure/` | IMPLEMENTAÇÕES - adapters, repos | ✅ Implementado | Repository implementations, Supabase adapter, QR code crypto |
+| `src/infrastructure/` | IMPLEMENTAÇÕES - adapters, repos | ✅ Implementado | Repository implementations, API client, QR code crypto |
 | `src/components/` | Componentes React organizados por domínio | ✅ Atual | UI components (admin, cart, menu, order, payment, kitchen, restaurant) |
 | `src/components/restaurant/` | Componentes de listagem pública (RestaurantSearch, RestaurantCard, RestaurantList) | ✅ Novo | Listagem de restaurantes para delivery |
 | `src/hooks/` | Custom React hooks (useAuth, useRealtimeOrders, etc) | ✅ Atual | Reutilizáveis em toda a aplicação |
-| `src/lib/` | Utilitários (auth, offline, QR, supabase, feature-flags) | ✅ Atual | Módulos reutilizáveis |
+| `src/lib/` | Utilitários (auth, offline, QR, api-client, feature-flags) | ✅ Atual | Módulos reutilizáveis |
 | `src/application/services/` | Lógica de negócio (adminOrderService, userService, etc) | ✅ DDD |antigamente em `src/services/`, migrado 2025-05-15 |
 | `src/infrastructure/persistence/` | Zustand stores (cart, menu, restaurant, table) | ✅ DDD |antigamente em `src/stores/`, migrado 2025-05-15 |
 
@@ -94,7 +94,7 @@ Cliente escaneia QR code
 Admin faz login (src/lib/auth/)
   → Dashboard admin (src/app/admin/dashboard/)
   → Gerencia categorias, produtos, combos, modificadores (src/application/admin/services/)
-  → Acompanha pedidos em tempo real (Supabase Realtime)
+  → Acompanha pedidos em tempo real (WebSocket Gateway + Socket.io)
   → Atualiza status de pedidos
 ```
 
@@ -137,8 +137,9 @@ Cozinha recebe pedido via realtime (src/hooks/useRealtimeOrders.ts)
                    │
                    ▼
          ┌─────────────────┐
-         │    Supabase     │
-         │  (Auth + DB +  │
-         │   Realtime)     │
+         │   NestJS API    │
+         │  (Fastify +    │
+         │   Prisma +     │
+         │  Socket.io)    │
          └─────────────────┘
 ```

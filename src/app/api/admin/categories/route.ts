@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db, isDevDatabase, getSupabaseAdmin } from '@/infrastructure/database'
 import { categories } from '@/infrastructure/database/schema'
 import { eq, and, asc } from 'drizzle-orm'
-import { invalidateMenuCache } from '@/lib/offline/cache'
 import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin'
 
 export async function GET(request: NextRequest) {

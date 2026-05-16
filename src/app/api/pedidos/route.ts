@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, isDevDatabase, getSupabaseAdmin } from '@/infrastructure/database';
-import { orders, orderItems, tables } from '@/infrastructure/database/schema';
-import { eq, desc } from 'drizzle-orm';
+import { orders, orderItems } from '@/infrastructure/database/schema';
 
 interface ItemInput {
   produtoId: string;
@@ -58,7 +57,7 @@ export async function POST(request: NextRequest) {
 
     if (isDevDatabase()) {
       // Verificar idempotência
-      const existingOrder = await db
+      const _existingOrder = await db
         .select()
         .from(orders)
         .where(eq(orders.customer_id, clienteId || ''))

@@ -118,7 +118,7 @@ export async function PUT(
         )
       }
 
-      const { products: existingProduct, categories: existingCategory } = existing[0]
+      const { categories: existingCategory } = existing[0]
 
       // Verifica ownership
       if (!existingCategory || existingCategory.restaurant_id !== restaurantId) {

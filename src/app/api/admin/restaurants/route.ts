@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, isDevDatabase, getSupabaseAdmin } from '@/infrastructure/database';
 import { restaurants, usersProfiles, subscriptions } from '@/infrastructure/database/schema';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 

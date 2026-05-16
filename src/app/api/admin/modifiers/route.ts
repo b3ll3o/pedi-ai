@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db, isDevDatabase, getSupabaseAdmin } from '@/infrastructure/database'
 import { modifierGroups, modifierValues, products, categories } from '@/infrastructure/database/schema'
-import { eq, and, asc, inArray } from 'drizzle-orm'
+import { eq, asc } from 'drizzle-orm'
 import { invalidateMenuCache } from '@/lib/offline/cache'
 import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin'
 

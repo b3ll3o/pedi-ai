@@ -23,7 +23,7 @@ test.describe('Admin Order Detail', () => {
     } catch { /* ignore */ }
   })
 
-  test('should display order details', async ({ seedData }) => {
+  test('should display order details', async ({}) => {
     // First get an order from the orders list
     await ordersPage.goto()
     await ordersPage.waitForLoad()
@@ -48,7 +48,7 @@ test.describe('Admin Order Detail', () => {
     await expect(orderDetailPage.orderStatus).toBeVisible()
   })
 
-  test('should show order items', async ({ seedData }) => {
+  test('should show order items', async ({}) => {
     await ordersPage.goto()
     await ordersPage.waitForLoad()
 
@@ -71,7 +71,7 @@ test.describe('Admin Order Detail', () => {
     expect(itemCount).toBeGreaterThan(0)
   })
 
-  test('should show order total', async ({ seedData }) => {
+  test('should show order total', async ({}) => {
     await ordersPage.goto()
     await ordersPage.waitForLoad()
 
@@ -93,7 +93,7 @@ test.describe('Admin Order Detail', () => {
     await expect(orderDetailPage.orderTotal).toBeVisible()
   })
 
-  test('should update order status', async ({ seedData }) => {
+  test('should update order status', async ({}) => {
     await ordersPage.goto()
     await ordersPage.waitForLoad()
 
@@ -122,7 +122,7 @@ test.describe('Admin Order Detail', () => {
     }
   })
 
-  test('should cancel order with reason', async ({ seedData }) => {
+  test('should cancel order with reason', async ({}) => {
     await ordersPage.goto()
     await ordersPage.waitForLoad()
 
@@ -150,7 +150,7 @@ test.describe('Admin Order Detail', () => {
     }
   })
 
-  test('should navigate back to orders list', async ({ seedData }) => {
+  test('should navigate back to orders list', async ({}) => {
     await ordersPage.goto()
     await ordersPage.waitForLoad()
 

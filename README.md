@@ -16,12 +16,13 @@ Aplicação de **Cardápio Digital** para restaurantes com foco em **mobile-firs
 ## Stack
 
 - **Frontend**: Next.js 16 + TypeScript + React 19
-- **Backend**: Supabase (Auth, Database, Realtime, Storage)
+- **Backend**: NestJS + Fastify + Prisma ORM + PostgreSQL
 - **Offline**: Service Worker (Workbox) + IndexedDB (Dexie)
 - **Estado**: Zustand + React Query
-- **Testes Unitários**: Vitest (517 testes, 97%+ cobertura)
+- **Testes Unitários**: Vitest (1523 testes, 80%+ cobertura)
 - **Testes E2E**: Playwright (19 specs)
 - **Pagamentos**: Mercado Pago (Pix) + Stripe (Cartão)
+- **Autenticação**: JWT com refresh tokens (bcrypt)
 
 ## Documentação
 
@@ -109,10 +110,12 @@ cp .env.local.example .env.local
 Edite `.env.local` com:
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=sua_url_do_supabase
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sua_chave_anon
-SUPABASE_SERVICE_ROLE_KEY=sua_chave_service_role
-NEXT_PUBLIC_SUPABASE_SITE_URL=http://localhost:3000
+# API (NestJS)
+NEXT_PUBLIC_API_URL=http://localhost:3001
+API_JWT_SECRET=seu_jwt_secret_minimo_32_chars
+
+# PostgreSQL (via Docker)
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/pedi_ai
 
 # Mercado Pago (Pix)
 MERCADO_PAGO_ACCESS_TOKEN=seu_token
@@ -127,19 +130,27 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxx
 QR_SECRET_KEY=sua_chave_secreta_para_hmac
 ```
 
-### 3. Configurar Supabase
-
-Siga as instruções em [docs/setup/SUPABASE_SETUP.md](docs/setup/SUPABASE_SETUP.md) para:
-
-- Criar um projeto no Supabase
-- Rodar as migrations
-- Configurar autenticação
-- Configurar Realtime
-
-### 4. Rodar em desenvolvimento
+### 3. Subir infraestrutura com Docker
 
 ```bash
-pnpm dev
+docker-compose up -d
+```
+
+Isso sobe PostgreSQL + API em containers.
+
+### 4. Aplicar schema e seed
+
+```bash
+cd apps/api
+pnpm install
+pnpm prisma db push    # Cria tabelas no Postgres
+pnpm db:seed          # Popula dados de exemplo
+```
+
+### 5. Rodar em desenvolvimento
+
+```bash
+pnpm dev              # Next.js em :3000 + API em :3001
 ```
 
 Abrir [http://localhost:3000](http://localhost:3000)
@@ -157,10 +168,8 @@ pnpm test         # Testes unitários (Vitest)
 pnpm test:watch   # Testes em watch mode
 pnpm test:coverage # Com cobertura
 
-# E2E (Playwright) — requer .env.e2e com Supabase Cloud
+# Testes E2E (Playwright) — requer docker-compose up
 pnpm test:e2e           # Rodar E2E (Chromium headless)
-pnpm test:e2e:seed     # Popular dados de teste no Supabase Cloud
-pnpm test:e2e:cleanup   # Limpar dados de teste
 pnpm test:e2e:ui        # E2E com UI
 pnpm test:e2e:all       # E2E em todos os browsers
 

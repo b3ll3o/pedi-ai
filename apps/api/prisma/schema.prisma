@@ -1,0 +1,345 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Enums ──────────────────────────────────────────────────────
+
+enum OrderStatus {
+  pending_payment
+  paid
+  preparing
+  ready
+  delivered
+  cancelled
+}
+
+enum PaymentMethod {
+  cash
+  credit_card
+  debit_card
+  pix
+  other
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  refunded
+  failed
+}
+
+enum UserRole {
+  dono
+  gerente
+  atendente
+  cliente
+}
+
+enum SubscriptionStatus {
+  trialing
+  active
+  past_due
+  cancelled
+  expired
+}
+
+// ── Tables ─────────────────────────────────────────────────────
+
+model Restaurant {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String?
+  description String?
+  address     String?
+  phone       String?
+  logoUrl     String?
+  active      Boolean  @default(true)
+  settings    String?  // JSON as string
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tables         Table[]
+  categories     Category[]
+  usersProfiles  UsersProfile[]
+  orders         Order[]
+  paymentIntents PaymentIntent[]
+  subscriptions  Subscription[]
+  modifierGroups ModifierGroup[]
+  combos         Combo[]
+}
+
+model Table {
+  id           String    @id @default(uuid())
+  restaurantId String
+  number       Int
+  qrCode       String?
+  name         String?
+  capacity     Int?
+  active       Boolean   @default(true)
+  deletedAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+  orders     Order[]
+
+  @@index([restaurantId])
+}
+
+model Category {
+  id           String    @id @default(uuid())
+  restaurantId String
+  name         String
+  description  String?
+  imageUrl     String?
+  sortOrder    Int       @default(0)
+  active       Boolean   @default(true)
+  deletedAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+  products   Product[]
+
+  @@index([restaurantId])
+}
+
+model Product {
+  id           String    @id @default(uuid())
+  categoryId   String
+  name         String
+  description  String?
+  imageUrl     String?
+  price        Float
+  dietaryLabels String?
+  available    Boolean   @default(true)
+  sortOrder    Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  category              Category               @relation(fields: [categoryId], references: [id])
+  orderItems            OrderItem[]
+  comboItems            ComboItem[]
+  productModifierGroups ProductModifierGroup[]
+
+  @@index([categoryId])
+}
+
+model ModifierGroup {
+  id           String   @id @default(uuid())
+  restaurantId String
+  name         String
+  required     Boolean  @default(false)
+  minSelections Int     @default(0)
+  maxSelections Int     @default(1)
+  createdAt    DateTime @default(now())
+
+  restaurant         Restaurant             @relation(fields: [restaurantId], references: [id])
+  modifierValues     ModifierValue[]
+  productModifierGroups ProductModifierGroup[]
+
+  @@index([restaurantId])
+}
+
+model ModifierValue {
+  id             String   @id @default(uuid())
+  modifierGroupId String
+  name           String
+  priceAdjustment Float   @default(0)
+  available      Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  modifierGroup ModifierGroup @relation(fields: [modifierGroupId], references: [id])
+
+  @@index([modifierGroupId])
+}
+
+model Combo {
+  id           String   @id @default(uuid())
+  restaurantId String
+  name         String
+  description  String?
+  bundlePrice  Float
+  imageUrl     String?
+  available    Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  restaurant Restaurant  @relation(fields: [restaurantId], references: [id])
+  comboItems ComboItem[]
+  orderItems OrderItem[]
+
+  @@index([restaurantId])
+}
+
+model ComboItem {
+  id        String   @id @default(uuid())
+  comboId   String
+  productId String
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+
+  combo   Combo   @relation(fields: [comboId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([comboId])
+  @@index([productId])
+}
+
+model Order {
+  id              String        @id @default(uuid())
+  restaurantId    String
+  tableId         String?
+  customerId      String?
+  customerPhone   String?
+  customerName    String?
+  status          OrderStatus    @default(pending_payment)
+  subtotal        Float
+  tax             Float
+  total           Float
+  paymentMethod   PaymentMethod?
+  paymentStatus   PaymentStatus @default(pending)
+  idempotencyKey  String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  restaurant    Restaurant          @relation(fields: [restaurantId], references: [id])
+  table         Table?              @relation(fields: [tableId], references: [id])
+  items         OrderItem[]
+  statusHistory OrderStatusHistory[]
+  paymentIntents PaymentIntent[]
+
+  @@index([restaurantId])
+  @@index([tableId])
+  @@index([customerId])
+}
+
+model OrderItem {
+  id         String    @id @default(uuid())
+  orderId    String
+  productId  String?
+  comboId    String?
+  quantity   Int
+  unitPrice  Float
+  totalPrice Float
+  notes      String?
+  createdAt  DateTime  @default(now())
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id])
+  combo   Combo?   @relation(fields: [comboId], references: [id])
+
+  @@index([orderId])
+}
+
+model OrderStatusHistory {
+  id        String      @id @default(uuid())
+  orderId   String
+  status    OrderStatus
+  notes     String?
+  createdAt DateTime    @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+model UsersProfile {
+  id            String   @id @default(uuid())
+  userId        String?  @unique
+  restaurantId  String?
+  role          UserRole @default(cliente)
+  name          String
+  email         String   @unique
+  passwordHash  String?
+  createdAt     DateTime @default(now())
+
+  restaurant       Restaurant? @relation(fields: [restaurantId], references: [id])
+  passwordResetTokens PasswordResetToken[]
+
+  @@index([restaurantId])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user UsersProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model PaymentIntent {
+  id                  String        @id @default(uuid())
+  orderId             String
+  restaurantId        String
+  amount              Float
+  currency            String        @default("BRL")
+  status              PaymentStatus @default(pending)
+  paymentMethod       String
+  mercadoPagoPaymentId String?
+  qrCode              String?
+  qrCodeBase64        String?
+  expiresAt           DateTime?
+  createdAt           DateTime      @default(now())
+
+  order      Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+
+  @@index([orderId])
+  @@index([restaurantId])
+}
+
+model Subscription {
+  id                    String             @id @default(uuid())
+  restaurantId          String
+  status                SubscriptionStatus
+  planType              String
+  priceCents            Int
+  currency              String             @default("BRL")
+  trialStartedAt        DateTime
+  trialEndsAt           DateTime
+  trialDays             Int
+  subscriptionStartedAt DateTime?
+  subscriptionEndsAt    DateTime?
+  cancelledAt           DateTime?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  version               Int                @default(1)
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+
+  @@index([restaurantId])
+}
+
+model ProductModifierGroup {
+  id             String   @id @default(uuid())
+  productId      String
+  modifierGroupId String
+  createdAt      DateTime @default(now())
+
+  product       Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  modifierGroup ModifierGroup @relation(fields: [modifierGroupId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, modifierGroupId])
+  @@index([productId])
+  @@index([modifierGroupId])
+}
+
+model WebhookEvent {
+  id           String   @id @default(uuid())
+  eventType    String
+  processedAt  DateTime @default(now())
+}

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { db, isDevDatabase } from '@/infrastructure/database'
-import { combos, comboItems, products } from '@/infrastructure/database/schema'
-import { eq, and, inArray } from 'drizzle-orm'
+import { combos, comboItems } from '@/infrastructure/database/schema'
+import { eq, and } from 'drizzle-orm'
 import { invalidateMenuCache } from '@/lib/offline/cache'
 import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin'
 

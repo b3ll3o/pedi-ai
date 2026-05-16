@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db, isDevDatabase, getSupabaseAdmin } from '@/infrastructure/database'
-import { orders, orderItems, products, tables } from '@/infrastructure/database/schema'
-import { eq, and, gte, lte, desc, inArray } from 'drizzle-orm'
+import { orders, orderItems, products } from '@/infrastructure/database/schema'
+import { eq, and, gte, lte, inArray } from 'drizzle-orm'
 import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin'
 
 // GET /api/admin/analytics - Get analytics data

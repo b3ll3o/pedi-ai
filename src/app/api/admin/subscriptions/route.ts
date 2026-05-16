@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isDevDatabase, getSupabaseAdmin, db } from '@/infrastructure/database';
 import { subscriptions } from '@/infrastructure/database/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   try {

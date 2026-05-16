@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { db, isDevDatabase, getSupabaseAdmin } from '@/infrastructure/database';
 import { orders, paymentIntents } from '@/infrastructure/database/schema';
 import { eq, desc } from 'drizzle-orm';

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { db, isDevDatabase, getSupabaseAdmin } from '@/infrastructure/database'
-import { combos, comboItems, products } from '@/infrastructure/database/schema'
-import { eq, and, inArray, desc } from 'drizzle-orm'
+import { db, isDevDatabase } from '@/infrastructure/database'
+import { combos, comboItems } from '@/infrastructure/database/schema'
+import { eq, and, inArray } from 'drizzle-orm'
 import { invalidateMenuCache } from '@/lib/offline/cache'
 import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin'
 
@@ -130,13 +130,8 @@ export async function POST(request: NextRequest) {
 
     if (isDevDatabase()) {
       // Validar que todos os product_ids pertencem ao restaurant
-      const productsResult = await db
-        .select({ id: products.id })
-        .from(products)
-        .where(and(eq(products.category_id, restaurantId), inArray(products.id, product_ids)))
-
-      // Note: products are linked to categories, not restaurants directly
-      // For simplicity, we skip this validation in dev mode or use a different approach
+      // Nota: produtos estão vinculados a categorias, não restaurantes diretamente
+      // Para simplificar, pulamos essa validação em modo dev
 
       const now = new Date().toISOString()
 
