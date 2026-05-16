@@ -621,7 +621,7 @@ Cliente seleciona pedido
 
 ## Links
 
-- [Specs de Domínio](../openspec/specs/)
+- **Specs**: documentados nos arquivos `codemap.md` de cada domínio
 - [Testes E2E](../tests/e2e/)
 - [Arquitetura DDD](./codemap.md#domain-codemaps)
 - [Guia Offline](./docs/guides/OFFLINE.md)

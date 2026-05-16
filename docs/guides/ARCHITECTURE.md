@@ -1256,10 +1256,8 @@ apps/web/src/infrastructure/
 
 ## 9. Referências
 
-- **Design Document**: `openspec/changes/archive/2026-04-25-implantacao-ddd/design.md`
-- **Archive Report**: `openspec/changes/archive/2026-04-25-implantacao-ddd/archive-report.md`
 - **Codemap**: `codemap.md`
-- **Specs de Domínio**: `openspec/specs/[contexto]/spec.md`
+- **Specs de Domínio**: cada domínio tem seu `codemap.md` em `apps/web/src/domain/[contexto]/`
 
 ---
 

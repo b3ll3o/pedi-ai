@@ -65,10 +65,6 @@ jobs:
 
 Disparado em push para `main`/`master` e em PRs. Executa E2E em 4 shards paralelos com Playwright.
 
-### `.github/workflows/docs-audit.yml` — Auditoria de Docs
-
-Disparado toda segunda-feira às 8h (schedule) ou quando arquivos de documentação mudam (push paths). Roda `node scripts/audit-docs.js` e cria issue no GitHub se encontrar problemas.
-
 ---
 
 ## 3. Cobertura de Código

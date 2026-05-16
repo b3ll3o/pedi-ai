@@ -36,14 +36,6 @@
 ### Specs (OpenSpec)
 | Domínio | Localização | Descrição |
 |---------|-------------|-----------|
-| Menu | `../openspec/specs/menu/spec.md` | Cardápio digital, categorias, produtos |
-| Carrinho | `../openspec/specs/cart/spec.md` | Carrinho, persistência offline |
-| Pedidos | `../openspec/specs/order/spec.md` | Criação, status, FSM |
-| Pagamentos | `../openspec/specs/payment/spec.md` | PIX, Stripe, webhooks |
-| Autenticação | `../openspec/specs/auth/spec.md` | Auth, roles |
-| Admin | `../openspec/specs/admin/spec.md` | Painel administrativo |
-| Mesa/QR | `../openspec/specs/table/spec.md` | Mesas, QR codes HMAC |
-| Offline | `../openspec/specs/offline/spec.md` | Service Worker, IndexedDB |
 
 ### Testes
 | Documento | Localização | Descrição |
@@ -94,7 +86,6 @@ docs/
 ### Desenvolvendo Nova Funcionalidade
 ```
 1. Leia AGENTS.md para entender as regras do projeto
-2. Consulte o spec do domínio em openspec/specs/[dominio]/spec.md
 3. Use ARCHITECTURE.md para entender a estrutura DDD
 4. Implemente seguindo as regras de dependência
 ```

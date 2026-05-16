@@ -177,7 +177,7 @@ interface CheckoutData {
 
 O design e proposta original estão documentados em:
 
-`openspec/changes/2026-05-06-navegacao-publica-restaurantes/proposal.md`
+o spec original do sistema de navegação
 
 ---
 
