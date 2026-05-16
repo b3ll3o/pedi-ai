@@ -148,16 +148,26 @@ Documentação detalhada de todos os fluxos de teste end-to-end.
 | offline | `tests/customer/offline.spec.ts` | — | ~30s |
 | combos (cliente) | `tests/customer/combos.spec.ts` | — | ~25s |
 | modifier-groups | `tests/customer/modifier-groups.spec.ts` | — | ~30s |
+| product-detail | `tests/customer/product-detail.spec.ts` | — | ~25s |
 | auth (admin) | `tests/admin/auth.spec.ts` | @smoke, @critical | ~15s |
+| dashboard | `tests/admin/dashboard.spec.ts` | — | ~20s |
 | categories | `tests/admin/categories.spec.ts` | — | ~35s |
 | products | `tests/admin/products.spec.ts` | — | ~40s |
 | orders | `tests/admin/orders.spec.ts` | — | ~45s |
+| order-detail | `tests/admin/order-detail.spec.ts` | — | ~30s |
+| tables | `tests/admin/tables.spec.ts` | — | ~35s |
 | table-qr | `tests/admin/table-qr.spec.ts` | — | ~30s |
+| settings | `tests/admin/settings.spec.ts` | — | ~25s |
+| users | `tests/admin/users.spec.ts` | — | ~30s |
+| modifier-groups (admin) | `tests/admin/modifier-groups.spec.ts` | — | ~35s |
+| restaurants | `tests/admin/restaurants.spec.ts` | — | ~40s |
 | combos-admin | `tests/admin/combos-admin.spec.ts` | — | ~35s |
 | realtime-updates | `tests/admin/realtime-updates.spec.ts` | — | ~50s |
+| analytics | `tests/admin/analytics.spec.ts` | — | ~40s |
 | kitchen | `tests/waiter/kitchen.spec.ts` | @slow | ~70s |
+| waiter-dashboard | `tests/waiter/waiter-dashboard.spec.ts` | — | ~25s |
 
-**Total: 19 fluxos | ~660s (~11 min)**
+**Total: 28 fluxos | ~1030s (~17 min)**
 
 ---
 

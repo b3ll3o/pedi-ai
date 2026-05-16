@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { db, isDevDatabase, getSupabaseAdmin } from '@/infrastructure/database'
+import { modifierGroups, modifierValues, products, categories } from '@/infrastructure/database/schema'
+import { eq, and, asc, inArray } from 'drizzle-orm'
 import { invalidateMenuCache } from '@/lib/offline/cache'
 import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin'
-import type { modifier_values } from '@/lib/supabase/types'
 
 /**
  * GET /api/admin/modifiers
@@ -14,62 +15,82 @@ export async function GET(_request: NextRequest) {
     requireRole(authUser, ['dono', 'gerente'])
 
     const restaurantId = getRestaurantId(authUser)
-    const supabase = await createClient()
 
-    // Busca modifier groups do restaurante
-    const { data: groups, error } = await supabase
-      .from('modifier_groups')
-      .select('*')
-      .eq('restaurant_id', restaurantId)
-      .order('created_at', { ascending: true })
+    if (isDevDatabase()) {
+      // Busca modifier groups do restaurante usando Drizzle
+      const groupsResult = await db.select().from(modifierGroups)
+        .where(eq(modifierGroups.restaurant_id, restaurantId))
+        .orderBy(asc(modifierGroups.created_at))
 
-    if (error) {
-      console.error('Erro ao buscar modifier groups:', error)
-      return NextResponse.json(
-        { error: 'Falha ao buscar grupos de modificadores' },
-        { status: 500 }
-      )
-    }
+      const groupIds = groupsResult.map((g: typeof modifierGroups.$inferSelect) => g.id)
+      const valuesMap: Record<string, typeof modifierValues.$inferSelect[]> = {}
 
-    // Busca modifier values para cada grupo
-    const groupIds = groups?.map(g => g.id) ?? []
-    const valuesMap: Record<string, modifier_values[]> = {}
+      if (groupIds.length > 0) {
+        const valuesResult = await db.select().from(modifierValues)
+          .where(inArray(modifierValues.modifier_group_id, groupIds))
+          .orderBy(asc(modifierValues.created_at))
 
-    if (groupIds.length > 0) {
-      const { data: values, error: valuesError } = await supabase
-        .from('modifier_values')
-        .select('*')
-        .in('modifier_group_id', groupIds)
-        .order('created_at', { ascending: true })
-
-      if (valuesError) {
-        console.error('Erro ao buscar modifier values:', valuesError)
-      } else if (values) {
-        // Agrupa values por modifier_group_id
-        for (const val of values) {
-          const modifierGroupId = val.modifier_group_id as string
-          if (!valuesMap[modifierGroupId]) {
-            valuesMap[modifierGroupId] = []
+        for (const val of valuesResult) {
+          if (!valuesMap[val.modifier_group_id]) {
+            valuesMap[val.modifier_group_id] = []
           }
-          valuesMap[modifierGroupId].push({
-            id: val.id as string,
-            modifier_group_id: modifierGroupId,
-            name: val.name as string,
-            price_adjustment: val.price_adjustment as number,
-            available: val.available as boolean,
-            created_at: val.created_at as string,
-          })
+          valuesMap[val.modifier_group_id].push(val)
         }
       }
+
+      // Monta resposta com groups e seus values
+      const groupsWithValues = groupsResult.map((group: typeof modifierGroups.$inferSelect) => ({
+        ...group,
+        modifier_values: valuesMap[group.id] ?? []
+      }))
+
+      return NextResponse.json({ modifier_groups: groupsWithValues })
+    } else {
+      const supabase = getSupabaseAdmin()
+
+      // Busca modifier groups do restaurante usando Supabase
+      const { data: groupsResult, error: groupsError } = await supabase
+        .from('modifier_groups')
+        .select('*')
+        .eq('restaurant_id', restaurantId)
+        .order('created_at', { ascending: true })
+
+      if (groupsError) {
+        console.error('Error fetching modifier groups:', groupsError)
+        return NextResponse.json({ error: 'Erro ao buscar grupos de modificadores' }, { status: 500 })
+      }
+
+      const groupIds = groupsResult?.map((g) => g.id) || []
+      const valuesMap: Record<string, unknown[]> = {}
+
+      if (groupIds.length > 0) {
+        const { data: valuesResult, error: valuesError } = await supabase
+          .from('modifier_values')
+          .select('*')
+          .in('modifier_group_id', groupIds)
+          .order('created_at', { ascending: true })
+
+        if (valuesError) {
+          console.error('Error fetching modifier values:', valuesError)
+          return NextResponse.json({ error: 'Erro ao buscar valores de modificadores' }, { status: 500 })
+        }
+
+        for (const val of valuesResult || []) {
+          if (!valuesMap[val.modifier_group_id]) {
+            valuesMap[val.modifier_group_id] = []
+          }
+          valuesMap[val.modifier_group_id].push(val)
+        }
+      }
+
+      // Monta resposta com groups e seus values
+      const groupsWithValues = (groupsResult || []).map((group) => ({
+        ...group,
+        modifier_values: valuesMap[group.id] ?? []
+      }))
+
+      return NextResponse.json({ modifier_groups: groupsWithValues })
     }
-
-    // Monta resposta com groups e seus values
-    const groupsWithValues = groups?.map(group => ({
-      ...group,
-      modifier_values: valuesMap[group.id as string] ?? []
-    })) ?? []
-
-    return NextResponse.json({ modifier_groups: groupsWithValues })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erro interno'
     const status = (error as Error & { status?: number }).status || 500
@@ -98,34 +119,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (product_id) {
-      const supabase = await createClient()
-
-      // Valida que o product_id pertence ao restaurante
-      // Products não têm restaurant_id diretamente, então verificamos via categoria
-      const { data: productWithCategory, error: catError } = await supabase
-        .from('products')
-        .select('id, categories!inner(restaurant_id)')
-        .eq('id', product_id)
-        .single()
-
-      if (catError || !productWithCategory) {
-        return NextResponse.json(
-          { error: 'Produto não encontrado' },
-          { status: 404 }
-        )
-      }
-
-      // @ts-expect-error - nested select retorna tipo genérico
-      const productRestaurantId = productWithCategory.categories?.restaurant_id
-      if (productRestaurantId !== restaurantId) {
-        return NextResponse.json(
-          { error: 'Produto não pertence a este restaurante' },
-          { status: 403 }
-        )
-      }
-    }
-
     if (min_selections !== undefined && (typeof min_selections !== 'number' || min_selections < 0)) {
       return NextResponse.json(
         { error: 'min_selections deve ser um número >= 0' },
@@ -147,30 +140,97 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = await createClient()
+    const now = new Date().toISOString()
 
-    const { data: group, error } = await supabase
-      .from('modifier_groups')
-      .insert({
+    if (isDevDatabase()) {
+      // Valida que o product_id pertence ao restaurante via categoria (Drizzle)
+      if (product_id) {
+        const productResult = await db.select().from(products)
+          .leftJoin(categories, eq(products.category_id, categories.id))
+          .where(eq(products.id, product_id))
+          .limit(1)
+
+        if (!productResult[0]) {
+          return NextResponse.json(
+            { error: 'Produto não encontrado' },
+            { status: 404 }
+          )
+        }
+
+        const { categories: cat } = productResult[0]
+        if (!cat || cat.restaurant_id !== restaurantId) {
+          return NextResponse.json(
+            { error: 'Produto não pertence a este restaurante' },
+            { status: 403 }
+          )
+        }
+      }
+
+      const newGroup = {
+        id: crypto.randomUUID(),
         restaurant_id: restaurantId,
         name: name.trim(),
         required: required ?? false,
         min_selections: min_selections ?? 0,
-        max_selections: max_selections ?? 1
-      })
-      .select()
-      .single()
+        max_selections: max_selections ?? 1,
+        created_at: now,
+      }
 
-    if (error) {
-      console.error('Erro ao criar modifier group:', error)
-      return NextResponse.json(
-        { error: 'Falha ao criar grupo de modificadores' },
-        { status: 500 }
-      )
+      await db.insert(modifierGroups).values(newGroup)
+      await invalidateMenuCache()
+      return NextResponse.json({ modifier_group: newGroup }, { status: 201 })
+    } else {
+      const supabase = getSupabaseAdmin()
+
+      // Valida que o product_id pertence ao restaurante via categoria (Supabase)
+      if (product_id) {
+        const { data: productResult, error: productError } = await supabase
+          .from('products')
+          .select('id, category_id, categories!inner(restaurant_id)')
+          .eq('id', product_id)
+          .single()
+
+        if (productError || !productResult) {
+          return NextResponse.json(
+            { error: 'Produto não encontrado' },
+            { status: 404 }
+          )
+        }
+
+         
+        const cat = productResult.categories as unknown as { restaurant_id: string } | null
+        if (!cat || cat.restaurant_id !== restaurantId) {
+          return NextResponse.json(
+            { error: 'Produto não pertence a este restaurante' },
+            { status: 403 }
+          )
+        }
+      }
+
+      const newGroup = {
+        id: crypto.randomUUID(),
+        restaurant_id: restaurantId,
+        name: name.trim(),
+        required: required ?? false,
+        min_selections: min_selections ?? 0,
+        max_selections: max_selections ?? 1,
+        created_at: now,
+      }
+
+      const { data, error } = await supabase
+        .from('modifier_groups')
+        .insert(newGroup)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error creating modifier group:', error)
+        return NextResponse.json({ error: 'Erro ao criar grupo de modificadores' }, { status: 500 })
+      }
+
+      await invalidateMenuCache()
+      return NextResponse.json({ modifier_group: data }, { status: 201 })
     }
-
-    await invalidateMenuCache()
-    return NextResponse.json({ modifier_group: group }, { status: 201 })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erro interno'
     const status = (error as Error & { status?: number }).status || 500

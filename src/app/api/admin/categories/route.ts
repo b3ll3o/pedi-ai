@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { db, isDevDatabase, getSupabaseAdmin } from '@/infrastructure/database'
+import { categories } from '@/infrastructure/database/schema'
+import { eq, and, asc } from 'drizzle-orm'
 import { invalidateMenuCache } from '@/lib/offline/cache'
 import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin'
 
@@ -12,30 +14,35 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const activeOnly = searchParams.get('active') === 'true'
 
-    const supabase = await createClient()
+    if (isDevDatabase()) {
+      const conditions = [eq(categories.restaurant_id, restaurantId)]
+      if (activeOnly) {
+        conditions.push(eq(categories.active, true))
+      }
+      const result = await db.select().from(categories)
+        .where(and(...conditions))
+        .orderBy(asc(categories.sort_order))
+      return NextResponse.json({ categories: result })
+    } else {
+      const supabase = getSupabaseAdmin()
+      let query = supabase
+        .from('categories')
+        .select('*')
+        .eq('restaurant_id', restaurantId)
 
-    let query = supabase
-      .from('categories')
-      .select('*')
-      .eq('restaurant_id', restaurantId)
-      .is('deleted_at', null)
-      .order('sort_order', { ascending: true })
+      if (activeOnly) {
+        query = query.eq('active', 'true')
+      }
 
-    if (activeOnly) {
-      query = query.eq('active', true)
+      const { data, error } = await query.order('sort_order', { ascending: true })
+
+      if (error) {
+        console.error('Error fetching categories:', error)
+        return NextResponse.json({ error: 'Erro ao buscar categorias' }, { status: 500 })
+      }
+
+      return NextResponse.json({ categories: data })
     }
-
-    const { data: categories, error } = await query
-
-    if (error) {
-      console.error('Erro ao buscar categorias:', error)
-      return NextResponse.json(
-        { error: 'Falha ao buscar categorias' },
-        { status: 500 }
-      )
-    }
-
-    return NextResponse.json({ categories })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erro interno'
     const status = (error as Error & { status?: number }).status || 500
@@ -67,30 +74,47 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = await createClient()
+    const now = new Date().toISOString()
 
-    const { data: category, error } = await supabase
-      .from('categories')
-      .insert({
+    if (isDevDatabase()) {
+      const newCategory = {
+        id: crypto.randomUUID(),
         restaurant_id: restaurantId,
         name: name.trim(),
         description: body.description || null,
         sort_order: sort_order ?? 0,
         active: true,
-      })
-      .select()
-      .single()
+        created_at: now,
+        updated_at: now,
+      }
+      await db.insert(categories).values(newCategory)
+      return NextResponse.json({ category: newCategory }, { status: 201 })
+    } else {
+      const supabase = getSupabaseAdmin()
+      const newCategory = {
+        id: crypto.randomUUID(),
+        restaurant_id: restaurantId,
+        name: name.trim(),
+        description: body.description || null,
+        sort_order: sort_order ?? 0,
+        active: true,
+        created_at: now,
+        updated_at: now,
+      }
 
-    if (error) {
-      console.error('Erro ao criar categoria:', error)
-      return NextResponse.json(
-        { error: 'Falha ao criar categoria' },
-        { status: 500 }
-      )
+      const { data, error } = await supabase
+        .from('categories')
+        .insert(newCategory)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error creating category:', error)
+        return NextResponse.json({ error: 'Erro ao criar categoria' }, { status: 500 })
+      }
+
+      return NextResponse.json({ category: data }, { status: 201 })
     }
-
-    await invalidateMenuCache()
-    return NextResponse.json({ category }, { status: 201 })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erro interno'
     const status = (error as Error & { status?: number }).status || 500

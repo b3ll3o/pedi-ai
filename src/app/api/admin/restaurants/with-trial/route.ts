@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { createClient as createSupabaseAdmin } from '@supabase/supabase-js';
+import { db, isDevDatabase, getSupabaseAdmin } from '@/infrastructure/database';
+import { usersProfiles, subscriptions } from '@/infrastructure/database/schema';
+import { eq, and } from 'drizzle-orm';
 
 const TRIAL_DAYS = 14;
 const MONTHLY_PRICE = 19.99; // R$ 19,99
@@ -18,14 +20,55 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
-    // Use admin client to bypass RLS
-    const supabaseAdmin = createSupabaseAdmin(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: { autoRefreshToken: false, persistSession: false }
+    if (isDevDatabase()) {
+      // Get user's profiles
+      const profilesResult = await db
+        .select({ restaurant_id: usersProfiles.restaurant_id })
+        .from(usersProfiles)
+        .where(and(eq(usersProfiles.user_id, user.id), eq(usersProfiles.role, 'dono')));
+
+      const hasRestaurants = profilesResult.length > 0;
+      const isFirstRestaurant = !hasRestaurants;
+
+      // For dev, we don't have restaurant_settings table, so we simulate
+      let trialDaysRemaining = TRIAL_DAYS;
+      let subscriptionStatus: 'trial' | 'active' | 'expired' = 'trial';
+      let firstRestaurantCreatedAt: string | null = null;
+
+      // Check if there's an existing subscription
+      if (hasRestaurants && profilesResult[0].restaurant_id) {
+        const subscriptionResult = await db
+          .select()
+          .from(subscriptions)
+          .where(eq(subscriptions.restaurant_id, profilesResult[0].restaurant_id))
+          .limit(1)
+          .get();
+
+        if (subscriptionResult) {
+          firstRestaurantCreatedAt = subscriptionResult.created_at;
+          subscriptionStatus = subscriptionResult.status as 'trial' | 'active' | 'expired';
+          
+          if (subscriptionResult.trial_ends_at) {
+            const trialEndDate = new Date(subscriptionResult.trial_ends_at);
+            const now = new Date();
+            trialDaysRemaining = Math.max(0, Math.floor((trialEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+          }
+        }
       }
-    );
+
+      return NextResponse.json({
+        trialDaysRemaining,
+        subscriptionStatus,
+        firstRestaurantCreatedAt,
+        monthlyPrice: MONTHLY_PRICE,
+        isFirstRestaurant,
+        hasRestaurants,
+      });
+    }
+
+    // Production: use Supabase
+    // Use admin client to bypass RLS
+    const supabaseAdmin = getSupabaseAdmin();
 
     // Get restaurant settings for this owner
     const { data: settings, error: settingsError } = await supabaseAdmin
@@ -109,14 +152,18 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
+    if (isDevDatabase()) {
+      // For dev, we don't have restaurant_settings table
+      // This is a no-op in dev mode - settings are created with the first restaurant
+      return NextResponse.json({
+        message: 'Configurações já existem (dev mode)',
+        trialDays: TRIAL_DAYS,
+      });
+    }
+
+    // Production: use Supabase
     // Use admin client to bypass RLS
-    const supabaseAdmin = createSupabaseAdmin(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: { autoRefreshToken: false, persistSession: false }
-      }
-    );
+    const supabaseAdmin = getSupabaseAdmin();
 
     // Check if settings already exist
     const { data: existingSettings } = await supabaseAdmin

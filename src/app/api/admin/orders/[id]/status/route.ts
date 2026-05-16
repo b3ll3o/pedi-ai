@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { db, isDevDatabase } from '@/infrastructure/database'
+import { orders, orderStatusHistory } from '@/infrastructure/database/schema'
+import { eq } from 'drizzle-orm'
 import { requireAuth, requireRole } from '@/lib/auth/admin'
 
 interface RouteParams {
@@ -44,6 +47,73 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       )
     }
 
+    if (isDevDatabase()) {
+      // Fetch current order
+      const currentOrder = await db
+        .select({ id: orders.id, status: orders.status, restaurant_id: orders.restaurant_id })
+        .from(orders)
+        .where(eq(orders.id, id))
+        .limit(1)
+        .get()
+
+      if (!currentOrder) {
+        return NextResponse.json(
+          { error: 'Pedido não encontrado' },
+          { status: 404 }
+        )
+      }
+
+      // Validate status transition
+      const currentStatus = currentOrder.status as OrderStatus
+      const allowedTransitions = VALID_STATUS_TRANSITIONS[currentStatus] || []
+
+      if (!allowedTransitions.includes(status)) {
+        return NextResponse.json(
+          {
+            error: `Transição de status inválida de '${currentStatus}' para '${status}'`,
+            current_status: currentStatus,
+            allowed_transitions: allowedTransitions,
+          },
+          { status: 400 }
+        )
+      }
+
+      // Update order status
+      await db.update(orders).set({ status }).where(eq(orders.id, id))
+
+      // Record status change in history
+      const actorNotes = JSON.stringify({
+        actor_id: authUser.id,
+        actor_type: 'admin',
+        actor_email: authUser.email,
+      })
+
+      await db.insert(orderStatusHistory).values({
+        id: crypto.randomUUID(),
+        order_id: id,
+        status,
+        notes: actorNotes,
+        created_at: new Date().toISOString(),
+      })
+
+      // Fetch updated order
+      const updatedOrder = await db
+        .select({ id: orders.id, status: orders.status, updated_at: orders.updated_at })
+        .from(orders)
+        .where(eq(orders.id, id))
+        .limit(1)
+        .get()
+
+      return NextResponse.json({
+        data: {
+          id: updatedOrder?.id,
+          status: updatedOrder?.status,
+          updated_at: updatedOrder?.updated_at,
+        },
+      })
+    }
+
+    // Production: use Supabase
     const supabase = await createClient()
 
     // Fetch current order

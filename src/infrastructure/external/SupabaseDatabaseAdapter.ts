@@ -1,3 +1,4 @@
+import type { Table } from 'dexie';
 import { createClient } from '@/lib/supabase/client';
 import type { ISupabaseDatabaseAdapter, SyncResult } from '@/application/shared/services/adapters/ISupabaseDatabaseAdapter';
 import { db, type PediDatabase } from '@/infrastructure/persistence/database';
@@ -249,9 +250,10 @@ export class SupabaseDatabaseAdapter implements ISupabaseDatabaseAdapter {
    * Usamos type assertion pois Dexie não suporta acesso por string index.
    * Esta é a única forma de fazer acesso dinámico a tabelas com a API do Dexie.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private getDexieTable(tableName: string): any {
-    return (db as PediDatabase)[tableName as keyof PediDatabase];
+  private getDexieTable(tableName: string): Table<unknown> | undefined {
+     
+    const tableMap = db as unknown as Partial<Record<keyof PediDatabase, Table<unknown>>>;
+    return tableMap[tableName as keyof PediDatabase];
   }
 
   /**

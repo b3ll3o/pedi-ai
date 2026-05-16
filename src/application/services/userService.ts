@@ -48,22 +48,31 @@ export async function getUser(userId: string): Promise<users_profiles> {
 
 // ── Invite User ─────────────────────────────────────────────
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function inviteUser(input: UserInput): Promise<{ invitation: any }> {
+export interface InviteUserResult {
+  invitation: {
+    id: string;
+    email: string;
+    role: string;
+    created_at: string;
+  };
+}
+
+export async function inviteUser(input: UserInput): Promise<InviteUserResult> {
   const response = await fetch('/api/admin/users', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(input),
-  })
+  });
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Failed to invite user' }))
     throw new Error(error.error || 'Failed to invite user')
   }
 
-  return response.json()
+  const data = await response.json() as { invitation?: InviteUserResult['invitation'] };
+  return { invitation: data.invitation! };
 }
 
 // ── Update User ─────────────────────────────────────────────

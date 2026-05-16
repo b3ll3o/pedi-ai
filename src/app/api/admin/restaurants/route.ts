@@ -1,25 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { db, isDevDatabase, getSupabaseAdmin } from '@/infrastructure/database';
+import { restaurants, usersProfiles, subscriptions } from '@/infrastructure/database/schema';
+import { eq, and, inArray } from 'drizzle-orm';
 import { createServerClient } from '@supabase/ssr';
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
-
-/**
- * Admin client for bypassing RLS - uses service role key directly
- * without cookie handling (service role bypasses auth context)
- */
-function getSupabaseAdmin() {
-  return createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-        detectSessionInUrl: false,
-      },
-    }
-  );
-}
 
 /**
  * Auth client for validating user sessions via cookies
@@ -61,15 +45,54 @@ export async function GET() {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
-    // Admin client for database operations (uses service role - bypasses RLS)
+    if (isDevDatabase()) {
+      // Get user's profiles using Drizzle
+      const profilesResult = await db
+        .select({ restaurant_id: usersProfiles.restaurant_id, role: usersProfiles.role })
+        .from(usersProfiles)
+        .where(eq(usersProfiles.user_id, user.id));
+
+      const restaurantIds = profilesResult.map((p) => p.restaurant_id).filter((id): id is string => id !== null);
+
+      if (restaurantIds.length === 0) {
+        return NextResponse.json({ restaurants: [] });
+      }
+
+      // Get restaurant details
+      const restaurantsResult = await db
+        .select()
+        .from(restaurants)
+        .where(inArray(restaurants.id, restaurantIds));
+
+      // Get team count for each restaurant
+      const teamCountsResult = await db
+        .select({ restaurant_id: usersProfiles.restaurant_id })
+        .from(usersProfiles)
+        .where(inArray(usersProfiles.restaurant_id, restaurantIds));
+
+      const teamCountMap = teamCountsResult.reduce((acc, curr) => {
+        if (curr.restaurant_id) {
+          acc[curr.restaurant_id] = (acc[curr.restaurant_id] || 0) + 1;
+        }
+        return acc;
+      }, {} as Record<string, number>);
+
+      const restaurantsWithTeamCount = restaurantsResult.map((r) => ({
+        ...r,
+        team_count: teamCountMap[r.id] || 0,
+      }));
+
+      return NextResponse.json({ restaurants: restaurantsWithTeamCount });
+    }
+
+    // Production: use Supabase
     const supabaseAdmin = getSupabaseAdmin();
 
-    // Get user's restaurants via users_profiles (filter out soft-deleted)
+    // Get user's restaurants via users_profiles
     const { data: profiles, error: profilesError } = await supabaseAdmin
       .from('users_profiles')
       .select('restaurant_id, role')
-      .eq('user_id', user.id)
-      .is('deleted_at', null);
+      .eq('user_id', user.id);
 
     if (profilesError) {
       console.error('Error fetching profiles:', JSON.stringify(profilesError, null, 2));
@@ -81,18 +104,17 @@ export async function GET() {
       );
     }
 
-    const restaurantIds = profiles?.map((p) => p.restaurant_id) || [];
+    const restaurantIds = profiles?.map((p) => p.restaurant_id).filter((id): id is string => id !== null) || [];
 
     if (restaurantIds.length === 0) {
       return NextResponse.json({ restaurants: [] });
     }
 
-    // Get restaurant details (filter out soft-deleted restaurants)
-    const { data: restaurants, error: restaurantsError } = await supabaseAdmin
+    // Get restaurant details
+    const { data: restaurantsData, error: restaurantsError } = await supabaseAdmin
       .from('restaurants')
       .select('*')
-      .in('id', restaurantIds)
-      .is('deleted_at', null);
+      .in('id', restaurantIds);
 
     if (restaurantsError) {
       console.error('Error fetching restaurants:', restaurantsError);
@@ -109,11 +131,13 @@ export async function GET() {
       .in('restaurant_id', restaurantIds);
 
     const teamCountMap = teamCounts?.reduce((acc, curr) => {
-      acc[curr.restaurant_id] = (acc[curr.restaurant_id] || 0) + 1;
+      if (curr.restaurant_id) {
+        acc[curr.restaurant_id] = (acc[curr.restaurant_id] || 0) + 1;
+      }
       return acc;
     }, {} as Record<string, number>) || {};
 
-    const restaurantsWithTeamCount = (restaurants || []).map((r) => ({
+    const restaurantsWithTeamCount = (restaurantsData || []).map((r) => ({
       ...r,
       team_count: teamCountMap[r.id] || 0,
     }));
@@ -140,9 +164,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
-    // Admin client for database operations (uses service role - bypasses RLS)
-    const supabaseAdmin = getSupabaseAdmin();
-
     const body = await request.json();
     const { name, description, address, phone, logo_url } = body;
 
@@ -152,6 +173,62 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const now = new Date().toISOString();
+
+    if (isDevDatabase()) {
+      // Create restaurant using Drizzle
+      const newRestaurant = {
+        id: crypto.randomUUID(),
+        name: name.trim(),
+        description: description?.trim() || null,
+        address: address?.trim() || null,
+        phone: phone?.trim() || null,
+        logo_url: logo_url || null,
+        active: true,
+        created_at: now,
+        updated_at: now,
+      };
+
+      await db.insert(restaurants).values(newRestaurant);
+
+      // Add user as owner
+      const ownerName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
+      await db.insert(usersProfiles).values({
+        id: crypto.randomUUID(),
+        user_id: user.id,
+        restaurant_id: newRestaurant.id,
+        role: 'dono',
+        name: ownerName,
+        email: user.email || '',
+        created_at: now,
+      });
+
+      // Create subscription with 14-day free trial
+      const trialDays = 14;
+      const trialEndsAt = new Date();
+      trialEndsAt.setDate(trialEndsAt.getDate() + trialDays);
+
+      await db.insert(subscriptions).values({
+        id: crypto.randomUUID(),
+        restaurant_id: newRestaurant.id,
+        status: 'trial',
+        plan_type: 'monthly',
+        price_cents: 1999,
+        currency: 'BRL',
+        trial_days: trialDays,
+        trial_started_at: now,
+        trial_ends_at: trialEndsAt.toISOString(),
+        created_at: now,
+        updated_at: now,
+        version: 1,
+      });
+
+      return NextResponse.json({ restaurant: newRestaurant }, { status: 201 });
+    }
+
+    // Production: use Supabase
+    const supabaseAdmin = getSupabaseAdmin();
 
     // Create restaurant
     const { data: restaurant, error: restaurantError } = await supabaseAdmin
@@ -175,14 +252,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Add user as owner
+    const ownerName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
     const { error: profileError } = await supabaseAdmin
       .from('users_profiles')
       .insert({
         user_id: user.id,
         restaurant_id: restaurant.id,
         role: 'dono',
-        name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
-        email: user.email,
+        name: ownerName,
+        email: user.email || '',
       });
 
     if (profileError) {

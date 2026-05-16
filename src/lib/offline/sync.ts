@@ -1,5 +1,5 @@
 import { db } from './db';
-import type { PendingSync, SyncStatus } from './types';
+import type { OrderData, PendingSync, SyncStatus } from './types';
 
 const INITIAL_BACKOFF_MS = 1000;
 const MAX_RETRIES = 3;
@@ -8,7 +8,7 @@ function getBackoffDelay(retryCount: number): number {
   return Math.min(INITIAL_BACKOFF_MS * Math.pow(2, retryCount), 30000);
 }
 
-export async function queueOrderForSync(orderData: unknown, restaurantId: string): Promise<number> {
+export async function queueOrderForSync(orderData: OrderData, restaurantId: string): Promise<number> {
   const entry: PendingSync = {
     restaurantId,
     orderData,

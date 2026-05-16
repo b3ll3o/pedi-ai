@@ -1,164 +1,200 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient as createSupabaseClient } from '@supabase/supabase-js'
-import type { categories, products, modifier_groups, modifier_values, combos } from '@/lib/supabase/types'
+import { NextRequest, NextResponse } from 'next/server';
+import { eq, and, asc } from 'drizzle-orm';
+import { db, isDevDatabase } from '@/infrastructure/database';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import * as schema from '@/infrastructure/database/schema';
 
-type Category = categories
-type Product = products
-type ModifierGroup = Omit<modifier_groups, 'created_at'> & {
-  modifier_values: Omit<modifier_values, 'modifier_group_id' | 'created_at'>[]
-}
-type Combo = combos
+type ModifierValueForGroup = {
+  id: string;
+  name: string;
+  price_adjustment: number;
+  available: boolean;
+};
 
 interface MenuResponse {
-  categories: Category[]
-  products: Product[]
-  modifier_groups: ModifierGroup[]
-  combos: Combo[]
+  categories: schema.Category[];
+  products: schema.Product[];
+  modifier_groups: Array<{
+    id: string;
+    restaurant_id: string;
+    name: string;
+    required: boolean;
+    min_selections: number;
+    max_selections: number;
+    modifier_values: ModifierValueForGroup[];
+  }>;
+  combos: schema.Combo[];
 }
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const restaurantId = searchParams.get('restaurant_id')
+    const { searchParams } = new URL(request.url);
+    const restaurantId = searchParams.get('restaurant_id');
 
     if (!restaurantId) {
-      return NextResponse.json(
-        { error: 'restaurant_id is required' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'restaurant_id é obrigatório' }, { status: 400 });
     }
 
-    // Use service role key to bypass RLS
-    const supabase = createSupabaseClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
-
-    // Fetch categories (active only, sorted by sort_order)
-    const { data: categoriesData, error: categoriesError } = await supabase
-      .from('categories')
-      .select('*')
-      .eq('restaurant_id', restaurantId)
-      .eq('active', true)
-      .order('sort_order', { ascending: true })
-
-    if (categoriesError) {
-      console.error('Error fetching categories:', categoriesError)
-      return NextResponse.json(
-        { error: 'Failed to fetch categories' },
-        { status: 500 }
-      )
+    if (isDevDatabase()) {
+      return handleDevMenu(restaurantId);
+    } else {
+      return handleSupabaseMenu(restaurantId);
     }
-    const categories = categoriesData as Category[]
+  } catch (error) {
+    console.error('Erro em /api/menu:', error);
+    return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
+  }
+}
 
-    // Fetch products (available only)
-    const { data: productsData, error: productsError } = await supabase
-      .from('products')
-      .select('*')
-      .eq('available', true)
-      .order('sort_order', { ascending: true })
+async function handleDevMenu(restaurantId: string): Promise<NextResponse> {
+  // Fetch categories
+  const categoriesData = db
+    .select()
+    .from(schema.categories)
+    .where(and(eq(schema.categories.restaurant_id, restaurantId), eq(schema.categories.active, true)))
+    .orderBy(asc(schema.categories.sort_order))
+    .all();
 
-    if (productsError) {
-      console.error('Error fetching products:', productsError)
-      return NextResponse.json(
-        { error: 'Failed to fetch products' },
-        { status: 500 }
-      )
-    }
-    const products = productsData as Product[]
+  // Fetch products
+  const productsData = db
+    .select()
+    .from(schema.products)
+    .where(and(eq(schema.products.available, true)))
+    .orderBy(asc(schema.products.sort_order))
+    .all();
 
-    // Filter products by restaurant_id via category join
-    const categoryIds = categories.map(c => c.id)
-    const filteredProducts = products.filter(p => categoryIds.includes(p.category_id))
+  // Filter products by restaurant_id via category join
+  const categoryIds = categoriesData.map((c) => c.id);
+  const filteredProducts = productsData.filter((p) => categoryIds.includes(p.category_id));
 
-    // Fetch modifier groups for this restaurant
-    const { data: modifierGroupsData, error: modifierGroupsError } = await supabase
-      .from('modifier_groups')
-      .select('*')
-      .eq('restaurant_id', restaurantId)
+  // Fetch modifier groups
+  const modifierGroupsData = db
+    .select()
+    .from(schema.modifierGroups)
+    .where(eq(schema.modifierGroups.restaurant_id, restaurantId))
+    .all();
 
-    if (modifierGroupsError) {
-      console.error('Error fetching modifier groups:', modifierGroupsError)
-      return NextResponse.json(
-        { error: 'Failed to fetch modifier groups' },
-        { status: 500 }
-      )
-    }
-    const modifierGroups = modifierGroupsData as (Omit<modifier_groups, 'created_at'>)[]
+  // Fetch modifier values
+  const modifierGroupIds = modifierGroupsData.map((mg) => mg.id);
+  const modifierValuesData =
+    modifierGroupIds.length > 0
+      ? db
+          .select()
+          .from(schema.modifierValues)
+          .where(eq(schema.modifierValues.available, true))
+          .all()
+          .filter((mv) => modifierGroupIds.includes(mv.modifier_group_id))
+      : [];
 
-    // Fetch modifier values for these groups
-    const modifierGroupIds = modifierGroups.map(mg => mg.id)
-    const { data: modifierValuesData, error: modifierValuesError } = modifierGroupIds.length > 0
+  // Nest modifier values within groups
+  const modifierGroupsWithValues = modifierGroupsData.map((mg) => ({
+    id: mg.id,
+    restaurant_id: mg.restaurant_id,
+    name: mg.name,
+    required: mg.required,
+    min_selections: mg.min_selections,
+    max_selections: mg.max_selections,
+    modifier_values: modifierValuesData
+      .filter((mv) => mv.modifier_group_id === mg.id)
+      .map((mv) => ({
+        id: mv.id,
+        name: mv.name,
+        price_adjustment: mv.price_adjustment,
+        available: mv.available,
+      })),
+  }));
+
+  // Fetch combos
+  const combosData = db
+    .select()
+    .from(schema.combos)
+    .where(and(eq(schema.combos.restaurant_id, restaurantId), eq(schema.combos.available, true)))
+    .all();
+
+  const response: MenuResponse = {
+    categories: categoriesData,
+    products: filteredProducts,
+    modifier_groups: modifierGroupsWithValues,
+    combos: combosData,
+  };
+
+  return NextResponse.json(response);
+}
+
+async function handleSupabaseMenu(restaurantId: string): Promise<NextResponse> {
+  const supabase = createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  const { data: categoriesData, error: categoriesError } = await supabase
+    .from('categories')
+    .select('*')
+    .eq('restaurant_id', restaurantId)
+    .eq('active', true)
+    .order('sort_order', { ascending: true });
+
+  if (categoriesError) {
+    console.error('Erro categories:', categoriesError);
+    return NextResponse.json({ error: 'Falha ao buscar categorias' }, { status: 500 });
+  }
+
+  const { data: productsData, error: productsError } = await supabase
+    .from('products')
+    .select('*')
+    .eq('available', true)
+    .order('sort_order', { ascending: true });
+
+  if (productsError) {
+    console.error('Erro products:', productsError);
+    return NextResponse.json({ error: 'Falha ao buscar produtos' }, { status: 500 });
+  }
+
+  const categoryIds = categoriesData.map((c) => c.id);
+  const filteredProducts = productsData.filter((p) => categoryIds.includes(p.category_id));
+
+  const { data: modifierGroupsData, error: modifierGroupsError } = await supabase
+    .from('modifier_groups')
+    .select('*')
+    .eq('restaurant_id', restaurantId);
+
+  if (modifierGroupsError) {
+    return NextResponse.json({ error: 'Falha ao buscar grupos de modificadores' }, { status: 500 });
+  }
+
+  const modifierGroupIds = modifierGroupsData.map((mg) => mg.id);
+  const { data: modifierValuesData } =
+    modifierGroupIds.length > 0
       ? await supabase
           .from('modifier_values')
           .select('*')
           .in('modifier_group_id', modifierGroupIds)
           .eq('available', true)
-      : { data: [], error: null }
-    const modifierValues = modifierValuesData as Omit<modifier_values, 'created_at'>[]
+      : { data: [] };
 
-    if (modifierValuesError) {
-      console.error('Error fetching modifier values:', modifierValuesError)
-      return NextResponse.json(
-        { error: 'Failed to fetch modifier values' },
-        { status: 500 }
-      )
-    }
+  const modifierGroupsWithValues = modifierGroupsData.map((mg) => ({
+    ...mg,
+    modifier_values: (modifierValuesData ?? [])
+      .filter((mv) => mv.modifier_group_id === mg.id)
+      .map((mv) => ({ id: mv.id, name: mv.name, price_adjustment: mv.price_adjustment, available: mv.available })),
+  }));
 
-    // Nest modifier values within groups
-    type ModifierValueForGroup = Omit<modifier_values, 'modifier_group_id' | 'created_at'>;
-    const modifierGroupsWithValues: ModifierGroup[] = modifierGroups.map((mg) => {
-      const group: Omit<modifier_groups, 'created_at'> = {
-        id: mg.id as string,
-        restaurant_id: mg.restaurant_id as string,
-        name: mg.name as string,
-        required: mg.required as boolean,
-        min_selections: mg.min_selections as number,
-        max_selections: mg.max_selections as number,
-      }
-      const values: ModifierValueForGroup[] = modifierValues
-        .filter(mv => mv.modifier_group_id === mg.id)
-        .map(mv => ({
-          id: mv.id as string,
-          name: mv.name as string,
-          price_adjustment: mv.price_adjustment as number,
-          available: mv.available as boolean,
-        }))
-      return {
-        ...group,
-        modifier_values: values,
-      }
-    })
+  const { data: combosData, error: combosError } = await supabase
+    .from('combos')
+    .select('*')
+    .eq('restaurant_id', restaurantId)
+    .eq('available', true);
 
-    // Fetch combos (available only)
-    const { data: combosData, error: combosError } = await supabase
-      .from('combos')
-      .select('*')
-      .eq('restaurant_id', restaurantId)
-      .eq('available', true)
-
-    if (combosError) {
-      console.error('Error fetching combos:', combosError)
-      return NextResponse.json(
-        { error: 'Failed to fetch combos' },
-        { status: 500 }
-      )
-    }
-    const combos = combosData as Combo[]
-
-    const response: MenuResponse = {
-      categories,
-      products: filteredProducts,
-      modifier_groups: modifierGroupsWithValues,
-      combos
-    }
-
-    return NextResponse.json(response)
-  } catch (error) {
-    console.error('Unexpected error in /api/menu:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+  if (combosError) {
+    return NextResponse.json({ error: 'Falha ao buscar combos' }, { status: 500 });
   }
+
+  const response: MenuResponse = {
+    categories: categoriesData,
+    products: filteredProducts,
+    modifier_groups: modifierGroupsWithValues,
+    combos: combosData,
+  };
+
+  return NextResponse.json(response);
 }

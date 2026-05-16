@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { db, isDevDatabase, getSupabaseAdmin } from '@/infrastructure/database';
+import { tables, restaurants } from '@/infrastructure/database/schema';
+import { eq, and } from 'drizzle-orm';
 import { QRCodeCryptoService } from '@/infrastructure/services/QRCodeCryptoService';
 import { logger } from '@/lib/logger';
 
@@ -53,85 +55,164 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    if (isDevDatabase()) {
+      // Buscar mesa
+      const tableResult = await db
+        .select({ id: tables.id, number: tables.number, name: tables.name, restaurant_id: tables.restaurant_id, active: tables.active })
+        .from(tables)
+        .where(and(eq(tables.id, tableId), eq(tables.restaurant_id, restaurantId)))
+        .limit(1);
 
-    const { data: table, error: tableError } = await supabaseAdmin
-      .from('tables')
-      .select('id, number, name, restaurant_id, active')
-      .eq('id', tableId)
-      .eq('restaurant_id', restaurantId)
-      .single();
+      if (!tableResult || tableResult.length === 0) {
+        return NextResponse.json(
+          { error: 'Mesa não encontrada' },
+          { status: 404 }
+        );
+      }
 
-    if (tableError || !table) {
-      return NextResponse.json(
-        { error: 'Mesa não encontrada' },
-        { status: 404 }
-      );
+      const table = tableResult[0];
+
+      if (!table.active) {
+        return NextResponse.json(
+          { error: 'Mesa inativa' },
+          { status: 403 }
+        );
+      }
+
+      // Buscar restaurante
+      const restaurantResult = await db
+        .select({ id: restaurants.id, name: restaurants.name, slug: restaurants.slug, active: restaurants.active })
+        .from(restaurants)
+        .where(eq(restaurants.id, restaurantId))
+        .limit(1);
+
+      if (!restaurantResult || restaurantResult.length === 0) {
+        return NextResponse.json(
+          { error: 'Restaurante não encontrado' },
+          { status: 404 }
+        );
+      }
+
+      const restaurant = restaurantResult[0];
+
+      if (!restaurant.active) {
+        return NextResponse.json(
+          { error: 'Restaurante inativo' },
+          { status: 403 }
+        );
+      }
+
+      const cryptoService = new QRCodeCryptoService();
+      const payload = {
+        restauranteId: restaurantId,
+        mesaId: tableId,
+        assinatura: signature,
+      };
+
+      const secret = process.env.QR_CODE_SECRET;
+      if (!secret) {
+        throw new Error('Variável de ambiente QR_CODE_SECRET não está configurada');
+      }
+      const isValidSignature = cryptoService.validarAssinatura(payload, secret);
+
+      if (!isValidSignature) {
+        return NextResponse.json(
+          { error: 'Assinatura inválida' },
+          { status: 401 }
+        );
+      }
+
+      return NextResponse.json({
+        valid: true,
+        table: {
+          id: table.id,
+          number: table.number,
+          name: table.name,
+        },
+        restaurant: {
+          id: restaurant.id,
+          name: restaurant.name,
+          slug: restaurant.slug,
+        },
+      });
+    } else {
+      const supabaseAdmin = getSupabaseAdmin();
+
+      const { data: table, error: tableError } = await supabaseAdmin
+        .from('tables')
+        .select('id, number, name, restaurant_id, active')
+        .eq('id', tableId)
+        .eq('restaurant_id', restaurantId)
+        .single();
+
+      if (tableError || !table) {
+        return NextResponse.json(
+          { error: 'Mesa não encontrada' },
+          { status: 404 }
+        );
+      }
+
+      if (!table.active) {
+        return NextResponse.json(
+          { error: 'Mesa inativa' },
+          { status: 403 }
+        );
+      }
+
+      const { data: restaurant, error: restaurantError } = await supabaseAdmin
+        .from('restaurants')
+        .select('id, name, slug, active')
+        .eq('id', restaurantId)
+        .single();
+
+      if (restaurantError || !restaurant) {
+        return NextResponse.json(
+          { error: 'Restaurante não encontrado' },
+          { status: 404 }
+        );
+      }
+
+      if (!restaurant.active) {
+        return NextResponse.json(
+          { error: 'Restaurante inativo' },
+          { status: 403 }
+        );
+      }
+
+      const cryptoService = new QRCodeCryptoService();
+      const payload = {
+        restauranteId: restaurantId,
+        mesaId: tableId,
+        assinatura: signature,
+      };
+
+      const secret = process.env.QR_CODE_SECRET;
+      if (!secret) {
+        throw new Error('Variável de ambiente QR_CODE_SECRET não está configurada');
+      }
+      const isValidSignature = cryptoService.validarAssinatura(payload, secret);
+
+      if (!isValidSignature) {
+        return NextResponse.json(
+          { error: 'Assinatura inválida' },
+          { status: 401 }
+        );
+      }
+
+      return NextResponse.json({
+        valid: true,
+        table: {
+          id: table.id,
+          number: table.number,
+          name: table.name,
+        },
+        restaurant: {
+          id: restaurant.id,
+          name: restaurant.name,
+          slug: restaurant.slug,
+        },
+      });
     }
-
-    if (!table.active) {
-      return NextResponse.json(
-        { error: 'Mesa inativa' },
-        { status: 403 }
-      );
-    }
-
-    const { data: restaurant, error: restaurantError } = await supabaseAdmin
-      .from('restaurants')
-      .select('id, name, slug, active')
-      .eq('id', restaurantId)
-      .single();
-
-    if (restaurantError || !restaurant) {
-      return NextResponse.json(
-        { error: 'Restaurante não encontrado' },
-        { status: 404 }
-      );
-    }
-
-    if (!restaurant.active) {
-      return NextResponse.json(
-        { error: 'Restaurante inativo' },
-        { status: 403 }
-      );
-    }
-
-    const cryptoService = new QRCodeCryptoService();
-    const payload = {
-      restauranteId: restaurantId,
-      mesaId: tableId,
-      assinatura: signature,
-    };
-
-    const secret = process.env.QR_CODE_SECRET;
-    if (!secret) {
-      throw new Error('Variável de ambiente QR_CODE_SECRET não está configurada');
-    }
-    const isValidSignature = cryptoService.validarAssinatura(payload, secret);
-
-    if (!isValidSignature) {
-      return NextResponse.json(
-        { error: 'Assinatura inválida' },
-        { status: 401 }
-      );
-    }
-
-    return NextResponse.json({
-      valid: true,
-      table: {
-        id: table.id,
-        number: table.number,
-        name: table.name,
-      },
-      restaurant: {
-        id: restaurant.id,
-        name: restaurant.name,
-        slug: restaurant.slug,
-      },
-    });
   } catch (error) {
     logger.error("mesa", "Erro ao validar QR code:", { error: error });
     return NextResponse.json(

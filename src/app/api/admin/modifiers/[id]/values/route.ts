@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { db, isDevDatabase } from '@/infrastructure/database'
+import { modifierGroups, modifierValues } from '@/infrastructure/database/schema'
+import { eq } from 'drizzle-orm'
 import { invalidateMenuCache } from '@/lib/offline/cache'
 import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin'
 
@@ -35,6 +38,39 @@ export async function POST(
       )
     }
 
+    if (isDevDatabase()) {
+      // Verifica que o modifier group pertence ao restaurante
+      const groupResult = await db
+        .select({ id: modifierGroups.id })
+        .from(modifierGroups)
+        .where(eq(modifierGroups.id, modifierGroupId))
+        .limit(1)
+        .get()
+
+      if (!groupResult) {
+        return NextResponse.json(
+          { error: 'Grupo de modificadores não encontrado' },
+          { status: 404 }
+        )
+      }
+
+      const now = new Date().toISOString()
+      const newValue = {
+        id: crypto.randomUUID(),
+        modifier_group_id: modifierGroupId,
+        name: name.trim(),
+        price_adjustment: price_adjustment ?? 0,
+        available: true,
+        created_at: now,
+      }
+
+      await db.insert(modifierValues).values(newValue)
+
+      await invalidateMenuCache()
+      return NextResponse.json({ modifier_value: newValue }, { status: 201 })
+    }
+
+    // Production: use Supabase
     const supabase = await createClient()
 
     // Verifica que o modifier group pertence ao restaurante

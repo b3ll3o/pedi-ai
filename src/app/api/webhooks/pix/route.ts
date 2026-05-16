@@ -1,29 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { eq } from 'drizzle-orm';
+import { db, isDevDatabase } from '@/infrastructure/database';
 import { createClient as createSupabaseAdmin } from '@supabase/supabase-js';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { logger } from '@/lib/logger';
+import * as schema from '@/infrastructure/database/schema';
+import type { OrderStatus } from '@/infrastructure/database/schema';
 
 /**
  * Webhook handler for Mercado Pago PIX notifications.
- * 
+ *
  * This route is called by the Supabase Edge Function after it validates
  * the signature and checks idempotency. It handles:
  * 1. Signature validation (HMAC-SHA256)
  * 2. Idempotency check
  * 3. Updating order status
  * 4. Broadcasting event via Supabase Realtime for connected clients
- * 
+ *
  * The Supabase Edge Function (pix-webhook) forwards validated payloads here
  * to allow proper domain event dispatching through the application layer.
  */
 const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET ?? '';
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN ?? '';
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-function getSupabaseAdmin() {
-  return createSupabaseAdmin(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-}
 
 function validateSignature(payload: { id: string }, signature: string): boolean {
   if (!MP_WEBHOOK_SECRET) {
@@ -97,8 +95,73 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Assinatura inválida' }, { status: 401 });
   }
 
-  const supabase = getSupabaseAdmin();
   const paymentId = String(data.id);
+
+  if (isDevDatabase()) {
+    return handleDevWebhook(eventId, paymentId);
+  } else {
+    return handleSupabaseWebhook(eventId, paymentId);
+  }
+}
+
+async function handleDevWebhook(eventId: string, paymentId: string): Promise<NextResponse> {
+  // Idempotency check - skip for dev since webhook_events table doesn't track external event IDs
+  // In production, this prevents duplicate processing
+
+  // Fetch full payment details from Mercado Pago
+  let mpPayment: MpPaymentResponse;
+  try {
+    const mpResponse = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+      headers: {
+        Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!mpResponse.ok) {
+      throw new Error(`Mercado Pago API error: ${mpResponse.status}`);
+    }
+    mpPayment = await mpResponse.json();
+  } catch (err) {
+    logger.error("webhooks/pix", "Erro ao buscar payment details:", { error: err });
+    return NextResponse.json({ error: 'Erro ao buscar detalhes do pagamento' }, { status: 500 });
+  }
+
+  const orderId = mpPayment.metadata?.order_id;
+  if (!orderId) {
+    return NextResponse.json({ error: 'order_id não encontrado no metadata' }, { status: 400 });
+  }
+
+  const orderStatus = (STATUS_MAP[mpPayment.status] ?? 'pending_payment') as OrderStatus;
+
+  // Update order status in SQLite database
+  const updateResult = db
+    .update(schema.orders)
+    .set({ status: orderStatus })
+    .where(eq(schema.orders.id, orderId))
+    .run();
+
+  if (updateResult.changes === 0) {
+    logger.error("webhooks/pix", "Pedido não encontrado:", { orderId });
+    return NextResponse.json({ error: 'Pedido não encontrado' }, { status: 404 });
+  }
+
+  // Record webhook event for idempotency in dev mode
+  db.insert(schema.webhookEvents)
+    .values({
+      id: eventId,
+      event_type: 'payment',
+      processed_at: new Date().toISOString(),
+    })
+    .run();
+
+  logger.info("webhooks/pix", "Pagamento processado com sucesso (dev)", { orderId, status: orderStatus });
+
+  return NextResponse.json({ status: 'success' }, { status: 200 });
+}
+
+async function handleSupabaseWebhook(eventId: string, paymentId: string): Promise<NextResponse> {
+  const supabase = getSupabaseAdmin();
 
   // Idempotency check
   const { data: existingEvent } = await supabase
@@ -168,7 +231,7 @@ export async function POST(request: NextRequest) {
   // Record webhook event for idempotency
   await supabase
     .from('webhook_events')
-    .insert({ id: eventId, event_type: type });
+    .insert({ id: eventId, event_type: 'payment' });
 
   // Broadcast event via Supabase Realtime for connected clients
   // Uses same 'orders' channel and 'order_updated' event as admin order status route
@@ -192,4 +255,11 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({ status: 'success' }, { status: 200 });
+}
+
+function getSupabaseAdmin() {
+  return createSupabaseAdmin(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
 }

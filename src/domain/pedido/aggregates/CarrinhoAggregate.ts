@@ -2,7 +2,13 @@ import { ItemPedido } from '../entities/ItemPedido';
 import { Pedido, PedidoProps } from '../entities/Pedido';
 import { StatusPedido } from '../value-objects/StatusPedido';
 import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
-import { MetodoPagamento } from '@/domain/pagamento/value-objects/MetodoPagamento';
+
+/**
+ * Tipo de método de pagamento - usa string simples para evitar
+ * acoplamento cruzado entre bounded contexts (pedido -> pagamento).
+ * A conversão para MetodoPagamento (value object) acontece no UseCase.
+ */
+export type MetodoPagamentoTipo = 'pix' | 'cartao' | 'dinheiro';
 
 export interface CarrinhoProps {
   id: string;
@@ -10,7 +16,7 @@ export interface CarrinhoProps {
   mesaId?: string;
   restauranteId: string;
   itens: ItemPedido[];
-  metodoPagamento?: MetodoPagamento;
+  metodoPagamento?: MetodoPagamentoTipo;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -42,7 +48,7 @@ export class CarrinhoAggregate {
     return [...this.props.itens];
   }
 
-  get metodoPagamento(): MetodoPagamento | undefined {
+  get metodoPagamento(): MetodoPagamentoTipo | undefined {
     return this.props.metodoPagamento;
   }
 
@@ -84,7 +90,7 @@ export class CarrinhoAggregate {
     }
   }
 
-  definirMetodoPagamento(metodo: MetodoPagamento): void {
+  definirMetodoPagamento(metodo: MetodoPagamentoTipo): void {
     this.props.metodoPagamento = metodo;
     this.props.updatedAt = new Date();
   }

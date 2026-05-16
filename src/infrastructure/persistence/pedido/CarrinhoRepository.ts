@@ -1,9 +1,8 @@
 import { PediDatabase } from '../database';
 import { ICarrinhoRepository } from '@/domain/pedido/repositories/ICarrinhoRepository';
-import { CarrinhoAggregate, type CarrinhoProps } from '@/domain/pedido/aggregates/CarrinhoAggregate';
+import { CarrinhoAggregate, type CarrinhoProps, type MetodoPagamentoTipo } from '@/domain/pedido/aggregates/CarrinhoAggregate';
 import { ItemPedido, type ItemPedidoProps } from '@/domain/pedido/entities/ItemPedido';
 import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
-import { MetodoPagamento } from '@/domain/pagamento/value-objects/MetodoPagamento';
 import { ModificadorSelecionado } from '@/domain/pedido/value-objects/ModificadorSelecionado';
 import type { CarrinhoDbModel } from '../types';
 
@@ -61,7 +60,7 @@ export class CarrinhoRepository implements ICarrinhoRepository {
       mesaId: carrinho.mesaId ?? undefined,
       restauranteId: carrinho.restauranteId,
       itens: itensSerialized,
-      metodoPagamento: carrinho.metodoPagamento?.toString() ?? undefined,
+      metodoPagamento: carrinho.metodoPagamento ?? undefined,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -99,9 +98,7 @@ export class CarrinhoRepository implements ICarrinhoRepository {
       mesaId: dbModel.mesaId,
       restauranteId: dbModel.restauranteId,
       itens,
-      metodoPagamento: dbModel.metodoPagamento
-        ? MetodoPagamento.fromValue(dbModel.metodoPagamento)
-        : undefined,
+      metodoPagamento: (dbModel.metodoPagamento as MetodoPagamentoTipo) ?? undefined,
       createdAt: dbModel.createdAt,
       updatedAt: dbModel.updatedAt,
     };

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { db, isDevDatabase, getSupabaseAdmin } from '@/infrastructure/database'
+import { products, categories } from '@/infrastructure/database/schema'
+import { eq, and, asc, inArray } from 'drizzle-orm'
 import { invalidateMenuCache } from '@/lib/offline/cache'
 import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin'
 
@@ -13,50 +15,89 @@ export async function GET(request: NextRequest) {
     const categoryId = searchParams.get('category_id')
     const activeOnly = searchParams.get('active') === 'true'
 
-    const supabase = await createClient()
+    if (isDevDatabase()) {
+      // Primeiro busca as categorias do restaurant para filtrar os produtos usando Drizzle
+      const categoryResult = await db.select().from(categories)
+        .where(eq(categories.restaurant_id, restaurantId))
 
-    // Primeiro busca as categorias do restaurant para filtrar os produtos
-    const { data: categories } = await supabase
-      .from('categories')
-      .select('id')
-      .eq('restaurant_id', restaurantId)
-      .is('deleted_at', null)
+      if (!categoryResult || categoryResult.length === 0) {
+        return NextResponse.json({ products: [] })
+      }
 
-    if (!categories || categories.length === 0) {
-      return NextResponse.json({ products: [] })
+      const categoryIds = categoryResult.map(c => c.id)
+
+      // Filtra produtos por categoria(s) do restaurante
+      const query = db.select({
+        products: products,
+        categories: categories
+      })
+        .from(products)
+        .leftJoin(categories, eq(products.category_id, categories.id))
+        .where(inArray(products.category_id, categoryIds))
+        .orderBy(asc(products.sort_order))
+
+      let result = await query.all()
+
+      // Filtra por categoryId específico se fornecido
+      if (categoryId) {
+        result = result.filter(p => p.products.category_id === categoryId)
+      }
+
+      // Filtra por disponível se activeOnly
+      if (activeOnly) {
+        result = result.filter(p => p.products.available === true)
+      }
+
+      const productsWithCategory = result.map(r => ({
+        ...r.products,
+        category: r.categories
+      }))
+
+      return NextResponse.json({ products: productsWithCategory })
+    } else {
+      const supabase = getSupabaseAdmin()
+
+      // Primeiro busca as categorias do restaurant para filtrar os produtos usando Supabase
+      const { data: categoryResult, error: categoryError } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('restaurant_id', restaurantId)
+
+      if (categoryError) {
+        console.error('Error fetching categories:', categoryError)
+        return NextResponse.json({ error: 'Erro ao buscar categorias' }, { status: 500 })
+      }
+
+      if (!categoryResult || categoryResult.length === 0) {
+        return NextResponse.json({ products: [] })
+      }
+
+      const categoryIds = categoryResult.map(c => c.id)
+
+      // Filtra produtos por categoria(s) do restaurante
+      let query = supabase
+        .from('products')
+        .select('*, categories(*)')
+        .in('category_id', categoryIds)
+        .order('sort_order', { ascending: true })
+
+      if (categoryId) {
+        query = query.eq('category_id', categoryId)
+      }
+
+      if (activeOnly) {
+        query = query.eq('available', true)
+      }
+
+      const { data: productsResult, error: productsError } = await query
+
+      if (productsError) {
+        console.error('Error fetching products:', productsError)
+        return NextResponse.json({ error: 'Erro ao buscar produtos' }, { status: 500 })
+      }
+
+      return NextResponse.json({ products: productsResult || [] })
     }
-
-    const categoryIds = categories.map(c => c.id)
-
-    let query = supabase
-      .from('products')
-      .select(`
-        *,
-        category:categories(*)
-      `)
-      .in('category_id', categoryIds)
-      .is('deleted_at', null)
-      .order('sort_order', { ascending: true })
-
-    if (categoryId) {
-      query = query.eq('category_id', categoryId)
-    }
-
-    if (activeOnly) {
-      query = query.eq('available', true)
-    }
-
-    const { data: products, error } = await query
-
-    if (error) {
-      console.error('Erro ao buscar produtos:', error)
-      return NextResponse.json(
-        { error: 'Falha ao buscar produtos' },
-        { status: 500 }
-      )
-    }
-
-    return NextResponse.json({ products: products || [] })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erro interno'
     const status = (error as Error & { status?: number }).status || 500
@@ -95,27 +136,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = await createClient()
+    const now = new Date().toISOString()
 
-    // Verifica se a categoria existe e pertence ao restaurant
-    const { data: category, error: categoryError } = await supabase
-      .from('categories')
-      .select('id')
-      .eq('id', category_id)
-      .eq('restaurant_id', restaurantId)
-      .is('deleted_at', null)
-      .single()
+    if (isDevDatabase()) {
+      // Verifica se a categoria existe e pertence ao restaurant usando Drizzle
+      const catResult = await db.select().from(categories)
+        .where(and(eq(categories.id, category_id), eq(categories.restaurant_id, restaurantId)))
+        .limit(1)
 
-    if (categoryError || !category) {
-      return NextResponse.json(
-        { error: 'Categoria não encontrada ou não pertence a este restaurante' },
-        { status: 404 }
-      )
-    }
+      if (!catResult[0]) {
+        return NextResponse.json(
+          { error: 'Categoria não encontrada ou não pertence a este restaurante' },
+          { status: 404 }
+        )
+      }
 
-    const { data: product, error } = await supabase
-      .from('products')
-      .insert({
+      const newProduct = {
+        id: crypto.randomUUID(),
         category_id,
         name: name.trim(),
         description: description || null,
@@ -124,20 +161,59 @@ export async function POST(request: NextRequest) {
         dietary_labels: dietary_labels || null,
         available: available ?? true,
         sort_order: sort_order ?? 0,
-      })
-      .select()
-      .single()
+        created_at: now,
+        updated_at: now,
+      }
 
-    if (error) {
-      console.error('Erro ao criar produto:', error)
-      return NextResponse.json(
-        { error: 'Falha ao criar produto' },
-        { status: 500 }
-      )
+      await db.insert(products).values(newProduct)
+      await invalidateMenuCache()
+      return NextResponse.json({ product: newProduct }, { status: 201 })
+    } else {
+      const supabase = getSupabaseAdmin()
+
+      // Verifica se a categoria existe e pertence ao restaurant usando Supabase
+      const { data: catResult, error: catError } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('id', category_id)
+        .eq('restaurant_id', restaurantId)
+        .single()
+
+      if (catError || !catResult) {
+        return NextResponse.json(
+          { error: 'Categoria não encontrada ou não pertence a este restaurante' },
+          { status: 404 }
+        )
+      }
+
+      const newProduct = {
+        id: crypto.randomUUID(),
+        category_id,
+        name: name.trim(),
+        description: description || null,
+        image_url: image_url || null,
+        price,
+        dietary_labels: dietary_labels || null,
+        available: available ?? true,
+        sort_order: sort_order ?? 0,
+        created_at: now,
+        updated_at: now,
+      }
+
+      const { data: product, error } = await supabase
+        .from('products')
+        .insert(newProduct)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error creating product:', error)
+        return NextResponse.json({ error: 'Erro ao criar produto' }, { status: 500 })
+      }
+
+      await invalidateMenuCache()
+      return NextResponse.json({ product }, { status: 201 })
     }
-
-    await invalidateMenuCache()
-    return NextResponse.json({ product }, { status: 201 })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erro interno'
     const status = (error as Error & { status?: number }).status || 500

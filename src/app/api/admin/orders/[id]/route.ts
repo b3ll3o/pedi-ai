@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { db, isDevDatabase } from '@/infrastructure/database'
+import { orders, orderItems, tables, orderStatusHistory } from '@/infrastructure/database/schema'
+import { eq, inArray } from 'drizzle-orm'
 import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin'
 
 interface RouteParams {
@@ -15,6 +18,77 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const restaurantId = getRestaurantId(authUser)
     const { id } = await params
 
+    if (isDevDatabase()) {
+      // Fetch order with restaurant_id check
+      const orderResult = await db
+        .select()
+        .from(orders)
+        .where(eq(orders.id, id))
+        .limit(1)
+        .get()
+
+      if (!orderResult || orderResult.restaurant_id !== restaurantId) {
+        return NextResponse.json(
+          { error: 'Pedido não encontrado' },
+          { status: 404 }
+        )
+      }
+
+      // Fetch order items with product details
+      const itemsResult = await db
+        .select({
+          id: orderItems.id,
+          product_id: orderItems.product_id,
+          combo_id: orderItems.combo_id,
+          quantity: orderItems.quantity,
+          unit_price: orderItems.unit_price,
+          total_price: orderItems.total_price,
+          notes: orderItems.notes,
+          created_at: orderItems.created_at,
+        })
+        .from(orderItems)
+        .where(eq(orderItems.order_id, id))
+
+      // Fetch status history
+      const historyResult = await db
+        .select()
+        .from(orderStatusHistory)
+        .where(eq(orderStatusHistory.order_id, id))
+
+      // Fetch table info if exists
+      let tableInfo = null
+      if (orderResult.table_id) {
+        const tableResult = await db
+          .select({ id: tables.id, number: tables.number, name: tables.name })
+          .from(tables)
+          .where(eq(tables.id, orderResult.table_id))
+          .limit(1)
+          .get()
+        tableInfo = tableResult || null
+      }
+
+      // Payment info
+      const paymentInfo = {
+        payment_status: orderResult.payment_status,
+        payment_method: orderResult.payment_method,
+        subtotal: orderResult.subtotal,
+        tax: orderResult.tax,
+        total: orderResult.total,
+      }
+
+      return NextResponse.json({
+        data: {
+          ...orderResult,
+          items: itemsResult,
+          status_history: historyResult,
+          customer: null, // Customer info not available in dev schema
+          table: tableInfo,
+          payment: paymentInfo,
+        },
+      })
+    }
+
+    // Production: use Supabase
     const supabase = await createClient()
 
     // Fetch order with restaurant_id check (return 404 if not found or wrong restaurant)

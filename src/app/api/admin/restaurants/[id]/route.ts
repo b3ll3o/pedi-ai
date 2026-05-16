@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { db, isDevDatabase, getSupabaseAdmin } from '@/infrastructure/database';
+import { restaurants, usersProfiles } from '@/infrastructure/database/schema';
+import { eq } from 'drizzle-orm';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
-async function getSupabaseAdmin() {
+async function getSupabaseAuth() {
   const cookieStore = await cookies();
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll() {
@@ -32,16 +35,53 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabaseAdmin = await getSupabaseAdmin();
+    const supabaseAuth = await getSupabaseAuth();
     const {
       data: { user },
-    } = await supabaseAdmin.auth.getUser();
+    } = await supabaseAuth.auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
     const { id: restaurantId } = await params;
+
+    if (isDevDatabase()) {
+      // Verify user has access to this restaurant
+      const profileResult = await db
+        .select({ role: usersProfiles.role })
+        .from(usersProfiles)
+        .where(eq(usersProfiles.user_id, user.id))
+        .limit(1)
+        .get();
+
+      if (!profileResult) {
+        return NextResponse.json(
+          { error: 'Acesso negado a este restaurante' },
+          { status: 403 }
+        );
+      }
+
+      // Get restaurant
+      const restaurantResult = await db
+        .select()
+        .from(restaurants)
+        .where(eq(restaurants.id, restaurantId))
+        .limit(1)
+        .get();
+
+      if (!restaurantResult) {
+        return NextResponse.json(
+          { error: 'Restaurante não encontrado' },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json({ restaurant: restaurantResult });
+    }
+
+    // Production: use Supabase
+    const supabaseAdmin = getSupabaseAdmin();
 
     // Verify user has access to this restaurant
     const { data: profile } = await supabaseAdmin
@@ -88,16 +128,61 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabaseAdmin = await getSupabaseAdmin();
+    const supabaseAuth = await getSupabaseAuth();
     const {
       data: { user },
-    } = await supabaseAdmin.auth.getUser();
+    } = await supabaseAuth.auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
     const { id: restaurantId } = await params;
+
+    if (isDevDatabase()) {
+      // Verify user has access and is owner/manager
+      const profileResult = await db
+        .select({ role: usersProfiles.role })
+        .from(usersProfiles)
+        .where(eq(usersProfiles.user_id, user.id))
+        .limit(1)
+        .get();
+
+      if (!profileResult || (profileResult.role !== 'dono' && profileResult.role !== 'gerente')) {
+        return NextResponse.json(
+          { error: 'Permissão insuficiente' },
+          { status: 403 }
+        );
+      }
+
+      const body = await request.json();
+      const { name, description, address, phone, logo_url } = body;
+
+      // Update restaurant
+      const updateData: Record<string, unknown> = {
+        updated_at: new Date().toISOString(),
+      };
+      if (name?.trim()) updateData.name = name.trim();
+      if (description !== undefined) updateData.description = description?.trim() || null;
+      if (address !== undefined) updateData.address = address?.trim() || null;
+      if (phone !== undefined) updateData.phone = phone?.trim() || null;
+      if (logo_url !== undefined) updateData.logo_url = logo_url || null;
+
+      await db.update(restaurants).set(updateData).where(eq(restaurants.id, restaurantId));
+
+      // Fetch updated restaurant
+      const updatedRestaurant = await db
+        .select()
+        .from(restaurants)
+        .where(eq(restaurants.id, restaurantId))
+        .limit(1)
+        .get();
+
+      return NextResponse.json({ restaurant: updatedRestaurant });
+    }
+
+    // Production: use Supabase
+    const supabaseAdmin = getSupabaseAdmin();
 
     // Verify user has access and is owner/manager
     const { data: profile } = await supabaseAdmin
@@ -155,16 +240,41 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabaseAdmin = await getSupabaseAdmin();
+    const supabaseAuth = await getSupabaseAuth();
     const {
       data: { user },
-    } = await supabaseAdmin.auth.getUser();
+    } = await supabaseAuth.auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
     const { id: restaurantId } = await params;
+
+    if (isDevDatabase()) {
+      // Verify user is owner
+      const profileResult = await db
+        .select({ role: usersProfiles.role })
+        .from(usersProfiles)
+        .where(eq(usersProfiles.user_id, user.id))
+        .limit(1)
+        .get();
+
+      if (!profileResult || profileResult.role !== 'dono') {
+        return NextResponse.json(
+          { error: 'Apenas o proprietário pode excluir um restaurante' },
+          { status: 403 }
+        );
+      }
+
+      // Soft delete restaurant - set deleted_at instead of actually deleting
+      await db.update(restaurants).set({ active: false }).where(eq(restaurants.id, restaurantId));
+
+      return NextResponse.json({ success: true, message: 'Restaurante removido com sucesso (soft delete)' });
+    }
+
+    // Production: use Supabase
+    const supabaseAdmin = getSupabaseAdmin();
 
     // Verify user is owner
     const { data: profile } = await supabaseAdmin
@@ -182,7 +292,6 @@ export async function DELETE(
     }
 
     // Soft delete restaurant - set deleted_at instead of actually deleting
-    // This respects the soft delete requirement: "n quero q nada sera deletado de fato"
     const { error: deleteError } = await supabaseAdmin
       .from('restaurants')
       .update({ deleted_at: new Date().toISOString() })

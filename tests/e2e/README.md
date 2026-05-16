@@ -6,13 +6,16 @@ Cobertura de testes end-to-end usando [Playwright](https://playwright.dev/).
 
 | Persona | Arquivos de Teste | Fluxos |
 |---------|------------------|--------|
-| Cliente | 11 specs | auth, register, menu, cart, checkout, order, payment, offline, combos, modifier-groups |
-| Administrador | 9 specs | auth, categories, products, orders, table-qr, combos-admin, realtime-updates, analytics |
-| Garçom | 1 spec | kitchen |
+| Cliente | 16 specs | auth, register, menu, cart, checkout, order, payment, offline, combos, modifier-groups, product-detail, restaurants, table-qr-redirect, logout, register-owner-redirect, checkout-no-payment |
+| Administrador | 18 specs | auth, categories, products, orders, table-qr, combos-admin, realtime-updates, analytics, dashboard, tables, settings, users, modifier-groups, restaurants, order-detail, multi-restaurant, offline-restaurant, restaurant-reactivate |
+| Garçom | 2 specs | kitchen, waiter-dashboard |
+| Cozinha | 2 specs | kds-new-order, kds-update-status |
 | Landing | 1 spec | landing |
-| Offline | 1 spec | cross-tab-sync |
+| Offline | 2 specs | cross-tab-sync, offline-flow |
+| Pagamento | 1 spec | pix |
+| Auth | 1 spec | password-recovery |
 
-**Total: 30 spec files cobrindo fluxos completos**
+**Total: 43 spec files cobrindo fluxos completos**
 
 ---
 
@@ -32,6 +35,7 @@ Cobertura de testes end-to-end usando [Playwright](https://playwright.dev/).
 | offline | `tests/customer/offline.spec.ts` | — | ✅ |
 | combos | `tests/customer/combos.spec.ts` | — | ✅ |
 | modifier-groups | `tests/customer/modifier-groups.spec.ts` | — | ✅ |
+| product-detail | `tests/customer/product-detail.spec.ts` | — | ✅ |
 | password-recovery | `tests/auth/password-recovery.spec.ts` | — | ✅ |
 | reset-password | `tests/auth/password-recovery.spec.ts` | — | ✅ |
 
@@ -40,10 +44,17 @@ Cobertura de testes end-to-end usando [Playwright](https://playwright.dev/).
 | Fluxo | Spec File | Tags | Status |
 |-------|-----------|------|--------|
 | auth | `tests/admin/auth.spec.ts` | @smoke, @critical | ✅ |
+| dashboard | `tests/admin/dashboard.spec.ts` | — | ✅ |
 | categories | `tests/admin/categories.spec.ts` | — | ✅ |
 | products | `tests/admin/products.spec.ts` | — | ✅ |
 | orders | `tests/admin/orders.spec.ts` | — | ✅ |
+| tables | `tests/admin/tables.spec.ts` | — | ✅ |
 | table-qr | `tests/admin/table-qr.spec.ts` | — | ✅ |
+| settings | `tests/admin/settings.spec.ts` | — | ✅ |
+| users | `tests/admin/users.spec.ts` | — | ✅ |
+| modifier-groups | `tests/admin/modifier-groups.spec.ts` | — | ✅ |
+| restaurants | `tests/admin/restaurants.spec.ts` | — | ✅ |
+| order-detail | `tests/admin/order-detail.spec.ts` | — | ✅ |
 | combos-admin | `tests/admin/combos-admin.spec.ts` | — | ✅ |
 | realtime-updates | `tests/admin/realtime-updates.spec.ts` | — | ✅ |
 | analytics | `tests/admin/analytics.spec.ts` | — | ✅ |
@@ -54,6 +65,7 @@ Cobertura de testes end-to-end usando [Playwright](https://playwright.dev/).
 |-------|-----------|------|--------|
 | realtime-updates | `tests/admin/realtime-updates.spec.ts` | — | ✅ |
 | kitchen | `tests/waiter/kitchen.spec.ts` | @slow | ✅ |
+| waiter-dashboard | `tests/waiter/waiter-dashboard.spec.ts` | — | ✅ |
 
 ### Landing Page
 
@@ -83,13 +95,22 @@ Localização: `tests/e2e/pages/`
 | `CartPage` | Carrinho de compras |
 | `CheckoutPage` | Página de finalização |
 | `OrderPage` | Acompanhamento do pedido |
+| `RestaurantsPage` | Lista de restaurantes públicos |
+| `ProductDetailPage` | Detalhes de produto |
 | `AdminLoginPage` | Tela de login administrativo |
 | `AdminDashboardPage` | Painel administrativo |
 | `AdminCategoriesPage` | Gerenciamento de categorias |
 | `AdminProductsPage` | Gerenciamento de produtos |
-| `AdminOrdersPage` | Lista e detalhes de pedidos |
+| `AdminOrdersPage` | Lista de pedidos |
+| `AdminOrderDetailPage` | Detalhes de pedido |
+| `AdminTablesPage` | Gerenciamento de mesas |
+| `AdminSettingsPage` | Configurações do restaurante |
+| `AdminUsersPage` | Gerenciamento de usuários |
+| `AdminModifierGroupsPage` | Gerenciamento de grupos de modificadores |
+| `AdminRestaurantsPage` | Gerenciamento de restaurantes |
 | `TableQRPage` | Mesas e QR codes |
-| `WaiterDashboardPage` | Exibição dos pedidos em produção |
+| `WaiterDashboardPage` | Painel do garçom |
+| `KitchenPage` | Exibição dos pedidos em produção |
 
 ---
 

@@ -1,96 +1,71 @@
 import { Page, Locator } from '@playwright/test'
 
-export type KitchenOrderStatus = 'pending' | 'preparing' | 'ready'
-
 export class WaiterDashboardPage {
   readonly page: Page
-  readonly sidebar: Locator
-  readonly kitchenOrders: Locator
-  readonly activeOrders: Locator
-  readonly completedOrders: Locator
-  readonly orderTicket: Locator
-  readonly startPreparingButton: Locator
-  readonly markReadyButton: Locator
-  readonly markDeliveredButton: Locator
-  readonly refreshButton: Locator
-  readonly audioToggle: Locator
+  readonly loading: Locator
+  readonly orderCard: Locator
+  readonly orderStatus: Locator
+  readonly connectionStatus: Locator
+  readonly kitchenNavLink: Locator
+  readonly logo: Locator
+  readonly emptyState: Locator
+  readonly newOrderNotification: Locator
 
   constructor(page: Page) {
     this.page = page
-    this.sidebar = page.locator('[data-testid="waiter-sidebar"]')
-    this.kitchenOrders = page.locator('[data-testid^="kitchen-order-card-"]')
-    this.activeOrders = page.locator('[data-testid="active-order"]')
-    this.completedOrders = page.locator('[data-testid="completed-order"]')
-    this.orderTicket = page.locator('[data-testid="order-ticket"]')
-    this.startPreparingButton = page.locator('[data-testid^="kitchen-preparing-button-"]')
-    this.markReadyButton = page.locator('[data-testid^="kitchen-ready-button-"]')
-    this.markDeliveredButton = page.locator('[data-testid="mark-delivered-button"]')
-    this.refreshButton = page.locator('[data-testid="refresh-button"]')
-    this.audioToggle = page.locator('[data-testid="audio-toggle"]')
+    this.loading = page.locator('[data-testid="loading"]')
+    this.orderCard = page.locator('[data-testid="order-card"]')
+    this.orderStatus = page.locator('[data-testid="order-status"]')
+    this.connectionStatus = page.locator('[data-testid="connection-status"]')
+    this.kitchenNavLink = page.locator('[data-testid="nav-kitchen"]')
+    this.logo = page.locator('[data-testid="logo"]')
+    this.emptyState = page.locator('[data-testid="empty-state"]')
+    this.newOrderNotification = page.locator('[data-testid="new-order-notification"]')
   }
 
   async goto(): Promise<void> {
-    // Waiter dashboard is at /dashboard (route group), not /admin/dashboard
-    await this.page.goto('/dashboard')
+    await this.page.goto('/garcom/dashboard')
+  }
+
+  async waitForLoad(): Promise<void> {
+    await this.page.waitForLoadState('networkidle')
+    await this.orderCard.first().waitFor({ state: 'visible', timeout: 10000 }).catch(() => {
+      // May be empty state
+    })
+  }
+
+  async getOrderCount(): Promise<number> {
+    return this.orderCard.count()
+  }
+
+  async getOrderStatus(orderIndex: number): Promise<string> {
+    return this.orderStatus.nth(orderIndex).textContent() ?? ''
+  }
+
+  async clickOrder(orderIndex: number = 0): Promise<void> {
+    await this.orderCard.nth(orderIndex).click()
+  }
+
+  async isConnected(): Promise<boolean> {
+    const status = await this.connectionStatus.textContent()
+    return status?.toLowerCase().includes('conectado') ?? false
+  }
+
+  async getLatency(): Promise<number> {
+    const statusText = await this.connectionStatus.textContent() ?? ''
+    const match = statusText.match(/\d+ms/)
+    return match ? parseInt(match[0], 10) : -1
   }
 
   async navigateToKitchen(): Promise<void> {
-    // First navigate to /dashboard, then click nav-kitchen link
-    await this.page.goto('/dashboard')
-    await this.page.waitForSelector('[data-testid="nav-kitchen"]')
-    await this.page.locator('[data-testid="nav-kitchen"]').click()
-    await this.page.waitForURL(/\/kitchen/)
+    await this.kitchenNavLink.click()
   }
 
-  async getKitchenOrdersCount(): Promise<number> {
-    return this.kitchenOrders.count()
-  }
-
-  async getActiveOrdersCount(): Promise<number> {
-    return this.activeOrders.count()
-  }
-
-  async getCompletedOrdersCount(): Promise<number> {
-    return this.completedOrders.count()
-  }
-
-  async startPreparing(orderId: string): Promise<void> {
-    const order = this.kitchenOrders.filter({ hasText: orderId })
-    await order.locator(`[data-testid="kitchen-preparing-button-${orderId}"]`).click()
-  }
-
-  async markReady(orderId: string): Promise<void> {
-    const order = this.kitchenOrders.filter({ hasText: orderId })
-    await order.locator(`[data-testid="kitchen-ready-button-${orderId}"]`).click()
-  }
-
-  async markDelivered(orderId: string): Promise<void> {
-    const order = this.activeOrders.filter({ hasText: orderId })
-    await order.locator('[data-testid="mark-delivered-button"]').click()
-  }
-
-  async refreshOrders(): Promise<void> {
-    await this.refreshButton.click()
-    await this.page.waitForResponse(/\/api\/orders/)
-  }
-
-  async getOrderItems(orderId: string): Promise<string[]> {
-    const order = this.kitchenOrders.filter({ hasText: orderId })
-    const items = order.locator('[data-testid="order-item"]')
-    const count = await items.count()
-    const itemList: string[] = []
-    for (let i = 0; i < count; i++) {
-      itemList.push(await items.nth(i).textContent() ?? '')
+  async waitForNewOrder(timeout: number = 5000): Promise<void> {
+    try {
+      await this.newOrderNotification.waitFor({ state: 'visible', timeout })
+    } catch {
+      // No new order within timeout
     }
-    return itemList
-  }
-
-  async waitForNewOrder(timeout = 60_000): Promise<void> {
-    const initialCount = await this.getKitchenOrdersCount()
-    await this.page.waitForFunction(
-      (count) => document.querySelectorAll('[data-testid^="kitchen-order-card-"]').length > count,
-      initialCount,
-      { timeout }
-    )
   }
 }

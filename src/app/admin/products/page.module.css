@@ -47,6 +47,10 @@
   transition: background 0.2s;
 }
 
+.addButton:hover {
+  background: var(--color-success-dark);
+}
+
 .toolbar {
   display: flex;
   gap: 0.75rem;
@@ -67,71 +71,6 @@
   border-radius: var(--border-radius-sm);
   font-size: 0.875rem;
   min-width: 11.25rem;
-  background: var(--color-surface);
-}
-
-.headerLeft {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.restaurantIndicator {
-  font-size: 14px;
-  color: var(--color-text-secondary);
-  background: var(--color-background);
-  padding: 4px 12px;
-  border-radius: 16px;
-  border: 1px solid var(--color-border);
-}
-
-.title {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--color-text-primary);
-}
-
-.actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.addButton {
-  padding: 8px 16px;
-  background: var(--color-success);
-  color: var(--color-surface);
-  border: none;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.addButton:hover {
-  background: var(--color-success-dark);
-}
-
-.toolbar {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 24px;
-}
-
-.searchInput {
-  flex: 1;
-  padding: 8px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  font-size: 14px;
-}
-
-.filterSelect {
-  padding: 8px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  font-size: 14px;
-  min-width: 180px;
   background: var(--color-surface);
 }
 
