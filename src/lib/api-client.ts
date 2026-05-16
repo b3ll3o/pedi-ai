@@ -76,7 +76,7 @@ async function fetchWithAuth<T>(
       if (refreshed) {
         // Retry com novo token
         const newToken = getAccessToken();
-        headers.Authorization = `Bearer ${newToken}`;
+        (<Record<string, string>>headers).Authorization = `Bearer ${newToken}`;
         const retryResponse = await fetch(url, { ...options, headers });
         const data = await retryResponse.json();
         return retryResponse.ok ? { data } : { error: data.message || 'Erro' };
@@ -119,7 +119,11 @@ async function refreshToken(): Promise<boolean> {
 // ============================================================
 
 export const authApi = {
-  async register(email: string, password: string, name: string): Promise<ApiResponse<AuthTokens & { user: User }>> {
+  async register(
+    email: string,
+    password: string,
+    name: string
+  ): Promise<ApiResponse<AuthTokens & { user: User }>> {
     const response = await fetch(`${API_BASE_URL}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -183,14 +187,21 @@ export const restaurantsApi = {
     return fetchWithAuth<any>(`/restaurants/slug/${slug}`);
   },
 
-  async create(data: { name: string; slug?: string; description?: string }): Promise<ApiResponse<any>> {
+  async create(data: {
+    name: string;
+    slug?: string;
+    description?: string;
+  }): Promise<ApiResponse<any>> {
     return fetchWithAuth<any>('/restaurants', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   },
 
-  async update(id: string, data: Partial<{ name: string; active: boolean }>): Promise<ApiResponse<any>> {
+  async update(
+    id: string,
+    data: Partial<{ name: string; active: boolean }>
+  ): Promise<ApiResponse<any>> {
     return fetchWithAuth<any>(`/restaurants/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
@@ -241,7 +252,11 @@ export const ordersApi = {
 // ============================================================
 
 export const paymentsApi = {
-  async createPixPayment(data: { orderId: string; restaurantId: string; amount: number }): Promise<ApiResponse<any>> {
+  async createPixPayment(data: {
+    orderId: string;
+    restaurantId: string;
+    amount: number;
+  }): Promise<ApiResponse<any>> {
     return fetchWithAuth<any>('/payments/pix/create', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -262,14 +277,21 @@ export const categoriesApi = {
     return fetchWithAuth<any[]>(`/categories?restaurantId=${restaurantId}`);
   },
 
-  async create(data: { restaurantId: string; name: string; description?: string }): Promise<ApiResponse<any>> {
+  async create(data: {
+    restaurantId: string;
+    name: string;
+    description?: string;
+  }): Promise<ApiResponse<any>> {
     return fetchWithAuth<any>('/categories', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   },
 
-  async update(id: string, data: Partial<{ name: string; description: string }>): Promise<ApiResponse<any>> {
+  async update(
+    id: string,
+    data: Partial<{ name: string; description: string }>
+  ): Promise<ApiResponse<any>> {
     return fetchWithAuth<any>(`/categories/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
@@ -306,12 +328,15 @@ export const productsApi = {
     });
   },
 
-  async update(id: string, data: Partial<{
-    name: string;
-    description: string;
-    price: number;
-    available: boolean;
-  }>): Promise<ApiResponse<any>> {
+  async update(
+    id: string,
+    data: Partial<{
+      name: string;
+      description: string;
+      price: number;
+      available: boolean;
+    }>
+  ): Promise<ApiResponse<any>> {
     return fetchWithAuth<any>(`/products/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data),

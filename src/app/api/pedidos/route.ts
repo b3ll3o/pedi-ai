@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, isDevDatabase, getSupabaseAdmin } from '@/infrastructure/database';
-import { orders, orderItems } from '@/infrastructure/database/schema';
+import { orders, orderItems, tables } from '@/infrastructure/database/schema';
+import { eq } from 'drizzle-orm';
 
 interface ItemInput {
   produtoId: string;
@@ -41,10 +42,8 @@ export async function POST(request: NextRequest) {
     let subtotal = 0;
     for (const item of itens) {
       const itemSubtotal = item.precoUnitario * item.quantidade;
-      const modifiersTotal = (item.modificadores || []).reduce(
-        (sum, m) => sum + m.precoAdicional,
-        0
-      ) * item.quantidade;
+      const modifiersTotal =
+        (item.modificadores || []).reduce((sum, m) => sum + m.precoAdicional, 0) * item.quantidade;
       subtotal += itemSubtotal + modifiersTotal;
     }
 
@@ -157,10 +156,7 @@ export async function POST(request: NextRequest) {
 
       if (orderError) {
         console.error('Erro ao criar pedido:', orderError);
-        return NextResponse.json(
-          { error: 'Erro ao criar pedido' },
-          { status: 500 }
-        );
+        return NextResponse.json({ error: 'Erro ao criar pedido' }, { status: 500 });
       }
 
       // Inserir itens do pedido
@@ -175,18 +171,13 @@ export async function POST(request: NextRequest) {
       }));
 
       if (orderItemsToInsert.length > 0) {
-        const { error: itemsError } = await supabase
-          .from('order_items')
-          .insert(orderItemsToInsert);
+        const { error: itemsError } = await supabase.from('order_items').insert(orderItemsToInsert);
 
         if (itemsError) {
           console.error('Erro ao criar itens do pedido:', itemsError);
           // Rollback - deletar o pedido
           await supabase.from('orders').delete().eq('id', order.id);
-          return NextResponse.json(
-            { error: 'Erro ao criar itens do pedido' },
-            { status: 500 }
-          );
+          return NextResponse.json({ error: 'Erro ao criar itens do pedido' }, { status: 500 });
         }
       }
 
@@ -201,7 +192,8 @@ export async function POST(request: NextRequest) {
     console.error('Erro ao criar pedido:', error);
 
     const message = error instanceof Error ? error.message : 'Erro interno ao criar pedido';
-    const status = message.includes('é obrigatório') || message.includes('não pode ser vazio') ? 400 : 500;
+    const status =
+      message.includes('é obrigatório') || message.includes('não pode ser vazio') ? 400 : 500;
 
     return NextResponse.json({ error: message }, { status });
   }
