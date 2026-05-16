@@ -118,11 +118,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       if (role !== undefined) updateData.role = role as 'dono' | 'gerente' | 'atendente';
       if (active !== undefined) updateData.active = active;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await db
-        .update(usersProfiles)
-        .set(updateData as any)
-        .where(eq(usersProfiles.id, id));
+      if (Object.keys(updateData).length > 0) {
+        await db
+          .update(usersProfiles)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .set(updateData as any)
+          .where(eq(usersProfiles.id, id));
+      }
 
       const updatedResult = await db
         .select()

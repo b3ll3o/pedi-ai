@@ -67,9 +67,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       if (available !== undefined) updateData.available = available;
 
       if (Object.keys(updateData).length > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await db
           .update(modifierValues)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           .set(updateData as any)
           .where(eq(modifierValues.id, id));
       }

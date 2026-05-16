@@ -115,13 +115,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       if (capacity !== undefined) updateData.capacity = capacity;
       if (active !== undefined) updateData.active = active;
       if (qr_code !== undefined) updateData.qr_code = qr_code;
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await db
-        .update(tables)
-        .set(updateData as any)
-        .where(eq(tables.id, id));
-
+      if (Object.keys(updateData).length > 0) {
+        await db
+          .update(tables)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .set(updateData as any)
+          .where(eq(tables.id, id));
+      }
       const updated = await db.select().from(tables).where(eq(tables.id, id)).limit(1).get();
       return NextResponse.json({ table: updated });
     }

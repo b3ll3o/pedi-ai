@@ -22,7 +22,7 @@ const eslintConfig = defineConfig([
   // DDD Domain Layer Rules - Block cross-layer imports
   {
     name: 'ddd/domain-layer-rules',
-    files: ['src/domain/**/*.ts'],
+    files: ['apps/web/src/domain/**/*.ts'],
     rules: {
       'no-restricted-imports': [
         'warn',
