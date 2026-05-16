@@ -81,3 +81,11 @@ apps/web/node_modules
 apps/web/data/*.db
 apps/web/data/*.db-shm
 apps/web/data/*.db-wal
+
+# Next.js build output
+apps/web/.next
+apps/web/out
+
+# Supabase local dev files
+supabase/.temp
+supabase/config.toml

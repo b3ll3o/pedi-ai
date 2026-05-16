@@ -30,7 +30,7 @@ function _walk(dir, extensions = ['.md']) {
     if (entry.isDirectory()) {
       if (entry.name === 'node_modules' || entry.name === '.git') continue;
       files.push(...walk(fullPath));
-    } else if (extensions.some(ext => entry.name.endsWith(ext))) {
+    } else if (extensions.some((ext) => entry.name.endsWith(ext))) {
       files.push(fullPath);
     }
   }
@@ -43,26 +43,23 @@ function checkSpecs() {
 
   // Mapeamento de spec names para domain names
   const specToDomainMap = {
-    'admin': 'admin',
-    'auth': 'autenticacao',
-    'cart': 'pedido', // cart é parte de pedido
-    'menu': 'cardapio',
-    'order': 'pedido',
-    'payment': 'pagamento',
-    'table': 'mesa',
-    'offline': null, // não é um domínio
-    'landing': null, // não é um domínio
-    'seo': null, // não é um domínio
-    'combos': 'cardapio', // combos faz parte de cardapio
+    admin: 'admin',
+    auth: 'autenticacao',
+    cart: 'pedido', // cart é parte de pedido
+    menu: 'cardapio',
+    order: 'pedido',
+    payment: 'pagamento',
+    table: 'mesa',
+    offline: null, // não é um domínio
+    landing: null, // não é um domínio
+    seo: null, // não é um domínio
+    combos: 'cardapio', // combos faz parte de cardapio
     'modifier-groups': 'cardapio',
-    'register': 'autenticacao',
+    register: 'autenticacao',
     'design-system': null, // não é um domínio
   };
 
-  const implDirs = [
-    'src/domain',
-    'src/application',
-  ];
+  const implDirs = ['apps/web/src/domain', 'apps/web/src/application'];
 
   console.log('\n📋 Verificando Specs...\n');
 
@@ -77,7 +74,7 @@ function checkSpecs() {
     }
 
     const domainName = specToDomainMap[domain] || domain;
-    const domainImpl = implDirs.some(dir => {
+    const domainImpl = implDirs.some((dir) => {
       const domainPath = path.join(ROOT, dir, domainName);
       return fs.existsSync(domainPath);
     });
@@ -96,10 +93,7 @@ function checkSpecs() {
 function checkCodemaps() {
   console.log('\n🗺️ Verificando Codemaps...\n');
 
-  const requiredCodemaps = [
-    'codemap.md',
-    'src/app/codemap.md',
-  ];
+  const requiredCodemaps = ['codemap.md', 'apps/web/src/app/codemap.md'];
 
   for (const codemap of requiredCodemaps) {
     const fullPath = path.join(ROOT, codemap);
@@ -112,7 +106,7 @@ function checkCodemaps() {
   }
 
   // Check domain codemaps
-  const domainDir = path.join(ROOT, 'src/domain');
+  const domainDir = path.join(ROOT, 'apps/web/src/domain');
   if (fs.existsSync(domainDir)) {
     const domains = fs.readdirSync(domainDir);
     for (const domain of domains) {
@@ -196,17 +190,17 @@ function generateReport() {
 
     if (results.outdatedSpecs.length) {
       console.log('📝 Specs desatualizados:');
-      results.outdatedSpecs.forEach(s => console.log(`  - ${s}`));
+      results.outdatedSpecs.forEach((s) => console.log(`  - ${s}`));
     }
 
     if (results.missingCodemaps.length) {
       console.log('\n🗺️  Codemaps faltando:');
-      results.missingCodemaps.forEach(c => console.log(`  - ${c}`));
+      results.missingCodemaps.forEach((c) => console.log(`  - ${c}`));
     }
 
     if (results.specsWithoutImpl.length) {
       console.log('\n📋 Specs sem implementação:');
-      results.specsWithoutImpl.forEach(s => console.log(`  - ${s}`));
+      results.specsWithoutImpl.forEach((s) => console.log(`  - ${s}`));
     }
   }
 

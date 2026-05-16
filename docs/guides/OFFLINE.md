@@ -12,11 +12,11 @@ O Pedi-AI funciona **100% offline**. O cliente pode navegar pelo cardápio, mont
 
 ### Stack Offline
 
-| Tecnologia | Função |
-|------------|--------|
-| **Dexie** | Wrapper IndexedDB para persistência local |
-| **Workbox** | Service Worker para caching de assets e API |
-| **BackgroundSync** | Fila de pedidos para sync automático |
+| Tecnologia           | Função                                            |
+| -------------------- | ------------------------------------------------- |
+| **Dexie**            | Wrapper IndexedDB para persistência local         |
+| **Workbox**          | Service Worker para caching de assets e API       |
+| **BackgroundSync**   | Fila de pedidos para sync automático              |
 | **BroadcastChannel** | Sincronização de carrinho entre abas do navegador |
 
 ### Fluxo de Dados Offline
@@ -98,7 +98,7 @@ O Pedi-AI funciona **100% offline**. O cliente pode navegar pelo cardápio, mont
 O banco `pedi` (nome: `pedi`) contém 4 tabelas:
 
 ```typescript
-// src/lib/offline/db.ts
+// apps/web/src/lib/offline/db.ts
 export class PediDatabase extends Dexie {
   cart!: Table<CartItem>;
   menu_cache!: Table<MenuCache>;
@@ -111,74 +111,78 @@ export class PediDatabase extends Dexie {
 
 Armazena os itens do carrinho de compras.
 
-| Campo | Tipo | Índice | Descrição |
-|-------|------|--------|-----------|
-| `id` | `number` | `++id` | Chave primária auto-increment |
-| `productId` | `string` | `productId` | ID do produto |
-| `quantity` | `number` | — | Quantidade |
-| `modifiers` | `Record<string, unknown>` | — | Modificadores selecionados |
-| `price` | `number` | — | Preço total (unitPrice × quantity) |
-| `createdAt` | `Date` | `createdAt` | Timestamp de criação |
+| Campo       | Tipo                      | Índice      | Descrição                          |
+| ----------- | ------------------------- | ----------- | ---------------------------------- |
+| `id`        | `number`                  | `++id`      | Chave primária auto-increment      |
+| `productId` | `string`                  | `productId` | ID do produto                      |
+| `quantity`  | `number`                  | —           | Quantidade                         |
+| `modifiers` | `Record<string, unknown>` | —           | Modificadores selecionados         |
+| `price`     | `number`                  | —           | Preço total (unitPrice × quantity) |
+| `createdAt` | `Date`                    | `createdAt` | Timestamp de criação               |
 
 **Código:**
+
 ```typescript
-cart: '++id, productId, createdAt'
+cart: '++id, productId, createdAt';
 ```
 
 ### Tabela `menu_cache`
 
 Cache do cardápio para navegação offline.
 
-| Campo | Tipo | Índice | Descrição |
-|-------|------|--------|-----------|
-| `id` | `number` | `++id` | Chave primária auto-increment |
-| `restaurantId` | `string` | `restaurantId` | ID do restaurante |
-| `categories` | `unknown[]` | — | Categorias do cardápio |
-| `products` | `unknown[]` | — | Produtos do cardápio |
-| `modifiers` | `unknown[]` | — | Modificadores disponíveis |
-| `timestamp` | `Date` | `timestamp` | Data/hora do cache |
+| Campo          | Tipo        | Índice         | Descrição                     |
+| -------------- | ----------- | -------------- | ----------------------------- |
+| `id`           | `number`    | `++id`         | Chave primária auto-increment |
+| `restaurantId` | `string`    | `restaurantId` | ID do restaurante             |
+| `categories`   | `unknown[]` | —              | Categorias do cardápio        |
+| `products`     | `unknown[]` | —              | Produtos do cardápio          |
+| `modifiers`    | `unknown[]` | —              | Modificadores disponíveis     |
+| `timestamp`    | `Date`      | `timestamp`    | Data/hora do cache            |
 
 **TTL:** 24 horas (`MENU_CACHE_TTL_MS = 24 * 60 * 60 * 1000`)
 
 **Código:**
+
 ```typescript
-menu_cache: '++id, timestamp, restaurantId'
+menu_cache: '++id, timestamp, restaurantId';
 ```
 
 ### Tabela `pending_sync`
 
 Fila de pedidos pendentes de sincronização.
 
-| Campo | Tipo | Índice | Descrição |
-|-------|------|--------|-----------|
-| `id` | `number` | `++id` | Chave primária auto-increment |
-| `restaurantId` | `string` | — | ID do restaurante |
-| `orderData` | `unknown` | — | Dados completos do pedido |
-| `retryCount` | `number` | — | Contagem de tentativas |
-| `maxRetries` | `number` | — | Máximo de tentativas (3) |
-| `status` | `SyncStatus` | `status` | `pending` \| `syncing` \| `failed` \| `completed` |
-| `lastError` | `string` | — | Última mensagem de erro |
-| `createdAt` | `Date` | `createdAt` | Timestamp de criação |
+| Campo          | Tipo         | Índice      | Descrição                                         |
+| -------------- | ------------ | ----------- | ------------------------------------------------- |
+| `id`           | `number`     | `++id`      | Chave primária auto-increment                     |
+| `restaurantId` | `string`     | —           | ID do restaurante                                 |
+| `orderData`    | `unknown`    | —           | Dados completos do pedido                         |
+| `retryCount`   | `number`     | —           | Contagem de tentativas                            |
+| `maxRetries`   | `number`     | —           | Máximo de tentativas (3)                          |
+| `status`       | `SyncStatus` | `status`    | `pending` \| `syncing` \| `failed` \| `completed` |
+| `lastError`    | `string`     | —           | Última mensagem de erro                           |
+| `createdAt`    | `Date`       | `createdAt` | Timestamp de criação                              |
 
 **Código:**
+
 ```typescript
-pending_sync: '++id, status, createdAt'
+pending_sync: '++id, status, createdAt';
 ```
 
 ### Tabela `tables_info`
 
 Informações das mesas (para operação offline).
 
-| Campo | Tipo | Índice | Descrição |
-|-------|------|--------|-----------|
-| `id` | `number` | `++id` | Chave primária auto-increment |
-| `tableId` | `string` | `tableId` | ID da mesa |
-| `restaurantId` | `string` | `restaurantId` | ID do restaurante |
-| `name` | `string` | — | Nome descritivo da mesa |
+| Campo          | Tipo     | Índice         | Descrição                     |
+| -------------- | -------- | -------------- | ----------------------------- |
+| `id`           | `number` | `++id`         | Chave primária auto-increment |
+| `tableId`      | `string` | `tableId`      | ID da mesa                    |
+| `restaurantId` | `string` | `restaurantId` | ID do restaurante             |
+| `name`         | `string` | —              | Nome descritivo da mesa       |
 
 **Código:**
+
 ```typescript
-tables_info: '++id, tableId, restaurantId'
+tables_info: '++id, tableId, restaurantId';
 ```
 
 ---
@@ -193,9 +197,7 @@ O Service Worker está em `public/sw.js` e utiliza Workbox para estratégias de 
 
 ```javascript
 registerRoute(
-  ({ request }) =>
-    request.destination === 'style' ||
-    request.destination === 'script',
+  ({ request }) => request.destination === 'style' || request.destination === 'script',
   new CacheFirst({
     cacheName: 'static-assets-cache',
     plugins: [
@@ -232,8 +234,7 @@ registerRoute(
 ```javascript
 registerRoute(
   ({ url }) =>
-    url.origin === 'https://fonts.googleapis.com' ||
-    url.origin === 'https://fonts.gstatic.com',
+    url.origin === 'https://fonts.googleapis.com' || url.origin === 'https://fonts.gstatic.com',
   new CacheFirst({
     cacheName: 'google-fonts-cache',
     plugins: [
@@ -300,10 +301,7 @@ registerRoute(
   new NetworkFirst({
     cacheName: 'orders-api-cache',
     networkTimeoutSeconds: 3,
-    plugins: [
-      new CacheableResponsePlugin({ statuses: [0, 200] }),
-      bgSyncPlugin,
-    ],
+    plugins: [new CacheableResponsePlugin({ statuses: [0, 200] }), bgSyncPlugin],
   }),
   'POST'
 );
@@ -331,9 +329,11 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(request).catch(() => {
       return caches.match('/offline.html').then((resp) => {
-        return resp || new Response(
-          '<html><body><h1>Você está offline</h1>...</html>',
-          { headers: { 'Content-Type': 'text/html' } }
+        return (
+          resp ||
+          new Response('<html><body><h1>Você está offline</h1>...</html>', {
+            headers: { 'Content-Type': 'text/html' },
+          })
         );
       });
     })
@@ -362,7 +362,7 @@ Tentativa 3 ──► Falhou ──► Espera 4s  (4000ms)
                           MAX 30s
 ```
 
-### Implementação (`src/lib/offline/sync.ts`)
+### Implementação (`apps/web/apps/web/src/lib/offline/sync.ts`)
 
 ```typescript
 const INITIAL_BACKOFF_MS = 1000;
@@ -375,23 +375,23 @@ function getBackoffDelay(retryCount: number): number {
 
 ### Funções Principais
 
-| Função | Descrição |
-|--------|-----------|
-| `queueOrderForSync(orderData, restaurantId)` | Adiciona pedido à fila |
-| `processQueue()` | Processa todos os pedidos pendentes |
-| `retryFailed()` | Reseta pedidos failed para pending |
-| `getSyncStatus()` | Retorna contagem por status |
-| `getPendingItems()` | Lista pedidos pendentes |
-| `getFailedItems()` | Lista pedidos com erro |
+| Função                                       | Descrição                           |
+| -------------------------------------------- | ----------------------------------- |
+| `queueOrderForSync(orderData, restaurantId)` | Adiciona pedido à fila              |
+| `processQueue()`                             | Processa todos os pedidos pendentes |
+| `retryFailed()`                              | Reseta pedidos failed para pending  |
+| `getSyncStatus()`                            | Retorna contagem por status         |
+| `getPendingItems()`                          | Lista pedidos pendentes             |
+| `getFailedItems()`                           | Lista pedidos com erro              |
 
 ### Status dos Pedidos
 
-| Status | Descrição |
-|--------|-----------|
-| `pending` | Aguardando processamento |
-| `syncing` | Em processamento |
-| `failed` | Falhou após todas as tentativas |
-| `completed` | Sincronizado com sucesso |
+| Status      | Descrição                       |
+| ----------- | ------------------------------- |
+| `pending`   | Aguardando processamento        |
+| `syncing`   | Em processamento                |
+| `failed`    | Falhou após todas as tentativas |
+| `completed` | Sincronizado com sucesso        |
 
 ---
 
@@ -443,7 +443,7 @@ const handler = (event: MessageEvent<CartBroadcast>) => {
 ### Integração no cartStore
 
 ```typescript
-// src/stores/cartStore.ts
+// apps/web/src/infrastructure/persistence/cartStore.ts
 
 useCartStore.subscribe(
   (state: CartStore) => state.items,
@@ -468,15 +468,15 @@ export function initCrossTabSync(): () => void {
 
 ## 7. TTL do Cache
 
-| Tipo | TTL | Limite Entradas |
-|------|-----|-----------------|
-| Assets estáticos (JS/CSS) | 30 dias | 100 |
-| Imagens | 30 dias | 60 |
-| Google Fonts | 1 ano | 30 |
-| API Menu/Produtos | 24 horas | 50 |
-| API Geral | 24 horas | 100 |
-| Cardápio (Dexie) | 24 horas | — |
-| BackgroundSync | 24 horas (minutos) | — |
+| Tipo                      | TTL                | Limite Entradas |
+| ------------------------- | ------------------ | --------------- |
+| Assets estáticos (JS/CSS) | 30 dias            | 100             |
+| Imagens                   | 30 dias            | 60              |
+| Google Fonts              | 1 ano              | 30              |
+| API Menu/Produtos         | 24 horas           | 50              |
+| API Geral                 | 24 horas           | 100             |
+| Cardápio (Dexie)          | 24 horas           | —               |
+| BackgroundSync            | 24 horas (minutos) | —               |
 
 ### Validação de Cache no Dexie
 
@@ -505,7 +505,7 @@ export async function getCachedMenu(restaurantId: string): Promise<CachedMenu | 
 
 ### Componente `OfflineIndicator`
 
-O componente `OfflineIndicator` em `src/components/providers/OfflineIndicator.tsx` detecta mudanças de conectividade:
+O componente `OfflineIndicator` em `apps/web/src/components/providers/OfflineIndicator.tsx` detecta mudanças de conectividade:
 
 ```typescript
 export function OfflineIndicator() {
@@ -537,21 +537,21 @@ export function OfflineIndicator() {
 
 ### Feedback Visual
 
-| Estado | Banner |
-|--------|--------|
-| **Online** | Nenhum (null) |
-| **Offline** | Banner preto fixo no topo: "📵 Você está offline" |
-| **Reconectado** | Toast verde por 3s: "✓ Conexão restaurada" |
+| Estado          | Banner                                            |
+| --------------- | ------------------------------------------------- |
+| **Online**      | Nenhum (null)                                     |
+| **Offline**     | Banner preto fixo no topo: "📵 Você está offline" |
+| **Reconectado** | Toast verde por 3s: "✓ Conexão restaurada"        |
 
 ### Detecção no Checkout
 
 ```typescript
-// src/components/checkout/CheckoutForm.tsx
+// apps/web/src/components/checkout/CheckoutForm.tsx
 
 if (navigator.onLine === false) {
   setErrors((prev) => ({
     ...prev,
-    offline: 'Você está offline. O pedido será enviado quando a conexão for restaurada.'
+    offline: 'Você está offline. O pedido será enviado quando a conexão for restaurada.',
   }));
 }
 ```
@@ -627,7 +627,7 @@ if (navigator.onLine === false) {
 ### Código do Fluxo
 
 ```typescript
-// src/lib/offline/sync.ts - processQueue()
+// apps/web/src/lib/offline/sync.ts - processQueue()
 
 export async function processQueue(): Promise<{ success: number; failed: number }> {
   const pending = await db.pending_sync
@@ -682,7 +682,7 @@ export async function processQueue(): Promise<{ success: number; failed: number 
 Para melhor experiência em iPhones com notch, adicionar:
 
 ```html
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 ```
 
 ```css
@@ -707,6 +707,7 @@ precacheAndRoute(self.__WB_MANIFEST);
 ### 10.3 Indicador de Sync Status
 
 Melhorar `SyncStatus.tsx` para mostrar:
+
 - Número de pedidos na fila
 - Indicador visual de progresso
 - Botão para forçar sync manual
@@ -733,6 +734,7 @@ registerRoute(
 ### 10.5 Sync de Preferências do Usuário
 
 Sincronizar preferências offline entre abas e dispositivos:
+
 - Forma de pagamento preferida
 - Histórico de pedidos local
 - Configurações de notificação

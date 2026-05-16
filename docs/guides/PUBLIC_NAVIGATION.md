@@ -15,17 +15,17 @@ A navegação pública permite que clientes acessem restaurantes e façam pedido
 
 ### Rotas Públicas
 
-| Rota | Descrição | Autenticação |
-|------|-----------|--------------|
-| `/restaurantes` | Lista de restaurantes ativos | Não requerida |
-| `/restaurantes/[id]/cardapio` | Cardápio de um restaurante | Não requerida |
+| Rota                          | Descrição                    | Autenticação  |
+| ----------------------------- | ---------------------------- | ------------- |
+| `/restaurantes`               | Lista de restaurantes ativos | Não requerida |
+| `/restaurantes/[id]/cardapio` | Cardápio de um restaurante   | Não requerida |
 
 ---
 
 ## 2. Estrutura de Rotas
 
 ```
-src/app/
+apps/web/src/app/
 ├── restaurantes/
 │   ├── page.tsx                    # Lista pública de restaurantes
 │   ├── RestaurantesPageClient.tsx  # Componente cliente
@@ -44,10 +44,12 @@ src/app/
 Lista restaurantes ativos para a página pública.
 
 **Filtros:**
+
 - `ativo: true` — apenas restaurantes ativos
 - Seleciona: `id`, `nome`, `logo_url`, `endereco`, `telefone`, `horarios`
 
 **Response:**
+
 ```json
 {
   "restaurants": [
@@ -182,7 +184,7 @@ O design e proposta original estão documentados em:
 ## 8. Estrutura de Arquivos
 
 ```
-src/
+apps/web/src/
 ├── app/
 │   ├── restaurantes/
 │   │   ├── page.tsx                    # Página de listagem
@@ -214,13 +216,13 @@ src/
 
 ## 9. Diferença entre Delivery e Mesa/Salão
 
-| Aspecto | Delivery | Mesa/Salão |
-|---------|----------|-------------|
-| **Rota** | `/restaurantes/[id]/cardapio` | `/table/[code]` |
-| **Autenticação** | Não requerida | Não requerida |
-| **Identificação** | `restaurantId` da URL | QR Code na mesa |
-| **Cliente** | Anônimo ou logado | Anônimo ou logado |
-| **Status do pedido** | Igual | Igual |
+| Aspecto              | Delivery                      | Mesa/Salão        |
+| -------------------- | ----------------------------- | ----------------- |
+| **Rota**             | `/restaurantes/[id]/cardapio` | `/table/[code]`   |
+| **Autenticação**     | Não requerida                 | Não requerida     |
+| **Identificação**    | `restaurantId` da URL         | QR Code na mesa   |
+| **Cliente**          | Anônimo ou logado             | Anônimo ou logado |
+| **Status do pedido** | Igual                         | Igual             |
 
 > **Nota:** O sistema de mesa/salão (QR code na mesa) será implementado futuramente.
 
@@ -237,10 +239,10 @@ npx playwright test tests/e2e/tests/delivery/
 
 ### 10.2 Cenários de Teste
 
-| Cenário | Comportamento Esperado |
-|---------|----------------------|
-| Acessar `/restaurantes` | Lista restaurantes ativos carrega |
-| Clicar em restaurante | Navega para cardápio correto |
+| Cenário                    | Comportamento Esperado                   |
+| -------------------------- | ---------------------------------------- |
+| Acessar `/restaurantes`    | Lista restaurantes ativos carrega        |
+| Clicar em restaurante      | Navega para cardápio correto             |
 | Adicionar item ao carrinho | Item adicionado com restaurantId correto |
-| Trocar de restaurante | Carrinho limpo ou confirmação exibida |
-| Checkout sem login | Pedido criado com dados do cliente |
+| Trocar de restaurante      | Carrinho limpo ou confirmação exibida    |
+| Checkout sem login         | Pedido criado com dados do cliente       |

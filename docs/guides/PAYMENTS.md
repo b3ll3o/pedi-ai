@@ -8,10 +8,10 @@ Este documento descreve a arquitetura e os fluxos de pagamento implementados no 
 
 O Pedi-AI suporta dois provedores de pagamento para processar transações de clientes:
 
-| Provedor | Método | Caso de Uso | Status |
-|----------|--------|-------------|--------|
-| **Mercado Pago** | PIX | Pagamentos instantâneos, sem custo de transação | ✅ Implementado |
-| **Demo Mode** | Simulado | Testes sem custo real (bypassa provedores reais) | ✅ Implementado |
+| Provedor         | Método   | Caso de Uso                                      | Status          |
+| ---------------- | -------- | ------------------------------------------------ | --------------- |
+| **Mercado Pago** | PIX      | Pagamentos instantâneos, sem custo de transação  | ✅ Implementado |
+| **Demo Mode**    | Simulado | Testes sem custo real (bypassa provedores reais) | ✅ Implementado |
 
 > **Nota:** Pagamento com cartão de crédito/débito (Stripe) não está implementado. O projeto suporta apenas PIX via Mercado Pago.
 
@@ -75,6 +75,7 @@ NEXT_PUBLIC_DEMO_PAYMENT_MODE=true       # Bypassa pagamentos reais (demo/simula
 **Endpoint:** `/api/payments/pix/create`
 
 **Request Body:**
+
 ```json
 {
   "order_id": "ord_123abc"
@@ -82,6 +83,7 @@ NEXT_PUBLIC_DEMO_PAYMENT_MODE=true       # Bypassa pagamentos reais (demo/simula
 ```
 
 **Fluxo:**
+
 1. Valida se `order_id` está presente
 2. Busca pedido no banco via Supabase
 3. Verifica se pedido já não está pago (`payment_status === 'paid'`)
@@ -91,6 +93,7 @@ NEXT_PUBLIC_DEMO_PAYMENT_MODE=true       # Bypassa pagamentos reais (demo/simula
 7. Retorna QR code e data de expiração
 
 **Response:**
+
 ```json
 {
   "qr_code": "00020101021226880014br.gov.bcb.pix2565...",
@@ -108,25 +111,25 @@ O webhook do Mercado Pago está implementado em `supabase/functions/pix-webhook/
 **Validação de Assinatura (HMAC-SHA256):**
 
 ```typescript
-const MP_WEBHOOK_SECRET = Deno.env.get('MP_WEBHOOK_SECRET') ?? ''
+const MP_WEBHOOK_SECRET = Deno.env.get('MP_WEBHOOK_SECRET') ?? '';
 
 async function validateSignature(req: Request, payload: { id: string }): Promise<boolean> {
-  const signature = req.headers.get('X-Signature')
+  const signature = req.headers.get('X-Signature');
   if (!signature || !MP_WEBHOOK_SECRET) {
-    return false
+    return false;
   }
 
-  const bodyStr = JSON.stringify(payload)
-  const dataToSign = `${payload.id}.${bodyStr}`
+  const bodyStr = JSON.stringify(payload);
+  const dataToSign = `${payload.id}.${bodyStr}`;
 
-  const hmac = createHmac('sha256', MP_WEBHOOK_SECRET)
-  hmac.update(dataToSign)
-  const expectedSignature = `sha256=${hmac.digest('base64')}`
+  const hmac = createHmac('sha256', MP_WEBHOOK_SECRET);
+  hmac.update(dataToSign);
+  const expectedSignature = `sha256=${hmac.digest('base64')}`;
 
   // Constant-time comparison (timingSafeEqual)
-  const sigBuffer = new TextEncoder().encode(signature)
-  const expectedBuffer = new TextEncoder().encode(expectedSignature)
-  return timingSafeEqual(sigBuffer, expectedBuffer)
+  const sigBuffer = new TextEncoder().encode(signature);
+  const expectedBuffer = new TextEncoder().encode(expectedSignature);
+  return timingSafeEqual(sigBuffer, expectedBuffer);
 }
 ```
 
@@ -139,19 +142,17 @@ const { data: existingEvent } = await supabase
   .from('webhook_events')
   .select('id')
   .eq('id', eventId)
-  .single()
+  .single();
 
 if (existingEvent) {
-  return Response.json({ status: 'duplicate' }, { status: 200 })
+  return Response.json({ status: 'duplicate' }, { status: 200 });
 }
 ```
 
 Após processar com sucesso, o evento é registrado:
 
 ```typescript
-await supabase
-  .from('webhook_events')
-  .insert({ id: eventId, event_type: type })
+await supabase.from('webhook_events').insert({ id: eventId, event_type: type });
 ```
 
 ### 2.5 Mapeamento de Status
@@ -164,7 +165,7 @@ const statusMap: Record<string, string> = {
   rejected: 'payment_failed',
   cancelled: 'payment_failed',
   refunded: 'refunded',
-}
+};
 ```
 
 ---
@@ -182,7 +183,7 @@ if (isDemoMode) {
     qr_code: `00020101021226880014br.gov.bcb.pix2565demo.here.co/v2/demo${random}`,
     qr_code_base64: `data:image/png;base64,${Buffer.from(mockQrCode).toString('base64')}`,
     expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-  })
+  });
 }
 ```
 
@@ -194,7 +195,7 @@ if (isDemoMode) {
   return NextResponse.json({
     status: 'confirmed',
     confirmed_at: new Date().toISOString(),
-  })
+  });
 }
 ```
 
@@ -203,7 +204,7 @@ if (isDemoMode) {
 ```typescript
 // POST /api/webhooks/stripe/webhook
 if (isDemoMode) {
-  return NextResponse.json({ received: true, demo: true })
+  return NextResponse.json({ received: true, demo: true });
 }
 ```
 
@@ -213,22 +214,22 @@ if (isDemoMode) {
 
 ### 5.1 Validação de Assinatura — PIX (Mercado Pago)
 
-| Aspecto | Implementação |
-|---------|---------------|
-| **Algoritmo** | HMAC-SHA256 |
-| **Header** | `X-Signature` |
-| **Formato** | `sha256=base64(hmac)` |
-| **Dados assinados** | `webhook_id.body` |
-| **Proteção** | `timingSafeEqual` contra timing attacks |
+| Aspecto             | Implementação                           |
+| ------------------- | --------------------------------------- |
+| **Algoritmo**       | HMAC-SHA256                             |
+| **Header**          | `X-Signature`                           |
+| **Formato**         | `sha256=base64(hmac)`                   |
+| **Dados assinados** | `webhook_id.body`                       |
+| **Proteção**        | `timingSafeEqual` contra timing attacks |
 
 ### 5.2 Validação de Assinatura — Stripe
 
-| Aspecto | Implementação |
-|---------|---------------|
-| **Algoritmo** | HMAC-SHA256 (via SDK) |
-| **Header** | `stripe-signature` |
-| **Método** | `Stripe.webhooks.constructEvent()` |
-| **Proteção** | SDK interno do Stripe |
+| Aspecto       | Implementação                      |
+| ------------- | ---------------------------------- |
+| **Algoritmo** | HMAC-SHA256 (via SDK)              |
+| **Header**    | `stripe-signature`                 |
+| **Método**    | `Stripe.webhooks.constructEvent()` |
+| **Proteção**  | SDK interno do Stripe              |
 
 ### 5.3 Idempotência
 
@@ -244,26 +245,26 @@ Todos os webhooks verificam se o evento já foi processadon antes de aplicar qua
 ### 6.1 Status de Pagamento (Domain)
 
 ```typescript
-type StatusPagamentoValue = 'pending' | 'confirmed' | 'failed' | 'refunded' | 'cancelled'
+type StatusPagamentoValue = 'pending' | 'confirmed' | 'failed' | 'refunded' | 'cancelled';
 ```
 
-| Status | Descrição | Transições válidas |
-|--------|-----------|-------------------|
-| `pending` | Aguardando pagamento | → `confirmed`, `failed`, `cancelled` |
-| `confirmed` | Pagamento confirmado | → `refunded` |
-| `failed` | Pagamento recusado | (final) |
-| `refunded` | Reembolsado | (final) |
-| `cancelled` | Cancelado | (final) |
+| Status      | Descrição            | Transições válidas                   |
+| ----------- | -------------------- | ------------------------------------ |
+| `pending`   | Aguardando pagamento | → `confirmed`, `failed`, `cancelled` |
+| `confirmed` | Pagamento confirmado | → `refunded`                         |
+| `failed`    | Pagamento recusado   | (final)                              |
+| `refunded`  | Reembolsado          | (final)                              |
+| `cancelled` | Cancelado            | (final)                              |
 
 ### 6.2 Status no Pedido (Orders)
 
-| Status Pagamento | Status Pedido |
-|------------------|--------------|
-| `pending` | `pending_payment` |
-| `confirmed` | `paid` |
-| `failed` | `payment_failed` |
-| `refunded` | `refunded` |
-| `cancelled` | `cancelled` |
+| Status Pagamento | Status Pedido     |
+| ---------------- | ----------------- |
+| `pending`        | `pending_payment` |
+| `confirmed`      | `paid`            |
+| `failed`         | `payment_failed`  |
+| `refunded`       | `refunded`        |
+| `cancelled`      | `cancelled`       |
 
 ### 6.3 Máquina de Estados — PagamentoAggregate
 
@@ -294,32 +295,32 @@ type StatusPagamentoValue = 'pending' | 'confirmed' | 'failed' | 'refunded' | 'c
 
 ### 6.1 Erros Comuns — PIX
 
-| Erro | Causa | Tratamento |
-|------|-------|------------|
-| `Order not found` | Pedido não existe no banco | HTTP 404 |
-| `Order is already paid` | Tentativa de pagar pedido já quitado | HTTP 400 |
-| `Failed to generate Pix QR code` | Falha na API do Mercado Pago | HTTP 500 |
-| `Missing order_id in payment metadata` | Metadata não enviada no create | Log + erro no webhook |
+| Erro                                   | Causa                                | Tratamento            |
+| -------------------------------------- | ------------------------------------ | --------------------- |
+| `Order not found`                      | Pedido não existe no banco           | HTTP 404              |
+| `Order is already paid`                | Tentativa de pagar pedido já quitado | HTTP 400              |
+| `Failed to generate Pix QR code`       | Falha na API do Mercado Pago         | HTTP 500              |
+| `Missing order_id in payment metadata` | Metadata não enviada no create       | Log + erro no webhook |
 
 ### 6.2 Erros de Validação — Domain
 
-| Erro | Condição |
-|------|----------|
-| `Não é possível adicionar transação de charge a pagamento não pendente` | Aggregate em estado final |
-| `Apenas pagamentos confirmados podem receber reembolso` | Tentativa de reembolso indevida |
-| `Valor de reembolso não pode exceder o valor do pagamento` | Reembolso maior que valor |
-| `Pagamento já não está pendente` | Confirmação/falha de pagamento já processado |
+| Erro                                                                    | Condição                                     |
+| ----------------------------------------------------------------------- | -------------------------------------------- |
+| `Não é possível adicionar transação de charge a pagamento não pendente` | Aggregate em estado final                    |
+| `Apenas pagamentos confirmados podem receber reembolso`                 | Tentativa de reembolso indevida              |
+| `Valor de reembolso não pode exceder o valor do pagamento`              | Reembolso maior que valor                    |
+| `Pagamento já não está pendente`                                        | Confirmação/falha de pagamento já processado |
 
 ### 6.3 Códigos de Resposta HTTP
 
-| Código | Uso |
-|--------|-----|
-| 200 | Sucesso (inclusive idempotência) |
-| 400 | Erro de validação, payload inválido |
-| 401 | Assinatura de webhook inválida |
-| 404 | Recurso não encontrado |
-| 405 | Método HTTP não permitido |
-| 500 | Erro interno do servidor |
+| Código | Uso                                 |
+| ------ | ----------------------------------- |
+| 200    | Sucesso (inclusive idempotência)    |
+| 400    | Erro de validação, payload inválido |
+| 401    | Assinatura de webhook inválida      |
+| 404    | Recurso não encontrado              |
+| 405    | Método HTTP não permitido           |
+| 500    | Erro interno do servidor            |
 
 ---
 
@@ -332,12 +333,12 @@ type StatusPagamentoValue = 'pending' | 'confirmed' | 'failed' | 'refunded' | 'c
 
 /** Enable PIX as a payment method */
 export function isPixEnabled(): boolean {
-  return process.env.NEXT_PUBLIC_FEATURE_PIX_ENABLED === 'true'
+  return process.env.NEXT_PUBLIC_FEATURE_PIX_ENABLED === 'true';
 }
 
 /** Enable Stripe as a payment method */
 export function isStripeEnabled(): boolean {
-  return process.env.NEXT_PUBLIC_FEATURE_STRIPE_ENABLED === 'true'
+  return process.env.NEXT_PUBLIC_FEATURE_STRIPE_ENABLED === 'true';
 }
 ```
 
@@ -355,24 +356,24 @@ import { isPixEnabled, isStripeEnabled } from '@/lib/feature-flags'
 
 ### 8.3 Todas as Flags
 
-| Flag | Descrição |
-|------|-----------|
-| `NEXT_PUBLIC_FEATURE_OFFLINE_ENABLED` | Modo offline com service worker |
-| `NEXT_PUBLIC_FEATURE_PIX_ENABLED` | PIX como método de pagamento |
-| `NEXT_PUBLIC_FEATURE_STRIPE_ENABLED` | Stripe como método de pagamento |
-| `NEXT_PUBLIC_FEATURE_WAITER_MODE` | Chamado de garçom |
-| `NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED` | Leitura de QR codes |
-| `NEXT_PUBLIC_FEATURE_COMBOS_ENABLED` | Combos/promotions |
-| `NEXT_PUBLIC_FEATURE_ANALYTICS_ENABLED` | Dashboard analytics |
-| `NEXT_PUBLIC_FEATURE_CASHBACK_ENABLED` | Sistema de cashback |
-| `NEXT_PUBLIC_ENABLE_MULTI_RESTAURANT` | Suporte multi-restaurante |
+| Flag                                    | Descrição                       |
+| --------------------------------------- | ------------------------------- |
+| `NEXT_PUBLIC_FEATURE_OFFLINE_ENABLED`   | Modo offline com service worker |
+| `NEXT_PUBLIC_FEATURE_PIX_ENABLED`       | PIX como método de pagamento    |
+| `NEXT_PUBLIC_FEATURE_STRIPE_ENABLED`    | Stripe como método de pagamento |
+| `NEXT_PUBLIC_FEATURE_WAITER_MODE`       | Chamado de garçom               |
+| `NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED`   | Leitura de QR codes             |
+| `NEXT_PUBLIC_FEATURE_COMBOS_ENABLED`    | Combos/promotions               |
+| `NEXT_PUBLIC_FEATURE_ANALYTICS_ENABLED` | Dashboard analytics             |
+| `NEXT_PUBLIC_FEATURE_CASHBACK_ENABLED`  | Sistema de cashback             |
+| `NEXT_PUBLIC_ENABLE_MULTI_RESTAURANT`   | Suporte multi-restaurante       |
 
 ---
 
 ## 8. Estrutura de Arquivos
 
 ```
-src/
+apps/web/src/
 ├── domain/pagamento/
 │   ├── entities/
 │   │   ├── Pagamento.ts          # Entidade de pagamento
@@ -425,20 +426,20 @@ src/
 
 ```bash
 # Tests de domínio
-npm run test -- src/tests/unit/domain/pagamento/
+npm run test -- tests/unit/domain/pagamento/
 
 # Tests de adapters
-npm run test -- src/tests/unit/infrastructure/payment/
+npm run test -- tests/unit/infrastructure/payment/
 
 # Tests de use cases
-npm run test -- src/tests/unit/application/payment/
+npm run test -- tests/unit/application/payment/
 ```
 
 ### 9.2 Testes de Integração
 
 ```bash
 # PIX API
-npm run test -- src/tests/integration/api/payments.test.ts
+npm run test -- tests/integration/api/payments.test.ts
 ```
 
 ### 9.3 Testes E2E
@@ -451,6 +452,7 @@ npx playwright test tests/e2e/tests/payment/pix.spec.ts
 ### 9.4 Setup Local — Mercado Pago
 
 Para testar PIX em desenvolvimento, configure o token do Mercado Pago:
+
 ```bash
 MERCADO_PAGO_ACCESS_TOKEN=APP_TEST-xxxxx
 NEXT_PUBLIC_DEMO_PAYMENT_MODE=false

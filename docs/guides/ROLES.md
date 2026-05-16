@@ -15,12 +15,12 @@ O controle de acesso é aplicado em duas camadas:
 
 O sistema possui quatro funções (roles) organizadas em hierarquia:
 
-| Função | Português | Nível | Descrição |
-|--------|-----------|-------|-----------|
-| `owner` | **dono** | 1 (mais alto) | Acesso completo ao restaurante |
-| `manager` | **gerente** | 2 | Gerencia cardápio, pedidos e mesas |
-| `staff` | **atendente** | 3 | Vê pedidos e atualiza status |
-| `client` | **cliente** | 4 (mais baixo) | Cliente final que faz pedidos |
+| Função    | Português     | Nível          | Descrição                          |
+| --------- | ------------- | -------------- | ---------------------------------- |
+| `owner`   | **dono**      | 1 (mais alto)  | Acesso completo ao restaurante     |
+| `manager` | **gerente**   | 2              | Gerencia cardápio, pedidos e mesas |
+| `staff`   | **atendente** | 3              | Vê pedidos e atualiza status       |
+| `client`  | **cliente**   | 4 (mais baixo) | Cliente final que faz pedidos      |
 
 ### 2.1 Dono (`owner` / `dono`)
 
@@ -68,46 +68,46 @@ O sistema possui quatro funções (roles) organizadas em hierarquia:
 
 ### 3.1 Tabela de Permissões
 
-| Recurso | Operação | Dono | Gerente | Atendente | Cliente |
-|---------|----------|------|---------|-----------|---------|
-| **Restaurante** | Criar | ✅ | ❌ | ❌ | ❌ |
-| | Ler | ✅ | ✅ | ❌ | ❌ |
-| | Editar | ✅ | ❌ | ❌ | ❌ |
-| | Excluir | ✅ | ❌ | ❌ | ❌ |
-| | Reativar | ✅ | ❌ | ❌ | ❌ |
-| **Usuários** | Criar | ✅ | ❌ | ❌ | ❌ |
-| | Ler (lista) | ✅ | ❌ | ❌ | ❌ |
-| | Ler (próprio) | ✅ | ✅ | ✅ | ✅ |
-| | Editar função | ✅ | ❌ | ❌ | ❌ |
-| | Editar próprio | ✅ | ✅ | ✅ | ❌ |
-| | Excluir | ✅ | ❌ | ❌ | ❌ |
-| **Categorias** | Criar | ✅ | ✅ | ❌ | ❌ |
-| | Ler | ✅ | ✅ | ✅ | ❌ |
-| | Editar | ✅ | ✅ | ❌ | ❌ |
-| | Excluir | ✅ | ✅ | ❌ | ❌ |
-| **Produtos** | Criar | ✅ | ✅ | ❌ | ❌ |
-| | Ler | ✅ | ✅ | ✅ | ✅ |
-| | Editar | ✅ | ✅ | ❌ | ❌ |
-| | Excluir | ✅ | ✅ | ❌ | ❌ |
-| **Combos** | Criar | ✅ | ✅ | ❌ | ❌ |
-| | Ler | ✅ | ✅ | ✅ | ✅ |
-| | Editar | ✅ | ✅ | ❌ | ❌ |
-| | Excluir | ✅ | ✅ | ❌ | ❌ |
-| **Modificadores** | Criar | ✅ | ✅ | ❌ | ❌ |
-| | Ler | ✅ | ✅ | ✅ | ✅ |
-| | Editar | ✅ | ✅ | ❌ | ❌ |
-| | Excluir | ✅ | ✅ | ❌ | ❌ |
-| **Mesas** | Criar | ✅ | ✅ | ❌ | ❌ |
-| | Ler | ✅ | ✅ | ✅ | ✅ |
-| | Editar | ✅ | ✅ | ❌ | ❌ |
-| | Excluir | ✅ | ✅ | ❌ | ❌ |
-| **Pedidos** | Criar (mesa) | ✅ | ✅ | ✅ | ✅ |
-| | Criar (manual) | ✅ | ✅ | ✅ | ❌ |
-| | Ler (restaurant) | ✅ | ✅ | ✅ | ❌ |
-| | Ler (próprio) | ✅ | ✅ | ✅ | ✅ |
-| | Editar status | ✅ | ✅ | ✅ | ❌ |
-| | Cancelar | ✅ | ✅ | ✅ | ❌ |
-| | Excluir | ✅ | ✅ | ✅ | ❌ |
+| Recurso           | Operação         | Dono | Gerente | Atendente | Cliente |
+| ----------------- | ---------------- | ---- | ------- | --------- | ------- |
+| **Restaurante**   | Criar            | ✅   | ❌      | ❌        | ❌      |
+|                   | Ler              | ✅   | ✅      | ❌        | ❌      |
+|                   | Editar           | ✅   | ❌      | ❌        | ❌      |
+|                   | Excluir          | ✅   | ❌      | ❌        | ❌      |
+|                   | Reativar         | ✅   | ❌      | ❌        | ❌      |
+| **Usuários**      | Criar            | ✅   | ❌      | ❌        | ❌      |
+|                   | Ler (lista)      | ✅   | ❌      | ❌        | ❌      |
+|                   | Ler (próprio)    | ✅   | ✅      | ✅        | ✅      |
+|                   | Editar função    | ✅   | ❌      | ❌        | ❌      |
+|                   | Editar próprio   | ✅   | ✅      | ✅        | ❌      |
+|                   | Excluir          | ✅   | ❌      | ❌        | ❌      |
+| **Categorias**    | Criar            | ✅   | ✅      | ❌        | ❌      |
+|                   | Ler              | ✅   | ✅      | ✅        | ❌      |
+|                   | Editar           | ✅   | ✅      | ❌        | ❌      |
+|                   | Excluir          | ✅   | ✅      | ❌        | ❌      |
+| **Produtos**      | Criar            | ✅   | ✅      | ❌        | ❌      |
+|                   | Ler              | ✅   | ✅      | ✅        | ✅      |
+|                   | Editar           | ✅   | ✅      | ❌        | ❌      |
+|                   | Excluir          | ✅   | ✅      | ❌        | ❌      |
+| **Combos**        | Criar            | ✅   | ✅      | ❌        | ❌      |
+|                   | Ler              | ✅   | ✅      | ✅        | ✅      |
+|                   | Editar           | ✅   | ✅      | ❌        | ❌      |
+|                   | Excluir          | ✅   | ✅      | ❌        | ❌      |
+| **Modificadores** | Criar            | ✅   | ✅      | ❌        | ❌      |
+|                   | Ler              | ✅   | ✅      | ✅        | ✅      |
+|                   | Editar           | ✅   | ✅      | ❌        | ❌      |
+|                   | Excluir          | ✅   | ✅      | ❌        | ❌      |
+| **Mesas**         | Criar            | ✅   | ✅      | ❌        | ❌      |
+|                   | Ler              | ✅   | ✅      | ✅        | ✅      |
+|                   | Editar           | ✅   | ✅      | ❌        | ❌      |
+|                   | Excluir          | ✅   | ✅      | ❌        | ❌      |
+| **Pedidos**       | Criar (mesa)     | ✅   | ✅      | ✅        | ✅      |
+|                   | Criar (manual)   | ✅   | ✅      | ✅        | ❌      |
+|                   | Ler (restaurant) | ✅   | ✅      | ✅        | ❌      |
+|                   | Ler (próprio)    | ✅   | ✅      | ✅        | ✅      |
+|                   | Editar status    | ✅   | ✅      | ✅        | ❌      |
+|                   | Cancelar         | ✅   | ✅      | ✅        | ❌      |
+|                   | Excluir          | ✅   | ✅      | ✅        | ❌      |
 
 ---
 
@@ -129,7 +129,7 @@ O Pedi-AI suporta que um mesmo usuário tenha acesso a **múltiplos restaurantes
 │ created_at      │       │ role (ENUM)         │       │ ...             │
 └─────────────────┘       │ name, email         │       └─────────────────┘
                           └──────────────────────┘
-                                      
+
                                       ┌──────────────────────┐
                                       │  user_restaurants   │ (N:N junction)
                                       │──────────────────────│
@@ -144,6 +144,7 @@ O Pedi-AI suporta que um mesmo usuário tenha acesso a **múltiplos restaurantes
 ### 4.2 Modelo de Dados
 
 **Tabela `users_profiles`** (legado, ainda em uso):
+
 ```sql
 CREATE TABLE users_profiles (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -157,6 +158,7 @@ CREATE TABLE users_profiles (
 ```
 
 **Tabela `user_restaurants`** (nova tabela de junção):
+
 ```sql
 CREATE TABLE user_restaurants (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -171,6 +173,7 @@ CREATE TABLE user_restaurants (
 ### 4.3 Exemplo de Cenário
 
 Um usuário pode ser:
+
 - **Dono** do Restaurante A
 - **Gerente** do Restaurante B
 - **Atendente** do Restaurante C
@@ -199,24 +202,29 @@ O `current_setting('app.current_restaurant_id')` é definido **na aplicação** 
 ### 5.2 Políticas Implementadas
 
 #### Restaurants
+
 - **SELECT**: Usuários belonging ao restaurante
 - **UPDATE/DELETE**: Apenas `dono`
 
 #### Categories
+
 - **SELECT**: Qualquer usuário autenticado do restaurante
 - **INSERT**: Qualquer usuário autenticado do restaurante
 - **UPDATE/DELETE**: `dono` ou `gerente`
 
 #### Products
+
 - **SELECT**: Qualquer usuário do restaurante
 - **INSERT/UPDATE/DELETE**: `dono` ou `gerente`
 
 #### Orders
+
 - **SELECT**: Funcionários leem todos do restaurante; clientes leem apenas os próprios
 - **INSERT**: Clientes criam para sua mesa; staff cria manualmente
 - **UPDATE/DELETE**: Apenas staff do restaurante
 
 #### Users_profiles
+
 - **SELECT**: Próprio usuário OU `dono` do restaurante
 - **UPDATE**: Próprio usuário OU `dono` do restaurante
 
@@ -266,18 +274,18 @@ Usuário abre /login (ou /menu)
 
 ### 6.2 Endpoints de Autenticação
 
-| Função | Arquivo | Descrição |
-|--------|---------|-----------|
-| Cadastro | `src/lib/supabase/auth.ts` | `signUp(email, password)` |
-| Login | `src/lib/supabase/auth.ts` | `signIn(email, password)` |
-| Logout | `src/lib/supabase/auth.ts` | `signOut()` |
-| Sessão | `src/lib/supabase/auth.ts` | `getSession()` |
-| Usuário | `src/lib/supabase/auth.ts` | `getUser()` |
-| Recovery | `src/lib/supabase/auth.ts` | `resetPassword(email)` |
+| Função   | Arquivo                             | Descrição                 |
+| -------- | ----------------------------------- | ------------------------- |
+| Cadastro | `apps/web/src/lib/supabase/auth.ts` | `signUp(email, password)` |
+| Login    | `apps/web/src/lib/supabase/auth.ts` | `signIn(email, password)` |
+| Logout   | `apps/web/src/lib/supabase/auth.ts` | `signOut()`               |
+| Sessão   | `apps/web/src/lib/supabase/auth.ts` | `getSession()`            |
+| Usuário  | `apps/web/src/lib/supabase/auth.ts` | `getUser()`               |
+| Recovery | `apps/web/src/lib/supabase/auth.ts` | `resetPassword(email)`    |
 
 ### 6.3 Middleware de Autenticação
 
-O arquivo `src/lib/supabase/middleware.ts` cria o cliente Supabase para Server Components e API Routes:
+O arquivo `apps/web/src/lib/supabase/middleware.ts` cria o cliente Supabase para Server Components e API Routes:
 
 ```typescript
 export async function createClient(request: NextRequest) {
@@ -286,12 +294,16 @@ export async function createClient(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() { return request.cookies.getAll() },
-        setAll(cookiesToSet) { /* ... */ }
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          /* ... */
+        },
       },
     }
-  )
-  return { supabase, supabaseResponse }
+  );
+  return { supabase, supabaseResponse };
 }
 ```
 
@@ -301,14 +313,14 @@ export async function createClient(request: NextRequest) {
 
 ### 7.1 Comparação
 
-| Aspecto | Admin (Painel) | Cliente (App) |
-|---------|----------------|---------------|
-| **URL de login** | `/admin/login` | `/login` |
-| **Dashboard** | `/admin/dashboard` | `/menu` |
-| **Funções permitidas** | `dono`, `gerente`, `atendente` | `cliente` |
-| **Cardápio** | Edição completa | Somente leitura |
-| **Pedidos** | Gerenciamento total | Criar para própria mesa |
-| ** Sessão** | Persistente (cookie) | Persistente (cookie) |
+| Aspecto                | Admin (Painel)                 | Cliente (App)           |
+| ---------------------- | ------------------------------ | ----------------------- |
+| **URL de login**       | `/admin/login`                 | `/login`                |
+| **Dashboard**          | `/admin/dashboard`             | `/menu`                 |
+| **Funções permitidas** | `dono`, `gerente`, `atendente` | `cliente`               |
+| **Cardápio**           | Edição completa                | Somente leitura         |
+| **Pedidos**            | Gerenciamento total            | Criar para própria mesa |
+| ** Sessão**            | Persistente (cookie)           | Persistente (cookie)    |
 
 ### 7.2 Redirecionamento Baseado em Perfil
 
@@ -320,11 +332,13 @@ Quando um usuário faz login:
 ### 7.3 Proteção de Rotas
 
 **Rotas Admin** (`/admin/*`):
+
 - Verificam se há sessão ativa
 - Verificam se o usuário tem role de admin (`dono`, `gerente`, `atendente`)
 - Redirecionam para `/admin/login` se não autenticado
 
 **Rotas Cliente** (`/menu`, `/login`):
+
 - Cardápio é público (qualquer um pode ver)
 - Fazer pedidos requer autenticação de `cliente`
 - Rotas protegidas redirecionam para `/login`
@@ -333,7 +347,7 @@ Quando um usuário faz login:
 
 ## 8. Store de Restaurante (Zustand)
 
-O estado do restaurante selecionado é gerenciado em `src/infrastructure/persistence/restaurantStore.ts`:
+O estado do restaurante selecionado é gerenciado em `apps/web/src/infrastructure/persistence/restaurantStore.ts`:
 
 ```typescript
 interface RestaurantState {
@@ -352,6 +366,7 @@ interface RestaurantActions {
 ```
 
 Este store:
+
 1. Persiste o restaurante selecionado em `localStorage` (chave: `pedi-ai-restaurant`)
 2. Permite carregar restaurantes acessíveis ao usuário
 3. Verifica se o usuário tem acesso a um restaurante específico
@@ -362,12 +377,12 @@ Este store:
 
 ### 9.1 Evolução do Sistema de Funções
 
-| Migration | Data | Alteração |
-|-----------|------|-----------|
-| `0012_create_users_profiles.sql` | Inicial | Cria tabela com roles em inglês (`owner`, `manager`, `staff`) |
-| `0018_create_user_restaurants.sql` | Multi-restaurant | Adiciona tabela de junção N:N |
-| `0020_enable_multi_restaurant_users.sql` | Multi-restaurant | Remove constraint único de user_id |
-| `0021_rename_roles_to_ptbr.sql` | Brazilianização | Renomeia roles para pt-BR (`dono`, `gerente`, `atendente`, `cliente`) |
+| Migration                                | Data             | Alteração                                                             |
+| ---------------------------------------- | ---------------- | --------------------------------------------------------------------- |
+| `0012_create_users_profiles.sql`         | Inicial          | Cria tabela com roles em inglês (`owner`, `manager`, `staff`)         |
+| `0018_create_user_restaurants.sql`       | Multi-restaurant | Adiciona tabela de junção N:N                                         |
+| `0020_enable_multi_restaurant_users.sql` | Multi-restaurant | Remove constraint único de user_id                                    |
+| `0021_rename_roles_to_ptbr.sql`          | Brazilianização  | Renomeia roles para pt-BR (`dono`, `gerente`, `atendente`, `cliente`) |
 
 ### 9.2 Tipo ENUM Atual
 
@@ -389,14 +404,14 @@ CREATE TYPE user_role AS ENUM ('dono', 'gerente', 'atendente', 'cliente');
 
 ## 11. Arquivos de Referência
 
-| Arquivo | Descrição |
-|---------|-----------|
-| `supabase/migrations/0012_create_users_profiles.sql` | Definição da tabela de perfis |
-| `supabase/migrations/0018_create_user_restaurants.sql` | Tabela de junção N:N |
-| `supabase/migrations/0013_enable_rls_policies.sql` | Políticas RLS (inglês) |
-| `supabase/migrations/0021_rename_roles_to_ptbr.sql` | Políticas RLS (pt-BR) |
-| `src/lib/supabase/auth.ts` | Funções de autenticação |
-| `src/lib/supabase/middleware.ts` | Middleware Supabase |
-| `src/infrastructure/persistence/restaurantStore.ts` | Store Zustand de restaurantes |
-| `tests/e2e/tests/admin/auth.spec.ts` | Testes E2E de auth admin |
-| `tests/e2e/tests/customer/auth.spec.ts` | Testes E2E de auth cliente |
+| Arquivo                                                      | Descrição                     |
+| ------------------------------------------------------------ | ----------------------------- |
+| `supabase/migrations/0012_create_users_profiles.sql`         | Definição da tabela de perfis |
+| `supabase/migrations/0018_create_user_restaurants.sql`       | Tabela de junção N:N          |
+| `supabase/migrations/0013_enable_rls_policies.sql`           | Políticas RLS (inglês)        |
+| `supabase/migrations/0021_rename_roles_to_ptbr.sql`          | Políticas RLS (pt-BR)         |
+| `apps/web/src/lib/supabase/auth.ts`                          | Funções de autenticação       |
+| `apps/web/src/lib/supabase/middleware.ts`                    | Middleware Supabase           |
+| `apps/web/src/infrastructure/persistence/restaurantStore.ts` | Store Zustand de restaurantes |
+| `tests/e2e/tests/admin/auth.spec.ts`                         | Testes E2E de auth admin      |
+| `tests/e2e/tests/customer/auth.spec.ts`                      | Testes E2E de auth cliente    |

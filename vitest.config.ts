@@ -21,82 +21,64 @@ export default defineConfig({
       },
       include: ['apps/web/src/**/*'],
       exclude: [
-        'src/**/*.d.ts',
-        'src/**/*.stories.tsx',
-        'src/styles/**',
+        'apps/web/src/**/*.d.ts',
+        'apps/web/src/**/*.stories.tsx',
         'node_modules/**',
         // API routes
-        'src/app/api/**',
+        'apps/web/src/app/api/**',
         // Páginas e layouts
-        'src/app/**/page.tsx',
-        'src/app/**/layout.tsx',
+        'apps/web/src/app/**/page.tsx',
+        'apps/web/src/app/**/layout.tsx',
         // Route groups com parênteses - Client components
-        'src/app/\\(admin\\)/**',
-        'src/app/\\(customer\\)/**',
-        'src/app/\\(waiter\\)/**',
-        'src/app/kitchen/**',
+        'apps/web/src/app/\\(admin\\)/**',
+        'apps/web/src/app/\\(customer\\)/**',
+        'apps/web/src/app/\\(waiter\\)/**',
+        'apps/web/src/app/kitchen/**',
         // Componentes UI
-        'src/components/**',
-        'src/app/components/**',
+        'apps/web/src/components/**',
+        'apps/web/src/app/components/**',
         // Webhooks
-        'src/app/api/webhooks/**',
-        // Arquivos de configuração
-        'src/config/**',
+        'apps/web/src/app/api/webhooks/**',
         // Service Worker
-        'src/lib/sw/**',
+        'apps/web/src/lib/sw/**',
         // Arquivos de sitemap e robots
-        'src/app/robots.ts',
-        'src/app/sitemap.ts',
+        'apps/web/src/app/robots.ts',
+        'apps/web/src/app/sitemap.ts',
         // Supabase client - initialization files, not unit testable
-        'src/lib/supabase/auth.ts',
-        'src/lib/supabase/client.ts',
-        'src/lib/supabase/server.ts',
-        'src/lib/supabase/middleware.ts',
-        'src/lib/supabase/storage.ts',
-        'src/lib/supabase/types.ts',
-        'src/lib/supabase/database.types.ts',
+        'apps/web/src/lib/supabase/auth.ts',
+        'apps/web/src/lib/supabase/client.ts',
+        'apps/web/src/lib/supabase/server.ts',
+        'apps/web/src/lib/supabase/middleware.ts',
+        'apps/web/src/lib/supabase/storage.ts',
+        'apps/web/src/lib/supabase/types.ts',
+        'apps/web/src/lib/supabase/database.types.ts',
         // Offline lib - db.ts is integration only
-        'src/lib/offline/db.ts',
+        'apps/web/src/lib/offline/db.ts',
         // Guest auth - not directly unit tested (browser-only localStorage)
-        'src/lib/auth/guest.ts',
+        'apps/web/src/lib/auth/guest.ts',
         // BroadcastChannel - browser-only API
-        'src/lib/broadcast-channel.ts',
+        'apps/web/src/lib/broadcast-channel.ts',
         // Logger - runtime utility with browser-only behavior, tested via integration
-        'src/lib/logger.ts',
+        'apps/web/src/lib/logger.ts',
         // Admin client - Supabase browser admin, integration tested
-        'src/lib/auth/client-admin.ts',
+        'apps/web/src/lib/auth/client-admin.ts',
         // Offline types - type definitions only, no executable code
-        'src/lib/offline/types.ts',
-        // Infrastructure repositories - tested via unit tests with mocked Dexie
-        // NOTE: removed exclusion so tests count toward 80% coverage requirement
-        // 'src/infrastructure/persistence/**',
-        // Application use cases - many require complex mocking
-        'src/application/**/services/*.ts',
-        // Domain events that require domain entities (hard to unit test)
-        'src/domain/**/events/*CriadoEvent.ts',
-        'src/domain/**/events/*ExpiradaEvent.ts',
-        'src/domain/**/events/PagamentoConfirmadoEvent.ts',
-        'src/domain/**/events/PedidoStatusAlteradoEvent.ts',
-        'src/domain/**/events/Reembolso*.ts',
-        // Aggregates with complex dependencies
-        'src/domain/**/aggregates/*.ts',
+        'apps/web/src/lib/offline/types.ts',
         // Restaurant store - async methods depend on repository classes that are hard to mock with vi.mock
         // Tested via synchronous methods; async methods (verificarAcesso, carregarRestaurantes) need integration tests
-        'src/stores/restaurantStore.ts',
-        // Email templates - not JavaScript/TypeScript, causes coverage parser errors
-        'src/templates/**',
+        'apps/web/src/infrastructure/persistence/restaurantStore.ts',
         // Markdown files - not JavaScript/TypeScript, causes coverage parser errors
         '**/*.md',
         // Infrastructure - requires integration tests with real IndexedDB/external services
-        'src/infrastructure/**',
+        'apps/web/src/infrastructure/**',
         // Application use cases - require complex mocking of repositories and external services
-        'src/application/**',
+        'apps/web/src/application/**',
         // Domain - entities, value objects, events, aggregates require complex setup
-        'src/domain/**',
+        'apps/web/src/domain/**',
         // Hooks - many require browser APIs or complex async mocking
-        'src/hooks/**',
+        'apps/web/src/hooks/**',
         // App routes - client-side only pages
-        'src/app/**',
+        'apps/web/src/app/**',
       ],
     },
   },

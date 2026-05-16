@@ -10,13 +10,13 @@ O projeto utiliza **GitHub Actions** para CI/CD, com pre-commit hooks locais (Hu
 
 ### Jobs do Pipeline
 
-| Job | Gatilho | O que faz |
-|-----|---------|-----------|
-| `unit-tests` | PR | Vitest: testes unitários |
-| `integration-tests` | PR | Vitest: testes de integração |
-| `coverage` | PR | Verificação de cobertura ≥ 80% |
-| `e2e-tests` (4 shards) | PR | Playwright: testes E2E em paralelo |
-| `docs-audit` | schedule/push docs | Verifica consistência da documentação |
+| Job                    | Gatilho            | O que faz                             |
+| ---------------------- | ------------------ | ------------------------------------- |
+| `unit-tests`           | PR                 | Vitest: testes unitários              |
+| `integration-tests`    | PR                 | Vitest: testes de integração          |
+| `coverage`             | PR                 | Verificação de cobertura ≥ 80%        |
+| `e2e-tests` (4 shards) | PR                 | Playwright: testes E2E em paralelo    |
+| `docs-audit`           | schedule/push docs | Verifica consistência da documentação |
 
 ### Gates de Bloqueio
 
@@ -40,10 +40,10 @@ on: pull_request
 
 jobs:
   lint:
-    run: pnpm lint                    # ESLint
+    run: pnpm lint # ESLint
 
   type-check:
-    run: pnpm tsc --noEmit           # TypeScript
+    run: pnpm tsc --noEmit # TypeScript
 
   unit-tests:
     run: pnpm test:unit
@@ -52,7 +52,7 @@ jobs:
     run: pnpm test:integration
 
   coverage:
-    run: pnpm test:coverage          # must meet 80% threshold
+    run: pnpm test:coverage # must meet 80% threshold
 
   e2e-tests:
     strategy:
@@ -102,12 +102,12 @@ pnpm test:coverage
 
 Arquivos que não são contados para cobertura (por serem difíceis de unit-testar ou por serem configurações/UI):
 
-- `src/app/api/**` — rotas de API (testadas por E2E)
-- `src/app/**/page.tsx` e `layout.tsx` — páginas (testadas por E2E)
-- `src/components/**` — componentes UI (testados por E2E)
-- `src/lib/supabase/auth.ts`, `client.ts`, `server.ts` — clientes Supabase (inicialização, testados por E2E)
-- `src/lib/sw/**` — service workers (testados por E2E)
-- `src/domain/**/aggregates/*.ts` — agregados com dependências complexas
+- `apps/web/src/app/api/**` — rotas de API (testadas por E2E)
+- `apps/web/src/app/**/page.tsx` e `layout.tsx` — páginas (testadas por E2E)
+- `apps/web/src/components/**` — componentes UI (testados por E2E)
+- `apps/web/src/lib/supabase/auth.ts`, `client.ts`, `server.ts` — clientes Supabase (inicialização, testados por E2E)
+- `apps/web/src/lib/sw/**` — service workers (testados por E2E)
+- `apps/web/src/domain/**/aggregates/*.ts` — agregados com dependências complexas
 
 ---
 
@@ -152,6 +152,7 @@ Dependabot mantém dependências atualizadas automaticamente.
 **Arquivo:** `.github/dependabot.yml`
 
 Configurado para:
+
 - **npm packages** — verificação semanal
 - **GitHub Actions** — verificação semanal
 
@@ -181,11 +182,11 @@ pnpm build              # Next.js build
 
 Os workflows E2E requerem:
 
-| Secret | Descrição |
-|--------|-----------|
-| `NEXT_PUBLIC_SUPABASE_URL` | URL do projeto Supabase |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Chave anônima do Supabase |
-| `SUPABASE_SERVICE_ROLE_KEY` | Chave de serviço (para seed/admin) |
+| Secret                          | Descrição                          |
+| ------------------------------- | ---------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | URL do projeto Supabase            |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Chave anônima do Supabase          |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Chave de serviço (para seed/admin) |
 
 Configure em: **GitHub repo → Settings → Secrets and variables → Actions**
 
@@ -206,6 +207,7 @@ Para bloquear merges que não passem no CI, configure em **Settings → Branches
 ### Coverage falhando no CI mas passando localmente
 
 Verifique que está rodando a mesma versão de node:
+
 ```bash
 node --version  # deve ser 20
 ```

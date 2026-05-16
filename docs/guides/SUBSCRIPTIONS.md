@@ -8,11 +8,11 @@ Este documento descreve o sistema de assinaturas implementado no Pedi-AI, inclui
 
 O Pedi-AI utiliza um sistema de assinaturas para controlar o acesso de restaurantes à plataforma:
 
-| Plano | Preço | Período | Status |
-|-------|-------|---------|--------|
-| **Trial** | Gratuito | 14 dias | ✅ Implementado |
-| **Mensal** | R$ 19,99/mês | 30 dias | ✅ Implementado |
-| **Anual** | R$ 19,99/mês | 365 dias | ✅ Implementado |
+| Plano      | Preço        | Período  | Status          |
+| ---------- | ------------ | -------- | --------------- |
+| **Trial**  | Gratuito     | 14 dias  | ✅ Implementado |
+| **Mensal** | R$ 19,99/mês | 30 dias  | ✅ Implementado |
+| **Anual**  | R$ 19,99/mês | 365 dias | ✅ Implementado |
 
 > **Nota:** O sistema de assinaturas está integrado à plataforma. Operações de escrita são bloqueadas quando a assinatura expira.
 
@@ -51,11 +51,11 @@ O Pedi-AI utiliza um sistema de assinaturas para controlar o acesso de restauran
 
 ### 2.2 Status da Assinatura
 
-| Status | Descrição |
-|--------|-----------|
-| `trial` | Período experimental de 14 dias, acesso completo |
-| `active` | Assinatura paga ativa, acesso completo |
-| `expired` | Trial ou assinatura expirou, operações bloqueadas |
+| Status      | Descrição                                                    |
+| ----------- | ------------------------------------------------------------ |
+| `trial`     | Período experimental de 14 dias, acesso completo             |
+| `active`    | Assinatura paga ativa, acesso completo                       |
+| `expired`   | Trial ou assinatura expirou, operações bloqueadas            |
 | `cancelled` | Assinatura cancelada pelo usuário, acesso até fim do período |
 
 ---
@@ -91,23 +91,23 @@ export interface AssinaturaProps {
 
 ### 3.2 Propriedades Calculadas
 
-| Propriedade | Descrição |
-|-------------|-----------|
-| `trialAtivo` | `true` se status é 'trial' e ainda não expirou |
-| `assinaturaAtiva` | `true` se status é 'active' e não expirou |
-| `períodoAtivo` | `true` se trial OU assinatura estão ativos |
+| Propriedade          | Descrição                                        |
+| -------------------- | ------------------------------------------------ |
+| `trialAtivo`         | `true` se status é 'trial' e ainda não expirou   |
+| `assinaturaAtiva`    | `true` se status é 'active' e não expirou        |
+| `períodoAtivo`       | `true` se trial OU assinatura estão ativos       |
 | `diasRestantesTrial` | Dias restantes no trial (0 se não está em trial) |
-| `bloqueado` | `true` se período não está ativo |
-| `preçoFormatado` | Preço formatado em reais (ex: "R$ 19,99") |
+| `bloqueado`          | `true` se período não está ativo                 |
+| `preçoFormatado`     | Preço formatado em reais (ex: "R$ 19,99")        |
 
 ### 3.3 Métodos de Domínio
 
-| Método | Descrição |
-|--------|-----------|
-| `iniciarTrial(dias?)` | Inicia trial de 14 dias (padrão) |
-| `ativarAssinatura(tipoPlano)` | Ativa assinatura mensal ou anual |
-| `expirar()` | Marca trial como expirado |
-| `cancelar()` | Cancela assinatura (mantém acesso até fim) |
+| Método                        | Descrição                                  |
+| ----------------------------- | ------------------------------------------ |
+| `iniciarTrial(dias?)`         | Inicia trial de 14 dias (padrão)           |
+| `ativarAssinatura(tipoPlano)` | Ativa assinatura mensal ou anual           |
+| `expirar()`                   | Marca trial como expirado                  |
+| `cancelar()`                  | Cancela assinatura (mantém acesso até fim) |
 
 ---
 
@@ -158,6 +158,7 @@ validarOperacao(restauranteId: string): Promise<void>
 Retorna informações da assinatura do restaurante logado.
 
 **Response:**
+
 ```json
 {
   "status": "trial",
@@ -175,6 +176,7 @@ Retorna informações da assinatura do restaurante logado.
 Cria assinatura trial para o restaurante.
 
 **Request:**
+
 ```json
 {
   "restaurantId": "rest_xxx",
@@ -187,6 +189,7 @@ Cria assinatura trial para o restaurante.
 Ativa assinatura paga.
 
 **Request:**
+
 ```json
 {
   "restaurantId": "rest_xxx",
@@ -236,29 +239,29 @@ async validarOperacao(restauranteId: string): Promise<void> {
 
 ### 7.1 subscriptions
 
-| Campo | Tipo | Descrição |
-|-------|------|-----------|
-| `id` | uuid | Identificador único |
-| `restaurant_id` | uuid | FK para restaurante |
-| `status` | text | 'trial', 'active', 'expired', 'cancelled' |
-| `plan_type` | text | 'monthly' ou 'yearly' |
-| `price_cents` | integer | Preço em centavos (1999 = R$19,99) |
-| `currency` | text | 'BRL' |
-| `trial_started_at` | timestamptz | Início do trial |
-| `trial_ends_at` | timestamptz | Fim do trial |
-| `trial_days` | integer | Dias de trial (14) |
-| `subscription_started_at` | timestamptz | Início da assinatura |
-| `subscription_ends_at` | timestamptz | Fim da assinatura |
-| `cancelled_at` | timestamptz | Data do cancelamento |
-| `created_at` | timestamptz | Data de criação |
-| `updated_at` | timestamptz | Data de atualização |
+| Campo                     | Tipo        | Descrição                                 |
+| ------------------------- | ----------- | ----------------------------------------- |
+| `id`                      | uuid        | Identificador único                       |
+| `restaurant_id`           | uuid        | FK para restaurante                       |
+| `status`                  | text        | 'trial', 'active', 'expired', 'cancelled' |
+| `plan_type`               | text        | 'monthly' ou 'yearly'                     |
+| `price_cents`             | integer     | Preço em centavos (1999 = R$19,99)        |
+| `currency`                | text        | 'BRL'                                     |
+| `trial_started_at`        | timestamptz | Início do trial                           |
+| `trial_ends_at`           | timestamptz | Fim do trial                              |
+| `trial_days`              | integer     | Dias de trial (14)                        |
+| `subscription_started_at` | timestamptz | Início da assinatura                      |
+| `subscription_ends_at`    | timestamptz | Fim da assinatura                         |
+| `cancelled_at`            | timestamptz | Data do cancelamento                      |
+| `created_at`              | timestamptz | Data de criação                           |
+| `updated_at`              | timestamptz | Data de atualização                       |
 
 ---
 
 ## 8. Estrutura de Arquivos
 
 ```
-src/
+apps/web/src/
 ├── domain/admin/
 │   └── entities/
 │       └── Assinatura.ts              # Entidade de assinatura
@@ -290,15 +293,15 @@ Não há variáveis de ambiente específicas para assinaturas. O sistema utiliza
 
 ```bash
 # Testes da entidade Assinatura
-npm run test -- src/tests/unit/domain/admin/
+npm run test -- tests/unit/domain/admin/
 
 # Testes do use case
-npm run test -- src/tests/unit/application/admin/
+npm run test -- tests/unit/application/admin/
 ```
 
 ### 10.2 Testes de Integração
 
 ```bash
 # Testes da API de assinaturas
-npm run test -- src/tests/integration/api/subscriptions.test.ts
+npm run test -- tests/integration/api/subscriptions.test.ts
 ```

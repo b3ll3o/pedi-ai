@@ -25,18 +25,18 @@ Cada entidade que suporta soft delete possui um campo `deletedAt`:
 
 ```typescript
 interface EntidadeComSoftDelete {
-  deletedAt: Date | null;  // null = não deletado
-  ativo: boolean;            // false quando deletado
+  deletedAt: Date | null; // null = não deletado
+  ativo: boolean; // false quando deletado
 }
 ```
 
 ### 2.2 Métodos de Domínio
 
-| Método | Descrição |
-|--------|-----------|
+| Método             | Descrição                                          |
+| ------------------ | -------------------------------------------------- |
 | `marcarDeletada()` | Define `deletedAt` com data atual e `ativo: false` |
-| `restaurar()` | Limpa `deletedAt` e define `ativo: true` |
-| `estaDeletada` | Getter que retorna `deletedAt !== null` |
+| `restaurar()`      | Limpa `deletedAt` e define `ativo: true`           |
+| `estaDeletada`     | Getter que retorna `deletedAt !== null`            |
 
 ### 2.3 Fluxo
 
@@ -190,10 +190,7 @@ const { data: mesa } = await supabase
   .single();
 
 // Delete - soft delete (não remove)
-await supabase
-  .from('tables')
-  .update({ deleted_at: now, ativo: false })
-  .eq('id', id);
+await supabase.from('tables').update({ deleted_at: now, ativo: false }).eq('id', id);
 ```
 
 ---
@@ -238,20 +235,20 @@ SELECT * FROM tables WHERE deleted_at IS NOT NULL;
 
 ### 6.2 Tabelas com Soft Delete
 
-| Tabela | Campo deleted | Campo ativo |
-|--------|---------------|-------------|
-| `tables` | `deleted_at` | `ativo` |
-| `categories` | — | `ativo` |
-| `products` | — | `ativo` |
-| `restaurants` | `desativado_em` | `ativo` |
-| `modifier_groups` | — | `ativo` |
+| Tabela            | Campo deleted   | Campo ativo |
+| ----------------- | --------------- | ----------- |
+| `tables`          | `deleted_at`    | `ativo`     |
+| `categories`      | —               | `ativo`     |
+| `products`        | —               | `ativo`     |
+| `restaurants`     | `desativado_em` | `ativo`     |
+| `modifier_groups` | —               | `ativo`     |
 
 ---
 
 ## 7. Estrutura de Arquivos
 
 ```
-src/
+apps/web/src/
 ├── domain/
 │   ├── mesa/entities/Mesa.ts           # desativar(), marcarDeletada(), restaurar()
 │   ├── cardapio/entities/
@@ -281,21 +278,21 @@ src/
 
 ```bash
 # Testes de soft delete em Mesa
-npm run test -- src/tests/unit/domain/mesa/
+npm run test -- tests/unit/domain/mesa/
 
 # Testes de soft delete em ItemCardapio
-npm run test -- src/tests/unit/domain/cardapio/
+npm run test -- tests/unit/domain/cardapio/
 ```
 
 ### 8.2 Cenários de Teste
 
-| Cenário | Comportamento Esperado |
-|---------|----------------------|
-| `mesa.desativar()` | `ativo: false`, timestamp atualizado |
-| `mesa.ativar()` | `ativo: true` |
-| `mesa.marcarDeletada()` | `deletedAt` definido, `ativo: false` |
-| `mesa.restaurar()` | `deletedAt: null`, `ativo: true` |
-| Query com `.is('deleted_at', null)` | Retorna apenas não deletados |
+| Cenário                             | Comportamento Esperado               |
+| ----------------------------------- | ------------------------------------ |
+| `mesa.desativar()`                  | `ativo: false`, timestamp atualizado |
+| `mesa.ativar()`                     | `ativo: true`                        |
+| `mesa.marcarDeletada()`             | `deletedAt` definido, `ativo: false` |
+| `mesa.restaurar()`                  | `deletedAt: null`, `ativo: true`     |
+| Query com `.is('deleted_at', null)` | Retorna apenas não deletados         |
 
 ---
 

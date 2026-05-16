@@ -39,14 +39,16 @@ Admin acessa /login (ou /admin/login)
 ```
 
 **Cenarios:**
+
 - **Sucesso**: Credenciais válidas + role válida → /admin/dashboard
 - **Credenciais Inválidas**: Exibe erro "Email ou senha incorretos"
 - **Role Inválida** (cliente): Redireciona para /menu (não tem acesso admin)
 - **Rota Protegida Sem Auth**: Redireciona para /login preservando URL original
 
 **Arquivos:**
-- `src/lib/auth/` — Módulo de autenticação
-- `src/middleware.ts` — Proteção de rotas admin
+
+- `apps/web/src/lib/auth/` — Módulo de autenticação
+- `apps/web/src/lib/supabase/middleware.ts` — Proteção de rotas admin
 
 **Fluxos E2E:** `tests/admin/auth.spec.ts`
 
@@ -81,6 +83,7 @@ Owner/Manager acessa /admin/restaurants
 ```
 
 **Cenarios:**
+
 - Owner com 1 restaurante: Redireciona direto para o restaurante
 - Owner com múltiplos restaurantes: Mostra lista para seleção
 
@@ -184,6 +187,7 @@ Owner/Manager clica em "Remover" ao lado do membro
 ```
 
 **Cenarios Especiais:**
+
 - **Prevenir Auto-Remoção**: Owner não pode remover a si mesmo
 - **Hierarquia de Papéis**: owner > manager > staff
   - Um manager não pode gerenciar owners
@@ -191,18 +195,18 @@ Owner/Manager clica em "Remover" ao lado do membro
 
 ### 3.5 Níveis de Acesso por Papel
 
-| Recurso | Owner | Manager | Staff |
-|---------|-------|---------|-------|
-| Dashboard | ✅ | ✅ | ✅ |
-| Categorias | ✅ | ✅ | ❌ |
-| Produtos | ✅ | ✅ | ❌ |
-| Modificadores | ✅ | ✅ | ❌ |
-| Combos | ✅ | ✅ | ❌ |
-| Mesas/QR Codes | ✅ | ✅ | ❌ |
-| Pedidos | ✅ | ✅ | ✅ (apenas ver) |
-| Equipe | ✅ | ❌ | ❌ |
-| Configurações | ✅ | ❌ | ❌ |
-| Analytics | ✅ | ❌ | ❌ |
+| Recurso        | Owner | Manager | Staff           |
+| -------------- | ----- | ------- | --------------- |
+| Dashboard      | ✅    | ✅      | ✅              |
+| Categorias     | ✅    | ✅      | ❌              |
+| Produtos       | ✅    | ✅      | ❌              |
+| Modificadores  | ✅    | ✅      | ❌              |
+| Combos         | ✅    | ✅      | ❌              |
+| Mesas/QR Codes | ✅    | ✅      | ❌              |
+| Pedidos        | ✅    | ✅      | ✅ (apenas ver) |
+| Equipe         | ✅    | ❌      | ❌              |
+| Configurações  | ✅    | ❌      | ❌              |
+| Analytics      | ✅    | ❌      | ❌              |
 
 ---
 
@@ -231,6 +235,7 @@ Membro acessa /login
 ```
 
 **Cenarios:**
+
 - Membro sem vínculo: Exibe erro "Você não tem acesso a este restaurante"
 - Membro desvinculado: Não consegue mais acessar
 
@@ -850,16 +855,16 @@ Admin acessa link no email
 
 ## Resumo — Hierarquia de Papéis
 
-| Papel | Nível | Pode Gerenciar |
-|-------|-------|----------------|
-| owner | 3 (mais alto) | Tudo, incluindo outros owners |
-| manager | 2 | staff, categorias, produtos, mesas, pedidos |
-| staff | 1 (mais baixo) | Apenas pedidos (leitura e status) |
+| Papel   | Nível          | Pode Gerenciar                              |
+| ------- | -------------- | ------------------------------------------- |
+| owner   | 3 (mais alto)  | Tudo, incluindo outros owners               |
+| manager | 2              | staff, categorias, produtos, mesas, pedidos |
+| staff   | 1 (mais baixo) | Apenas pedidos (leitura e status)           |
 
 ### Funções de Verificação
 
 ```typescript
-// Localização: src/lib/auth/roles.ts
+// Localização: apps/web/src/domain/autenticacao/value-objects/Papel.ts
 canManageRole(currentRole, targetRole): boolean
 getRoleLabel(role): string  // Retorna "Proprietário", "Gerente", "Funcionário"
 getRoleColor(role): string  // Retorna cor hex do badge
@@ -869,21 +874,21 @@ getRoleColor(role): string  // Retorna cor hex do badge
 
 ## Matriz de Fluxos x Tags E2E
 
-| Fluxo | Spec File | Tags |
-|-------|-----------|------|
-| auth (admin) | `tests/admin/auth.spec.ts` | @smoke, @critical |
-| multi-restaurant | `tests/admin/multi-restaurant.spec.ts` | — |
-| restaurant-reactivate | `tests/admin/restaurant-reactivate.spec.ts` | — |
-| categories | `tests/admin/categories.spec.ts` | — |
-| products | `tests/admin/products.spec.ts` | — |
-| modifier-groups | `tests/admin/modifier-groups.spec.ts` | — |
-| combos-admin | `tests/admin/combos-admin.spec.ts` | — |
-| table-qr | `tests/admin/table-qr.spec.ts` | — |
-| orders | `tests/admin/orders.spec.ts` | — |
-| realtime-updates | `tests/admin/realtime-updates.spec.ts` | — |
-| analytics | `tests/admin/analytics.spec.ts` | — |
-| kitchen (garçom) | `tests/waiter/kitchen.spec.ts` | @slow |
-| offline-restaurant | `tests/admin/offline-restaurant.spec.ts` | — |
+| Fluxo                 | Spec File                                   | Tags              |
+| --------------------- | ------------------------------------------- | ----------------- |
+| auth (admin)          | `tests/admin/auth.spec.ts`                  | @smoke, @critical |
+| multi-restaurant      | `tests/admin/multi-restaurant.spec.ts`      | —                 |
+| restaurant-reactivate | `tests/admin/restaurant-reactivate.spec.ts` | —                 |
+| categories            | `tests/admin/categories.spec.ts`            | —                 |
+| products              | `tests/admin/products.spec.ts`              | —                 |
+| modifier-groups       | `tests/admin/modifier-groups.spec.ts`       | —                 |
+| combos-admin          | `tests/admin/combos-admin.spec.ts`          | —                 |
+| table-qr              | `tests/admin/table-qr.spec.ts`              | —                 |
+| orders                | `tests/admin/orders.spec.ts`                | —                 |
+| realtime-updates      | `tests/admin/realtime-updates.spec.ts`      | —                 |
+| analytics             | `tests/admin/analytics.spec.ts`             | —                 |
+| kitchen (garçom)      | `tests/waiter/kitchen.spec.ts`              | @slow             |
+| offline-restaurant    | `tests/admin/offline-restaurant.spec.ts`    | —                 |
 
 ---
 
@@ -893,16 +898,16 @@ getRoleColor(role): string  // Retorna cor hex do badge
 ┌─────────────┐     ┌───────────┐     ┌───────────┐     ┌───────┐     ┌───────────┐
 │pending_payment│────▶│    paid    │────▶│ received  │────▶│ready  │────▶│ delivered │
 └─────────────┘     └───────────┘     └───────────┘     └───────┘     └───────────┘
-                           │                │                            
-                           ▼                ▼                            
-                     ┌───────────┐    ┌───────────┐                    
-                     │ cancelled │    │ cancelled │                    
-                     └───────────┘    └───────────┘                    
-                                            
-                           ┌───────────┐     ┌───────────┐              
-                     ┌─────│ preparing  │────▶│ cancelled │              
-                     │     └───────────┘     └───────────┘              
-                     │                                              
+                           │                │
+                           ▼                ▼
+                     ┌───────────┐    ┌───────────┐
+                     │ cancelled │    │ cancelled │
+                     └───────────┘    └───────────┘
+
+                           ┌───────────┐     ┌───────────┐
+                     ┌─────│ preparing  │────▶│ cancelled │
+                     │     └───────────┘     └───────────┘
+                     │
                      └──────────────────────────────────────────────▶ (cancelled de qualquer status)
 ```
 
