@@ -20,9 +20,8 @@
 
 | Documento            | Localização                   | Descrição                                                                    | Quando Consultar                                |
 | -------------------- | ----------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------- |
-| **SUPABASE_SETUP**   | `./setup/SUPABASE_SETUP.md`   | Criar projeto Supabase, configurar environment, aplicar migrations, seed E2E | Setup inicial de desenvolvimento                |
 | **STRIPE_CLI_SETUP** | `./setup/STRIPE_CLI_SETUP.md` | Configurar Stripe CLI para webhooks locais, testar pagamentos                | Testar pagamentos com cartão em desenvolvimento |
-| **MAILPIT_SETUP**    | `./setup/MAILPIT_SETUP.md`    | Servidor SMTP mock para capturar emails em testes                            | Testar emails em desenvolvimento                |
+| **MAILPIT_SETUP**     | `./setup/MAILPIT_SETUP.md`     | Servidor SMTP mock para capturar emails em testes                            | Testar emails em desenvolvimento                |
 
 ---
 

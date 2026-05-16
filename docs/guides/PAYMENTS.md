@@ -51,7 +51,6 @@ NEXT_PUBLIC_DEMO_PAYMENT_MODE=true       # Bypassa pagamentos reais (demo/simula
                                                                    │
                                                                    ▼
 ┌─────────────┐    Webhook Notification           ┌─────────────────────────────────────┐
-│   Mercado   │ ─────────────────────────────────▶  │  supabase/functions/pix-webhook   │
 │   Pago      │                                     │  (Edge Function - Deno)            │
 └─────────────┘                                     └──────────────────┬──────────────────┘
                                                                     │
@@ -106,7 +105,7 @@ NEXT_PUBLIC_DEMO_PAYMENT_MODE=true       # Bypassa pagamentos reais (demo/simula
 
 ### 2.3 Validação de Webhook — Mercado Pago
 
-O webhook do Mercado Pago está implementado em `supabase/functions/pix-webhook/index.ts`.
+O webhook PIX é processado via Stripe.
 
 **Validação de Assinatura (HMAC-SHA256):**
 
@@ -411,7 +410,6 @@ apps/web/src/
 │   │   ├── create/route.ts              # POST - Criar PIX
 │   │   └── status/[orderId]/route.ts    # GET - Status PIX
 │
-└── supabase/functions/
     └── pix-webhook/
         └── index.ts                     # Edge function para webhooks MP
 ```

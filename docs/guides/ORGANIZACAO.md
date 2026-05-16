@@ -186,7 +186,6 @@ Arquivos críticos requerem aprovação do CTO além do Tech Lead:
 - `AGENTS.md` — padrões de código
 - `src/domain/**` — entidades de domínio
 - `src/application/**` — use cases
-- `supabase/migrations/**` — schema do banco
 
 ---
 

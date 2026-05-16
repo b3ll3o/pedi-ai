@@ -47,17 +47,17 @@ yarn-error.log*
 next-env.d.ts
 
 # E2E Test Artifacts
-tests/e2e/test-results/
-tests/e2e/playwright-report/
-tests/e2e/playwright-results.json
-tests/e2e/.playwright/
-tests/e2e/scripts/.seed-result.json
-tests/e2e/node_modules
+apps/web/tests/e2e/test-results/
+apps/web/tests/e2e/playwright-report/
+apps/web/tests/e2e/playwright-results.json
+apps/web/tests/e2e/.playwright/
+apps/web/tests/e2e/scripts/.seed-result.json
+apps/web/tests/e2e/node_modules
 
 # Playwright
 /.playwright/
 
-# Supabase
+# Supabase (local dev)
 .supabase/
 
 # Cartography
@@ -67,25 +67,19 @@ tests/e2e/node_modules
 Thumbs.db
 
 .playwright-mcp
-supabase/.temp
 pnpm-lock.yamldata/
 
 # Workspace node_modules (pnpm hoists to root)
-apps/*/node_modules
-packages/*/node_modules
-apps/api/.next
-apps/web/.next
-apps/web/node_modules
+/apps/*/node_modules
+/packages/*/node_modules
 
 # Local SQLite dev database
 apps/web/data/*.db
 apps/web/data/*.db-shm
 apps/web/data/*.db-wal
 
-# Next.js build output
+# Build outputs
 apps/web/.next
 apps/web/out
-
-# Supabase local dev files
-supabase/.temp
-supabase/config.toml
+apps/api/dist
+packages/shared/dist

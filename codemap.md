@@ -122,14 +122,6 @@ Cozinha recebe pedido via realtime (apps/web/src/hooks/useRealtimeOrders.ts)
 
 ---
 
-## OpenSpec
-
-| Tipo               | Localização                                                                      |
-| ------------------ | -------------------------------------------------------------------------------- |
-| Specs de domínio   | `openspec/specs/` (admin, auth, cart, menu, offline, order, payment, seo, table) |
-| Changes arquivados | `openspec/changes/` (SDD artifacts)                                              |
-
----
 
 ## Arquitetura de Dados Offline
 

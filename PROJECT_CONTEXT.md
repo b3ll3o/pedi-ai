@@ -423,4 +423,3 @@ NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED=true
 | `docs/guides/OFFLINE.md` | Guia offline-first |
 | `docs/guides/PAYMENTS.md` | Guia de pagamentos |
 | `docs/guides/QR_CODE.md` | Guia de QR code |
-| `openspec/specs/` | Especificações de domínio |

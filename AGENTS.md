@@ -209,7 +209,6 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 > ✅ **STATUS**: A arquitetura DDD está **MAJORITARIAMENTE IMPLEMENTADA**. A estrutura DDD existe em `apps/web/src/domain/`, `apps/web/src/application/`, e `apps/web/src/infrastructure/`.
 > A estrutura coexiste com código em `apps/web/src/components/`, `apps/web/src/hooks/`, e `apps/web/src/lib/` (legacy).
-> Ver: `openspec/changes/archive/2026-04-25-implantacao-ddd/` para histórico da migração.
 
 ### Bounded Contexts Implementados
 
@@ -258,7 +257,6 @@ apps/web/src/
     └── hooks/
 ```
 
-> **Nota**: A estrutura DDD **JÁ ESTÁ IMPLEMENTADA** em `apps/web/src/domain/`, `apps/web/src/application/`, `apps/web/src/infrastructure/`. O `presentation/` coexiste com a estrutura tradicional. Voir `openspec/changes/archive/2026-04-25-implantacao-ddd/` para o plano de migração completo (em progresso).
 
 ### O que vai em cada camada
 

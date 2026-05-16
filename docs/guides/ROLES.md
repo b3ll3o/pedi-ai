@@ -406,10 +406,6 @@ CREATE TYPE user_role AS ENUM ('dono', 'gerente', 'atendente', 'cliente');
 
 | Arquivo                                                      | Descrição                     |
 | ------------------------------------------------------------ | ----------------------------- |
-| `supabase/migrations/0012_create_users_profiles.sql`         | Definição da tabela de perfis |
-| `supabase/migrations/0018_create_user_restaurants.sql`       | Tabela de junção N:N          |
-| `supabase/migrations/0013_enable_rls_policies.sql`           | Políticas RLS (inglês)        |
-| `supabase/migrations/0021_rename_roles_to_ptbr.sql`          | Políticas RLS (pt-BR)         |
 | `apps/web/src/lib/supabase/auth.ts`                          | Funções de autenticação       |
 | `apps/web/src/lib/supabase/middleware.ts`                    | Middleware Supabase           |
 | `apps/web/src/infrastructure/persistence/restaurantStore.ts` | Store Zustand de restaurantes |
