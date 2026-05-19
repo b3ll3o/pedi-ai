@@ -15,7 +15,7 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
   cancelled: [],
 };
 
-type OrderStatus = 'pending_payment' | 'paid' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
+type _OrderStatus = 'pending_payment' | 'paid' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
 
 // GET /api/orders/[id]/status - Get order status
 export async function GET(request: NextRequest, { params }: RouteParams) {

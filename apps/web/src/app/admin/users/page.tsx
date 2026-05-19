@@ -13,7 +13,6 @@ import {
   type UserRole,
 } from '@/application/services/userService';
 import { getSession } from '@/lib/auth/client';
-import { redirect } from 'next/navigation';
 
 export default function UsersPage() {
   const router = useRouter();

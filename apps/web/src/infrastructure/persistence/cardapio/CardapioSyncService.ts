@@ -1,4 +1,4 @@
-import { db, type PediDatabase } from '../database';
+import { type PediDatabase } from '../database';
 import { CategoriaRepository } from './CategoriaRepository';
 import { ItemCardapioRepository } from './ItemCardapioRepository';
 import { ModificadorGrupoRepository } from './ModificadorGrupoRepository';
@@ -53,14 +53,14 @@ export class CardapioSyncService {
   private grupoRepo: ModificadorGrupoRepository;
 
   constructor(
-    private db: unknown, // Not used anymore with postgres.js
-    private supabaseClient?: unknown // Deprecated parameter
+    _db: unknown, // Kept for Dexie repositories (syncFromLocalCache)
+    _supabaseClient?: unknown // Deprecated - no longer used
   ) {
     // Initialize local repositories (Dexie-based)
     // These are used for syncFromLocalCache
-    this.categoriaRepo = new CategoriaRepository(db as PediDatabase);
-    this.itemRepo = new ItemCardapioRepository(db as PediDatabase);
-    this.grupoRepo = new ModificadorGrupoRepository(db as PediDatabase);
+    this.categoriaRepo = new CategoriaRepository(_db as PediDatabase);
+    this.itemRepo = new ItemCardapioRepository(_db as PediDatabase);
+    this.grupoRepo = new ModificadorGrupoRepository(_db as PediDatabase);
   }
 
   /**

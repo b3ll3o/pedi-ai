@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { renderHook, waitFor, act } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 
 import { useAuth } from '@/hooks/useAuth';
-import { login, logout, getSession } from '@/lib/auth/client';
+import { getSession } from '@/lib/auth/client';
 
 // Mock next/navigation
 const mockPush = vi.fn();

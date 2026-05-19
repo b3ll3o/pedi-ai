@@ -12,7 +12,7 @@ export async function GET(
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
-    const userId = session.user.id;
+    const _userId = session.user.id;
 
     const { id: modifierId } = await params;
 

@@ -106,7 +106,6 @@ export function useRealtimeOrders({
       return;
     }
 
-    /* eslint-disable react-hooks/set-state-in-effect */
     setIsConnected(!!socketConnected);
 
     if (socketConnected) {

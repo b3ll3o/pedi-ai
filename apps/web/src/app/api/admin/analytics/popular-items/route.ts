@@ -12,8 +12,8 @@ export async function GET(request: NextRequest) {
     const userId = session.user.id;
 
     const restaurantId = request.nextUrl.searchParams.get('restaurant_id');
-    const startDate = request.nextUrl.searchParams.get('start_date');
-    const endDate = request.nextUrl.searchParams.get('end_date');
+    const _startDate = request.nextUrl.searchParams.get('start_date');
+    const _endDate = request.nextUrl.searchParams.get('end_date');
     const limit = parseInt(request.nextUrl.searchParams.get('limit') || '10', 10);
 
     if (!restaurantId) {

@@ -15,7 +15,7 @@ interface ProductDetailProps {
   onAddToCart: (item: CartItem) => void;
 }
 
-type ModifierGroupFromDB = {
+type _ModifierGroupFromDB = {
   modifier_values: any[];
 };
 
@@ -241,7 +241,7 @@ export function ProductDetail({ productId, restaurantId, onAddToCart }: ProductD
             {product.modifier_groups.map((group) => (
               <ModifierSelector
                 key={group.id}
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                 
                 modifierGroup={group as any}
                 selectedValues={selectedModifiers.filter((m) => m.group_id === group.id)}
                 onChange={(values) => handleModifierChange(group.id, values)}

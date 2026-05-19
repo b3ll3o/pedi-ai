@@ -156,19 +156,16 @@ export function usePedidosKDS({
       return;
     }
 
-    /* eslint-disable react-hooks/set-state-in-effect */
     setError(null);
 
     // Use socket if connected, otherwise fall back to polling
     if (socketConnected) {
-      /* eslint-disable react-hooks/set-state-in-effect */
       setIsConnected(true);
       if (pollingRef.current) {
         clearInterval(pollingRef.current);
         pollingRef.current = null;
       }
     } else {
-      /* eslint-disable react-hooks/set-state-in-effect */
       setIsConnected(false);
 
       const startPolling = () => {

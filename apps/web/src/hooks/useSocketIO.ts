@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useCallback, useState, useRef } from 'react';
-import { getSocket, disconnectSocket } from '@/lib/socketio';
+import { getSocket } from '@/lib/socketio';
 
 export interface UseSocketIOOptions {
   restaurantId?: string;

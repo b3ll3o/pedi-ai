@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { token, usuarioId } = resultado;
+    const { token: _token, usuarioId } = resultado;
 
     // Create session in our database (using token from auth as the session token)
     const sessionToken = await createSession(usuarioId, email, 'dono', undefined);
