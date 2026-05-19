@@ -160,14 +160,29 @@ jobs:
           cat > .env.e2e << EOF
           NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           EOF
+        env:
+          NODE_ENV: e2e
+
+      - name: Verificar secrets
+        run: |
+          if [ -z "${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" ] || [ -z "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" ]; then
+            echo "::warning::E2E secrets not configured. Skipping tests."
+            echo "skip_tests=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip_tests=false" >> $GITHUB_OUTPUT
+          fi
+        id: check-secrets
 
       - name: Seed database
+        if: steps.check-secrets.outputs.skip_tests != 'true'
         run: pnpm test:e2e:seed
         env:
           NODE_ENV: e2e
 
       - name: Executar testes E2E (Shard ${{ matrix.shard }})
+        if: steps.check-secrets.outputs.skip_tests != 'true'
         run: pnpm test:e2e --shard=${{ matrix.shard }}/4
         env:
           NODE_ENV: e2e
