@@ -17,6 +17,21 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4]
 
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -26,42 +41,49 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install pnpm
+      - name: Instalar pnpm
         uses: pnpm/action-setup@v6
         with:
           version: 9
 
-      - name: Install dependencies
+      - name: Instalar node-gyp
+        run: npm install -g node-gyp
+
+      - name: Instalar dependências
         run: pnpm install --frozen-lockfile
 
-      - name: Install Playwright browsers
+      - name: Instalar Playwright browsers
         run: pnpm exec playwright install chromium --with-deps
 
-      - name: Create .env.e2e
+      - name: Criar .env.e2e
         run: |
-          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env.e2e
-          echo "NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}" >> .env.e2e
-        env:
-          NODE_ENV: e2e
+          echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_API_URL=http://localhost:3000" >> $GITHUB_ENV
 
-      - name: Verify DATABASE_URL is set
+      - name: Verificar conexão PostgreSQL
         run: |
-          if [ -z "${{ secrets.DATABASE_URL }}" ]; then
-            echo "::warning::DATABASE_URL not configured. Skipping tests."
-            echo "skip_tests=true" >> $GITHUB_OUTPUT
-          else
-            echo "skip_tests=false" >> $GITHUB_OUTPUT
-          fi
-        id: check-secrets
+          for i in {1..30}; do
+            if pg_isready -h localhost -U postgres; then
+              echo "PostgreSQL está pronto"
+              break
+            fi
+            echo "Aguardando PostgreSQL... ($i/30)"
+            sleep 2
+          done
+
+      - name: Setup database schema
+        run: |
+          cd apps/api
+          npx prisma db push --accept-data-loss --skip-generate
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
 
       - name: Seed database
-        if: steps.check-secrets.outputs.skip_tests != 'true'
         run: pnpm test:e2e:seed
         env:
           NODE_ENV: e2e
 
       - name: Run E2E tests (Shard ${{ matrix.shard }})
-        if: steps.check-secrets.outputs.skip_tests != 'true'
         run: pnpm test:e2e --shard=${{ matrix.shard }}/4
         env:
           NODE_ENV: e2e

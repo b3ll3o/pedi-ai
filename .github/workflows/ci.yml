@@ -132,6 +132,21 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4]
 
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -157,31 +172,33 @@ jobs:
 
       - name: Criar .env.e2e
         run: |
-          cat > .env.e2e << EOF
-          DATABASE_URL=${{ secrets.DATABASE_URL }}
-          NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
-          EOF
-        env:
-          NODE_ENV: e2e
+          echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_API_URL=http://localhost:3000" >> $GITHUB_ENV
 
-      - name: Verificar DATABASE_URL
+      - name: Verificar conexão PostgreSQL
         run: |
-          if [ -z "${{ secrets.DATABASE_URL }}" ]; then
-            echo "::warning::DATABASE_URL not configured. Skipping tests."
-            echo "skip_tests=true" >> $GITHUB_OUTPUT
-          else
-            echo "skip_tests=false" >> $GITHUB_OUTPUT
-          fi
-        id: check-secrets
+          for i in {1..30}; do
+            if pg_isready -h localhost -U postgres; then
+              echo "PostgreSQL está pronto"
+              break
+            fi
+            echo "Aguardando PostgreSQL... ($i/30)"
+            sleep 2
+          done
+
+      - name: Setup database schema
+        run: |
+          cd apps/api
+          npx prisma db push --accept-data-loss --skip-generate
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
 
       - name: Seed database
-        if: steps.check-secrets.outputs.skip_tests != 'true'
         run: pnpm test:e2e:seed
         env:
           NODE_ENV: e2e
 
       - name: Executar testes E2E (Shard ${{ matrix.shard }})
-        if: steps.check-secrets.outputs.skip_tests != 'true'
         run: pnpm test:e2e --shard=${{ matrix.shard }}/4
         env:
           NODE_ENV: e2e
