@@ -158,17 +158,16 @@ jobs:
       - name: Criar .env.e2e
         run: |
           cat > .env.e2e << EOF
-          NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          DATABASE_URL=${{ secrets.DATABASE_URL }}
+          NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
           EOF
         env:
           NODE_ENV: e2e
 
-      - name: Verificar secrets
+      - name: Verificar DATABASE_URL
         run: |
-          if [ -z "${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" ] || [ -z "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" ]; then
-            echo "::warning::E2E secrets not configured. Skipping tests."
+          if [ -z "${{ secrets.DATABASE_URL }}" ]; then
+            echo "::warning::DATABASE_URL not configured. Skipping tests."
             echo "skip_tests=true" >> $GITHUB_OUTPUT
           else
             echo "skip_tests=false" >> $GITHUB_OUTPUT
