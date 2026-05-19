@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pedi-AI — Fluxos da Aplicação</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent2: #a78bfa;
+      --success: #4ade80;
+      --warning: #fbbf24;
+      --danger: #f87171;
+      --border: #334155;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 2rem;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    h2 {
+      font-size: 1.2rem;
+      color: var(--accent);
+      margin: 2rem 0 1rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+    }
+
+    h3 {
+      font-size: 1rem;
+      color: var(--text-muted);
+      margin: 1.5rem 0 0.75rem;
+    }
+
+    p { color: var(--text-muted); margin-bottom: 2rem; }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .flow-section {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--border);
+    }
+
+    .flow-diagram {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      flex-direction: column;
+      width: 100%;
+    }
+
+    .flow-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .node {
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      padding: 0.6rem 1rem;
+      font-size: 0.85rem;
+      text-align: center;
+      min-width: 140px;
+      max-width: 200px;
+      transition: all 0.3s ease;
+    }
+
+    .node:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(56, 189, 248, 0.2);
+    }
+
+    .node-client { border-color: var(--success); }
+    .node-client:hover { border-color: var(--success); box-shadow: 0 4px 20px rgba(74, 222, 128, 0.2); }
+
+    .node-admin { border-color: var(--warning); }
+    .node-admin:hover { border-color: var(--warning); box-shadow: 0 4px 20px rgba(251, 191, 36, 0.2); }
+
+    .node-api { border-color: var(--accent); }
+    .node-api:hover { border-color: var(--accent); box-shadow: 0 4px 20px rgba(56, 189, 248, 0.2); }
+
+    .node-external { border-color: var(--accent2); }
+    .node-external:hover { border-color: var(--accent2); box-shadow: 0 4px 20px rgba(167, 139, 250, 0.2); }
+
+    .node-kds { border-color: var(--danger); }
+    .node-kds:hover { border-color: var(--danger); box-shadow: 0 4px 20px rgba(248, 113, 113, 0.2); }
+
+    .node-offline { border-color: #f59e0b; }
+    .node-offline:hover { border-color: #f59e0b; box-shadow: 0 4px 20px rgba(245, 158, 11, 0.2); }
+
+    .node-title {
+      font-weight: 700;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+
+    .node-subtitle {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .arrow {
+      color: var(--text-muted);
+      font-size: 1.2rem;
+      padding: 0 0.25rem;
+    }
+
+    .arrow-down {
+      display: block;
+      text-align: center;
+      font-size: 1.5rem;
+      color: var(--border);
+      padding: 0.5rem 0;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .info-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 1.5rem;
+      border: 1px solid var(--border);
+    }
+
+    .info-card h3 {
+      color: var(--accent);
+      margin-top: 0;
+    }
+
+    .info-card ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .info-card li {
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+
+    .info-card li:last-child { border-bottom: none; }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      margin-left: 0.5rem;
+    }
+
+    .badge-client { background: rgba(74, 222, 128, 0.2); color: var(--success); }
+    .badge-admin { background: rgba(251, 191, 36, 0.2); color: var(--warning); }
+    .badge-api { background: rgba(56, 189, 248, 0.2); color: var(--accent); }
+    .badge-external { background: rgba(167, 139, 250, 0.2); color: var(--accent2); }
+    .badge-kds { background: rgba(248, 113, 113, 0.2); color: var(--danger); }
+    .badge-offline { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+
+    .tech-stack {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .tech-badge {
+      background: var(--border);
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+    }
+
+    @media (max-width: 768px) {
+      body { padding: 1rem; }
+      .flow-row { flex-direction: column; }
+      .node { max-width: 100%; min-width: 120px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Pedi-AI — Fluxos da Aplicação</h1>
+    <p>Cardápio Digital para Restaurantes (offline-first, multi-tenant)</p>
+
+    <!-- Tech Stack -->
+    <div class="flow-section">
+      <h2>Stack Tecnológico</h2>
+      <div class="tech-stack">
+        <span class="tech-badge">Next.js 16 + TypeScript</span>
+        <span class="tech-badge">React 19</span>
+        <span class="tech-badge">NestJS + Fastify</span>
+        <span class="tech-badge">Prisma ORM + PostgreSQL</span>
+        <span class="tech-badge">Socket.io</span>
+        <span class="tech-badge">Service Worker + IndexedDB</span>
+        <span class="tech-badge">Zustand + React Query</span>
+        <span class="tech-badge">MercadoPago PIX</span>
+        <span class="tech-badge">Stripe</span>
+      </div>
+    </div>
+
+    <!-- Fluxo 1: Cliente -->
+    <div class="flow-section">
+      <h2>1. Fluxo Cliente (Pedido via QR Code)</h2>
+      <div class="flow-diagram">
+        <div class="flow-row">
+          <div class="node node-client">
+            <span class="node-title">QR Code</span>
+            <span class="node-subtitle">Cliente escaneia</span>
+          </div>
+        </div>
+        <span class="arrow-down">▼</span>
+        <div class="flow-row">
+          <div class="node node-client">
+            <span class="node-title">Validação Mesa</span>
+            <span class="node-subtitle">lib/qr.ts</span>
+          </div>
+        </div>
+        <span class="arrow-down">▼</span>
+        <div class="flow-row">
+          <div class="node node-client">
+            <span class="node-title">Cardápio Digital</span>
+            <span class="node-subtitle">/restaurantes/[id]/cardapio</span>
+          </div>
+        </div>
+        <span class="arrow-down">▼</span>
+        <div class="flow-row">
+          <div class="node node-offline">
+            <span class="node-title">Carrinho</span>
+            <span class="node-subtitle">cartStore (Zustand)</span>
+          </div>
+        </div>
+        <span class="arrow-down">▼</span>
+        <div class="flow-row">
+          <div class="node node-client">
+            <span class="node-title">Checkout</span>
+            <span class="node-subtitle">PIX ou Cartão</span>
+          </div>
+        </div>
+        <span class="arrow-down">▼</span>
+        <div class="flow-row">
+          <div class="node node-external">
+            <span class="node-title">MercadoPago</span>
+            <span class="node-subtitle">PIX API</span>
+          </div>
+          <span class="arrow">ou</span>
+          <div class="node node-external">
+            <span class="node-title">Stripe</span>
+            <span class="node-subtitle">Cartão</span>
+          </div>
+        </div>
+        <span class="arrow-down">▼</span>
+        <div class="flow-row">
+          <div class="node node-api">
+            <span class="node-title">POST /api/orders</span>
+            <span class="node-subtitle">Criar pedido</span>
+          </div>
+        </div>
+        <span class="arrow-down">▼</span>
+        <div class="flow-row">
+          <div class="node node-offline">
+            <span class="node-title">Service Worker</span>
+            <span class="node-subtitle">Background Sync</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fluxo 2: Admin -->
+    <div class="flow-section">
+      <h2>2. Fluxo Admin (Gestão)</h2>
+      <div class="grid">
+        <div class="info-card">
+          <h3>Autenticação</h3>
+          <ul>
+            <li>Login <span class="badge badge-client">/admin/login</span></li>
+            <li>POST /api/auth/login</li>
+            <li>JWT + Session Cookie</li>
+          </ul>
+        </div>
+        <div class="info-card">
+          <h3>Gestão de Cardápio</h3>
+          <ul>
+            <li>Categorias <span class="badge badge-admin">/admin/categories</span></li>
+            <li>Produtos <span class="badge badge-admin">/admin/products</span></li>
+            <li>Combos <span class="badge badge-admin">/admin/combos</span></li>
+            <li>Modificadores <span class="badge badge-admin">/admin/modifiers</span></li>
+          </ul>
+        </div>
+        <div class="info-card">
+          <h3>Gestão de Mesas</h3>
+          <ul>
+            <li>CRUD Mesas <span class="badge badge-admin">/admin/tables</span></li>
+            <li>QR Code generation</li>
+            <li>Validação QR (lib/qr.ts)</li>
+          </ul>
+        </div>
+        <div class="info-card">
+          <h3>Acompanhamento</h3>
+          <ul>
+            <li>Pedidos em tempo real <span class="badge badge-kds">Socket.io</span></li>
+            <li>useRealtimeOrders hook</li>
+            <li>Invalidação React Query</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fluxo 3: KDS -->
+    <div class="flow-section">
+      <h2>3. Fluxo Cozinha/KDS</h2>
+      <div class="flow-diagram">
+        <div class="flow-row">
+          <div class="node node-api">
+            <span class="node-title">Socket.io Event</span>
+            <span class="node-subtitle">newOrder</span>
+          </div>
+        </div>
+        <span class="arrow-down">▼</span>
+        <div class="flow-row">
+          <div class="node node-kds">
+            <span class="node-title">usePedidosKDS</span>
+            <span class="node-subtitle">Hook React</span>
+          </div>
+        </div>
+        <span class="arrow-down">▼</span>
+        <div class="flow-row">
+          <div class="node node-kds">
+            <span class="node-title">Tocar Som</span>
+            <span class="node-subtitle">AudioContext API</span>
+          </div>
+          <div class="node node-kds">
+            <span class="node-title">Invalidar Query</span>
+            <span class="node-subtitle">React Query</span>
+          </div>
+        </div>
+        <span class="arrow-down">▼</span>
+        <div class="flow-row">
+          <div class="node node-kds">
+            <span class="node-title">KDS Display</span>
+            <span class="node-subtitle">/kitchen</span>
+          </div>
+        </div>
+        <span class="arrow-down">▼</span>
+        <div class="flow-row">
+          <div class="node node-client">
+            <span class="node-title">Atualizar Status</span>
+            <span class="node-subtitle">pending → preparing → ready</span>
+          </div>
+        </div>
+        <span class="arrow-down">▼</span>
+        <div class="flow-row">
+          <div class="node node-client">
+            <span class="node-title">Socket.io Event</span>
+            <span class="node-subtitle">orderUpdate → Cliente</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fluxo 4: Pagamento -->
+    <div class="flow-section">
+      <h2>4. Fluxo Pagamento PIX</h2>
+      <div class="flow-diagram">
+        <div class="flow-row">
+          <div class="node node-client">
+            <span class="node-title">Seleciona PIX</span>
+            <span class="node-subtitle">Cliente escolhe</span>
+          </div>
+        </div>
+        <span class="arrow-down">▼</span>
+        <div class="flow-row">
+          <div class="node node-api">
+            <span class="node-title">POST /api/payments/pix/create</span>
+            <span class="node-subtitle">Criar pagamento</span>
+          </div>
+        </div>
+        <span class="arrow-down">▼</span>
+        <div class="flow-row">
+          <div class="node node-external">
+            <span class="node-title">MercadoPago API</span>
+            <span class="node-subtitle">Cria QR PIX</span>
+          </div>
+        </div>
+        <span class="arrow-down">▼</span>
+        <div class="flow-row">
+          <div class="node node-client">
+            <span class="node-title">QR Code PIX</span>
+            <span class="node-subtitle">Exibe ao cliente</span>
+          </div>
+        </div>
+        <span class="arrow-down">▼</span>
+        <div class="flow-row">
+          <div class="node node-external">
+            <span class="node-title">Cliente Paga</span>
+            <span class="node-subtitle">App do banco</span>
+          </div>
+        </div>
+        <span class="arrow-down">▼</span>
+        <div class="flow-row">
+          <div class="node node-api">
+            <span class="node-title">POST /api/webhooks/pix</span>
+            <span class="node-subtitle">Webhook callback</span>
+          </div>
+        </div>
+        <span class="arrow-down">▼</span>
+        <div class="flow-row">
+          <div class="node node-admin">
+            <span class="node-title">orderUpdate Event</span>
+            <span class="node-subtitle">Socket.io → Admin</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fluxo 5: Offline -->
+    <div class="flow-section">
+      <h2>5. Fluxo Offline-First</h2>
+      <div class="flow-diagram">
+        <div class="flow-row">
+          <div class="node node-client">
+            <span class="node-title">Dexie (IndexedDB)</span>
+            <span class="node-subtitle">menus, orders, tables</span>
+          </div>
+        </div>
+        <span class="arrow-down">▼</span>
+        <div class="flow-row">
+          <div class="node node-offline">
+            <span class="node-title">Zustand Stores</span>
+            <span class="node-subtitle">cartStore, menuStore, tableStore</span>
+          </div>
+        </div>
+        <span class="arrow-down">▼</span>
+        <div class="flow-row">
+          <div class="node node-offline">
+            <span class="node-title">Service Worker</span>
+            <span class="node-subtitle">Workbox + Background Sync</span>
+          </div>
+        </div>
+        <span class="arrow-down">▼</span>
+        <div class="flow-row">
+          <div class="node node-api">
+            <span class="node-title">NestJS API</span>
+            <span class="node-subtitle">Fastify + Prisma</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fluxo 6: Autenticação -->
+    <div class="flow-section">
+      <h2>6. Fluxo Autenticação</h2>
+      <div class="flow-diagram">
+        <div class="flow-row">
+          <div class="node node-client">
+            <span class="node-title">POST /api/auth/login</span>
+            <span class="node-subtitle">Credenciais</span>
+          </div>
+        </div>
+        <span class="arrow-down">▼</span>
+        <div class="flow-row">
+          <div class="node node-api">
+            <span class="node-title">AuthService</span>
+            <span class="node-subtitle">Valida + Gera JWT</span>
+          </div>
+        </div>
+        <span class="arrow-down">▼</span>
+        <div class="flow-row">
+          <div class="node node-api">
+            <span class="node-title">Session PostgreSQL</span>
+            <span class="node-subtitle">sessions table</span>
+          </div>
+        </div>
+        <span class="arrow-down">▼</span>
+        <div class="flow-row">
+          <div class="node node-client">
+            <span class="node-title">Cookie</span>
+            <span class="node-subtitle">session_token</span>
+          </div>
+        </div>
+        <span class="arrow-down">▼</span>
+        <div class="flow-row">
+          <div class="node node-api">
+            <span class="node-title">getSession()</span>
+            <span class="node-subtitle">Via cookies()</span>
+          </div>
+        </div>
+        <span class="arrow-down">▼</span>
+        <div class="flow-row">
+          <div class="node node-client">
+            <span class="node-title">Usuário Autenticado</span>
+            <span class="node-subtitle">Sessão válida</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Entry Points -->
+    <div class="flow-section">
+      <h2>Entry Points</h2>
+      <div class="grid">
+        <div class="info-card">
+          <h3>Rotas Públicas</h3>
+          <ul>
+            <li><span class="badge badge-client">/</span> Landing page</li>
+            <li><span class="badge badge-client">/restaurantes</span> Lista restaurantes</li>
+            <li><span class="badge badge-client">/restaurantes/[id]/cardapio</span> Cardápio digital</li>
+          </ul>
+        </div>
+        <div class="info-card">
+          <h3>Rotas Cliente</h3>
+          <ul>
+            <li><span class="badge badge-client">/menu</span> Cardápio legado</li>
+            <li><span class="badge badge-client">/cart</span> Carrinho</li>
+            <li><span class="badge badge-client">/checkout</span> Checkout</li>
+          </ul>
+        </div>
+        <div class="info-card">
+          <h3>Rotas Admin</h3>
+          <ul>
+            <li><span class="badge badge-admin">/admin/dashboard</span> Painel admin</li>
+            <li><span class="badge badge-admin">/admin/orders</span> Pedidos</li>
+            <li><span class="badge badge-kds">/kitchen</span> KDS Display</li>
+          </ul>
+        </div>
+        <div class="info-card">
+          <h3>API Routes</h3>
+          <ul>
+            <li><span class="badge badge-api">/api/auth/*</span> Autenticação</li>
+            <li><span class="badge badge-api">/api/admin/*</span> Admin APIs</li>
+            <li><span class="badge badge-api">/api/payments/*</span> Pagamentos</li>
+            <li><span class="badge badge-api">/api/webhooks/*</span> Webhooks</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Socket.io Events -->
+    <div class="flow-section">
+      <h2>Socket.io Events (Realtime)</h2>
+      <div class="grid">
+        <div class="info-card">
+          <h3>Client → Server</h3>
+          <ul>
+            <li><code>joinRestaurant</code> <span class="badge badge-api">Entrar room</span></li>
+            <li><code>leaveRestaurant</code> <span class="badge badge-api">Sair room</span></li>
+          </ul>
+        </div>
+        <div class="info-card">
+          <h3>Server → Client</h3>
+          <ul>
+            <li><code>newOrder</code> <span class="badge badge-success">Novo pedido</span></li>
+            <li><code>orderUpdate</code> <span class="badge badge-warning">Status atualizado</span></li>
+          </ul>
+        </div>
+        <div class="info-card">
+          <h3>Rooms</h3>
+          <ul>
+            <li><code>restaurant:{id}</code> <span class="badge badge-admin">Sala do restaurante</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hooks Realtime -->
+    <div class="flow-section">
+      <h2>Hooks de Realtime</h2>
+      <div class="grid">
+        <div class="info-card">
+          <h3>useSocketIO</h3>
+          <ul>
+            <li>Abstração de conexão Socket.io</li>
+            <li>Auto-reconexão com backoff</li>
+            <li>Gestão de rooms</li>
+          </ul>
+        </div>
+        <div class="info-card">
+          <h3>useRealtimeOrders</h3>
+          <ul>
+            <li>Admin dashboard</li>
+            <li>Escuta orderUpdate + newOrder</li>
+            <li>Polling fallback (10s)</li>
+          </ul>
+        </div>
+        <div class="info-card">
+          <h3>usePedidosKDS</h3>
+          <ul>
+            <li>Kitchen Display System</li>
+            <li>Som ao receber pedido</li>
+            <li>Polling fallback (5s)</li>
+          </ul>
+        </div>
+        <div class="info-card">
+          <h3>useCustomerOrderNotifications</h3>
+          <ul>
+            <li>Cliente monitora pedido</li>
+            <li>Escuta orderUpdate</li>
+            <li>Polling fallback (5s)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

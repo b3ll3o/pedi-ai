@@ -18,10 +18,11 @@
 
 ## 🛠️ Guias de Configuração
 
-| Documento            | Localização                   | Descrição                                                                    | Quando Consultar                                |
-| -------------------- | ----------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------- |
-| **STRIPE_CLI_SETUP** | `./setup/STRIPE_CLI_SETUP.md` | Configurar Stripe CLI para webhooks locais, testar pagamentos                | Testar pagamentos com cartão em desenvolvimento |
-| **MAILPIT_SETUP**     | `./setup/MAILPIT_SETUP.md`     | Servidor SMTP mock para capturar emails em testes                            | Testar emails em desenvolvimento                |
+| Documento            | Localização                   | Descrição                                                                  | Quando Consultar                                |
+| -------------------- | ----------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------- |
+| **STRIPE_CLI_SETUP** | `./setup/STRIPE_CLI_SETUP.md` | Configurar Stripe CLI para webhooks locais, testar pagamentos              | Testar pagamentos com cartão em desenvolvimento |
+| **MAILPIT_SETUP**    | `./setup/MAILPIT_SETUP.md`    | Servidor SMTP mock para capturar emails em testes                          | Testar emails em desenvolvimento                |
+| **FLUXOS**           | `./fluxos.html`               | Visualização HTML dos fluxos da aplicação (cliente, admin, KDS, PIX, auth) | Entender fluxos de dados e eventos              |
 
 ---
 
