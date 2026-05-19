@@ -45,11 +45,13 @@ describe('Restaurant Creation API - Role Enum Fix', () => {
   });
 
   describe('route.ts code verification', () => {
+    const routeBasePath = process.cwd() + '/apps/web/src/app/api/admin';
+
     it('route.ts não usa valores em inglês para role', async () => {
       // Read the route file and verify the fix
       const routeContent = await import('fs').then((fs) =>
         fs.readFileSync(
-          '/home/leo/Documentos/projetos/pedi-ai/apps/web/src/app/api/admin/restaurants/route.ts',
+          `${routeBasePath}/restaurants/route.ts`,
           'utf-8'
         )
       );
@@ -67,7 +69,7 @@ describe('Restaurant Creation API - Role Enum Fix', () => {
       // Read the user route file and verify the fix
       const routeContent = await import('fs').then((fs) =>
         fs.readFileSync(
-          '/home/leo/Documentos/projetos/pedi-ai/apps/web/src/app/api/admin/users/[id]/route.ts',
+          `${routeBasePath}/users/[id]/route.ts`,
           'utf-8'
         )
       );
