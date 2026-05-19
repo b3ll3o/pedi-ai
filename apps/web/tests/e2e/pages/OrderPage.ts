@@ -1,5 +1,5 @@
 import { Page, Locator, expect } from '@playwright/test'
-import { createClient, RealtimeChannel } from '@supabase/supabase-js'
+import { io, Socket } from 'socket.io-client'
 
 export type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled'
 
@@ -16,8 +16,7 @@ export class OrderPage {
   readonly realtimeIndicator: Locator
   readonly connectionStatus: Locator
 
-  private supabaseUrl: string
-  private supabaseKey: string
+  private socket: Socket | null = null
 
   constructor(page: Page) {
     this.page = page
@@ -31,10 +30,6 @@ export class OrderPage {
     this.cancelButton = page.locator('[data-testid="cancel-order-button"]')
     this.realtimeIndicator = page.locator('[data-testid="realtime-indicator"]')
     this.connectionStatus = page.locator('[data-testid="connection-status"]')
-
-    // Configurações do Supabase via variáveis de ambiente
-    this.supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
-    this.supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
   }
 
   async goto(orderId: string): Promise<void> {
@@ -55,8 +50,7 @@ export class OrderPage {
   }
 
   /**
-   * Aguarda atualização de status via Realtime ou polling fallback.
-   * Usa Supabase realtime channel com postgres_changes filter.
+   * Aguarda atualização de status via Socket.io realtime.
    * Fallback: polling a cada 2s se realtime falhar.
    */
   async waitForRealtimeStatus(status: OrderStatus, timeout = 60_000): Promise<void> {
@@ -68,7 +62,7 @@ export class OrderPage {
     }
 
     try {
-      await this.waitForRealtimeUpdate(status, restaurantId, timeout)
+      await this.waitForSocketIOUpdate(status, restaurantId, timeout)
     } catch {
       // Fallback: polling a cada 2s
       await this.pollForStatus(status, timeout)
@@ -88,51 +82,41 @@ export class OrderPage {
     return null
   }
 
-  private async waitForRealtimeUpdate(
+  private async waitForSocketIOUpdate(
     status: OrderStatus,
     restaurantId: string,
     timeout: number
   ): Promise<void> {
     return new Promise((resolve, reject) => {
       const timeoutId = setTimeout(() => {
-        channel.unsubscribe()
-        reject(new Error(`Timeout esperando status ${status} via realtime`))
+        this.socket?.disconnect()
+        reject(new Error(`Timeout esperando status ${status} via Socket.io`))
       }, timeout)
 
-      const channel: RealtimeChannel = {
-        topic: `orders-${restaurantId}`,
-        subscribe: () => {},
-        unsubscribe: () => {},
-        on: () => channel,
-        send: () => Promise.resolve(),
-      }
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
 
-      // Criar cliente Supabase para realtime
-      const supabase = createClient(this.supabaseUrl, this.supabaseKey)
+      this.socket = io(apiUrl, {
+        transports: ['websocket'],
+        autoConnect: true,
+      })
 
-      const subscription = supabase
-        .channel(`orders-${restaurantId}`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'orders',
-            filter: `restaurant_id=eq.${restaurantId}`,
-          },
-          (payload) => {
-            const newStatus = payload.new?.status
-            if (newStatus?.toLowerCase() === status.toLowerCase()) {
-              clearTimeout(timeoutId)
-              subscription.unsubscribe()
-              resolve()
-            }
-          }
-        )
-        .subscribe()
+      this.socket.on('connect', () => {
+        this.socket?.emit('joinRestaurant', { restaurantId })
+      })
 
-      // Guardar referência para cleanup
-      ;(this as unknown as { _realtimeSubscription: { unsubscribe: () => void } })._realtimeSubscription = subscription
+      this.socket.on('orderUpdate', (data: { orderId: string; status: string }) => {
+        if (data.status.toLowerCase() === status.toLowerCase()) {
+          clearTimeout(timeoutId)
+          this.socket?.disconnect()
+          resolve()
+        }
+      })
+
+      this.socket.on('connect_error', () => {
+        clearTimeout(timeoutId)
+        this.socket?.disconnect()
+        reject(new Error('Socket.io connection failed'))
+      })
     })
   }
 

@@ -69,13 +69,12 @@ const globalSetup = async () => {
   console.log('🚀 E2E Global Setup')
   console.log('========================================\n')
 
-  // 1. Validate environment
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  // 1. Validate environment - check DATABASE_URL for PostgreSQL
+  const databaseUrl = process.env.DATABASE_URL
 
-  if (!supabaseUrl || !serviceRoleKey) {
-    console.log('⚠️ E2E secrets not configured. Skipping E2E tests.')
-    console.log('Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in GitHub Actions secrets to enable E2E tests.\n')
+  if (!databaseUrl) {
+    console.log('⚠️ DATABASE_URL not configured. Skipping E2E tests.')
+    console.log('Set DATABASE_URL environment variable to enable E2E tests.\n')
     return
   }
 

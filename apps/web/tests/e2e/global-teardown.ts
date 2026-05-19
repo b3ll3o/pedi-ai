@@ -15,6 +15,16 @@ const globalTeardown = async () => {
   console.log('🧹 E2E Global Teardown')
   console.log('========================================\n')
 
+  // Skip cleanup if DATABASE_URL is not set
+  const databaseUrl = process.env.DATABASE_URL
+  if (!databaseUrl) {
+    console.log('⚠️ DATABASE_URL not configured. Skipping cleanup.\n')
+    console.log('========================================')
+    console.log('✅ Global Teardown Complete')
+    console.log('========================================\n')
+    return
+  }
+
   try {
     console.log('🧹 Executando cleanup final...')
     const { stdout, stderr } = await execAsync('pnpm test:e2e:cleanup', {
@@ -25,7 +35,7 @@ const globalTeardown = async () => {
     if (stderr) console.warn(stderr)
     console.log('✅ Cleanup concluído\n')
   } catch (error) {
-    console.error('⚠️ Cleanup falhou:', error)
+    console.warn('⚠️ Cleanup falhou:', error)
     // Don't fail the build if cleanup fails
   }
 
