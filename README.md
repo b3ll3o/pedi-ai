@@ -21,7 +21,7 @@ Aplicação de **Cardápio Digital** para restaurantes com foco em **mobile-firs
 - **Estado**: Zustand + React Query
 - **Testes Unitários**: Vitest (116 test files, 1441 tests)
 - **Testes E2E**: Playwright (19 specs)
-- **Pagamentos**: Mercado Pago (Pix) + Stripe (Cartão)
+- **Pagamentos**: Mercado Pago (PIX)
 - **Autenticação**: JWT com refresh tokens (bcrypt)
 
 ## Documentação
@@ -68,7 +68,6 @@ Adicione ao seu `.env.local`:
 # Feature Flags (valores padrão: false)
 NEXT_PUBLIC_FEATURE_OFFLINE_ENABLED=true
 NEXT_PUBLIC_FEATURE_PIX_ENABLED=true
-NEXT_PUBLIC_FEATURE_STRIPE_ENABLED=true
 NEXT_PUBLIC_FEATURE_WAITER_MODE=false
 NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED=true
 NEXT_PUBLIC_FEATURE_COMBOS_ENABLED=false
