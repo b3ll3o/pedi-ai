@@ -1,35 +1,29 @@
 /**
- * Script de cleanup para testes E2E.
+ * Script de cleanup para testes E2E usando PostgreSQL.
  *
  * Limpa dados de teste criados pelo seed:
  * - Usuários de teste (customer, admin, waiter)
  * - Restaurant de teste (cascade deleta tables, categories, products, etc)
  *
  * Uso: pnpm test:e2e:cleanup
- * Requer: SUPABASE_SERVICE_ROLE_KEY no .env.local
+ * Requer: DATABASE_URL no .env.e2e
  */
 
 import * as dotenv from 'dotenv'
 import * as path from 'path'
+import * as fs from 'fs'
 
-// Carregar .env.local explicitamente
-dotenv.config({ path: path.join(process.cwd(), '.env.local') })
-
-import { createClient, SupabaseClient } from '@supabase/supabase-js'
-import WebSocket from 'ws'
+// Carregar .env.e2e explicitamente
+dotenv.config({ path: path.join(process.cwd(), '.env.e2e') })
 
 // ============================================
 // Configuração
 // ============================================
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+const DATABASE_URL = process.env.DATABASE_URL
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  console.error('❌ Variáveis de ambiente ausentes:')
-  if (!SUPABASE_URL) console.error('   - NEXT_PUBLIC_SUPABASE_URL')
-  if (!SUPABASE_SERVICE_ROLE_KEY) console.error('   - SUPABASE_SERVICE_ROLE_KEY')
-  console.error('\nAdicione SUPABASE_SERVICE_ROLE_KEY ao .env.local')
+if (!DATABASE_URL) {
+  console.error('❌ DATABASE_URL não está configurada no .env.e2e')
   process.exit(1)
 }
 
@@ -37,116 +31,126 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
 const SEED_PREFIX = 'e2e+'
 const RESTAURANT_NAME = 'Restaurant E2E Test'
 
-// ============================================
-// Cliente Supabase Admin
-// ============================================
+// Lock file (same as seed.ts)
+const LOCK_FILE = path.join(__dirname, '.cleanup.lock')
+const LOCK_TIMEOUT = 60_000 // 60 segundos
 
-export function createAdminClient(): SupabaseClient {
-  return createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-    realtime: {
-      transport: WebSocket,
-    },
-  })
+// Shard configuration (same as seed.ts)
+const SHARD = process.env.SHARD || ''
+const SHARD_MATCH = SHARD.match(/^(\d+)\/(\d+)$/)
+const SHARD_CURRENT = SHARD_MATCH ? Number(SHARD_MATCH[1]) : 0
+const IS_SHARD_MODE = SHARD_CURRENT > 0
+
+function getShardSuffix(): string {
+  return IS_SHARD_MODE ? `+sh${SHARD_CURRENT}` : ''
+}
+
+function getShardPrefix(): string {
+  return IS_SHARD_MODE ? `[Shard${SHARD_CURRENT}] ` : ''
 }
 
 // ============================================
-// Funções de cleanup exportadas (Requirement 2.4)
+// PostgreSQL connection
 // ============================================
 
-/**
- * Deleta um usuário pelo email.
- * @param email Email do usuário a ser deletado
- * @returns true se deletado com sucesso
- */
-export async function deleteTestUserByEmail(email: string): Promise<boolean> {
-  const admin = createAdminClient()
+let _sql: ReturnType<typeof import('postgres').default> | null = null
 
-  const { data: existingUsers } = await admin.auth.admin.listUsers()
-  const user = existingUsers?.users.find((u) => u.email === email)
+async function getSql() {
+  if (!_sql) {
+    const postgres = (await import('postgres')).default
+    _sql = postgres(DATABASE_URL!, { max: 10 })
+  }
+  return _sql
+}
 
-  if (!user) {
-    return false
+// ============================================
+// Lock
+// ============================================
+
+async function acquireLock(): Promise<() => Promise<void>> {
+  const waitForLock = async (): Promise<void> => {
+    const startTime = Date.now()
+    while (fs.existsSync(LOCK_FILE)) {
+      if (Date.now() - startTime > LOCK_TIMEOUT) {
+        throw new Error(`Timeout ao aguardar lock de cleanup (${LOCK_TIMEOUT}ms)`)
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100))
+    }
   }
 
-  const { error } = await admin.auth.admin.deleteUser(user.id)
-  return !error
+  const releaseLock = async (): Promise<void> => {
+    try {
+      if (fs.existsSync(LOCK_FILE)) {
+        fs.unlinkSync(LOCK_FILE)
+      }
+    } catch {
+      // Ignorar erros ao remover lock
+    }
+  }
+
+  await waitForLock()
+
+  fs.writeFileSync(LOCK_FILE, JSON.stringify({
+    pid: process.pid,
+    timestamp: Date.now(),
+    workerId: process.env.TEST_WORKER_ID || 'unknown',
+  }))
+
+  return releaseLock
 }
 
-/**
- * Deleta um usuário pelo ID.
- * @param userId ID do usuário a ser deletado
- * @returns true se deletado com sucesso
- */
+// ============================================
+// Funções de cleanup exportadas
+// ============================================
+
+export async function deleteTestUserByEmail(email: string): Promise<boolean> {
+  const sql = await getSql()
+  const result = await sql`DELETE FROM users WHERE email = ${email}`
+  return result.count > 0
+}
+
 export async function deleteTestUserById(userId: string): Promise<boolean> {
-  const admin = createAdminClient()
-  const { error } = await admin.auth.admin.deleteUser(userId)
-  return !error
+  const sql = await getSql()
+  const result = await sql`DELETE FROM users WHERE id = ${userId}`
+  return result.count > 0
 }
 
-/**
- * Deleta um restaurant de teste pelo nome.
- * @param restaurantName Nome do restaurant (default: 'Restaurant E2E Test')
- * @returns true se deletado com sucesso
- */
 export async function deleteTestRestaurantByName(
   restaurantName: string = RESTAURANT_NAME
 ): Promise<boolean> {
-  const admin = createAdminClient()
+  const sql = await getSql()
+  const shardPrefix = getShardPrefix()
+  const fullName = IS_SHARD_MODE ? `${shardPrefix}${restaurantName}` : restaurantName
 
-  const { data: restaurants } = await admin
-    .from('restaurants')
-    .select('id')
-    .eq('name', restaurantName)
-    .maybeSingle()
-
-  if (!restaurants) {
-    return false
-  }
-
-  const { error } = await admin
-    .from('restaurants')
-    .delete()
-    .eq('id', restaurants.id)
-
-  return !error
+  const result = await sql`
+    DELETE FROM restaurants WHERE name = ${fullName}
+  `
+  return result.count > 0
 }
 
 // ============================================
 // Funções internas de cleanup
 // ============================================
 
-async function deleteTestUsers(admin: SupabaseClient): Promise<number> {
+async function deleteTestUsers(): Promise<number> {
   console.log('👥 Deletando usuários de teste...')
 
+  const sql = await getSql()
+  const shardSuffix = getShardSuffix()
+
   const testEmails = [
-    `${SEED_PREFIX}customer@pedi-ai.test`,
-    `${SEED_PREFIX}admin@pedi-ai.test`,
-    `${SEED_PREFIX}waiter@pedi-ai.test`,
+    `${SEED_PREFIX}customer${shardSuffix}@pedi-ai.test`,
+    `${SEED_PREFIX}admin${shardSuffix}@pedi-ai.test`,
+    `${SEED_PREFIX}waiter${shardSuffix}@pedi-ai.test`,
   ]
-
-  // Buscar usuários existentes
-  const { data: existingUsers, error: listError } = await admin.auth.admin.listUsers()
-
-  if (listError) {
-    throw new Error(`Erro ao listar usuários: ${listError.message}`)
-  }
 
   let deletedCount = 0
 
-  for (const user of existingUsers?.users || []) {
-    if (user.email && testEmails.includes(user.email)) {
-      console.log(`   Deletando: ${user.email}`)
-      const { error: deleteError } = await admin.auth.admin.deleteUser(user.id)
-
-      if (deleteError) {
-        console.error(`   ⚠️  Erro ao deletar ${user.email}: ${deleteError.message}`)
-      } else {
-        deletedCount++
-      }
+  for (const email of testEmails) {
+    const result = await sql`DELETE FROM users WHERE email = ${email}`
+    if (result.count > 0) {
+      console.log(`   Deletado: ${email}`)
+      deletedCount += result.count
     }
   }
 
@@ -154,62 +158,50 @@ async function deleteTestUsers(admin: SupabaseClient): Promise<number> {
   return deletedCount
 }
 
-async function deleteTestRestaurant(admin: SupabaseClient): Promise<boolean> {
+async function deleteTestRestaurant(): Promise<boolean> {
   console.log('🏪 Deletando restaurant de teste...')
 
-  const { data: restaurants, error: selectError } = await admin
-    .from('restaurants')
-    .select('id')
-    .eq('name', RESTAURANT_NAME)
-    .maybeSingle()
+  const sql = await getSql()
+  const shardPrefix = getShardPrefix()
+  const fullName = IS_SHARD_MODE ? `${shardPrefix}${RESTAURANT_NAME}` : RESTAURANT_NAME
 
-  if (selectError) {
-    throw new Error(`Erro ao buscar restaurant: ${selectError.message}`)
-  }
+  // Find restaurant first
+  const restaurants = await sql`
+    SELECT id FROM restaurants WHERE name = ${fullName}
+  `
 
-  if (!restaurants) {
+  if (restaurants.length === 0) {
     console.log('   Nenhum restaurant de teste encontrado\n')
     return false
   }
 
-  console.log(`   Deletando restaurant: ${RESTAURANT_NAME} (${restaurants.id})`)
+  const restaurantId = restaurants[0].id
 
-  await deleteOrdersByRestaurant(admin, restaurants.id)
+  // Delete orders first (manually since there might be FK constraints)
+  await sql`DELETE FROM orders WHERE restaurant_id = ${restaurantId}`
 
-  const { error: deleteError } = await admin
-    .from('restaurants')
-    .delete()
-    .eq('id', restaurants.id)
+  // Delete restaurant (cascade should handle related tables)
+  const result = await sql`
+    DELETE FROM restaurants WHERE id = ${restaurantId}
+  `
 
-  if (deleteError) {
-    throw new Error(`Erro ao deletar restaurant: ${deleteError.message}`)
+  if (result.count > 0) {
+    console.log(`   Restaurant deletado: ${fullName} (${restaurantId})\n`)
+    return true
   }
 
-  console.log('   Restaurant e dados relacionados deletados\n')
-  return true
+  return false
 }
 
-async function deleteOrdersByRestaurant(
-  admin: SupabaseClient,
-  restaurantId: string
-): Promise<void> {
-  console.log('🛒 Limpando pedidos do restaurant...')
-
-  const { data: orders } = await admin
-    .from('orders')
-    .select('id')
-    .eq('restaurant_id', restaurantId)
-
-  if (orders && orders.length > 0) {
-    const orderIds = orders.map((o) => o.id)
-
-    await admin.from('order_items').delete().in('order_id', orderIds)
-    await admin.from('order_status_history').delete().in('order_id', orderIds)
-    await admin.from('orders').delete().eq('restaurant_id', restaurantId)
-
-    console.log(`   ${orders.length} pedido(s) deletado(s)\n`)
-  } else {
-    console.log('   Nenhum pedido encontrado\n')
+async function deleteSeedResultFile(): Promise<void> {
+  const resultPath = path.join(__dirname, '.seed-result.json')
+  try {
+    if (fs.existsSync(resultPath)) {
+      fs.unlinkSync(resultPath)
+      console.log('📄 Arquivo .seed-result.json removido\n')
+    }
+  } catch {
+    // Ignorar erros ao remover arquivo
   }
 }
 
@@ -218,40 +210,21 @@ async function deleteOrdersByRestaurant(
 // ============================================
 
 export async function cleanup(): Promise<void> {
-  console.log('========================================')
-  console.log('🧹 CLEANUP E2E - Iniciando...')
-  console.log('========================================\n')
-
-  const admin = createAdminClient()
+  const releaseLock = await acquireLock()
 
   try {
-    // 1. Deletar restaurant primeiro (se existir) - cascade cuida dos dados relacionados
-    const restaurantDeleted = await deleteTestRestaurant(admin)
+    console.log('========================================')
+    console.log('🧹 CLEANUP E2E - Iniciando...')
+    console.log('========================================\n')
 
-    // 2. Se o restaurant foi deletado, limpar pedidos (cascade já deve ter feito isso)
-    // Mas garantimos que não fique órfão
-    if (restaurantDeleted) {
-      // O cascade do banco já deve ter deletado tudo, mas vamos verificar
-      // Se houver orders órfãs, limpamos
-    }
+    // 1. Deletar restaurant primeiro (cascade cuida dos dados relacionados)
+    const restaurantDeleted = await deleteTestRestaurant()
 
-    // 3. Deletar usuários (profiles são deletados em cascade pelo banco)
-    const usersDeleted = await deleteTestUsers(admin)
+    // 2. Deletar usuários (profiles são deletados em cascade pelo banco)
+    const usersDeleted = await deleteTestUsers()
 
-    // 4. Remover arquivo de resultado do seed
-    try {
-      const fs = await import('fs')
-      const path = await import('path')
-      // Usa process.cwd() para garantir caminho consistente (same as seed.ts)
-      const resultPath = path.join(__dirname, '.seed-result.json')
-
-      if (fs.existsSync(resultPath)) {
-        fs.unlinkSync(resultPath)
-        console.log('📄 Arquivo .seed-result.json removido\n')
-      }
-    } catch {
-      // Ignorar erros ao remover arquivo
-    }
+    // 3. Remover arquivo de resultado do seed
+    await deleteSeedResultFile()
 
     console.log('========================================')
     console.log('✅ CLEANUP E2E - Concluído com sucesso!')
@@ -261,8 +234,21 @@ export async function cleanup(): Promise<void> {
   } catch (error) {
     console.error('❌ Erro no cleanup:', error)
     process.exit(1)
+  } finally {
+    await releaseLock()
   }
 }
 
 // Executar
-cleanup()
+const isMainModule = require.main === module || process.argv[1]?.includes('cleanup.ts')
+if (isMainModule) {
+  cleanup()
+    .then(() => {
+      console.log('\n✅ Cleanup finalizado')
+      process.exit(0)
+    })
+    .catch((error) => {
+      console.error('\n❌ Erro no cleanup:', error.message)
+      process.exit(1)
+    })
+}
