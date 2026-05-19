@@ -22,21 +22,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { usuarioId, email: userEmail, role, restaurantId } = resultado;
+    const { token, usuarioId } = resultado;
 
-    // Create session in our database
-    const token = await createSession(usuarioId, userEmail, role, restaurantId);
+    // Create session in our database (using token from auth as the session token)
+    const sessionToken = await createSession(usuarioId, email, 'dono', undefined);
 
     // Create session cookie
-    const sessionCookie = createSessionCookie(token);
+    const sessionCookie = createSessionCookie(sessionToken);
 
     const response = NextResponse.json({
       success: true,
       user: {
         id: usuarioId,
-        email: userEmail,
-        role,
-        restaurantId,
+        email: email,
+        role: 'dono',
       },
     });
 

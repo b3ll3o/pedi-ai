@@ -22,7 +22,7 @@ export default function SettingsPage() {
     },
     phone: '',
     address: '',
-  });
+  } as RestaurantSettings);
 
   const fetchSettings = useCallback(async () => {
     try {
@@ -117,7 +117,8 @@ export default function SettingsPage() {
     setFormData((prev) => ({
       ...prev,
       opening_hours: {
-        ...prev.opening_hours,
+        open: prev.opening_hours?.open ?? '08:00',
+        close: prev.opening_hours?.close ?? '22:00',
         [field]: value,
       },
     }));

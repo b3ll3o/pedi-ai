@@ -5,10 +5,6 @@ const nextConfig: NextConfig = {
     // Tipos são verificados via `tsc --noEmit` em CI — ignorar no build Docker
     ignoreBuildErrors: true,
   },
-  eslint: {
-    // ESLint rodado via `npm run lint` em CI — ignorar no build
-    ignoreDuringBuilds: true,
-  },
   serverExternalPackages: ['postgres'],
   // Allow cross-origin requests from local network IPs during development
   // This suppresses the "Blocked cross-origin request to Next.js dev resource" warning

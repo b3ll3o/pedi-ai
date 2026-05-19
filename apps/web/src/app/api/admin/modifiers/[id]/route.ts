@@ -138,7 +138,7 @@ export async function DELETE(
     // Verify user has access and is owner/manager
     const profileResult = await sql`
       SELECT role FROM users_profiles
-      WHERE user_id = ${user.id} AND restaurant_id = ${modifierResult[0].restaurant_id}
+      WHERE user_id = ${userId} AND restaurant_id = ${modifierResult[0].restaurant_id}
       LIMIT 1
     `;
 

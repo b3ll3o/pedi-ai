@@ -11,8 +11,17 @@ import {
 } from '@/components/admin/ModifierGroupForm';
 import styles from './page.module.css';
 
-interface ModifierGroupWithValues extends any {
-  modifier_values?: any[];
+interface ModifierGroupWithValues {
+  id: string;
+  name: string;
+  required: boolean;
+  min_selections: number;
+  max_selections: number;
+  modifier_values?: Array<{
+    id?: string;
+    name: string;
+    price_adjustment?: number;
+  }>;
 }
 
 export default function ModifiersPage() {

@@ -30,14 +30,14 @@ export async function POST(request: NextRequest) {
     // Create user using PostgresAuthAdapter
     const resultado = await PostgresAuthAdapter.criarUsuario(email, senha);
 
-    if (!resultado || !resultado.usuarioId) {
+    if (!resultado || !resultado.id) {
       return NextResponse.json(
-        { error: resultado?.error || 'Erro ao criar usuário' },
+        { error: 'Erro ao criar usuário' },
         { status: 400 }
       );
     }
 
-    const { usuarioId } = resultado;
+    const { id: usuarioId } = resultado;
     const role: Role = intentToRole(intent);
 
     // Check if profile already exists
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
 
     if (existingProfile.length > 0) {
       // Already has profile, just create session
-      const token = await createSession(usuarioId, email.toLowerCase(), role, null);
+      const token = await createSession(usuarioId, email.toLowerCase(), role, undefined);
       const sessionCookie = createSessionCookie(token);
 
       const response = NextResponse.json({ success: true });
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     `;
 
     // Create session
-    const token = await createSession(usuarioId, email.toLowerCase(), role, null);
+    const token = await createSession(usuarioId, email.toLowerCase(), role, undefined);
     const sessionCookie = createSessionCookie(token);
 
     const response = NextResponse.json({ success: true }, { status: 201 });
