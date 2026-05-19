@@ -1,10 +1,11 @@
 /**
  * useRealtimeOrders Hook
- * Subscribes to order updates via polling (Supabase realtime removed).
+ * Subscribes to order updates via Socket.io with polling fallback.
  */
 
 import { useEffect, useCallback, useState, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSocketIO } from './useSocketIO';
 import type { OrderWithItems } from '@/application/services/adminOrderService';
 
 const POLLING_INTERVAL = 10000; // 10 seconds
@@ -31,8 +32,12 @@ export function useRealtimeOrders({
   const queryClient = useQueryClient();
   const [isConnected, setIsConnected] = useState(false);
   const [error, _setError] = useState<Error | null>(null);
-
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
+
+  const { isConnected: socketConnected, on, off } = useSocketIO({
+    restaurantId,
+    enabled,
+  });
 
   // Query for orders
   const { data, isLoading, refetch } = useQuery({
@@ -54,7 +59,28 @@ export function useRealtimeOrders({
     staleTime: 5000,
   });
 
-  // Set up polling
+  // Handle order updates via Socket.io
+  useEffect(() => {
+    const handleOrderUpdate = () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-orders', restaurantId] });
+    };
+
+    const handleNewOrder = () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-orders', restaurantId] });
+    };
+
+    if (socketConnected) {
+      on('orderUpdate', handleOrderUpdate);
+      on('newOrder', handleNewOrder);
+    }
+
+    return () => {
+      off('orderUpdate', handleOrderUpdate);
+      off('newOrder', handleNewOrder);
+    };
+  }, [socketConnected, restaurantId, queryClient, on, off]);
+
+  // Set up polling fallback
   const startPolling = useCallback(() => {
     if (pollingRef.current) {
       clearInterval(pollingRef.current);
@@ -71,22 +97,28 @@ export function useRealtimeOrders({
     }
   }, []);
 
-  // Set up polling for order updates
+  // Manage connection state and polling fallback
   useEffect(() => {
     if (!enabled || !restaurantId) {
       stopPolling();
+      /* eslint-disable react-hooks/set-state-in-effect */
       setIsConnected(false);
       return;
     }
 
-    // Start polling
-    setIsConnected(true);
-    startPolling();
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setIsConnected(!!socketConnected);
+
+    if (socketConnected) {
+      stopPolling();
+    } else {
+      startPolling();
+    }
 
     return () => {
       stopPolling();
     };
-  }, [enabled, restaurantId, startPolling, stopPolling]);
+  }, [enabled, restaurantId, socketConnected, startPolling, stopPolling]);
 
   return {
     orders: data || [],

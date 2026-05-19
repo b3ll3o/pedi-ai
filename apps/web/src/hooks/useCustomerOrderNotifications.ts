@@ -1,10 +1,11 @@
 /**
  * useCustomerOrderNotifications Hook
- * Monitora atualizações de status de pedidos via polling.
+ * Monitora atualizações de status de pedidos via Socket.io com polling fallback.
  * Supabase realtime broadcast removido.
  */
 
 import { useEffect, useCallback, useState, useMemo, useRef } from 'react';
+import { useSocketIO } from './useSocketIO';
 
 export type OrderStatus =
   | 'pending_payment'
@@ -28,6 +29,8 @@ export interface UseCustomerOrderNotificationsOptions {
   onOrderUpdated?: (payload: OrderUpdatePayload) => void;
   /** Se falso, desabilita a inscrição */
   enabled?: boolean;
+  /** ID do restaurante para conexão Socket.io */
+  restaurantId?: string;
 }
 
 export interface UseCustomerOrderNotificationsResult {
@@ -57,11 +60,12 @@ export function getStatusLabel(status: OrderStatus): string {
 const POLLING_INTERVAL = 5000; // 5 seconds
 
 /**
- * Hook para monitorar atualizações de status de pedidos em tempo real via polling.
+ * Hook para monitorar atualizações de status de pedidos em tempo real via Socket.io.
  *
  * @example
  * const { pendingUpdates, clearPendingUpdates } = useCustomerOrderNotifications({
  *   orderIds: ['order-id-1', 'order-id-2'],
+ *   restaurantId: 'restaurant-123',
  *   onOrderUpdated: (payload) => {
  *     showToast(`Pedido ${payload.order_id}: status alterado para ${getStatusLabel(payload.status)}`);
  *   },
@@ -72,12 +76,18 @@ export function useCustomerOrderNotifications({
   orderIds,
   onOrderUpdated,
   enabled = true,
+  restaurantId,
 }: UseCustomerOrderNotificationsOptions): UseCustomerOrderNotificationsResult {
   const [pendingUpdates, setPendingUpdates] = useState<OrderUpdatePayload[]>([]);
   const previousStatusesRef = useRef<Record<string, OrderStatus>>({});
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
   const orderIdsKey = useMemo(() => orderIds.join(','), [orderIds]);
+
+  const { isConnected: socketConnected, on, off } = useSocketIO({
+    restaurantId,
+    enabled,
+  });
 
   const handleOrderUpdated = useCallback(
     (payload: OrderUpdatePayload) => {
@@ -98,6 +108,39 @@ export function useCustomerOrderNotifications({
   const clearPendingUpdates = useCallback(() => {
     setPendingUpdates([]);
   }, []);
+
+  // Handle order updates via Socket.io
+  useEffect(() => {
+    const handleOrderUpdate = (payload: { id: string; status: string }) => {
+      const orderId = payload.id;
+      const newStatus = payload.status as OrderStatus;
+
+      if (orderIds.length > 0 && !orderIds.includes(orderId)) {
+        return;
+      }
+
+      if (previousStatusesRef.current[orderId] !== undefined &&
+          previousStatusesRef.current[orderId] !== newStatus) {
+        const updatePayload: OrderUpdatePayload = {
+          order_id: orderId,
+          status: newStatus,
+          updated_at: new Date().toISOString(),
+          updated_by: 'system',
+        };
+        handleOrderUpdated(updatePayload);
+      }
+
+      previousStatusesRef.current[orderId] = newStatus;
+    };
+
+    if (socketConnected) {
+      on('orderUpdate', handleOrderUpdate);
+    }
+
+    return () => {
+      off('orderUpdate', handleOrderUpdate);
+    };
+  }, [socketConnected, orderIds, handleOrderUpdated, on, off]);
 
   const fetchOrderStatus = useCallback(
     async (orderId: string): Promise<OrderStatus | null> => {
@@ -122,7 +165,7 @@ export function useCustomerOrderNotifications({
 
     for (const orderId of orderIds) {
       const currentStatus = await fetchOrderStatus(orderId);
-      
+
       if (currentStatus && previousStatusesRef.current[orderId] !== undefined) {
         if (previousStatusesRef.current[orderId] !== currentStatus) {
           // Status changed - notify
@@ -135,7 +178,7 @@ export function useCustomerOrderNotifications({
           handleOrderUpdated(payload);
         }
       }
-      
+
       // Update the stored status
       if (currentStatus) {
         previousStatusesRef.current[orderId] = currentStatus;
@@ -155,14 +198,22 @@ export function useCustomerOrderNotifications({
     // Limpa atualizações pendentes quando orderIds mudou
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setPendingUpdates([]);
-    
+
     // Reset previous statuses when orderIds change
     previousStatusesRef.current = {};
 
-    // Start polling
-    pollOrderStatuses();
-    
-    pollingRef.current = setInterval(pollOrderStatuses, POLLING_INTERVAL);
+    // Use socket if connected, otherwise fall back to polling
+    if (socketConnected) {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+    } else {
+      // Start polling as fallback
+      pollOrderStatuses();
+
+      pollingRef.current = setInterval(pollOrderStatuses, POLLING_INTERVAL);
+    }
 
     return () => {
       if (pollingRef.current) {
@@ -170,7 +221,7 @@ export function useCustomerOrderNotifications({
         pollingRef.current = null;
       }
     };
-  }, [enabled, orderIdsKey, pollOrderStatuses]);
+  }, [enabled, orderIdsKey, socketConnected, pollOrderStatuses]);
 
   return {
     pendingUpdates,

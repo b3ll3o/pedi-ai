@@ -28,7 +28,7 @@ export interface Session {
 
 // ─── Criar token de sessão (usado após login) ─────────────────────────────────
 
-export async function createSession(userId: string, email: string, role: string, restaurantId?: string): Promise<string> {
+export async function createSession(userId: string, _email: string, _role: string, _restaurantId?: string): Promise<string> {
   const token = randomBytes(32).toString('hex');
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
 

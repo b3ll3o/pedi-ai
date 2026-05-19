@@ -10,18 +10,26 @@ import styles from './page.module.css';
 
 type ToastType = 'success' | 'error' | null;
 
+interface Category {
+  id: string;
+  name: string;
+  description?: string | null;
+  sort_order: number;
+  active: boolean;
+}
+
 export default function CategoriesPage() {
   const router = useRouter();
   const { restauranteSelecionado } = useRestaurantStore();
   const selectedRestaurantId = restauranteSelecionado?.id ?? null;
   const [loading, setLoading] = useState(true);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<any | null>(null);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Loading states for operations
@@ -92,7 +100,7 @@ export default function CategoriesPage() {
   };
 
   // Handle edit category
-  const handleEdit = (category: any) => {
+  const handleEdit = (category: Category) => {
     setEditingCategory(category);
     setIsModalOpen(true);
   };

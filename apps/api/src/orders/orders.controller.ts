@@ -8,16 +8,19 @@ export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Get()
+  @UseGuards(JwtAuthGuard)
   async findAll(@Query('restaurantId') restaurantId: string) {
     return this.ordersService.findByRestaurant(restaurantId);
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard)
   async findById(@Param('id') id: string) {
     return this.ordersService.findById(id);
   }
 
   @Post()
+  @UseGuards(JwtAuthGuard)
   async create(@Body() data: {
     restaurantId: string;
     tableId?: string;

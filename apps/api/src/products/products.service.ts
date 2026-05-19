@@ -15,14 +15,14 @@ export class ProductsService {
   async findByRestaurant(restaurantId: string) {
     const categories = await this.prisma.category.findMany({
       where: { restaurantId },
-    });
-    const products = await this.prisma.product.findMany({
-      where: {
-        categoryId: { in: categories.map(c => c.id) },
+      include: {
+        products: {
+          orderBy: { sortOrder: 'asc' },
+        },
       },
       orderBy: { sortOrder: 'asc' },
     });
-    return products;
+    return categories.flatMap(cat => cat.products);
   }
 
   async findById(id: string) {
@@ -54,14 +54,10 @@ export class ProductsService {
     available: boolean;
     sortOrder: number;
   }>) {
-    const updated = await this.prisma.product.update({
+    return this.prisma.product.update({
       where: { id },
       data,
     });
-    if (!updated) {
-      throw new NotFoundException('Produto não encontrado');
-    }
-    return updated;
   }
 
   async delete(id: string) {

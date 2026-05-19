@@ -3,6 +3,15 @@
  * Handles table CRUD operations and QR code generation.
  */
 
+export interface Table {
+  id: string;
+  number: number;
+  name?: string | null;
+  capacity?: number | null;
+  active: boolean;
+  qr_data?: string;
+}
+
 export interface TableInput {
   restaurant_id: string;
   number: number;
@@ -26,7 +35,7 @@ export interface TableQRData {
 
 // ── Fetch Tables ─────────────────────────────────────────────
 
-export async function getTables(restaurantId: string): Promise<any[]> {
+export async function getTables(restaurantId: string): Promise<Table[]> {
   const response = await fetch(`/api/admin/tables?restaurant_id=${restaurantId}`);
 
   if (!response.ok) {
@@ -35,10 +44,10 @@ export async function getTables(restaurantId: string): Promise<any[]> {
   }
 
   const { tables } = await response.json();
-  return tables as any[];
+  return tables as Table[];
 }
 
-export async function getTable(tableId: string): Promise<any> {
+export async function getTable(tableId: string): Promise<Table> {
   const response = await fetch(`/api/admin/tables/${tableId}`);
 
   if (!response.ok) {
@@ -47,12 +56,12 @@ export async function getTable(tableId: string): Promise<any> {
   }
 
   const { table } = await response.json();
-  return table as any;
+  return table as Table;
 }
 
 // ── Create Table ─────────────────────────────────────────────
 
-export async function createTable(input: TableInput): Promise<any> {
+export async function createTable(input: TableInput): Promise<Table> {
   const response = await fetch('/api/admin/tables', {
     method: 'POST',
     headers: {
@@ -67,15 +76,15 @@ export async function createTable(input: TableInput): Promise<any> {
   }
 
   const { table } = await response.json();
-  return table as any;
+  return table as Table;
 }
 
 // ── Update Table ─────────────────────────────────────────────
 
 export async function updateTable(
   tableId: string,
-  updates: Partial<any>
-): Promise<any> {
+  updates: Partial<Pick<Table, 'number' | 'name' | 'capacity' | 'active'>>
+): Promise<Table> {
   const response = await fetch(`/api/admin/tables/${tableId}`, {
     method: 'PUT',
     headers: {
@@ -90,7 +99,7 @@ export async function updateTable(
   }
 
   const { table } = await response.json();
-  return table as any;
+  return table as Table;
 }
 
 // ── Delete Table ─────────────────────────────────────────────

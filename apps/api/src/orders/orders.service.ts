@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
+import { RealtimeService } from '../realtime/realtime.service';
 import { OrderStatus, PaymentMethod, PaymentStatus } from '@prisma/client';
 
 @Injectable()
 export class OrdersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly realtimeService: RealtimeService,
+  ) {}
 
   async findByRestaurant(restaurantId: string) {
     return this.prisma.order.findMany({
@@ -45,7 +49,7 @@ export class OrdersService {
       notes?: string;
     }>;
   }) {
-    return this.prisma.order.create({
+    const order = await this.prisma.order.create({
       data: {
         restaurantId: data.restaurantId,
         tableId: data.tableId,
@@ -63,6 +67,13 @@ export class OrdersService {
       },
       include: { items: true },
     });
+
+    this.realtimeService.emitNewOrder(data.restaurantId, {
+      id: order.id,
+      total: order.total,
+    });
+
+    return order;
   }
 
   async updateStatus(id: string, status: OrderStatus, notes?: string) {
@@ -70,12 +81,14 @@ export class OrdersService {
       where: { id },
       data: { status },
     });
-    if (!order) {
-      throw new NotFoundException('Pedido não encontrado');
-    }
 
     await this.prisma.orderStatusHistory.create({
       data: { orderId: id, status, notes },
+    });
+
+    this.realtimeService.emitOrderUpdate(order.restaurantId, {
+      id: order.id,
+      status: order.status,
     });
 
     return order;

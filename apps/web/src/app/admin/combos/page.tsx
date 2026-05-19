@@ -7,14 +7,30 @@ import { getSession } from '@/lib/auth/client';
 import { ComboForm, type ComboInput } from '@/components/admin/ComboForm';
 import styles from './page.module.css';
 
-interface ComboWithItems extends any {
-  combo_items?: (any & { product?: any })[];
+interface ComboWithItems {
+  id: string;
+  name: string;
+  description?: string | null;
+  bundle_price: number;
+  available: boolean;
+  combo_items?: ComboItem[];
+}
+
+interface ComboItem {
+  id: string;
+  product?: { id: string; name: string; price: number };
+}
+
+interface Product {
+  id: string;
+  name: string;
+  price: number;
 }
 
 export default function CombosPage() {
   const router = useRouter();
   const [combos, setCombos] = useState<ComboWithItems[]>([]);
-  const [products, setProducts] = useState<{ id: string; name: string; price: number }[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,7 +82,7 @@ export default function CombosPage() {
       if (response.ok) {
         const data = await response.json();
         setProducts(
-          data.products?.map((p: any) => ({ id: p.id, name: p.name, price: p.price })) || []
+          data.products?.map((p: Product) => ({ id: p.id, name: p.name, price: p.price })) || []
         );
       }
     } catch {

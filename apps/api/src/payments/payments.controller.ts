@@ -1,11 +1,13 @@
-import { Controller, Post, Get, Param, Body } from '@nestjs/common';
+import { Controller, Post, Get, Param, Body, UseGuards } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('payments')
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
   @Post('pix/create')
+  @UseGuards(JwtAuthGuard)
   async createPixPayment(@Body() data: {
     orderId: string;
     restaurantId: string;
@@ -15,6 +17,7 @@ export class PaymentsController {
   }
 
   @Get('pix/status/:orderId')
+  @UseGuards(JwtAuthGuard)
   async getPixStatus(@Param('orderId') orderId: string) {
     // Busca o payment pelo orderId
     return { orderId, status: 'pending' };

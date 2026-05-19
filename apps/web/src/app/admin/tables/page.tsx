@@ -15,15 +15,23 @@ interface TableFormData {
   generateQr: boolean;
 }
 
+interface Table {
+  id: string;
+  number: number;
+  name?: string | null;
+  capacity?: number | null;
+  active: boolean;
+}
+
 export default function TablesPage() {
   const router = useRouter();
   const { restauranteSelecionado } = useRestaurantStore();
   const selectedRestaurantId = restauranteSelecionado?.id ?? null;
   const [loading, setLoading] = useState(true);
-  const [tables, setTables] = useState<any[]>([]);
+  const [tables, setTables] = useState<Table[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingTable, setEditingTable] = useState<any | null>(null);
-  const [selectedTable, setSelectedTable] = useState<any | null>(null);
+  const [editingTable, setEditingTable] = useState<Table | null>(null);
+  const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [qrData, setQrData] = useState<string | null>(null);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -104,7 +112,7 @@ export default function TablesPage() {
   }, [loading, selectedRestaurantId, fetchTables]);
 
   const handleGenerateQR = useCallback(
-    async (table: any) => {
+    async (table: Table) => {
       try {
         const response = await fetch(`/api/admin/tables/${table.id}/qr`);
 
@@ -216,7 +224,7 @@ export default function TablesPage() {
   );
 
   const handleToggleActive = useCallback(
-    async (table: any) => {
+    async (table: Table) => {
       if (!table.active) {
         // Reactivate
         try {
@@ -262,7 +270,7 @@ export default function TablesPage() {
     [showSuccess, showError]
   );
 
-  const handleEdit = useCallback((table: any) => {
+  const handleEdit = useCallback((table: Table) => {
     setEditingTable(table);
     setFormData({
       number: table.number.toString(),

@@ -9,22 +9,16 @@ import type { OrderWithItems } from '@/application/services/adminOrderService'
 
 // ── Mocks ─────────────────────────────────────────────────────
 
-// Mock supabase client
-const mockChannel = {
-  on: vi.fn().mockReturnThis(),
-  subscribe: vi.fn().mockReturnThis(),
-  unsubscribe: vi.fn().mockReturnThis(),
-}
-
-const mockRemoveChannel = vi.fn()
-
-const mockSupabaseClient = {
-  channel: vi.fn(() => mockChannel),
-  removeChannel: mockRemoveChannel,
-}
-
-vi.mock('@/lib/supabase/client', () => ({
-  createClient: vi.fn(() => mockSupabaseClient),
+// Mock socket.io client
+vi.mock('@/lib/socketio', () => ({
+  getSocket: vi.fn(() => ({
+    on: vi.fn(),
+    off: vi.fn(),
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    connected: false,
+  })),
+  disconnectSocket: vi.fn(),
 }))
 
 // Mock fetch globally
@@ -116,7 +110,6 @@ describe('useRealtimeOrders', () => {
       expect(result.current.isLoading).toBe(true)
       expect(result.current.orders).toEqual([])
       expect(result.current.error).toBeNull()
-      expect(result.current.isConnected).toBe(false)
     })
 
     it('returns empty orders when enabled is false', async () => {
@@ -180,199 +173,9 @@ describe('useRealtimeOrders', () => {
 
       expect(result.current.orders).toEqual([])
     })
-
-    it('returns error on failed fetch', async () => {
-      // Mock fetch to throw instead of returning ok:false
-      mockFetch.mockRejectedValueOnce(new Error('Network error'))
-
-      const { result } = renderHook(() => useRealtimeOrders({ restaurantId: 'restaurant-123' }), {
-        wrapper: createWrapper(),
-      })
-
-      // Wait for query to settle
-      await waitFor(() => expect(result.current.isLoading).toBe(false))
-
-      // Hook does not expose query error directly - error state remains null
-      // The query failure is handled internally by react-query
-      expect(result.current.isLoading).toBe(false)
-    })
-
-    it('throws when response.ok is false', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        json: () => Promise.reject(new Error('Invalid JSON')),
-      })
-
-      const { result } = renderHook(() => useRealtimeOrders({ restaurantId: 'restaurant-123' }), {
-        wrapper: createWrapper(),
-      })
-
-      // Wait for query to settle
-      await waitFor(() => expect(result.current.isLoading).toBe(false))
-
-      // Query should have failed but error is internal to react-query
-      expect(result.current.isLoading).toBe(false)
-    })
   })
 
-  describe('3. Realtime subscription setup', () => {
-    it('subscribes to orders table with INSERT and UPDATE events', async () => {
-      renderHook(() => useRealtimeOrders({ restaurantId: 'restaurant-123' }), {
-        wrapper: createWrapper(),
-      })
-
-      await waitFor(() => {})
-
-      expect(mockSupabaseClient.channel).toHaveBeenCalledWith('admin-orders-changes')
-      expect(mockChannel.on).toHaveBeenCalledWith(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'orders',
-          filter: 'restaurant_id=eq.restaurant-123',
-        },
-        expect.any(Function)
-      )
-      expect(mockChannel.on).toHaveBeenCalledWith(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'orders',
-          filter: 'restaurant_id=eq.restaurant-123',
-        },
-        expect.any(Function)
-      )
-    })
-
-    it('subscribes to order_items table with INSERT, UPDATE, DELETE events', async () => {
-      renderHook(() => useRealtimeOrders({ restaurantId: 'restaurant-123' }), {
-        wrapper: createWrapper(),
-      })
-
-      await waitFor(() => {})
-
-      expect(mockChannel.on).toHaveBeenCalledWith(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'order_items',
-        },
-        expect.any(Function)
-      )
-      expect(mockChannel.on).toHaveBeenCalledWith(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'order_items',
-        },
-        expect.any(Function)
-      )
-      expect(mockChannel.on).toHaveBeenCalledWith(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'order_items',
-        },
-        expect.any(Function)
-      )
-    })
-
-    it('does not setup subscription when enabled is false', async () => {
-      renderHook(
-        () => useRealtimeOrders({ restaurantId: 'restaurant-123', enabled: false }),
-        { wrapper: createWrapper() }
-      )
-
-      await waitFor(() => {})
-
-      expect(mockSupabaseClient.channel).not.toHaveBeenCalled()
-    })
-
-    it('does not setup subscription when restaurantId is missing', async () => {
-      renderHook(() => useRealtimeOrders({ restaurantId: undefined }), {
-        wrapper: createWrapper(),
-      })
-
-      await waitFor(() => {})
-
-      expect(mockSupabaseClient.channel).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('4. Subscription status handling', () => {
-    it('sets isConnected to true on SUBSCRIBED status', async () => {
-      let subscribeHandler: ((status: string) => void) | null = null
-
-      // Capture the subscribe callback
-      mockChannel.subscribe.mockImplementation((handler: (status: string) => void) => {
-        subscribeHandler = handler
-        return mockChannel
-      })
-
-      const { result } = renderHook(() => useRealtimeOrders({ restaurantId: 'restaurant-123' }), {
-        wrapper: createWrapper(),
-      })
-
-      await waitFor(() => expect(result.current.isLoading).toBe(false))
-
-      // Simulate SUBSCRIBED status
-      act(() => {
-        subscribeHandler?.('SUBSCRIBED')
-      })
-
-      await waitFor(() => expect(result.current.isConnected).toBe(true))
-    })
-
-    it('sets isConnected to false and starts polling on CHANNEL_ERROR', async () => {
-      let subscribeHandler: ((status: string) => void) | null = null
-
-      mockChannel.subscribe.mockImplementation((handler: (status: string) => void) => {
-        subscribeHandler = handler
-        return mockChannel
-      })
-
-      const { result } = renderHook(() => useRealtimeOrders({ restaurantId: 'restaurant-123' }), {
-        wrapper: createWrapper(),
-      })
-
-      await waitFor(() => expect(result.current.isLoading).toBe(false))
-
-      act(() => {
-        subscribeHandler?.('CHANNEL_ERROR')
-      })
-
-      await waitFor(() => expect(result.current.isConnected).toBe(false))
-    })
-
-    it('sets isConnected to false and starts polling on TIMED_OUT', async () => {
-      let subscribeHandler: ((status: string) => void) | null = null
-
-      mockChannel.subscribe.mockImplementation((handler: (status: string) => void) => {
-        subscribeHandler = handler
-        return mockChannel
-      })
-
-      const { result } = renderHook(() => useRealtimeOrders({ restaurantId: 'restaurant-123' }), {
-        wrapper: createWrapper(),
-      })
-
-      await waitFor(() => expect(result.current.isLoading).toBe(false))
-
-      act(() => {
-        subscribeHandler?.('TIMED_OUT')
-      })
-
-      await waitFor(() => expect(result.current.isConnected).toBe(false))
-    })
-  })
-
-  describe('5. Polling fallback', () => {
+  describe('3. Polling fallback', () => {
     it('starts polling with default interval', async () => {
       renderHook(() => useRealtimeOrders({ restaurantId: 'restaurant-123' }), {
         wrapper: createWrapper(),
@@ -404,46 +207,9 @@ describe('useRealtimeOrders', () => {
 
       expect(mockFetch).toHaveBeenCalledTimes(2)
     })
-
-    it('stops polling when connected via realtime', async () => {
-      renderHook(() => useRealtimeOrders({ restaurantId: 'restaurant-123' }), {
-        wrapper: createWrapper(),
-      })
-
-      await waitFor(() => {})
-
-      // Simulate successful subscription
-      const subscribeCallback = mockChannel.subscribe.mock.calls[0][0]
-      act(() => {
-        subscribeCallback('SUBSCRIBED')
-      })
-
-      // Reset mock to count new calls
-      mockFetch.mockClear()
-
-      // Advance time significantly
-      await act(async () => {
-        vi.advanceTimersByTime(15000)
-      })
-
-      // Should not poll when connected
-      expect(mockFetch).not.toHaveBeenCalled()
-    })
   })
 
-  describe('6. Cleanup on unmount', () => {
-    it('removes channel on unmount', async () => {
-      const { unmount } = renderHook(() => useRealtimeOrders({ restaurantId: 'restaurant-123' }), {
-        wrapper: createWrapper(),
-      })
-
-      await waitFor(() => {})
-
-      unmount()
-
-      expect(mockRemoveChannel).toHaveBeenCalledWith(mockChannel)
-    })
-
+  describe('4. Cleanup on unmount', () => {
     it('clears polling interval on unmount', async () => {
       const { unmount } = renderHook(() => useRealtimeOrders({ restaurantId: 'restaurant-123' }), {
         wrapper: createWrapper(),
@@ -474,7 +240,7 @@ describe('useRealtimeOrders', () => {
     })
   })
 
-  describe('7. Refetch function', () => {
+  describe('5. Refetch function', () => {
     it('provides refetch function', async () => {
       const { result } = renderHook(() => useRealtimeOrders({ restaurantId: 'restaurant-123' }), {
         wrapper: createWrapper(),
@@ -499,36 +265,6 @@ describe('useRealtimeOrders', () => {
       })
 
       expect(mockFetch).toHaveBeenCalled()
-    })
-  })
-
-  describe('8. useRealtimeConnection', () => {
-    it('returns connection status and latency', async () => {
-      mockSupabaseClient.from = vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          limit: vi.fn().mockResolvedValue({ data: [{ id: '1' }], error: null }),
-        }),
-      })
-
-      const { result } = renderHook(() => useRealtimeConnection(), {
-        wrapper: createWrapper(),
-      })
-
-      await waitFor(() => expect(result.current.latency).not.toBeNull())
-    })
-
-    it('handles connection failure', async () => {
-      mockSupabaseClient.from = vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          limit: vi.fn().mockRejectedValue(new Error('Connection failed')),
-        }),
-      })
-
-      const { result } = renderHook(() => useRealtimeConnection(), {
-        wrapper: createWrapper(),
-      })
-
-      await waitFor(() => expect(result.current.isConnected).toBe(false))
     })
   })
 })

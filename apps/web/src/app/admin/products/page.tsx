@@ -10,6 +10,21 @@ import styles from './page.module.css';
 
 type ToastType = 'success' | 'error' | null;
 
+interface Product {
+  id: string;
+  name: string;
+  description?: string | null;
+  price: number;
+  available: boolean;
+  categoryId: string;
+  imageUrl?: string | null;
+}
+
+interface Category {
+  id: string;
+  name: string;
+}
+
 export default function ProductsPage() {
   const router = useRouter();
   const { restauranteSelecionado } = useRestaurantStore();
@@ -20,8 +35,8 @@ export default function ProductsPage() {
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Data states
-  const [products, setProducts] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
 
   // Filter states
   const [selectedCategory, setSelectedCategory] = useState<string>('');
@@ -30,7 +45,7 @@ export default function ProductsPage() {
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<any | null>(null);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Loading states for operations
@@ -134,7 +149,7 @@ export default function ProductsPage() {
   };
 
   // Open edit modal
-  const handleEdit = (product: any) => {
+  const handleEdit = (product: Product) => {
     setEditingProduct(product);
     setIsModalOpen(true);
   };
@@ -170,7 +185,7 @@ export default function ProductsPage() {
   };
 
   // Toggle product availability (via PUT with toggled available)
-  const handleToggleAvailability = async (product: any) => {
+  const handleToggleAvailability = async (product: Product) => {
     try {
       const res = await fetch(`/api/admin/products/${product.id}`, {
         method: 'PUT',
@@ -340,7 +355,7 @@ export default function ProductsPage() {
           <div className={styles.modalContent}>
             <ProductForm
               product={editingProduct ?? undefined}
-              categories={categories.map((c) => ({ id: c.id, name: c.name }))}
+              categories={categories}
               onSubmit={handleSubmit}
               onCancel={() => {
                 setIsModalOpen(false);

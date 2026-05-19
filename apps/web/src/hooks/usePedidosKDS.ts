@@ -1,10 +1,11 @@
 /**
  * usePedidosKDS Hook
- * Hook para Kitchen Display System (KDS) - lista pedidos e atualiza via polling.
+ * Hook para Kitchen Display System (KDS) - lista pedidos e atualiza via Socket.io com polling fallback.
  */
 
 import { useEffect, useCallback, useState, useRef, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSocketIO } from './useSocketIO';
 import type { OrderWithItems, OrderStatus } from '@/application/services/adminOrderService';
 import {
   getOrderAge,
@@ -78,6 +79,11 @@ export function usePedidosKDS({
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const previousOrderIdsRef = useRef<Set<string>>(new Set());
 
+  const { isConnected: socketConnected, on, off } = useSocketIO({
+    restaurantId: restauranteId,
+    enabled,
+  });
+
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['kds-pedidos', restauranteId],
     queryFn: async (): Promise<OrderWithItems[]> => {
@@ -119,49 +125,81 @@ export function usePedidosKDS({
     [queryClient, restauranteId]
   );
 
-  // Set up polling for order updates
+  // Handle new orders via Socket.io and play sound
+  useEffect(() => {
+    const handleNewOrder = (payload: { id: string }) => {
+      if (somAtivado && !soundPlayedRef.current.has(payload.id)) {
+        soundPlayedRef.current.add(payload.id);
+        tocarSomNovoPedido();
+      }
+      queryClient.invalidateQueries({ queryKey: ['kds-pedidos', restauranteId] });
+    };
+
+    if (socketConnected) {
+      on('newOrder', handleNewOrder);
+    }
+
+    return () => {
+      off('newOrder', handleNewOrder);
+    };
+  }, [socketConnected, restauranteId, queryClient, somAtivado, on, off]);
+
+  // Set up polling fallback for order updates
   useEffect(() => {
     if (!enabled || !restauranteId) {
       if (pollingRef.current) {
         clearInterval(pollingRef.current);
         pollingRef.current = null;
       }
+      /* eslint-disable react-hooks/set-state-in-effect */
       setIsConnected(false);
       return;
     }
 
-    // Start polling
-    setIsConnected(true);
+    /* eslint-disable react-hooks/set-state-in-effect */
     setError(null);
 
-    const startPolling = () => {
+    // Use socket if connected, otherwise fall back to polling
+    if (socketConnected) {
+      /* eslint-disable react-hooks/set-state-in-effect */
+      setIsConnected(true);
       if (pollingRef.current) {
         clearInterval(pollingRef.current);
+        pollingRef.current = null;
       }
-      pollingRef.current = setInterval(() => {
-        // Check for new orders to play sound
-        const currentOrderIds = new Set(
-          (data || []).map((o) => o.id).filter(Boolean)
-        );
-        
-        // Detect new orders
-        currentOrderIds.forEach((orderId) => {
-          if (!previousOrderIdsRef.current.has(orderId) && somAtivado) {
-            if (!soundPlayedRef.current.has(orderId)) {
-              soundPlayedRef.current.add(orderId);
-              tocarSomNovoPedido();
-            }
-          }
-        });
-        
-        previousOrderIdsRef.current = currentOrderIds;
-        
-        // Refetch data
-        queryClient.invalidateQueries({ queryKey: ['kds-pedidos', restauranteId] });
-      }, POLLING_INTERVAL);
-    };
+    } else {
+      /* eslint-disable react-hooks/set-state-in-effect */
+      setIsConnected(false);
 
-    startPolling();
+      const startPolling = () => {
+        if (pollingRef.current) {
+          clearInterval(pollingRef.current);
+        }
+        pollingRef.current = setInterval(() => {
+          // Check for new orders to play sound
+          const currentOrderIds = new Set(
+            (data || []).map((o) => o.id).filter(Boolean)
+          );
+
+          // Detect new orders
+          currentOrderIds.forEach((orderId) => {
+            if (!previousOrderIdsRef.current.has(orderId) && somAtivado) {
+              if (!soundPlayedRef.current.has(orderId)) {
+                soundPlayedRef.current.add(orderId);
+                tocarSomNovoPedido();
+              }
+            }
+          });
+
+          previousOrderIdsRef.current = currentOrderIds;
+
+          // Refetch data
+          queryClient.invalidateQueries({ queryKey: ['kds-pedidos', restauranteId] });
+        }, POLLING_INTERVAL);
+      };
+
+      startPolling();
+    }
 
     return () => {
       if (pollingRef.current) {
@@ -169,7 +207,7 @@ export function usePedidosKDS({
         pollingRef.current = null;
       }
     };
-  }, [enabled, restauranteId, queryClient, somAtivado, data]);
+  }, [enabled, restauranteId, queryClient, somAtivado, data, socketConnected]);
 
   const pedidosProcessados = useMemo<PedidoKDS[]>(() => {
     return (data || []).map((pedido) => {

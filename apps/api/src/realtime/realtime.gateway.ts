@@ -1,6 +1,12 @@
-import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { Server } from 'socket.io';
-import { SubscribeMessage, MessageBody, ConnectedSocket } from '@nestjs/websockets';
+import {
+  WebSocketGateway,
+  WebSocketServer,
+  SubscribeMessage,
+  MessageBody,
+  ConnectedSocket,
+} from '@nestjs/websockets';
 import { Socket } from 'socket.io';
 
 @WebSocketGateway({
@@ -8,9 +14,14 @@ import { Socket } from 'socket.io';
     origin: '*',
   },
 })
-export class RealtimeGateway {
+@Injectable()
+export class RealtimeGateway implements OnModuleInit {
   @WebSocketServer()
   server: Server;
+
+  onModuleInit() {
+    // Server instance is now available via this.server
+  }
 
   @SubscribeMessage('joinRestaurant')
   handleJoinRestaurant(
@@ -30,13 +41,11 @@ export class RealtimeGateway {
     return { event: 'left', data: `restaurant:${restaurantId}` };
   }
 
-  // Método para emitir atualização de pedido para toda a restaurante
   emitOrderUpdate(restaurantId: string, order: { id: string; status: string }) {
-    this.server.to(`restaurant:${restaurantId}`).emit('orderUpdate', order);
+    this.server?.to(`restaurant:${restaurantId}`).emit('orderUpdate', order);
   }
 
-  // Método para emitir novo pedido
   emitNewOrder(restaurantId: string, order: { id: string; total: number }) {
-    this.server.to(`restaurant:${restaurantId}`).emit('newOrder', order);
+    this.server?.to(`restaurant:${restaurantId}`).emit('newOrder', order);
   }
 }

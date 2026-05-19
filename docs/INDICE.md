@@ -31,7 +31,7 @@
 | ---------------- | -------------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------- |
 | **ARCHITECTURE** | `./guides/ARCHITECTURE.md` | Arquitetura DDD em 4 camadas (domain/application/infrastructure/presentation) | Entender a estrutura DDD e regras de dependência   |
 | **OFFLINE**      | `./guides/OFFLINE.md`      | Service Worker (Workbox), Dexie (IndexedDB), BackgroundSync, BroadcastChannel | Implementar/modificar funcionalidade offline-first |
-| **REALTIME**     | `./guides/REALTIME.md`     | ⚠️ DEPRECADO — Socket.io via NestJS (ver realtime.gateway.ts)                | Implementar atualizações em tempo real de pedidos  |
+| **REALTIME**     | `./guides/REALTIME.md`     | Socket.io para updates realtime com polling fallback                          | Implementar atualizações em tempo real de pedidos  |
 | **PAYMENTS**     | `./guides/PAYMENTS.md`     | PIX (Mercado Pago), Stripe (cartão), webhooks, idempotência, modo demo        | Implementar/modificar fluxos de pagamento          |
 | **QR_CODE**      | `./guides/QR_CODE.md`      | Segurança HMAC-SHA256, validação de QR codes, timestamp expiry                | Implementar/modificar sistema de mesas e QR codes  |
 | **ROLES**        | `./guides/ROLES.md`        | RBAC, multi-tenant, Row Level Security (RLS), autenticação admin/cliente      | Implementar/modificar controle de acesso           |
