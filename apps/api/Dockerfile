@@ -5,7 +5,7 @@
 FROM node:20-alpine AS base
 
 # Install pnpm globally
-RUN npm install -g pnpm
+RUN npm install -g pnpm@8
 
 # ============================================================
 # Build stage
@@ -21,6 +21,9 @@ COPY apps/api ./apps/api
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
+
+# Generate Prisma client
+RUN cd /app/apps/api && npx prisma generate
 
 # Build
 RUN pnpm --filter @pedi-ai/api build
@@ -41,15 +44,21 @@ RUN addgroup --system --gid 1001 nodejs && \
 # Copy built application
 COPY --from=builder /app/apps/api/dist ./dist
 COPY --from=builder /app/apps/api/package.json ./
+COPY --from=builder /app/pnpm-lock.yaml ./
+COPY --from=builder /app/pnpm-workspace.yaml ./
 
-# Install production dependencies only
-RUN pnpm install --prod --frozen-lockfile
+# Copy Prisma schema (needed for migrate deploy at startup)
+COPY --from=builder /app/apps/api/prisma ./prisma
 
-# Change ownership
-RUN chown -R nestjs:nodejs /app
+# Copy startup script
+COPY --from=builder /app/apps/api/scripts/start.sh ./start.sh
+
+# Install production dependencies only (dev deps excluded, lockfile respected)
+RUN pnpm install --prod --ignore-scripts && \
+    chown -R nestjs:nodejs /app
 
 USER nestjs
 
 EXPOSE 3001
 
-CMD ["node", "dist/main"]
+ENTRYPOINT ["sh", "./start.sh"]

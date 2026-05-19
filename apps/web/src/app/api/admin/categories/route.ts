@@ -1,118 +1,148 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, isDevDatabase, getSupabaseAdmin } from '@/infrastructure/database';
-import { categories } from '@/infrastructure/database/schema';
-import { eq, and, asc } from 'drizzle-orm';
-import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin';
+import { sql } from '@/infrastructure/database/pg-client';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+
+async function getSupabaseAuth() {
+  const cookieStore = await cookies();
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Server component - ignore
+          }
+        },
+      },
+    }
+  );
+}
 
 export async function GET(request: NextRequest) {
   try {
-    const authUser = await requireAuth();
-    requireRole(authUser, ['dono', 'gerente']);
+    const supabaseAuth = await getSupabaseAuth();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
 
-    const restaurantId = getRestaurantId(authUser);
-    const { searchParams } = new URL(request.url);
-    const activeOnly = searchParams.get('active') === 'true';
-
-    if (isDevDatabase()) {
-      const conditions = [eq(categories.restaurant_id, restaurantId)];
-      if (activeOnly) {
-        conditions.push(eq(categories.active, true));
-      }
-      const result = await db
-        .select()
-        .from(categories)
-        .where(and(...conditions))
-        .orderBy(asc(categories.sort_order));
-      return NextResponse.json({ categories: result });
-    } else {
-      const supabase = getSupabaseAdmin();
-      let query = supabase.from('categories').select('*').eq('restaurant_id', restaurantId);
-
-      if (activeOnly) {
-        query = query.eq('active', 'true');
-      }
-
-      const { data, error } = await query.order('sort_order', { ascending: true });
-
-      if (error) {
-        console.error('Error fetching categories:', error);
-        return NextResponse.json({ error: 'Erro ao buscar categorias' }, { status: 500 });
-      }
-
-      return NextResponse.json({ categories: data });
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
+
+    const restaurantId = request.nextUrl.searchParams.get('restaurant_id');
+
+    if (!restaurantId) {
+      return NextResponse.json({ error: 'restaurant_id é obrigatório' }, { status: 400 });
+    }
+
+    // Verify user has access to this restaurant
+    const profileResult = await sql`
+      SELECT role FROM users_profiles
+      WHERE user_id = ${user.id} AND restaurant_id = ${restaurantId}
+      LIMIT 1
+    `;
+
+    if (!profileResult[0]) {
+      return NextResponse.json({ error: 'Acesso negado a este restaurante' }, { status: 403 });
+    }
+
+    // Get categories for this restaurant
+    const categoriesResult = await sql`
+      SELECT * FROM categories
+      WHERE restaurant_id = ${restaurantId}
+      ORDER BY position ASC, created_at ASC
+    `;
+
+    return NextResponse.json({ categories: categoriesResult });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Erro interno';
-    const status = (error as Error & { status?: number }).status || 500;
-    return NextResponse.json({ error: message }, { status });
+    console.error('Error in GET /api/admin/categories:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const authUser = await requireAuth();
-    requireRole(authUser, ['dono', 'gerente']);
+    const supabaseAuth = await getSupabaseAuth();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
 
-    const restaurantId = getRestaurantId(authUser);
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+    }
+
     const body = await request.json();
-    const { name, sort_order } = body;
+    const { restaurant_id, name, description, position } = body;
 
-    // Validações
-    if (!name || typeof name !== 'string' || name.trim() === '') {
+    if (!restaurant_id || !name) {
       return NextResponse.json(
-        { error: 'Nome é obrigatório e não pode ser vazio' },
+        { error: 'restaurant_id e name são obrigatórios' },
         { status: 400 }
       );
     }
 
-    if (sort_order !== undefined && (typeof sort_order !== 'number' || sort_order < 0)) {
-      return NextResponse.json({ error: 'sort_order deve ser um número >= 0' }, { status: 400 });
+    // Verify user has access and is owner/manager
+    const profileResult = await sql`
+      SELECT role FROM users_profiles
+      WHERE user_id = ${user.id} AND restaurant_id = ${restaurant_id}
+      LIMIT 1
+    `;
+
+    if (!profileResult[0] || (profileResult[0].role !== 'dono' && profileResult[0].role !== 'gerente')) {
+      return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 });
     }
 
     const now = new Date().toISOString();
 
-    if (isDevDatabase()) {
-      const newCategory = {
-        id: crypto.randomUUID(),
-        restaurant_id: restaurantId,
-        name: name.trim(),
-        description: body.description || null,
-        sort_order: sort_order ?? 0,
-        active: true,
-        created_at: now,
-        updated_at: now,
-      };
-      await db.insert(categories).values(newCategory);
-      return NextResponse.json({ category: newCategory }, { status: 201 });
-    } else {
-      const supabase = getSupabaseAdmin();
-      const newCategory = {
-        id: crypto.randomUUID(),
-        restaurant_id: restaurantId,
-        name: name.trim(),
-        description: body.description || null,
-        sort_order: sort_order ?? 0,
-        active: true,
-        created_at: now,
-        updated_at: now,
-      };
-
-      const { data, error } = await supabase
-        .from('categories')
-        .insert(newCategory)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error creating category:', error);
-        return NextResponse.json({ error: 'Erro ao criar categoria' }, { status: 500 });
-      }
-
-      return NextResponse.json({ category: data }, { status: 201 });
+    // Get max position if not provided
+    let positionValue = position;
+    if (positionValue === undefined) {
+      const maxPosResult = await sql`
+        SELECT COALESCE(MAX(position), 0) + 1 as next_pos FROM categories
+        WHERE restaurant_id = ${restaurant_id}
+      `;
+      positionValue = maxPosResult[0]?.next_pos || 1;
     }
+
+    // Create new category
+    const newCategory = {
+      id: crypto.randomUUID(),
+      restaurant_id,
+      name: name.trim(),
+      description: description?.trim() || null,
+      position: positionValue,
+      active: true,
+      created_at: now,
+      updated_at: now,
+    };
+
+    await sql`
+      INSERT INTO categories (id, restaurant_id, name, description, position, active, created_at, updated_at)
+      VALUES (
+        ${newCategory.id},
+        ${newCategory.restaurant_id},
+        ${newCategory.name},
+        ${newCategory.description},
+        ${newCategory.position},
+        ${newCategory.active},
+        ${newCategory.created_at},
+        ${newCategory.updated_at}
+      )
+    `;
+
+    return NextResponse.json({ category: newCategory }, { status: 201 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Erro interno';
-    const status = (error as Error & { status?: number }).status || 500;
-    return NextResponse.json({ error: message }, { status });
+    console.error('Error in POST /api/admin/categories:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }

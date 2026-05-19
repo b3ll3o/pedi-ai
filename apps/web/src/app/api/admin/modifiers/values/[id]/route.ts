@@ -1,251 +1,113 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { db, isDevDatabase } from '@/infrastructure/database';
-import { modifierGroups, modifierValues } from '@/infrastructure/database/schema';
-import { eq } from 'drizzle-orm';
-import { invalidateMenuCache } from '@/lib/offline/cache';
-import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin';
+import { sql } from '@/infrastructure/database/pg-client';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
-/**
- * PUT /api/admin/modifiers/values/[id]
- * Atualiza um valor de modificador.
- */
-export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const authUser = await requireAuth();
-    requireRole(authUser, ['dono', 'gerente']);
+async function getSupabaseAuth() {
+  const cookieStore = await cookies();
 
-    const restaurantId = getRestaurantId(authUser);
-    const { id } = await params;
-    const body = await request.json();
-    const { name, price_adjustment, available } = body;
-
-    if (isDevDatabase()) {
-      // Busca o modifier value e verifica ownership via modifier_group
-      const existingValue = await db
-        .select()
-        .from(modifierValues)
-        .where(eq(modifierValues.id, id))
-        .limit(1)
-        .get();
-
-      if (!existingValue) {
-        return NextResponse.json({ error: 'Valor de modificador não encontrado' }, { status: 404 });
-      }
-
-      // Verifica que o modifier group pertence ao restaurante
-      const groupResult = await db
-        .select({ restaurant_id: modifierGroups.restaurant_id })
-        .from(modifierGroups)
-        .where(eq(modifierGroups.id, existingValue.modifier_group_id))
-        .limit(1)
-        .get();
-
-      if (!groupResult || groupResult.restaurant_id !== restaurantId) {
-        return NextResponse.json(
-          { error: 'Valor de modificador não pertence a este restaurante' },
-          { status: 403 }
-        );
-      }
-
-      // Validações
-      if (name !== undefined && (typeof name !== 'string' || name.trim() === '')) {
-        return NextResponse.json({ error: 'Nome não pode ser vazio' }, { status: 400 });
-      }
-
-      if (price_adjustment !== undefined && typeof price_adjustment !== 'number') {
-        return NextResponse.json({ error: 'price_adjustment deve ser um número' }, { status: 400 });
-      }
-
-      if (available !== undefined && typeof available !== 'boolean') {
-        return NextResponse.json({ error: 'available deve ser um booleano' }, { status: 400 });
-      }
-
-      const updateData: Record<string, unknown> = {};
-      if (name !== undefined) updateData.name = name.trim();
-      if (price_adjustment !== undefined) updateData.price_adjustment = price_adjustment;
-      if (available !== undefined) updateData.available = available;
-
-      if (Object.keys(updateData).length > 0) {
-        await db
-          .update(modifierValues)
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .set(updateData as any)
-          .where(eq(modifierValues.id, id));
-      }
-
-      // Fetch updated value
-      const updatedValue = await db
-        .select()
-        .from(modifierValues)
-        .where(eq(modifierValues.id, id))
-        .limit(1)
-        .get();
-
-      await invalidateMenuCache();
-      return NextResponse.json({ modifier_value: updatedValue });
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Server component - ignore
+          }
+        },
+      },
     }
-
-    // Production: use Supabase
-    const supabase = await createClient();
-
-    // Busca o modifier value e verifica ownership via modifier_group
-    const { data: existingValue, error: fetchError } = await supabase
-      .from('modifier_values')
-      .select('id, modifier_group_id, modifier_groups!inner(restaurant_id)')
-      .eq('id', id)
-      .single();
-
-    if (fetchError || !existingValue) {
-      return NextResponse.json({ error: 'Valor de modificador não encontrado' }, { status: 404 });
-    }
-
-    // @ts-expect-error - nested select
-    const groupRestaurantId = existingValue.modifier_groups?.restaurant_id;
-    if (groupRestaurantId !== restaurantId) {
-      return NextResponse.json(
-        { error: 'Valor de modificador não pertence a este restaurante' },
-        { status: 403 }
-      );
-    }
-
-    // Validações
-    if (name !== undefined && (typeof name !== 'string' || name.trim() === '')) {
-      return NextResponse.json({ error: 'Nome não pode ser vazio' }, { status: 400 });
-    }
-
-    if (price_adjustment !== undefined && typeof price_adjustment !== 'number') {
-      return NextResponse.json({ error: 'price_adjustment deve ser um número' }, { status: 400 });
-    }
-
-    if (available !== undefined && typeof available !== 'boolean') {
-      return NextResponse.json({ error: 'available deve ser um booleano' }, { status: 400 });
-    }
-
-    const updateData: Record<string, unknown> = {};
-    if (name !== undefined) updateData.name = name.trim();
-    if (price_adjustment !== undefined) updateData.price_adjustment = price_adjustment;
-    if (available !== undefined) updateData.available = available;
-
-    if (Object.keys(updateData).length > 0) {
-      const { data: value, error } = await supabase
-        .from('modifier_values')
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .update(updateData as any)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Erro ao atualizar modifier value:', error);
-        return NextResponse.json(
-          { error: 'Falha ao atualizar valor de modificador' },
-          { status: 500 }
-        );
-      }
-
-      await invalidateMenuCache();
-      return NextResponse.json({ modifier_value: value });
-    }
-
-    await invalidateMenuCache();
-    return NextResponse.json({ modifier_value: existingValue });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Erro interno';
-    const status = (error as Error & { status?: number }).status || 500;
-    return NextResponse.json({ error: message }, { status });
-  }
+  );
 }
 
-/**
- * DELETE /api/admin/modifiers/values/[id]
- * Soft delete de um valor de modificador.
- */
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest) {
   try {
-    const authUser = await requireAuth();
-    requireRole(authUser, ['dono', 'gerente']);
+    const supabaseAuth = await getSupabaseAuth();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
 
-    const restaurantId = getRestaurantId(authUser);
-    const { id } = await params;
-
-    if (isDevDatabase()) {
-      // Busca o modifier value e verifica ownership via modifier_group
-      const existingValue = await db
-        .select()
-        .from(modifierValues)
-        .where(eq(modifierValues.id, id))
-        .limit(1)
-        .get();
-
-      if (!existingValue) {
-        return NextResponse.json({ error: 'Valor de modificador não encontrado' }, { status: 404 });
-      }
-
-      // Verifica que o modifier group pertence ao restaurante
-      const groupResult = await db
-        .select({ restaurant_id: modifierGroups.restaurant_id })
-        .from(modifierGroups)
-        .where(eq(modifierGroups.id, existingValue.modifier_group_id))
-        .limit(1)
-        .get();
-
-      if (!groupResult || groupResult.restaurant_id !== restaurantId) {
-        return NextResponse.json(
-          { error: 'Valor de modificador não pertence a este restaurante' },
-          { status: 403 }
-        );
-      }
-
-      // Soft delete do modifier value (set available = false)
-      await db.update(modifierValues).set({ available: false }).where(eq(modifierValues.id, id));
-
-      await invalidateMenuCache();
-      return NextResponse.json({ success: true });
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
-    // Production: use Supabase
-    const supabase = await createClient();
+    const body = await request.json();
+    const { modifier_id, name, price_cents, position } = body;
 
-    // Busca o modifier value e verifica ownership via modifier_group
-    const { data: existingValue, error: fetchError } = await supabase
-      .from('modifier_values')
-      .select('id, modifier_group_id, modifier_groups!inner(restaurant_id)')
-      .eq('id', id)
-      .single();
-
-    if (fetchError || !existingValue) {
-      return NextResponse.json({ error: 'Valor de modificador não encontrado' }, { status: 404 });
-    }
-
-    // @ts-expect-error - nested select
-    const groupRestaurantId = existingValue.modifier_groups?.restaurant_id;
-    if (groupRestaurantId !== restaurantId) {
+    if (!modifier_id || !name) {
       return NextResponse.json(
-        { error: 'Valor de modificador não pertence a este restaurante' },
-        { status: 403 }
+        { error: 'modifier_id e name são obrigatórios' },
+        { status: 400 }
       );
     }
 
-    // Soft delete do modifier value (atualiza deleted_at se existir)
-    const { error } = await supabase
-      .from('modifier_values')
-      .update({ deleted_at: new Date().toISOString() })
-      .eq('id', id);
+    // Get modifier to check restaurant
+    const modifierResult = await sql`SELECT * FROM modifiers WHERE id = ${modifier_id} LIMIT 1`;
 
-    if (error) {
-      console.error('Erro ao excluir modifier value:', error);
-      return NextResponse.json({ error: 'Falha ao excluir valor de modificador' }, { status: 500 });
+    if (!modifierResult[0]) {
+      return NextResponse.json({ error: 'Modificador não encontrado' }, { status: 404 });
     }
 
-    await invalidateMenuCache();
-    return NextResponse.json({ success: true });
+    // Verify user has access and is owner/manager
+    const profileResult = await sql`
+      SELECT role FROM users_profiles
+      WHERE user_id = ${user.id} AND restaurant_id = ${modifierResult[0].restaurant_id}
+      LIMIT 1
+    `;
+
+    if (!profileResult[0] || (profileResult[0].role !== 'dono' && profileResult[0].role !== 'gerente')) {
+      return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 });
+    }
+
+    const now = new Date().toISOString();
+
+    // Get max position if not provided
+    let positionValue = position;
+    if (positionValue === undefined) {
+      const maxPosResult = await sql`
+        SELECT COALESCE(MAX(position), 0) + 1 as next_pos FROM modifier_values
+        WHERE modifier_id = ${modifier_id}
+      `;
+      positionValue = maxPosResult[0]?.next_pos || 1;
+    }
+
+    // Create new modifier value
+    const newValue = {
+      id: crypto.randomUUID(),
+      modifier_id,
+      name: name.trim(),
+      price_cents: price_cents || 0,
+      position: positionValue,
+      active: true,
+      created_at: now,
+      updated_at: now,
+    };
+
+    await sql`
+      INSERT INTO modifier_values (id, modifier_id, name, price_cents, position, active, created_at, updated_at)
+      VALUES (
+        ${newValue.id},
+        ${newValue.modifier_id},
+        ${newValue.name},
+        ${newValue.price_cents},
+        ${newValue.position},
+        ${newValue.active},
+        ${newValue.created_at},
+        ${newValue.updated_at}
+      )
+    `;
+
+    return NextResponse.json({ value: newValue }, { status: 201 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Erro interno';
-    const status = (error as Error & { status?: number }).status || 500;
-    return NextResponse.json({ error: message }, { status });
+    console.error('Error in POST /api/admin/modifiers/values:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }

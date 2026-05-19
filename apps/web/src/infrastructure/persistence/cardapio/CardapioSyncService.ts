@@ -1,8 +1,8 @@
-import { PediDatabase } from '../database';
+import { sql } from '@/infrastructure/database/pg-client';
+import { db, type PediDatabase } from '../database';
 import { CategoriaRepository } from './CategoriaRepository';
 import { ItemCardapioRepository } from './ItemCardapioRepository';
 import { ModificadorGrupoRepository } from './ModificadorGrupoRepository';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import { Categoria } from '@/domain/cardapio/entities/Categoria';
 import { ItemCardapio } from '@/domain/cardapio/entities/ItemCardapio';
 import { ModificadorGrupo } from '@/domain/cardapio/entities/ModificadorGrupo';
@@ -48,32 +48,26 @@ interface GrupoModificadorApiResponse {
   max_selections: number | null;
 }
 
-// Supabase table names (English)
-const SUPABASE_TABLES = {
-  CATEGORIAS: 'categories',
-  PRODUTOS: 'products',
-  MODIFICADORES_GRUPO: 'modifier_groups',
-  MODIFICADORES_VALOR: 'modifier_values',
-} as const;
-
 export class CardapioSyncService {
   private categoriaRepo: CategoriaRepository;
   private itemRepo: ItemCardapioRepository;
   private grupoRepo: ModificadorGrupoRepository;
 
   constructor(
-    private db: PediDatabase,
-    private supabaseClient?: SupabaseClient
+    private db: unknown, // Not used anymore with postgres.js
+    private supabaseClient?: unknown // Deprecated parameter
   ) {
-    this.categoriaRepo = new CategoriaRepository(db);
-    this.itemRepo = new ItemCardapioRepository(db);
-    this.grupoRepo = new ModificadorGrupoRepository(db);
+    // Initialize local repositories (Dexie-based)
+    // These are used for syncFromLocalCache
+    this.categoriaRepo = new CategoriaRepository(db as PediDatabase);
+    this.itemRepo = new ItemCardapioRepository(db as PediDatabase);
+    this.grupoRepo = new ModificadorGrupoRepository(db as PediDatabase);
   }
 
   /**
-   * Sincroniza cardápio diretamente do Supabase (bypass RLS com service role).
+   * Sincroniza cardápio diretamente do PostgreSQL usando postgres.js.
    */
-  async syncFromSupabase(restauranteId: string): Promise<CardapioSyncResult> {
+  async syncFromPostgres(restauranteId: string): Promise<CardapioSyncResult> {
     const result: CardapioSyncResult = {
       categoriasSincronizadas: 0,
       itensSincronizados: 0,
@@ -81,23 +75,24 @@ export class CardapioSyncService {
       erros: [],
     };
 
-    if (!this.supabaseClient) {
-      result.erros.push('Cliente Supabase não configurado');
-      return result;
-    }
-
     try {
-      // Sincronizar categorias do Supabase (tabela: categories)
-      const { data: categorias, error: catError } = await this.supabaseClient
-        .from(SUPABASE_TABLES.CATEGORIAS)
-        .select('*')
-        .eq('restaurant_id', restauranteId)
-        .eq('active', true)
-        .order('sort_order', { ascending: true });
+      // Sincronizar categorias do PostgreSQL
+      const categorias = await sql<{
+        id: string;
+        restaurant_id: string;
+        name: string;
+        description: string | null;
+        image_url: string | null;
+        sort_order: number;
+        active: boolean;
+      }>`
+        SELECT id, restaurant_id, name, description, image_url, sort_order, active
+        FROM categories
+        WHERE restaurant_id = ${restauranteId} AND active = true
+        ORDER BY sort_order ASC
+      `;
 
-      if (catError) {
-        result.erros.push(`Erro ao buscar categorias: ${catError.message}`);
-      } else if (categorias) {
+      if (categorias.length > 0) {
         const categoriasEntities = categorias.map((cat) => {
           const now = new Date();
           return Categoria.reconstruir({
@@ -118,20 +113,27 @@ export class CardapioSyncService {
         result.categoriasSincronizadas = categoriasEntities.length;
       }
 
-      // Sincronizar itens do cardápio do Supabase (tabela: products)
-      const { data: produtos, error: prodError } = await this.supabaseClient
-        .from(SUPABASE_TABLES.PRODUTOS)
-        .select('*')
-        .eq('available', true);
+      // Sincronizar produtos do PostgreSQL
+      const categoryIds = categorias.map((c) => c.id);
+      const produtos = categoryIds.length > 0
+        ? await sql<{
+            id: string;
+            category_id: string;
+            name: string;
+            description: string | null;
+            price: number;
+            image_url: string | null;
+            dietary_labels: string[] | null;
+            available: boolean;
+          }>`
+            SELECT id, category_id, name, description, price, image_url, dietary_labels, available
+            FROM products
+            WHERE available = true AND category_id = ANY(${categoryIds})
+          `
+        : [];
 
-      if (prodError) {
-        result.erros.push(`Erro ao buscar produtos: ${prodError.message}`);
-      } else if (produtos) {
-        // Filter by restaurant_id via category join
-        const categoryIds = categorias?.map((c) => c.id) || [];
-        const produtosFiltrados = produtos.filter((p) => categoryIds.includes(p.category_id));
-
-        const itensEntities = produtosFiltrados.map((prod) => {
+      if (produtos.length > 0) {
+        const itensEntities = produtos.map((prod) => {
           const now = new Date();
           return ItemCardapio.reconstruir({
             id: prod.id,
@@ -140,7 +142,7 @@ export class CardapioSyncService {
             descricao: prod.description,
             preco: Dinheiro.criar(prod.price, 'BRL'),
             imagemUrl: prod.image_url,
-            tipo: TipoItemCardapio.fromValue('item'), // products table doesn't have tipo
+            tipo: TipoItemCardapio.fromValue('item'),
             labelsDieteticos: prod.dietary_labels
               ? LabelDietetico.fromArray(prod.dietary_labels)
               : [],
@@ -155,15 +157,22 @@ export class CardapioSyncService {
         result.itensSincronizados = itensEntities.length;
       }
 
-      // Sincronizar grupos de modificadores do Supabase (tabela: modifier_groups)
-      const { data: grupos, error: grupoError } = await this.supabaseClient
-        .from(SUPABASE_TABLES.MODIFICADORES_GRUPO)
-        .select('*')
-        .eq('restaurant_id', restauranteId);
+      // Sincronizar grupos de modificadores do PostgreSQL
+      const grupos = await sql<{
+        id: string;
+        restaurant_id: string;
+        name: string;
+        description: string | null;
+        required: boolean;
+        min_selections: number | null;
+        max_selections: number | null;
+      }>`
+        SELECT id, restaurant_id, name, description, required, min_selections, max_selections
+        FROM modifier_groups
+        WHERE restaurant_id = ${restauranteId}
+      `;
 
-      if (grupoError) {
-        result.erros.push(`Erro ao buscar grupos: ${grupoError.message}`);
-      } else if (grupos) {
+      if (grupos.length > 0) {
         const gruposEntities = grupos.map((grupo) => {
           return ModificadorGrupo.reconstruir({
             id: grupo.id,
@@ -172,7 +181,7 @@ export class CardapioSyncService {
             obrigatorio: grupo.required,
             minSelecoes: grupo.min_selections,
             maxSelecoes: grupo.max_selections,
-            valores: [], // Valores são carregados separadamente
+            valores: [],
             ativo: true,
           });
         });
@@ -271,7 +280,7 @@ export class CardapioSyncService {
             obrigatorio: grupo.required,
             minSelecoes: grupo.min_selections ?? 0,
             maxSelecoes: grupo.max_selections ?? 0,
-            valores: [], // Valores são carregados separadamente
+            valores: [],
             ativo: true,
           });
         });

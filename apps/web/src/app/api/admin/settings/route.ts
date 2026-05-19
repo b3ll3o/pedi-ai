@@ -1,194 +1,159 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, isDevDatabase, getSupabaseAdmin } from '@/infrastructure/database';
-import { restaurants } from '@/infrastructure/database/schema';
-import { eq } from 'drizzle-orm';
-import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin';
+import { sql } from '@/infrastructure/database/pg-client';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
-export interface RestaurantSettings {
-  restaurant_name: string;
-  description: string;
-  opening_hours: {
-    open: string;
-    close: string;
-  };
-  phone: string;
-  address: string;
+export interface OpeningHours {
+  open: string;
+  close: string;
 }
 
-// GET /api/admin/settings - Get restaurant settings
-export async function GET(_request: NextRequest) {
-  try {
-    const authUser = await requireAuth();
-    requireRole(authUser, ['dono']);
+export interface RestaurantSettings {
+  restaurant_id: string;
+  config: Record<string, unknown>;
+  restaurant_name?: string;
+  description?: string;
+  opening_hours?: OpeningHours;
+  phone?: string;
+  address?: string;
+  created_at?: string;
+  updated_at?: string;
+}
 
-    const restaurantId = getRestaurantId(authUser);
+async function getSupabaseAuth() {
+  const cookieStore = await cookies();
 
-    if (isDevDatabase()) {
-      const result = await db
-        .select({
-          name: restaurants.name,
-          description: restaurants.description,
-          phone: restaurants.phone,
-          address: restaurants.address,
-          settings: restaurants.settings,
-        })
-        .from(restaurants)
-        .where(eq(restaurants.id, restaurantId))
-        .limit(1);
-
-      const restaurant = result[0];
-      if (!restaurant) {
-        return NextResponse.json({ error: 'Restaurante não encontrado' }, { status: 404 });
-      }
-
-      // Parse settings for opening hours
-      const settings = (restaurant.settings as Record<string, unknown>) || {};
-      const openingHours = (settings.opening_hours as { open?: string; close?: string }) || {
-        open: '08:00',
-        close: '22:00',
-      };
-
-      const response: RestaurantSettings = {
-        restaurant_name: restaurant.name,
-        description: restaurant.description || '',
-        opening_hours: {
-          open: openingHours.open || '08:00',
-          close: openingHours.close || '22:00',
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
         },
-        phone: restaurant.phone || '',
-        address: restaurant.address || '',
-      };
-
-      return NextResponse.json(response);
-    } else {
-      const supabase = getSupabaseAdmin();
-
-      const { data: restaurant, error } = await supabase
-        .from('restaurants')
-        .select('name, description, phone, address, settings')
-        .eq('id', restaurantId)
-        .single();
-
-      if (error) {
-        console.error('Error fetching restaurant settings:', error);
-        return NextResponse.json({ error: 'Falha ao carregar configurações' }, { status: 500 });
-      }
-
-      if (!restaurant) {
-        return NextResponse.json({ error: 'Restaurante não encontrado' }, { status: 404 });
-      }
-
-      // Parse settings for opening hours
-      const settings = (restaurant.settings as Record<string, unknown>) || {};
-      const openingHours = (settings.opening_hours as { open?: string; close?: string }) || {
-        open: '08:00',
-        close: '22:00',
-      };
-
-      const response: RestaurantSettings = {
-        restaurant_name: restaurant.name,
-        description: restaurant.description || '',
-        opening_hours: {
-          open: openingHours.open || '08:00',
-          close: openingHours.close || '22:00',
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Server component - ignore
+          }
         },
-        phone: restaurant.phone || '',
-        address: restaurant.address || '',
-      };
-
-      return NextResponse.json(response);
+      },
     }
+  );
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const supabaseAuth = await getSupabaseAuth();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+    }
+
+    const restaurantId = request.nextUrl.searchParams.get('restaurant_id');
+
+    if (!restaurantId) {
+      return NextResponse.json({ error: 'restaurant_id é obrigatório' }, { status: 400 });
+    }
+
+    // Verify user has access to this restaurant
+    const profileResult = await sql`
+      SELECT role FROM users_profiles
+      WHERE user_id = ${user.id} AND restaurant_id = ${restaurantId}
+      LIMIT 1
+    `;
+
+    if (!profileResult[0]) {
+      return NextResponse.json({ error: 'Acesso negado a este restaurante' }, { status: 403 });
+    }
+
+    // Get settings
+    const settingsResult = await sql`
+      SELECT * FROM restaurant_settings
+      WHERE restaurant_id = ${restaurantId}
+      LIMIT 1
+    `;
+
+    if (!settingsResult[0]) {
+      // Return default settings if none exist
+      return NextResponse.json({
+        settings: {
+          restaurant_id: restaurantId,
+          config: {},
+        },
+      });
+    }
+
+    return NextResponse.json({ settings: settingsResult[0] });
   } catch (error) {
-    console.error('Unexpected error in /api/admin/settings:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Error in GET /api/admin/settings:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }
 
-// PUT /api/admin/settings - Update restaurant settings
 export async function PUT(request: NextRequest) {
   try {
-    const authUser = await requireAuth();
-    requireRole(authUser, ['dono']);
+    const supabaseAuth = await getSupabaseAuth();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
 
-    const restaurantId = getRestaurantId(authUser);
-    const body = await request.json();
-    const { restaurant_name, description, opening_hours, phone, address } = body;
-
-    if (isDevDatabase()) {
-      // First get current restaurant data to merge with settings
-      const currentResult = await db
-        .select({ settings: restaurants.settings })
-        .from(restaurants)
-        .where(eq(restaurants.id, restaurantId))
-        .limit(1);
-
-      if (!currentResult[0]) {
-        return NextResponse.json({ error: 'Falha ao carregar restaurante' }, { status: 500 });
-      }
-
-      const currentSettings = ((currentResult[0].settings as Record<string, unknown>) ||
-        {}) as Record<string, unknown>;
-
-      // Update restaurant basic info
-      await db
-        .update(restaurants)
-        .set({
-          name: restaurant_name,
-          description: description || null,
-          phone: phone || null,
-          address: address || null,
-          settings: {
-            ...currentSettings,
-            opening_hours: opening_hours || { open: '08:00', close: '22:00' },
-          },
-          updated_at: new Date().toISOString(),
-        })
-        .where(eq(restaurants.id, restaurantId));
-
-      return NextResponse.json({ message: 'Configurações atualizadas com sucesso' });
-    } else {
-      const supabase = getSupabaseAdmin();
-
-      // First get current restaurant data to merge with settings
-      const { data: currentRestaurant, error: fetchError } = await supabase
-        .from('restaurants')
-        .select('settings')
-        .eq('id', restaurantId)
-        .single();
-
-      if (fetchError) {
-        console.error('Error fetching current restaurant:', fetchError);
-        return NextResponse.json({ error: 'Falha ao carregar restaurante' }, { status: 500 });
-      }
-
-      const currentSettings = ((currentRestaurant?.settings as Record<string, unknown>) ||
-        {}) as Record<string, unknown>;
-
-      // Update restaurant basic info
-      const { error: updateError } = await supabase
-        .from('restaurants')
-        .update({
-          name: restaurant_name,
-          description: description || null,
-          phone: phone || null,
-          address: address || null,
-          settings: {
-            ...currentSettings,
-            opening_hours: opening_hours || { open: '08:00', close: '22:00' },
-          },
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', restaurantId);
-
-      if (updateError) {
-        console.error('Error updating restaurant settings:', updateError);
-        return NextResponse.json({ error: 'Falha ao atualizar configurações' }, { status: 500 });
-      }
-
-      return NextResponse.json({ message: 'Configurações atualizadas com sucesso' });
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
+
+    const body = await request.json();
+    const { restaurant_id, config } = body;
+
+    if (!restaurant_id) {
+      return NextResponse.json({ error: 'restaurant_id é obrigatório' }, { status: 400 });
+    }
+
+    // Verify user has access and is owner/manager
+    const profileResult = await sql`
+      SELECT role FROM users_profiles
+      WHERE user_id = ${user.id} AND restaurant_id = ${restaurant_id}
+      LIMIT 1
+    `;
+
+    if (!profileResult[0] || (profileResult[0].role !== 'dono' && profileResult[0].role !== 'gerente')) {
+      return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 });
+    }
+
+    const now = new Date().toISOString();
+
+    // Upsert settings
+    const existingSettings = await sql`
+      SELECT * FROM restaurant_settings WHERE restaurant_id = ${restaurant_id} LIMIT 1
+    `;
+
+    if (existingSettings[0]) {
+      await sql`
+        UPDATE restaurant_settings
+        SET config = ${JSON.stringify(config)}, updated_at = ${now}
+        WHERE restaurant_id = ${restaurant_id}
+      `;
+    } else {
+      await sql`
+        INSERT INTO restaurant_settings (id, restaurant_id, config, created_at, updated_at)
+        VALUES (${crypto.randomUUID()}, ${restaurant_id}, ${JSON.stringify(config)}, ${now}, ${now})
+      `;
+    }
+
+    // Fetch updated settings
+    const updatedSettings = await sql`
+      SELECT * FROM restaurant_settings WHERE restaurant_id = ${restaurant_id} LIMIT 1
+    `;
+
+    return NextResponse.json({ settings: updatedSettings[0] });
   } catch (error) {
-    console.error('Unexpected error in /api/admin/settings PUT:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Error in PUT /api/admin/settings:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }

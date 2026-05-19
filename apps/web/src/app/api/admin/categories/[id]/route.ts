@@ -1,207 +1,174 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, isDevDatabase, getSupabaseAdmin } from '@/infrastructure/database';
-import { categories } from '@/infrastructure/database/schema';
-import { eq, and } from 'drizzle-orm';
-import { invalidateMenuCache } from '@/lib/offline/cache';
-import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin';
+import { sql } from '@/infrastructure/database/pg-client';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const authUser = await requireAuth();
-    requireRole(authUser, ['dono', 'gerente']);
+async function getSupabaseAuth() {
+  const cookieStore = await cookies();
 
-    const restaurantId = getRestaurantId(authUser);
-    const { id } = await params;
-
-    if (isDevDatabase()) {
-      const result = await db
-        .select()
-        .from(categories)
-        .where(and(eq(categories.id, id), eq(categories.restaurant_id, restaurantId)))
-        .limit(1);
-
-      const category = result[0];
-      if (!category) {
-        return NextResponse.json({ error: 'Categoria não encontrada' }, { status: 404 });
-      }
-      return NextResponse.json({ category });
-    } else {
-      const supabase = getSupabaseAdmin();
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('id', id)
-        .eq('restaurant_id', restaurantId)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching category:', error);
-        return NextResponse.json({ error: 'Erro ao buscar categoria' }, { status: 500 });
-      }
-
-      if (!data) {
-        return NextResponse.json({ error: 'Categoria não encontrada' }, { status: 404 });
-      }
-      return NextResponse.json({ category: data });
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Server component - ignore
+          }
+        },
+      },
     }
+  );
+}
+
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const supabaseAuth = await getSupabaseAuth();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+    }
+
+    const { id: categoryId } = await params;
+
+    // Get category
+    const categoryResult = await sql`SELECT * FROM categories WHERE id = ${categoryId} LIMIT 1`;
+
+    if (!categoryResult[0]) {
+      return NextResponse.json({ error: 'Categoria não encontrada' }, { status: 404 });
+    }
+
+    // Verify user has access to this restaurant
+    const profileResult = await sql`
+      SELECT role FROM users_profiles
+      WHERE user_id = ${user.id} AND restaurant_id = ${categoryResult[0].restaurant_id}
+      LIMIT 1
+    `;
+
+    if (!profileResult[0]) {
+      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
+    }
+
+    return NextResponse.json({ category: categoryResult[0] });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Erro interno';
-    const status = (error as Error & { status?: number }).status || 500;
-    return NextResponse.json({ error: message }, { status });
+    console.error('Error in GET /api/admin/categories/[id]:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const authUser = await requireAuth();
-    requireRole(authUser, ['dono', 'gerente']);
+    const supabaseAuth = await getSupabaseAuth();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
 
-    const restaurantId = getRestaurantId(authUser);
-    const { id } = await params;
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+    }
+
+    const { id: categoryId } = await params;
     const body = await request.json();
-    const { name, description, sort_order, active } = body;
+    const { name, description, position, active } = body;
 
-    // Validações
-    if (name !== undefined && (typeof name !== 'string' || name.trim() === '')) {
-      return NextResponse.json({ error: 'Nome não pode ser vazio' }, { status: 400 });
+    // Get category first
+    const categoryResult = await sql`SELECT * FROM categories WHERE id = ${categoryId} LIMIT 1`;
+
+    if (!categoryResult[0]) {
+      return NextResponse.json({ error: 'Categoria não encontrada' }, { status: 404 });
     }
 
-    if (sort_order !== undefined && (typeof sort_order !== 'number' || sort_order < 0)) {
-      return NextResponse.json({ error: 'sort_order deve ser um número >= 0' }, { status: 400 });
+    // Verify user has access and is owner/manager
+    const profileResult = await sql`
+      SELECT role FROM users_profiles
+      WHERE user_id = ${user.id} AND restaurant_id = ${categoryResult[0].restaurant_id}
+      LIMIT 1
+    `;
+
+    if (!profileResult[0] || (profileResult[0].role !== 'dono' && profileResult[0].role !== 'gerente')) {
+      return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 });
     }
 
-    if (isDevDatabase()) {
-      // Verifica ownership
-      const existing = await db
-        .select()
-        .from(categories)
-        .where(and(eq(categories.id, id), eq(categories.restaurant_id, restaurantId)))
-        .limit(1);
+    const now = new Date().toISOString();
 
-      if (!existing[0]) {
-        return NextResponse.json({ error: 'Categoria não encontrada' }, { status: 404 });
-      }
+    // Update category
+    await sql`
+      UPDATE categories
+      SET
+        name = COALESCE(${name || null}, name),
+        description = COALESCE(${description !== undefined ? (description?.trim() || null) : null}, description),
+        position = COALESCE(${position}, position),
+        active = COALESCE(${active}, active),
+        updated_at = ${now}
+      WHERE id = ${categoryId}
+    `;
 
-      const updateData: Record<string, unknown> = { updated_at: new Date().toISOString() };
-      if (name !== undefined) updateData.name = name.trim();
-      if (description !== undefined) updateData.description = description;
-      if (sort_order !== undefined) updateData.sort_order = sort_order;
-      if (active !== undefined) updateData.active = active;
+    // Fetch updated category
+    const updatedCategory = await sql`SELECT * FROM categories WHERE id = ${categoryId} LIMIT 1`;
 
-      await db.update(categories).set(updateData).where(eq(categories.id, id));
-
-      const updated = await db.select().from(categories).where(eq(categories.id, id)).limit(1);
-      await invalidateMenuCache();
-      return NextResponse.json({ category: updated[0] });
-    } else {
-      const supabase = getSupabaseAdmin();
-
-      // Verifica ownership
-      const { data: existing, error: fetchError } = await supabase
-        .from('categories')
-        .select('id')
-        .eq('id', id)
-        .eq('restaurant_id', restaurantId)
-        .single();
-
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        console.error('Error checking category:', fetchError);
-        return NextResponse.json({ error: 'Erro ao verificar categoria' }, { status: 500 });
-      }
-
-      if (!existing) {
-        return NextResponse.json({ error: 'Categoria não encontrada' }, { status: 404 });
-      }
-
-      const updateData: Record<string, unknown> = { updated_at: new Date().toISOString() };
-      if (name !== undefined) updateData.name = name.trim();
-      if (description !== undefined) updateData.description = description;
-      if (sort_order !== undefined) updateData.sort_order = sort_order;
-      if (active !== undefined) updateData.active = active;
-
-      const { data, error } = await supabase
-        .from('categories')
-        .update(updateData)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error updating category:', error);
-        return NextResponse.json({ error: 'Erro ao atualizar categoria' }, { status: 500 });
-      }
-
-      await invalidateMenuCache();
-      return NextResponse.json({ category: data });
-    }
+    return NextResponse.json({ category: updatedCategory[0] });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Erro interno';
-    const status = (error as Error & { status?: number }).status || 500;
-    return NextResponse.json({ error: message }, { status });
+    console.error('Error in PUT /api/admin/categories/[id]:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const authUser = await requireAuth();
-    requireRole(authUser, ['dono', 'gerente']);
+    const supabaseAuth = await getSupabaseAuth();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
 
-    const restaurantId = getRestaurantId(authUser);
-    const { id } = await params;
-
-    if (isDevDatabase()) {
-      // Verifica ownership
-      const existing = await db
-        .select()
-        .from(categories)
-        .where(and(eq(categories.id, id), eq(categories.restaurant_id, restaurantId)))
-        .limit(1);
-
-      if (!existing[0]) {
-        return NextResponse.json({ error: 'Categoria não encontrada' }, { status: 404 });
-      }
-
-      // Hard delete
-      await db.delete(categories).where(eq(categories.id, id));
-      await invalidateMenuCache();
-      return NextResponse.json({ success: true });
-    } else {
-      const supabase = getSupabaseAdmin();
-
-      // Verifica ownership
-      const { data: existing, error: fetchError } = await supabase
-        .from('categories')
-        .select('id')
-        .eq('id', id)
-        .eq('restaurant_id', restaurantId)
-        .single();
-
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        console.error('Error checking category:', fetchError);
-        return NextResponse.json({ error: 'Erro ao verificar categoria' }, { status: 500 });
-      }
-
-      if (!existing) {
-        return NextResponse.json({ error: 'Categoria não encontrada' }, { status: 404 });
-      }
-
-      // Hard delete
-      const { error } = await supabase.from('categories').delete().eq('id', id);
-
-      if (error) {
-        console.error('Error deleting category:', error);
-        return NextResponse.json({ error: 'Erro ao deletar categoria' }, { status: 500 });
-      }
-
-      await invalidateMenuCache();
-      return NextResponse.json({ success: true });
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
+
+    const { id: categoryId } = await params;
+
+    // Get category first
+    const categoryResult = await sql`SELECT * FROM categories WHERE id = ${categoryId} LIMIT 1`;
+
+    if (!categoryResult[0]) {
+      return NextResponse.json({ error: 'Categoria não encontrada' }, { status: 404 });
+    }
+
+    // Verify user has access and is owner/manager
+    const profileResult = await sql`
+      SELECT role FROM users_profiles
+      WHERE user_id = ${user.id} AND restaurant_id = ${categoryResult[0].restaurant_id}
+      LIMIT 1
+    `;
+
+    if (!profileResult[0] || (profileResult[0].role !== 'dono' && profileResult[0].role !== 'gerente')) {
+      return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 });
+    }
+
+    // Soft delete category
+    await sql`
+      UPDATE categories SET active = false, updated_at = ${new Date().toISOString()}
+      WHERE id = ${categoryId}
+    `;
+
+    return NextResponse.json({ success: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Erro interno';
-    const status = (error as Error & { status?: number }).status || 500;
-    return NextResponse.json({ error: message }, { status });
+    console.error('Error in DELETE /api/admin/categories/[id]:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }

@@ -1,303 +1,201 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { isDevDatabase, getSupabaseAdmin, db } from '@/infrastructure/database';
-import { usersProfiles } from '@/infrastructure/database/schema';
-import { eq, and } from 'drizzle-orm';
-import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin';
+import { sql } from '@/infrastructure/database/pg-client';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
-interface RouteParams {
-  params: Promise<{ id: string }>;
+async function getSupabaseAuth() {
+  const cookieStore = await cookies();
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Server component - ignore
+          }
+        },
+      },
+    }
+  );
 }
 
-// GET /api/admin/users/[id] - Get a single user
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const authUser = await requireAuth();
-    requireRole(authUser, ['dono']);
+    const supabaseAuth = await getSupabaseAuth();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
 
-    const { id } = await params;
-    const restaurantId = getRestaurantId(authUser);
-
-    if (isDevDatabase()) {
-      const result = await db
-        .select()
-        .from(usersProfiles)
-        .where(and(eq(usersProfiles.id, id), eq(usersProfiles.restaurant_id, restaurantId)))
-        .limit(1);
-
-      const user = result[0];
-      if (!user) {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
-      }
-
-      return NextResponse.json({ user });
-    } else {
-      const supabase = getSupabaseAdmin();
-
-      const { data: user, error } = await supabase
-        .from('users_profiles')
-        .select('*')
-        .eq('id', id)
-        .eq('restaurant_id', restaurantId)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching user:', error);
-        return NextResponse.json({ error: 'Failed to fetch user' }, { status: 500 });
-      }
-
-      if (!user) {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
-      }
-
-      return NextResponse.json({ user });
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
+
+    const { id: userId } = await params;
+
+    // Get user profile
+    const userResult = await sql`
+      SELECT * FROM users_profiles WHERE id = ${userId} LIMIT 1
+    `;
+
+    if (!userResult[0]) {
+      return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
+    }
+
+    // Verify requesting user has access to same restaurant
+    const requestingUserResult = await sql`
+      SELECT role, restaurant_id FROM users_profiles
+      WHERE user_id = ${user.id}
+      LIMIT 1
+    `;
+
+    if (!requestingUserResult[0]) {
+      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
+    }
+
+    if (requestingUserResult[0].restaurant_id !== userResult[0].restaurant_id) {
+      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
+    }
+
+    return NextResponse.json({ user: userResult[0] });
   } catch (error) {
-    console.error('Unexpected error in /api/admin/users/[id]:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Error in GET /api/admin/users/[id]:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }
 
-// PUT /api/admin/users/[id] - Update user (role, name, active status)
-export async function PUT(request: NextRequest, { params }: RouteParams) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const authUser = await requireAuth();
-    requireRole(authUser, ['dono']);
+    const supabaseAuth = await getSupabaseAuth();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
 
-    const { id } = await params;
-    const restaurantId = getRestaurantId(authUser);
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+    }
+
+    const { id: userId } = await params;
     const body = await request.json();
-    const { name, role, active } = body;
+    const { name, email, role } = body;
 
-    if (isDevDatabase()) {
-      // Check if user exists and belongs to the same restaurant
-      const existingResult = await db
-        .select()
-        .from(usersProfiles)
-        .where(and(eq(usersProfiles.id, id), eq(usersProfiles.restaurant_id, restaurantId)))
-        .limit(1);
+    // Get target user
+    const userResult = await sql`
+      SELECT * FROM users_profiles WHERE id = ${userId} LIMIT 1
+    `;
 
-      const existingUser = existingResult[0];
-      if (!existingUser) {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
-      }
-
-      // Validate role if provided
-      if (role !== undefined) {
-        const validRoles = ['dono', 'gerente', 'atendente'];
-        if (!validRoles.includes(role)) {
-          return NextResponse.json(
-            { error: `role must be one of: ${validRoles.join(', ')}` },
-            { status: 400 }
-          );
-        }
-
-        // Prevent changing the last owner's role
-        if (existingUser.role === 'dono' && role !== 'dono') {
-          const ownersResult = await db
-            .select({ id: usersProfiles.id })
-            .from(usersProfiles)
-            .where(
-              and(eq(usersProfiles.restaurant_id, restaurantId), eq(usersProfiles.role, 'dono'))
-            );
-
-          if (ownersResult.length <= 1) {
-            return NextResponse.json(
-              { error: 'Cannot change the role of the last owner' },
-              { status: 400 }
-            );
-          }
-        }
-      }
-
-      const updateData: {
-        name?: string;
-        role?: 'dono' | 'gerente' | 'atendente' | null;
-        active?: boolean;
-      } = {};
-      if (name !== undefined) updateData.name = name;
-      if (role !== undefined) updateData.role = role as 'dono' | 'gerente' | 'atendente';
-      if (active !== undefined) updateData.active = active;
-
-      if (Object.keys(updateData).length > 0) {
-        await db
-          .update(usersProfiles)
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .set(updateData as any)
-          .where(eq(usersProfiles.id, id));
-      }
-
-      const updatedResult = await db
-        .select()
-        .from(usersProfiles)
-        .where(eq(usersProfiles.id, id))
-        .limit(1);
-
-      return NextResponse.json({ user: updatedResult[0] });
-    } else {
-      const supabase = getSupabaseAdmin();
-
-      // Check if user exists and belongs to the same restaurant
-      const { data: existingUser, error: fetchError } = await supabase
-        .from('users_profiles')
-        .select('id, role, restaurant_id')
-        .eq('id', id)
-        .eq('restaurant_id', restaurantId)
-        .single();
-
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        console.error('Error fetching user:', fetchError);
-        return NextResponse.json({ error: 'Failed to fetch user' }, { status: 500 });
-      }
-
-      if (!existingUser) {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
-      }
-
-      // Validate role if provided
-      if (role !== undefined) {
-        const validRoles = ['dono', 'gerente', 'atendente'];
-        if (!validRoles.includes(role)) {
-          return NextResponse.json(
-            { error: `role must be one of: ${validRoles.join(', ')}` },
-            { status: 400 }
-          );
-        }
-
-        // Prevent changing the last owner's role
-        if (existingUser.role === 'dono' && role !== 'dono') {
-          const { data: owners, error: ownersError } = await supabase
-            .from('users_profiles')
-            .select('id')
-            .eq('restaurant_id', existingUser.restaurant_id as string)
-            .eq('role', 'dono');
-
-          if (ownersError) {
-            console.error('Error checking owners:', ownersError);
-            return NextResponse.json({ error: 'Failed to verify ownership' }, { status: 500 });
-          }
-
-          if ((owners?.length || 0) <= 1) {
-            return NextResponse.json(
-              { error: 'Cannot change the role of the last owner' },
-              { status: 400 }
-            );
-          }
-        }
-      }
-
-      const updateData: { name?: string; role?: string; active?: boolean } = {};
-      if (name !== undefined) updateData.name = name;
-      if (role !== undefined) updateData.role = role;
-      if (active !== undefined) updateData.active = active;
-
-      const { data: user, error: updateError } = await supabase
-        .from('users_profiles')
-        .update(updateData)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (updateError) {
-        console.error('Error updating user:', updateError);
-        return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });
-      }
-
-      return NextResponse.json({ user });
+    if (!userResult[0]) {
+      return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
     }
+
+    // Verify requesting user has access
+    const requestingUserResult = await sql`
+      SELECT role, restaurant_id FROM users_profiles
+      WHERE user_id = ${user.id}
+      LIMIT 1
+    `;
+
+    if (!requestingUserResult[0]) {
+      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
+    }
+
+    if (requestingUserResult[0].restaurant_id !== userResult[0].restaurant_id) {
+      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
+    }
+
+    // Only owners can change roles
+    if (role && requestingUserResult[0].role !== 'dono') {
+      return NextResponse.json(
+        { error: 'Apenas o proprietário pode alterar cargos' },
+        { status: 403 }
+      );
+    }
+
+    const now = new Date().toISOString();
+
+    // Update user
+    await sql`
+      UPDATE users_profiles
+      SET
+        name = COALESCE(${name || null}, name),
+        email = COALESCE(${email || null}, email),
+        role = COALESCE(${role || null}, role),
+        updated_at = ${now}
+      WHERE id = ${userId}
+    `;
+
+    // Fetch updated user
+    const updatedUser = await sql`
+      SELECT * FROM users_profiles WHERE id = ${userId} LIMIT 1
+    `;
+
+    return NextResponse.json({ user: updatedUser[0] });
   } catch (error) {
-    console.error('Unexpected error in /api/admin/users/[id]:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Error in PUT /api/admin/users/[id]:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }
 
-// DELETE /api/admin/users/[id] - Remove a user
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const authUser = await requireAuth();
-    requireRole(authUser, ['dono']);
+    const supabaseAuth = await getSupabaseAuth();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
 
-    const { id } = await params;
-    const restaurantId = getRestaurantId(authUser);
-
-    if (isDevDatabase()) {
-      // Check if user exists and belongs to the same restaurant
-      const existingResult = await db
-        .select()
-        .from(usersProfiles)
-        .where(and(eq(usersProfiles.id, id), eq(usersProfiles.restaurant_id, restaurantId)))
-        .limit(1);
-
-      const existingUser = existingResult[0];
-      if (!existingUser) {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
-      }
-
-      // Prevent deleting the last owner
-      if (existingUser.role === 'dono') {
-        const ownersResult = await db
-          .select({ id: usersProfiles.id })
-          .from(usersProfiles)
-          .where(
-            and(eq(usersProfiles.restaurant_id, restaurantId), eq(usersProfiles.role, 'dono'))
-          );
-
-        if (ownersResult.length <= 1) {
-          return NextResponse.json({ error: 'Cannot delete the last owner' }, { status: 400 });
-        }
-      }
-
-      await db.delete(usersProfiles).where(eq(usersProfiles.id, id));
-
-      return NextResponse.json({ success: true });
-    } else {
-      const supabase = getSupabaseAdmin();
-
-      // Check if user exists and belongs to the same restaurant
-      const { data: existingUser, error: fetchError } = await supabase
-        .from('users_profiles')
-        .select('id, role, restaurant_id')
-        .eq('id', id)
-        .eq('restaurant_id', restaurantId)
-        .single();
-
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        console.error('Error fetching user:', fetchError);
-        return NextResponse.json({ error: 'Failed to fetch user' }, { status: 500 });
-      }
-
-      if (!existingUser) {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
-      }
-
-      // Prevent deleting the last owner
-      if (existingUser.role === 'dono') {
-        const { data: owners, error: ownersError } = await supabase
-          .from('users_profiles')
-          .select('id')
-          .eq('restaurant_id', existingUser.restaurant_id as string)
-          .eq('role', 'dono');
-
-        if (ownersError) {
-          console.error('Error checking owners:', ownersError);
-          return NextResponse.json({ error: 'Failed to verify ownership' }, { status: 500 });
-        }
-
-        if ((owners?.length || 0) <= 1) {
-          return NextResponse.json({ error: 'Cannot delete the last owner' }, { status: 400 });
-        }
-      }
-
-      const { error: deleteError } = await supabase.from('users_profiles').delete().eq('id', id);
-
-      if (deleteError) {
-        console.error('Error deleting user:', deleteError);
-        return NextResponse.json({ error: 'Failed to delete user' }, { status: 500 });
-      }
-
-      return NextResponse.json({ success: true });
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
+
+    const { id: userId } = await params;
+
+    // Get target user
+    const userResult = await sql`
+      SELECT * FROM users_profiles WHERE id = ${userId} LIMIT 1
+    `;
+
+    if (!userResult[0]) {
+      return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
+    }
+
+    // Verify requesting user is owner
+    const requestingUserResult = await sql`
+      SELECT role, restaurant_id FROM users_profiles
+      WHERE user_id = ${user.id}
+      LIMIT 1
+    `;
+
+    if (!requestingUserResult[0] || requestingUserResult[0].role !== 'dono') {
+      return NextResponse.json(
+        { error: 'Apenas o proprietário pode remover usuários' },
+        { status: 403 }
+      );
+    }
+
+    if (requestingUserResult[0].restaurant_id !== userResult[0].restaurant_id) {
+      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
+    }
+
+    // Delete user
+    await sql`DELETE FROM users_profiles WHERE id = ${userId}`;
+
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Unexpected error in /api/admin/users/[id]:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Error in DELETE /api/admin/users/[id]:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }

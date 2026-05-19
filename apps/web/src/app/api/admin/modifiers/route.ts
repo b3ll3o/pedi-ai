@@ -1,259 +1,178 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, isDevDatabase, getSupabaseAdmin } from '@/infrastructure/database';
-import {
-  modifierGroups,
-  modifierValues,
-  products,
-  categories,
-} from '@/infrastructure/database/schema';
-import { eq, asc, inArray } from 'drizzle-orm';
-import { invalidateMenuCache } from '@/lib/offline/cache';
-import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin';
+import { sql } from '@/infrastructure/database/pg-client';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
-/**
- * GET /api/admin/modifiers
- * Lista todos os modifier groups do restaurante com seus valores.
- */
-export async function GET(_request: NextRequest) {
-  try {
-    const authUser = await requireAuth();
-    requireRole(authUser, ['dono', 'gerente']);
+async function getSupabaseAuth() {
+  const cookieStore = await cookies();
 
-    const restaurantId = getRestaurantId(authUser);
-
-    if (isDevDatabase()) {
-      // Busca modifier groups do restaurante usando Drizzle
-      const groupsResult = await db
-        .select()
-        .from(modifierGroups)
-        .where(eq(modifierGroups.restaurant_id, restaurantId))
-        .orderBy(asc(modifierGroups.created_at));
-
-      const groupIds = groupsResult.map((g: typeof modifierGroups.$inferSelect) => g.id);
-      const valuesMap: Record<string, (typeof modifierValues.$inferSelect)[]> = {};
-
-      if (groupIds.length > 0) {
-        const valuesResult = await db
-          .select()
-          .from(modifierValues)
-          .where(inArray(modifierValues.modifier_group_id, groupIds))
-          .orderBy(asc(modifierValues.created_at));
-
-        for (const val of valuesResult) {
-          if (!valuesMap[val.modifier_group_id]) {
-            valuesMap[val.modifier_group_id] = [];
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Server component - ignore
           }
-          valuesMap[val.modifier_group_id].push(val);
-        }
-      }
-
-      // Monta resposta com groups e seus values
-      const groupsWithValues = groupsResult.map((group: typeof modifierGroups.$inferSelect) => ({
-        ...group,
-        modifier_values: valuesMap[group.id] ?? [],
-      }));
-
-      return NextResponse.json({ modifier_groups: groupsWithValues });
-    } else {
-      const supabase = getSupabaseAdmin();
-
-      // Busca modifier groups do restaurante usando Supabase
-      const { data: groupsResult, error: groupsError } = await supabase
-        .from('modifier_groups')
-        .select('*')
-        .eq('restaurant_id', restaurantId)
-        .order('created_at', { ascending: true });
-
-      if (groupsError) {
-        console.error('Error fetching modifier groups:', groupsError);
-        return NextResponse.json(
-          { error: 'Erro ao buscar grupos de modificadores' },
-          { status: 500 }
-        );
-      }
-
-      const groupIds = groupsResult?.map((g) => g.id) || [];
-      const valuesMap: Record<string, unknown[]> = {};
-
-      if (groupIds.length > 0) {
-        const { data: valuesResult, error: valuesError } = await supabase
-          .from('modifier_values')
-          .select('*')
-          .in('modifier_group_id', groupIds)
-          .order('created_at', { ascending: true });
-
-        if (valuesError) {
-          console.error('Error fetching modifier values:', valuesError);
-          return NextResponse.json(
-            { error: 'Erro ao buscar valores de modificadores' },
-            { status: 500 }
-          );
-        }
-
-        for (const val of valuesResult || []) {
-          if (!valuesMap[val.modifier_group_id]) {
-            valuesMap[val.modifier_group_id] = [];
-          }
-          valuesMap[val.modifier_group_id].push(val);
-        }
-      }
-
-      // Monta resposta com groups e seus values
-      const groupsWithValues = (groupsResult || []).map((group) => ({
-        ...group,
-        modifier_values: valuesMap[group.id] ?? [],
-      }));
-
-      return NextResponse.json({ modifier_groups: groupsWithValues });
+        },
+      },
     }
+  );
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const supabaseAuth = await getSupabaseAuth();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+    }
+
+    const restaurantId = request.nextUrl.searchParams.get('restaurant_id');
+
+    if (!restaurantId) {
+      return NextResponse.json({ error: 'restaurant_id é obrigatório' }, { status: 400 });
+    }
+
+    // Verify user has access to this restaurant
+    const profileResult = await sql`
+      SELECT role FROM users_profiles
+      WHERE user_id = ${user.id} AND restaurant_id = ${restaurantId}
+      LIMIT 1
+    `;
+
+    if (!profileResult[0]) {
+      return NextResponse.json({ error: 'Acesso negado a este restaurante' }, { status: 403 });
+    }
+
+    // Get modifiers with values
+    const modifiersResult = await sql`
+      SELECT * FROM modifiers
+      WHERE restaurant_id = ${restaurantId}
+      ORDER BY created_at DESC
+    `;
+
+    // Get modifier values
+    const modifierIds = modifiersResult.map((m: { id: string }) => m.id);
+    let modifierValues: Record<string, unknown>[] = [];
+
+    if (modifierIds.length > 0) {
+      modifierValues = await sql`
+        SELECT * FROM modifier_values
+        WHERE modifier_id = ANY(${modifierIds})
+        ORDER BY position ASC
+      `;
+    }
+
+    // Group values by modifier_id
+    const valuesByModifierId = modifierValues.reduce<
+      Record<string, { modifier_id: string; name: string; price_adjustment: number; available: boolean; }[]>
+    >((acc, curr) => {
+        const modifierId = curr.modifier_id as string;
+        const item = curr as { modifier_id: string; name: string; price_adjustment: number; available: boolean };
+        if (!acc[modifierId]) {
+          acc[modifierId] = [];
+        }
+        acc[modifierId].push(item);
+        return acc;
+      },
+      {} as Record<string, { modifier_id: string; name: string; price_adjustment: number; available: boolean; }[]>
+    );
+
+    // Attach values to modifiers
+    const modifiersWithValues = modifiersResult.map((m: Record<string, unknown>) => ({
+      ...m,
+      values: valuesByModifierId[m.id as string] || [],
+    }));
+
+    return NextResponse.json({ modifiers: modifiersWithValues });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Erro interno';
-    const status = (error as Error & { status?: number }).status || 500;
-    return NextResponse.json({ error: message }, { status });
+    console.error('Error in GET /api/admin/modifiers:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }
 
-/**
- * POST /api/admin/modifiers
- * Cria um novo modifier group para um produto.
- */
 export async function POST(request: NextRequest) {
   try {
-    const authUser = await requireAuth();
-    requireRole(authUser, ['dono', 'gerente']);
+    const supabaseAuth = await getSupabaseAuth();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
 
-    const restaurantId = getRestaurantId(authUser);
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+    }
+
     const body = await request.json();
-    const { product_id, name, required, min_selections, max_selections } = body;
+    const { restaurant_id, name, description, min_selections, max_selections, required } = body;
 
-    // Validações
-    if (!name || typeof name !== 'string' || name.trim() === '') {
-      return NextResponse.json({ error: 'Nome é obrigatório' }, { status: 400 });
-    }
-
-    if (
-      min_selections !== undefined &&
-      (typeof min_selections !== 'number' || min_selections < 0)
-    ) {
+    if (!restaurant_id || !name) {
       return NextResponse.json(
-        { error: 'min_selections deve ser um número >= 0' },
+        { error: 'restaurant_id e name são obrigatórios' },
         { status: 400 }
       );
     }
 
-    if (
-      max_selections !== undefined &&
-      (typeof max_selections !== 'number' || max_selections < 1)
-    ) {
-      return NextResponse.json(
-        { error: 'max_selections deve ser um número >= 1' },
-        { status: 400 }
-      );
-    }
+    // Verify user has access and is owner/manager
+    const profileResult = await sql`
+      SELECT role FROM users_profiles
+      WHERE user_id = ${user.id} AND restaurant_id = ${restaurant_id}
+      LIMIT 1
+    `;
 
-    if (
-      min_selections !== undefined &&
-      max_selections !== undefined &&
-      min_selections > max_selections
-    ) {
-      return NextResponse.json(
-        { error: 'min_selections não pode ser maior que max_selections' },
-        { status: 400 }
-      );
+    if (!profileResult[0] || (profileResult[0].role !== 'dono' && profileResult[0].role !== 'gerente')) {
+      return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 });
     }
 
     const now = new Date().toISOString();
 
-    if (isDevDatabase()) {
-      // Valida que o product_id pertence ao restaurante via categoria (Drizzle)
-      if (product_id) {
-        const productResult = await db
-          .select()
-          .from(products)
-          .leftJoin(categories, eq(products.category_id, categories.id))
-          .where(eq(products.id, product_id))
-          .limit(1);
+    // Create new modifier
+    const newModifier = {
+      id: crypto.randomUUID(),
+      restaurant_id,
+      name: name.trim(),
+      description: description?.trim() || null,
+      min_selections: min_selections || 0,
+      max_selections: max_selections || null,
+      required: required || false,
+      active: true,
+      created_at: now,
+      updated_at: now,
+    };
 
-        if (!productResult[0]) {
-          return NextResponse.json({ error: 'Produto não encontrado' }, { status: 404 });
-        }
+    await sql`
+      INSERT INTO modifiers (
+        id, restaurant_id, name, description, min_selections, max_selections,
+        required, active, created_at, updated_at
+      )
+      VALUES (
+        ${newModifier.id},
+        ${newModifier.restaurant_id},
+        ${newModifier.name},
+        ${newModifier.description},
+        ${newModifier.min_selections},
+        ${newModifier.max_selections},
+        ${newModifier.required},
+        ${newModifier.active},
+        ${newModifier.created_at},
+        ${newModifier.updated_at}
+      )
+    `;
 
-        const { categories: cat } = productResult[0];
-        if (!cat || cat.restaurant_id !== restaurantId) {
-          return NextResponse.json(
-            { error: 'Produto não pertence a este restaurante' },
-            { status: 403 }
-          );
-        }
-      }
-
-      const newGroup = {
-        id: crypto.randomUUID(),
-        restaurant_id: restaurantId,
-        name: name.trim(),
-        required: required ?? false,
-        min_selections: min_selections ?? 0,
-        max_selections: max_selections ?? 1,
-        created_at: now,
-      };
-
-      await db.insert(modifierGroups).values(newGroup);
-      await invalidateMenuCache();
-      return NextResponse.json({ modifier_group: newGroup }, { status: 201 });
-    } else {
-      const supabase = getSupabaseAdmin();
-
-      // Valida que o product_id pertence ao restaurante via categoria (Supabase)
-      if (product_id) {
-        const { data: productResult, error: productError } = await supabase
-          .from('products')
-          .select('id, category_id, categories!inner(restaurant_id)')
-          .eq('id', product_id)
-          .single();
-
-        if (productError || !productResult) {
-          return NextResponse.json({ error: 'Produto não encontrado' }, { status: 404 });
-        }
-
-        const cat = productResult.categories as unknown as { restaurant_id: string } | null;
-        if (!cat || cat.restaurant_id !== restaurantId) {
-          return NextResponse.json(
-            { error: 'Produto não pertence a este restaurante' },
-            { status: 403 }
-          );
-        }
-      }
-
-      const newGroup = {
-        id: crypto.randomUUID(),
-        restaurant_id: restaurantId,
-        name: name.trim(),
-        required: required ?? false,
-        min_selections: min_selections ?? 0,
-        max_selections: max_selections ?? 1,
-        created_at: now,
-      };
-
-      const { data, error } = await supabase
-        .from('modifier_groups')
-        .insert(newGroup)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error creating modifier group:', error);
-        return NextResponse.json(
-          { error: 'Erro ao criar grupo de modificadores' },
-          { status: 500 }
-        );
-      }
-
-      await invalidateMenuCache();
-      return NextResponse.json({ modifier_group: data }, { status: 201 });
-    }
+    return NextResponse.json({ modifier: { ...newModifier, values: [] } }, { status: 201 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Erro interno';
-    const status = (error as Error & { status?: number }).status || 500;
-    return NextResponse.json({ error: message }, { status });
+    console.error('Error in POST /api/admin/modifiers:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }

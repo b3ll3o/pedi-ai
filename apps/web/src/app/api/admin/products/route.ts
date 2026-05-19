@@ -1,230 +1,152 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, isDevDatabase, getSupabaseAdmin } from '@/infrastructure/database';
-import { products, categories } from '@/infrastructure/database/schema';
-import { eq, and, asc, inArray } from 'drizzle-orm';
-import { invalidateMenuCache } from '@/lib/offline/cache';
-import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin';
+import { sql } from '@/infrastructure/database/pg-client';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+
+async function getSupabaseAuth() {
+  const cookieStore = await cookies();
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Server component - ignore
+          }
+        },
+      },
+    }
+  );
+}
 
 export async function GET(request: NextRequest) {
   try {
-    const authUser = await requireAuth();
-    requireRole(authUser, ['dono', 'gerente']);
+    const supabaseAuth = await getSupabaseAuth();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
 
-    const restaurantId = getRestaurantId(authUser);
-    const { searchParams } = new URL(request.url);
-    const categoryId = searchParams.get('category_id');
-    const activeOnly = searchParams.get('active') === 'true';
-
-    if (isDevDatabase()) {
-      // Primeiro busca as categorias do restaurant para filtrar os produtos usando Drizzle
-      const categoryResult = await db
-        .select()
-        .from(categories)
-        .where(eq(categories.restaurant_id, restaurantId));
-
-      if (!categoryResult || categoryResult.length === 0) {
-        return NextResponse.json({ products: [] });
-      }
-
-      const categoryIds = categoryResult.map((c) => c.id);
-
-      // Filtra produtos por categoria(s) do restaurante
-      const query = db
-        .select({
-          products: products,
-          categories: categories,
-        })
-        .from(products)
-        .leftJoin(categories, eq(products.category_id, categories.id))
-        .where(inArray(products.category_id, categoryIds))
-        .orderBy(asc(products.sort_order));
-
-      let result = await query.all();
-
-      // Filtra por categoryId específico se fornecido
-      if (categoryId) {
-        result = result.filter((p) => p.products.category_id === categoryId);
-      }
-
-      // Filtra por disponível se activeOnly
-      if (activeOnly) {
-        result = result.filter((p) => p.products.available === true);
-      }
-
-      const productsWithCategory = result.map((r) => ({
-        ...r.products,
-        category: r.categories,
-      }));
-
-      return NextResponse.json({ products: productsWithCategory });
-    } else {
-      const supabase = getSupabaseAdmin();
-
-      // Primeiro busca as categorias do restaurant para filtrar os produtos usando Supabase
-      const { data: categoryResult, error: categoryError } = await supabase
-        .from('categories')
-        .select('id')
-        .eq('restaurant_id', restaurantId);
-
-      if (categoryError) {
-        console.error('Error fetching categories:', categoryError);
-        return NextResponse.json({ error: 'Erro ao buscar categorias' }, { status: 500 });
-      }
-
-      if (!categoryResult || categoryResult.length === 0) {
-        return NextResponse.json({ products: [] });
-      }
-
-      const categoryIds = categoryResult.map((c) => c.id);
-
-      // Filtra produtos por categoria(s) do restaurante
-      let query = supabase
-        .from('products')
-        .select('*, categories(*)')
-        .in('category_id', categoryIds)
-        .order('sort_order', { ascending: true });
-
-      if (categoryId) {
-        query = query.eq('category_id', categoryId);
-      }
-
-      if (activeOnly) {
-        query = query.eq('available', true);
-      }
-
-      const { data: productsResult, error: productsError } = await query;
-
-      if (productsError) {
-        console.error('Error fetching products:', productsError);
-        return NextResponse.json({ error: 'Erro ao buscar produtos' }, { status: 500 });
-      }
-
-      return NextResponse.json({ products: productsResult || [] });
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
+
+    const restaurantId = request.nextUrl.searchParams.get('restaurant_id');
+
+    if (!restaurantId) {
+      return NextResponse.json({ error: 'restaurant_id é obrigatório' }, { status: 400 });
+    }
+
+    // Verify user has access to this restaurant
+    const profileResult = await sql`
+      SELECT role FROM users_profiles
+      WHERE user_id = ${user.id} AND restaurant_id = ${restaurantId}
+      LIMIT 1
+    `;
+
+    if (!profileResult[0]) {
+      return NextResponse.json({ error: 'Acesso negado a este restaurante' }, { status: 403 });
+    }
+
+    // Get products for this restaurant with category info
+    const productsResult = await sql`
+      SELECT p.*, c.name as category_name
+      FROM products p
+      LEFT JOIN categories c ON p.category_id = c.id
+      WHERE p.restaurant_id = ${restaurantId}
+      ORDER BY c.position ASC, p.created_at DESC
+    `;
+
+    return NextResponse.json({ products: productsResult });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Erro interno';
-    const status = (error as Error & { status?: number }).status || 500;
-    return NextResponse.json({ error: message }, { status });
+    console.error('Error in GET /api/admin/products:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const authUser = await requireAuth();
-    requireRole(authUser, ['dono', 'gerente']);
+    const supabaseAuth = await getSupabaseAuth();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
 
-    const restaurantId = getRestaurantId(authUser);
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+    }
+
     const body = await request.json();
     const {
-      name,
-      description,
-      price,
-      category_id,
-      image_url,
-      dietary_labels,
-      available,
-      sort_order,
+      restaurant_id, category_id, name, description, price_cents,
+      image_url, preparation_time_minutes, active
     } = body;
 
-    // Validações
-    if (!name || typeof name !== 'string' || name.trim() === '') {
+    if (!restaurant_id || !name || price_cents === undefined) {
       return NextResponse.json(
-        { error: 'Nome é obrigatório e não pode ser vazio' },
+        { error: 'restaurant_id, name e price_cents são obrigatórios' },
         { status: 400 }
       );
     }
 
-    if (price === undefined || typeof price !== 'number' || price <= 0) {
-      return NextResponse.json({ error: 'Preço deve ser um número maior que 0' }, { status: 400 });
-    }
+    // Verify user has access and is owner/manager
+    const profileResult = await sql`
+      SELECT role FROM users_profiles
+      WHERE user_id = ${user.id} AND restaurant_id = ${restaurant_id}
+      LIMIT 1
+    `;
 
-    if (!category_id || typeof category_id !== 'string') {
-      return NextResponse.json({ error: 'category_id é obrigatório' }, { status: 400 });
+    if (!profileResult[0] || (profileResult[0].role !== 'dono' && profileResult[0].role !== 'gerente')) {
+      return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 });
     }
 
     const now = new Date().toISOString();
 
-    if (isDevDatabase()) {
-      // Verifica se a categoria existe e pertence ao restaurant usando Drizzle
-      const catResult = await db
-        .select()
-        .from(categories)
-        .where(and(eq(categories.id, category_id), eq(categories.restaurant_id, restaurantId)))
-        .limit(1);
+    // Create new product
+    const newProduct = {
+      id: crypto.randomUUID(),
+      restaurant_id,
+      category_id: category_id || null,
+      name: name.trim(),
+      description: description?.trim() || null,
+      price_cents,
+      image_url: image_url || null,
+      preparation_time_minutes: preparation_time_minutes || null,
+      active: active !== false,
+      created_at: now,
+      updated_at: now,
+    };
 
-      if (!catResult[0]) {
-        return NextResponse.json(
-          { error: 'Categoria não encontrada ou não pertence a este restaurante' },
-          { status: 404 }
-        );
-      }
+    await sql`
+      INSERT INTO products (
+        id, restaurant_id, category_id, name, description, price_cents,
+        image_url, preparation_time_minutes, active, created_at, updated_at
+      )
+      VALUES (
+        ${newProduct.id},
+        ${newProduct.restaurant_id},
+        ${newProduct.category_id},
+        ${newProduct.name},
+        ${newProduct.description},
+        ${newProduct.price_cents},
+        ${newProduct.image_url},
+        ${newProduct.preparation_time_minutes},
+        ${newProduct.active},
+        ${newProduct.created_at},
+        ${newProduct.updated_at}
+      )
+    `;
 
-      const newProduct = {
-        id: crypto.randomUUID(),
-        category_id,
-        name: name.trim(),
-        description: description || null,
-        image_url: image_url || null,
-        price,
-        dietary_labels: dietary_labels || null,
-        available: available ?? true,
-        sort_order: sort_order ?? 0,
-        created_at: now,
-        updated_at: now,
-      };
-
-      await db.insert(products).values(newProduct);
-      await invalidateMenuCache();
-      return NextResponse.json({ product: newProduct }, { status: 201 });
-    } else {
-      const supabase = getSupabaseAdmin();
-
-      // Verifica se a categoria existe e pertence ao restaurant usando Supabase
-      const { data: catResult, error: catError } = await supabase
-        .from('categories')
-        .select('id')
-        .eq('id', category_id)
-        .eq('restaurant_id', restaurantId)
-        .single();
-
-      if (catError || !catResult) {
-        return NextResponse.json(
-          { error: 'Categoria não encontrada ou não pertence a este restaurante' },
-          { status: 404 }
-        );
-      }
-
-      const newProduct = {
-        id: crypto.randomUUID(),
-        category_id,
-        name: name.trim(),
-        description: description || null,
-        image_url: image_url || null,
-        price,
-        dietary_labels: dietary_labels || null,
-        available: available ?? true,
-        sort_order: sort_order ?? 0,
-        created_at: now,
-        updated_at: now,
-      };
-
-      const { data: product, error } = await supabase
-        .from('products')
-        .insert(newProduct)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error creating product:', error);
-        return NextResponse.json({ error: 'Erro ao criar produto' }, { status: 500 });
-      }
-
-      await invalidateMenuCache();
-      return NextResponse.json({ product }, { status: 201 });
-    }
+    return NextResponse.json({ product: newProduct }, { status: 201 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Erro interno';
-    const status = (error as Error & { status?: number }).status || 500;
-    return NextResponse.json({ error: message }, { status });
+    console.error('Error in POST /api/admin/products:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }

@@ -1,71 +1,87 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, isDevDatabase, getSupabaseAdmin } from '@/infrastructure/database';
-import { categories } from '@/infrastructure/database/schema';
-import { eq, and } from 'drizzle-orm';
-import { invalidateMenuCache } from '@/lib/offline/cache';
-import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin';
+import { sql } from '@/infrastructure/database/pg-client';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
-export async function PATCH(request: NextRequest) {
+async function getSupabaseAuth() {
+  const cookieStore = await cookies();
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Server component - ignore
+          }
+        },
+      },
+    }
+  );
+}
+
+export async function POST(request: NextRequest) {
   try {
-    const authUser = await requireAuth();
-    requireRole(authUser, ['dono', 'gerente']);
+    const supabaseAuth = await getSupabaseAuth();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
 
-    const restaurantId = getRestaurantId(authUser);
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+    }
+
     const body = await request.json();
-    const { categories: categoryList } = body;
+    const { restaurant_id, updates } = body;
 
-    if (!Array.isArray(categoryList)) {
-      return NextResponse.json({ error: 'categories deve ser um array' }, { status: 400 });
+    if (!restaurant_id || !updates || !Array.isArray(updates)) {
+      return NextResponse.json(
+        { error: 'restaurant_id e updates (array) são obrigatórios' },
+        { status: 400 }
+      );
     }
 
-    // Valida cada item
-    for (const item of categoryList) {
-      if (!item.id || typeof item.id !== 'string') {
-        return NextResponse.json(
-          { error: 'Cada categoria deve ter um id válido' },
-          { status: 400 }
-        );
-      }
-      if (typeof item.sort_order !== 'number' || item.sort_order < 0) {
-        return NextResponse.json({ error: 'sort_order deve ser um número >= 0' }, { status: 400 });
-      }
+    // Verify user has access and is owner/manager
+    const profileResult = await sql`
+      SELECT role FROM users_profiles
+      WHERE user_id = ${user.id} AND restaurant_id = ${restaurant_id}
+      LIMIT 1
+    `;
+
+    if (!profileResult[0] || (profileResult[0].role !== 'dono' && profileResult[0].role !== 'gerente')) {
+      return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 });
     }
 
-    if (isDevDatabase()) {
-      // Atualiza cada categoria com o novo sort_order usando Drizzle
-      for (const item of categoryList) {
-        await db
-          .update(categories)
-          .set({ sort_order: item.sort_order })
-          .where(and(eq(categories.id, item.id), eq(categories.restaurant_id, restaurantId)));
-      }
-      await invalidateMenuCache();
-      return NextResponse.json({ success: true });
-    } else {
-      const supabase = getSupabaseAdmin();
+    const now = new Date().toISOString();
 
-      // Atualiza cada categoria com o novo sort_order usando Supabase
-      for (const item of categoryList) {
-        const { error } = await supabase
-          .from('categories')
-          .update({ sort_order: item.sort_order })
-          .eq('id', item.id)
-          .eq('restaurant_id', restaurantId);
-
-        if (error) {
-          console.error('Error updating category sort_order:', error);
-          return NextResponse.json(
-            { error: 'Erro ao atualizar ordem das categorias' },
-            { status: 500 }
-          );
-        }
-      }
-      await invalidateMenuCache();
-      return NextResponse.json({ success: true });
+    // Update each category's position
+    for (const update of updates) {
+      const { id, position } = update;
+      await sql`
+        UPDATE categories
+        SET position = ${position}, updated_at = ${now}
+        WHERE id = ${id} AND restaurant_id = ${restaurant_id}
+      `;
     }
+
+    // Fetch updated categories
+    const categoriesResult = await sql`
+      SELECT * FROM categories
+      WHERE restaurant_id = ${restaurant_id}
+      ORDER BY position ASC
+    `;
+
+    return NextResponse.json({ categories: categoriesResult });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Erro interno';
-    const status = (error as Error & { status?: number }).status || 500;
-    return NextResponse.json({ error: message }, { status });
+    console.error('Error in POST /api/admin/categories/reorder:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }

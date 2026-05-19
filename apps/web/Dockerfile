@@ -1,11 +1,15 @@
 # ============================================================
 # Next.js Web Dockerfile
+# Multi-stage: builder + runner
+# Build context: repo root (.)
 # ============================================================
 
 FROM node:20-alpine AS base
 
-# Install pnpm globally
-RUN npm install -g pnpm
+RUN corepack enable && corepack prepare pnpm@8 --activate
+
+# Native build tools for modules like better-sqlite3
+RUN apk add --no-cache python3 make g++
 
 # ============================================================
 # Build stage
@@ -14,21 +18,24 @@ FROM base AS builder
 
 WORKDIR /app
 
-# Copy workspace files
-COPY pnpm-workspace.yaml pnpm-lock.yaml ./
-COPY package.json ./
+# Copy monorepo workspace config (allows packages/* resolution)
+COPY pnpm-workspace.yaml ./
 
-# Copy source (apps/web is the Next.js workspace package)
+# Copy all packages (monorepo deps resolution for packages/shared)
+COPY packages ./packages
+
+# Copy Next.js app source
 COPY apps/web/src ./src
 COPY apps/web/public ./public
-COPY apps/web/next.config.ts ./next.config.ts
-COPY apps/web/tsconfig.json ./tsconfig.json
-COPY apps/web/next-env.d.ts ./next-env.d.ts
+COPY apps/web/next.config.ts ./
+COPY apps/web/tsconfig.json ./
+COPY apps/web/next-env.d.ts ./
+COPY apps/web/package.json ./
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile
+# Install dependencies fresh (no lockfile at this level - root has mixed deps)
+RUN pnpm install --ignore-scripts
 
-# Build
+# Build Next.js app
 RUN pnpm build
 
 # ============================================================
@@ -40,7 +47,6 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
@@ -48,16 +54,17 @@ RUN addgroup --system --gid 1001 nodejs && \
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/package.json ./
-COPY --from=builder /app/.next/static ./.next/static
+
+# Copy packages for runtime resolution
+COPY --from=builder /app/packages ./packages
 
 # Install production dependencies only
-RUN pnpm install --prod --frozen-lockfile
+RUN pnpm install --prod --ignore-scripts
 
-# Change ownership
 RUN chown -R nextjs:nodejs /app
 
 USER nextjs
 
 EXPOSE 3000
 
-CMD ["pnpm", "start"]
+CMD ["node_modules/.bin/next", "start", "--port", "3000"]

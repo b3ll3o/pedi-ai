@@ -1,163 +1,98 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { db, isDevDatabase } from '@/infrastructure/database';
-import { orders, orderItems, tables, orderStatusHistory } from '@/infrastructure/database/schema';
-import { eq } from 'drizzle-orm';
-import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin';
+import { sql } from '@/infrastructure/database/pg-client';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
-interface RouteParams {
-  params: Promise<{ id: string }>;
+async function getSupabaseAuth() {
+  const cookieStore = await cookies();
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Server component - ignore
+          }
+        },
+      },
+    }
+  );
 }
 
-// GET /api/admin/orders/[id] - Get order details with items, history, customer, table, payment
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const authUser = await requireAuth();
-    requireRole(authUser, ['dono', 'gerente', 'atendente']);
+    const supabaseAuth = await getSupabaseAuth();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
 
-    const restaurantId = getRestaurantId(authUser);
-    const { id } = await params;
-
-    if (isDevDatabase()) {
-      // Fetch order with restaurant_id check
-      const orderResult = await db.select().from(orders).where(eq(orders.id, id)).limit(1).get();
-
-      if (!orderResult || orderResult.restaurant_id !== restaurantId) {
-        return NextResponse.json({ error: 'Pedido não encontrado' }, { status: 404 });
-      }
-
-      // Fetch order items with product details
-      const itemsResult = await db
-        .select({
-          id: orderItems.id,
-          product_id: orderItems.product_id,
-          combo_id: orderItems.combo_id,
-          quantity: orderItems.quantity,
-          unit_price: orderItems.unit_price,
-          total_price: orderItems.total_price,
-          notes: orderItems.notes,
-          created_at: orderItems.created_at,
-        })
-        .from(orderItems)
-        .where(eq(orderItems.order_id, id));
-
-      // Fetch status history
-      const historyResult = await db
-        .select()
-        .from(orderStatusHistory)
-        .where(eq(orderStatusHistory.order_id, id));
-
-      // Fetch table info if exists
-      let tableInfo = null;
-      if (orderResult.table_id) {
-        const tableResult = await db
-          .select({ id: tables.id, number: tables.number, name: tables.name })
-          .from(tables)
-          .where(eq(tables.id, orderResult.table_id))
-          .limit(1)
-          .get();
-        tableInfo = tableResult || null;
-      }
-
-      // Payment info
-      const paymentInfo = {
-        payment_status: orderResult.payment_status,
-        payment_method: orderResult.payment_method,
-        subtotal: orderResult.subtotal,
-        tax: orderResult.tax,
-        total: orderResult.total,
-      };
-
-      return NextResponse.json({
-        data: {
-          ...orderResult,
-          items: itemsResult,
-          status_history: historyResult,
-          customer: null, // Customer info not available in dev schema
-          table: tableInfo,
-          payment: paymentInfo,
-        },
-      });
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
-    // Production: use Supabase
-    const supabase = await createClient();
+    const { id: orderId } = await params;
 
-    // Fetch order with restaurant_id check (return 404 if not found or wrong restaurant)
-    const { data: order, error: orderError } = await supabase
-      .from('orders')
-      .select(
-        `
-        *,
-        table:tables(id, number, name),
-        customer:customers(id, name, email, phone)
-      `
-      )
-      .eq('id', id)
-      .eq('restaurant_id', restaurantId)
-      .single();
+    // Get order
+    const orderResult = await sql`
+      SELECT o.*, t.name as table_name, r.name as restaurant_name
+      FROM orders o
+      LEFT JOIN tables t ON o.table_id = t.id
+      LEFT JOIN restaurants r ON o.restaurant_id = r.id
+      WHERE o.id = ${orderId}
+      LIMIT 1
+    `;
 
-    if (orderError || !order) {
-      // Return 404 to prevent enumeration (per spec)
+    if (!orderResult[0]) {
       return NextResponse.json({ error: 'Pedido não encontrado' }, { status: 404 });
     }
 
-    // Fetch order items with product details
-    const { data: items, error: itemsError } = await supabase
-      .from('order_items')
-      .select(
-        `
-        id,
-        product_id,
-        combo_id,
-        quantity,
-        unit_price,
-        total_price,
-        notes,
-        created_at,
-        product:products(id, name, image_url, price)
-      `
-      )
-      .eq('order_id', id);
+    // Verify user has access to this restaurant
+    const profileResult = await sql`
+      SELECT role FROM users_profiles
+      WHERE user_id = ${user.id} AND restaurant_id = ${orderResult[0].restaurant_id}
+      LIMIT 1
+    `;
 
-    if (itemsError) {
-      console.error('Error fetching order items:', itemsError);
-      return NextResponse.json({ error: 'Falha ao buscar itens do pedido' }, { status: 500 });
+    if (!profileResult[0]) {
+      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 
-    // Fetch status history
-    const { data: history, error: historyError } = await supabase
-      .from('order_status_history')
-      .select('*')
-      .eq('order_id', id)
-      .order('created_at', { ascending: true });
+    // Get order items
+    const itemsResult = await sql`
+      SELECT oi.*, p.name as product_name
+      FROM order_items oi
+      LEFT JOIN products p ON oi.product_id = p.id
+      WHERE oi.order_id = ${orderId}
+    `;
 
-    if (historyError) {
-      console.error('Error fetching order history:', historyError);
-    }
-
-    // Fetch payment info (order has payment_status and payment_method)
-    const paymentInfo = {
-      payment_status: order.payment_status,
-      payment_method: order.payment_method,
-      subtotal: order.subtotal,
-      tax: order.tax,
-      total: order.total,
-    };
+    // Get order status history
+    const historyResult = await sql`
+      SELECT * FROM order_status_history
+      WHERE order_id = ${orderId}
+      ORDER BY created_at ASC
+    `;
 
     return NextResponse.json({
-      data: {
-        ...order,
-        items: items || [],
-        status_history: history || [],
-        customer: order.customer,
-        table: order.table,
-        payment: paymentInfo,
+      order: {
+        ...orderResult[0],
+        items: itemsResult,
+        history: historyResult,
       },
     });
   } catch (error) {
-    console.error('Unexpected error in /api/admin/orders/[id]:', error);
-    const message = error instanceof Error ? error.message : 'Erro interno do servidor';
-    return NextResponse.json({ error: message }, { status: 401 });
+    console.error('Error in GET /api/admin/orders/[id]:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }

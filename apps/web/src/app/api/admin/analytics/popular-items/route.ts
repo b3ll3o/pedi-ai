@@ -1,193 +1,86 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, isDevDatabase, getSupabaseAdmin } from '@/infrastructure/database';
-import { orders, orderItems, products } from '@/infrastructure/database/schema';
-import { eq, and, gte, lte, inArray } from 'drizzle-orm';
-import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin';
+import { sql } from '@/infrastructure/database/pg-client';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
-type Period = 'day' | 'week' | 'month';
+async function getSupabaseAuth() {
+  const cookieStore = await cookies();
 
-// GET /api/admin/analytics/popular-items - Get most popular items
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Server component - ignore
+          }
+        },
+      },
+    }
+  );
+}
+
 export async function GET(request: NextRequest) {
   try {
-    const authUser = await requireAuth();
-    requireRole(authUser, ['dono', 'gerente']);
+    const supabaseAuth = await getSupabaseAuth();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
 
-    const restaurantId = getRestaurantId(authUser);
-    const { searchParams } = new URL(request.url);
-
-    const period = (searchParams.get('period') || 'month') as Period;
-    const startDate = searchParams.get('start_date');
-    const endDate = searchParams.get('end_date');
-    const limit = parseInt(searchParams.get('limit') || '10', 10);
-
-    // Validate period
-    if (!['day', 'week', 'month'].includes(period)) {
-      return NextResponse.json(
-        { error: 'Período inválido. Use: day, week ou month' },
-        { status: 400 }
-      );
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
-    // Validate limit
-    if (isNaN(limit) || limit < 1 || limit > 100) {
-      return NextResponse.json({ error: 'Limite deve ser entre 1 e 100' }, { status: 400 });
+    const restaurantId = request.nextUrl.searchParams.get('restaurant_id');
+    const startDate = request.nextUrl.searchParams.get('start_date');
+    const endDate = request.nextUrl.searchParams.get('end_date');
+    const limit = parseInt(request.nextUrl.searchParams.get('limit') || '10', 10);
+
+    if (!restaurantId) {
+      return NextResponse.json({ error: 'restaurant_id é obrigatório' }, { status: 400 });
     }
 
-    // Default date range: last 30 days
-    const defaultStartDate = new Date();
-    defaultStartDate.setDate(defaultStartDate.getDate() - 30);
-    const defaultEndDate = new Date();
+    // Verify user has access to this restaurant
+    const profileResult = await sql`
+      SELECT role FROM users_profiles
+      WHERE user_id = ${user.id} AND restaurant_id = ${restaurantId}
+      LIMIT 1
+    `;
 
-    const from = startDate || defaultStartDate.toISOString().split('T')[0];
-    const to = endDate || defaultEndDate.toISOString().split('T')[0];
-
-    if (isDevDatabase()) {
-      // First, get all paid orders in the date range for this restaurant using Drizzle
-      const ordersResult = await db
-        .select({ id: orders.id })
-        .from(orders)
-        .where(
-          and(
-            eq(orders.restaurant_id, restaurantId),
-            eq(orders.payment_status, 'paid'),
-            gte(orders.created_at, from),
-            lte(orders.created_at, to + 'T23:59:59.999Z')
-          )
-        );
-
-      const orderIds = ordersResult.map((o) => o.id);
-
-      if (orderIds.length === 0) {
-        return NextResponse.json({
-          items: [],
-          period,
-          date_range: {
-            start_date: from,
-            end_date: to,
-          },
-        });
-      }
-
-      // Get order items with product names
-      const itemsResult = await db
-        .select({
-          product_id: orderItems.product_id,
-          quantity: orderItems.quantity,
-          product_name: products.name,
-        })
-        .from(orderItems)
-        .leftJoin(products, eq(orderItems.product_id, products.id))
-        .where(inArray(orderItems.order_id, orderIds));
-
-      // Aggregate by product
-      const productQuantities: Record<string, number> = {};
-      const productNames: Record<string, string> = {};
-
-      itemsResult.forEach((item) => {
-        if (!item.product_id || item.quantity == null) return;
-        const productId = String(item.product_id);
-        productQuantities[productId] = (productQuantities[productId] || 0) + item.quantity;
-        if (item.product_name) {
-          productNames[productId] = item.product_name;
-        }
-      });
-
-      // Build final result
-      const popularItems = Object.keys(productQuantities)
-        .map((productId) => ({
-          product_id: productId,
-          product_name: productNames[productId] || 'Produto desconhecido',
-          count: productQuantities[productId],
-        }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, limit);
-
-      return NextResponse.json({
-        items: popularItems,
-        period,
-        date_range: {
-          start_date: from,
-          end_date: to,
-        },
-      });
-    } else {
-      const supabase = getSupabaseAdmin();
-
-      // First, get all paid orders in the date range for this restaurant using Supabase
-      const { data: ordersResult, error: ordersError } = await supabase
-        .from('orders')
-        .select('id')
-        .eq('restaurant_id', restaurantId)
-        .eq('payment_status', 'paid')
-        .gte('created_at', from)
-        .lte('created_at', to + 'T23:59:59.999Z');
-
-      if (ordersError) {
-        console.error('Error fetching orders:', ordersError);
-        return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
-      }
-
-      const orderIds = ordersResult?.map((o) => o.id) || [];
-
-      if (orderIds.length === 0) {
-        return NextResponse.json({
-          items: [],
-          period,
-          date_range: {
-            start_date: from,
-            end_date: to,
-          },
-        });
-      }
-
-      // Get order items with product names
-      const { data: itemsResult, error: itemsError } = await supabase
-        .from('order_items')
-        .select('product_id, quantity, products(name)')
-        .in('order_id', orderIds);
-
-      if (itemsError) {
-        console.error('Error fetching items:', itemsError);
-        return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
-      }
-
-      // Aggregate by product
-      const productQuantities: Record<string, number> = {};
-      const productNames: Record<string, string> = {};
-
-      itemsResult?.forEach((item) => {
-        if (!item.product_id || item.quantity == null) return;
-        const productId = String(item.product_id);
-        productQuantities[productId] = (productQuantities[productId] || 0) + item.quantity;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if ((item as any).products?.name) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          productNames[productId] = (item as any).products.name;
-        }
-      });
-
-      // Build final result
-      const popularItems = Object.keys(productQuantities)
-        .map((productId) => ({
-          product_id: productId,
-          product_name: productNames[productId] || 'Produto desconhecido',
-          count: productQuantities[productId],
-        }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, limit);
-
-      return NextResponse.json({
-        items: popularItems,
-        period,
-        date_range: {
-          start_date: from,
-          end_date: to,
-        },
-      });
+    if (!profileResult[0]) {
+      return NextResponse.json({ error: 'Acesso negado a este restaurante' }, { status: 403 });
     }
+
+    // Get popular items based on order items
+    const popularItemsResult = await sql`
+      SELECT
+        oi.product_id,
+        p.name as product_name,
+        COUNT(*) as order_count,
+        SUM(oi.quantity) as total_quantity,
+        SUM(oi.quantity * oi.unit_price_cents) as total_revenue
+      FROM order_items oi
+      JOIN orders o ON oi.order_id = o.id
+      LEFT JOIN products p ON oi.product_id = p.id
+      WHERE o.restaurant_id = ${restaurantId}
+        AND o.status NOT IN ('canceled')
+        AND o.created_at >= NOW() - INTERVAL '30 days'
+      GROUP BY oi.product_id, p.name
+      ORDER BY total_quantity DESC
+      LIMIT ${limit}
+    `;
+
+    return NextResponse.json({ popular_items: popularItemsResult });
   } catch (error) {
-    console.error('Unexpected error in /api/admin/analytics/popular-items:', error);
-    const status = (error as { status?: number }).status || 500;
-    return NextResponse.json({ error: 'Erro interno do servidor' }, { status });
+    console.error('Error in GET /api/admin/analytics/popular-items:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }

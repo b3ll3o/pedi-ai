@@ -1,200 +1,97 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { db, isDevDatabase } from '@/infrastructure/database';
-import { orders, orderStatusHistory } from '@/infrastructure/database/schema';
-import { eq } from 'drizzle-orm';
-import { requireAuth, requireRole } from '@/lib/auth/admin';
+import { sql } from '@/infrastructure/database/pg-client';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
-interface RouteParams {
-  params: Promise<{ id: string }>;
+async function getSupabaseAuth() {
+  const cookieStore = await cookies();
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Server component - ignore
+          }
+        },
+      },
+    }
+  );
 }
 
-// Valid order statuses based on DB enum
-type OrderStatus = 'pending_payment' | 'paid' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
-
-// Valid status transitions (DB schema)
-const VALID_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
-  pending_payment: ['paid', 'cancelled'],
-  paid: ['preparing', 'cancelled'],
-  preparing: ['ready', 'cancelled'],
-  ready: ['delivered', 'cancelled'],
-  delivered: [],
-  cancelled: [],
-};
-
-// Valid order statuses based on DB enum
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const authUser = await requireAuth();
-    requireRole(authUser, ['dono', 'gerente']);
+    const supabaseAuth = await getSupabaseAuth();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
 
-    const { id } = await params;
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+    }
+
+    const { id: orderId } = await params;
     const body = await request.json();
-    const { status } = body as { status: OrderStatus };
+    const { status, notes } = body;
 
     if (!status) {
       return NextResponse.json({ error: 'status é obrigatório' }, { status: 400 });
     }
 
-    const validStatuses: OrderStatus[] = [
-      'pending_payment',
-      'paid',
-      'preparing',
-      'ready',
-      'delivered',
-      'cancelled',
-    ];
-    if (!validStatuses.includes(status)) {
-      return NextResponse.json({ error: `Status '${status}' não é válido` }, { status: 400 });
-    }
+    // Get order
+    const orderResult = await sql`SELECT * FROM orders WHERE id = ${orderId} LIMIT 1`;
 
-    if (isDevDatabase()) {
-      // Fetch current order
-      const currentOrder = await db
-        .select({ id: orders.id, status: orders.status, restaurant_id: orders.restaurant_id })
-        .from(orders)
-        .where(eq(orders.id, id))
-        .limit(1)
-        .get();
-
-      if (!currentOrder) {
-        return NextResponse.json({ error: 'Pedido não encontrado' }, { status: 404 });
-      }
-
-      // Validate status transition
-      const currentStatus = currentOrder.status as OrderStatus;
-      const allowedTransitions = VALID_STATUS_TRANSITIONS[currentStatus] || [];
-
-      if (!allowedTransitions.includes(status)) {
-        return NextResponse.json(
-          {
-            error: `Transição de status inválida de '${currentStatus}' para '${status}'`,
-            current_status: currentStatus,
-            allowed_transitions: allowedTransitions,
-          },
-          { status: 400 }
-        );
-      }
-
-      // Update order status
-      await db.update(orders).set({ status }).where(eq(orders.id, id));
-
-      // Record status change in history
-      const actorNotes = JSON.stringify({
-        actor_id: authUser.id,
-        actor_type: 'admin',
-        actor_email: authUser.email,
-      });
-
-      await db.insert(orderStatusHistory).values({
-        id: crypto.randomUUID(),
-        order_id: id,
-        status,
-        notes: actorNotes,
-        created_at: new Date().toISOString(),
-      });
-
-      // Fetch updated order
-      const updatedOrder = await db
-        .select({ id: orders.id, status: orders.status, updated_at: orders.updated_at })
-        .from(orders)
-        .where(eq(orders.id, id))
-        .limit(1)
-        .get();
-
-      return NextResponse.json({
-        data: {
-          id: updatedOrder?.id,
-          status: updatedOrder?.status,
-          updated_at: updatedOrder?.updated_at,
-        },
-      });
-    }
-
-    // Production: use Supabase
-    const supabase = await createClient();
-
-    // Fetch current order
-    const { data: currentOrder, error: fetchError } = await supabase
-      .from('orders')
-      .select('id, status, restaurant_id')
-      .eq('id', id)
-      .single();
-
-    if (fetchError || !currentOrder) {
+    if (!orderResult[0]) {
       return NextResponse.json({ error: 'Pedido não encontrado' }, { status: 404 });
     }
 
-    // Validate status transition
-    const currentStatus = currentOrder.status as OrderStatus;
-    const allowedTransitions = VALID_STATUS_TRANSITIONS[currentStatus] || [];
+    // Verify user has access to this restaurant
+    const profileResult = await sql`
+      SELECT role FROM users_profiles
+      WHERE user_id = ${user.id} AND restaurant_id = ${orderResult[0].restaurant_id}
+      LIMIT 1
+    `;
 
-    if (!allowedTransitions.includes(status)) {
-      return NextResponse.json(
-        {
-          error: `Transição de status inválida de '${currentStatus}' para '${status}'`,
-          current_status: currentStatus,
-          allowed_transitions: allowedTransitions,
-        },
-        { status: 400 }
-      );
+    if (!profileResult[0]) {
+      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
+
+    const now = new Date().toISOString();
 
     // Update order status
-    const { data: updatedOrder, error: updateError } = await supabase
-      .from('orders')
-      .update({ status })
-      .eq('id', id)
-      .select()
-      .single();
+    await sql`
+      UPDATE orders SET status = ${status}, updated_at = ${now}
+      WHERE id = ${orderId}
+    `;
 
-    if (updateError) {
-      console.error('Error updating order status:', updateError);
-      return NextResponse.json({ error: 'Falha ao atualizar status do pedido' }, { status: 500 });
-    }
+    // Add status history entry
+    await sql`
+      INSERT INTO order_status_history (id, order_id, status, notes, created_at)
+      VALUES (${crypto.randomUUID()}, ${orderId}, ${status}, ${notes || null}, ${now})
+    `;
 
-    // Record status change in history (actor info stored in notes since DB doesn't have actor columns)
-    const actorNotes = JSON.stringify({
-      actor_id: authUser.id,
-      actor_type: 'admin',
-      actor_email: authUser.email,
-    });
-
-    await supabase.from('order_status_history').insert({
-      order_id: id,
-      status,
-      notes: actorNotes,
-    });
-
-    // Emit realtime event to orders channel
-    try {
-      supabase.channel('orders').send({
-        type: 'broadcast',
-        event: 'order_updated',
-        payload: {
-          order_id: id,
-          status,
-          updated_at: updatedOrder.updated_at,
-          updated_by: authUser.id,
-        },
-      });
-    } catch (realtimeError) {
-      // Log but don't fail the request if realtime fails
-      console.warn('Failed to emit realtime event:', realtimeError);
-    }
+    // Fetch updated order with history
+    const updatedOrder = await sql`SELECT * FROM orders WHERE id = ${orderId} LIMIT 1`;
+    const historyResult = await sql`
+      SELECT * FROM order_status_history
+      WHERE order_id = ${orderId}
+      ORDER BY created_at ASC
+    `;
 
     return NextResponse.json({
-      data: {
-        id: updatedOrder.id,
-        status: updatedOrder.status,
-        updated_at: updatedOrder.updated_at,
-      },
+      order: { ...updatedOrder[0], history: historyResult },
     });
   } catch (error) {
-    console.error('Unexpected error in PATCH /api/admin/orders/[id]/status:', error);
-    const message = error instanceof Error ? error.message : 'Erro interno do servidor';
-    const status =
-      message === 'Não autenticado' || message === 'Usuário não encontrado' ? 401 : 500;
-    return NextResponse.json({ error: message }, { status });
+    console.error('Error in POST /api/admin/orders/[id]/status:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }

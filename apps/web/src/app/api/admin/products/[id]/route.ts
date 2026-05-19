@@ -1,280 +1,177 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, isDevDatabase, getSupabaseAdmin } from '@/infrastructure/database';
-import { products, categories } from '@/infrastructure/database/schema';
-import { eq, and } from 'drizzle-orm';
-import { invalidateMenuCache } from '@/lib/offline/cache';
-import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin';
+import { sql } from '@/infrastructure/database/pg-client';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const authUser = await requireAuth();
-    requireRole(authUser, ['dono', 'gerente']);
+async function getSupabaseAuth() {
+  const cookieStore = await cookies();
 
-    const restaurantId = getRestaurantId(authUser);
-    const { id } = await params;
-
-    if (isDevDatabase()) {
-      // Busca o produto com sua categoria via join usando Drizzle
-      const result = await db
-        .select()
-        .from(products)
-        .leftJoin(categories, eq(products.category_id, categories.id))
-        .where(eq(products.id, id))
-        .limit(1);
-
-      if (!result[0]) {
-        return NextResponse.json({ error: 'Produto não encontrado' }, { status: 404 });
-      }
-
-      const { products: product, categories: category } = result[0];
-
-      // Verifica ownership via category
-      if (!category || category.restaurant_id !== restaurantId) {
-        return NextResponse.json({ error: 'Produto não encontrado' }, { status: 404 });
-      }
-
-      return NextResponse.json({ product });
-    } else {
-      const supabase = getSupabaseAdmin();
-
-      // Busca o produto com sua categoria via join usando Supabase
-      const { data: product, error } = await supabase
-        .from('products')
-        .select('*, categories(*)')
-        .eq('id', id)
-        .single();
-
-      if (error || !product) {
-        return NextResponse.json({ error: 'Produto não encontrado' }, { status: 404 });
-      }
-
-      const category = product.categories as { restaurant_id: string } | null;
-      if (!category || category.restaurant_id !== restaurantId) {
-        return NextResponse.json({ error: 'Produto não encontrado' }, { status: 404 });
-      }
-
-      return NextResponse.json({ product });
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Server component - ignore
+          }
+        },
+      },
     }
+  );
+}
+
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const supabaseAuth = await getSupabaseAuth();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+    }
+
+    const { id: productId } = await params;
+
+    // Get product
+    const productResult = await sql`SELECT * FROM products WHERE id = ${productId} LIMIT 1`;
+
+    if (!productResult[0]) {
+      return NextResponse.json({ error: 'Produto não encontrado' }, { status: 404 });
+    }
+
+    // Verify user has access to this restaurant
+    const profileResult = await sql`
+      SELECT role FROM users_profiles
+      WHERE user_id = ${user.id} AND restaurant_id = ${productResult[0].restaurant_id}
+      LIMIT 1
+    `;
+
+    if (!profileResult[0]) {
+      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
+    }
+
+    return NextResponse.json({ product: productResult[0] });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Erro interno';
-    const status = (error as Error & { status?: number }).status || 500;
-    return NextResponse.json({ error: message }, { status });
+    console.error('Error in GET /api/admin/products/[id]:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const authUser = await requireAuth();
-    requireRole(authUser, ['dono', 'gerente']);
-
-    const restaurantId = getRestaurantId(authUser);
-    const { id } = await params;
-    const body = await request.json();
+    const supabaseAuth = await getSupabaseAuth();
     const {
-      name,
-      description,
-      price,
-      category_id,
-      image_url,
-      dietary_labels,
-      available,
-      sort_order,
-    } = body;
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
 
-    // Validações
-    if (name !== undefined && (typeof name !== 'string' || name.trim() === '')) {
-      return NextResponse.json({ error: 'Nome não pode ser vazio' }, { status: 400 });
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
-    if (price !== undefined && (typeof price !== 'number' || price <= 0)) {
-      return NextResponse.json({ error: 'Preço deve ser um número maior que 0' }, { status: 400 });
+    const { id: productId } = await params;
+    const body = await request.json();
+    const { name, description, price_cents, image_url, category_id, preparation_time_minutes, active } = body;
+
+    // Get product first
+    const productResult = await sql`SELECT * FROM products WHERE id = ${productId} LIMIT 1`;
+
+    if (!productResult[0]) {
+      return NextResponse.json({ error: 'Produto não encontrado' }, { status: 404 });
     }
 
-    if (isDevDatabase()) {
-      // Primeiro verifica se o produto existe e pertence ao restaurant usando Drizzle
-      const existing = await db
-        .select()
-        .from(products)
-        .leftJoin(categories, eq(products.category_id, categories.id))
-        .where(eq(products.id, id))
-        .limit(1);
+    // Verify user has access and is owner/manager
+    const profileResult = await sql`
+      SELECT role FROM users_profiles
+      WHERE user_id = ${user.id} AND restaurant_id = ${productResult[0].restaurant_id}
+      LIMIT 1
+    `;
 
-      if (!existing[0]) {
-        return NextResponse.json({ error: 'Produto não encontrado' }, { status: 404 });
-      }
-
-      const { categories: existingCategory } = existing[0];
-
-      // Verifica ownership
-      if (!existingCategory || existingCategory.restaurant_id !== restaurantId) {
-        return NextResponse.json({ error: 'Produto não encontrado' }, { status: 404 });
-      }
-
-      // Verifica se a categoria pertence ao restaurant se category_id for fornecido
-      if (category_id) {
-        const catResult = await db
-          .select()
-          .from(categories)
-          .where(and(eq(categories.id, category_id), eq(categories.restaurant_id, restaurantId)))
-          .limit(1);
-        if (!catResult[0]) {
-          return NextResponse.json(
-            { error: 'Categoria não encontrada ou não pertence a este restaurante' },
-            { status: 404 }
-          );
-        }
-      }
-
-      const updateData: Record<string, unknown> = { updated_at: new Date().toISOString() };
-      if (category_id !== undefined) updateData.category_id = category_id;
-      if (name !== undefined) updateData.name = name.trim();
-      if (description !== undefined) updateData.description = description;
-      if (image_url !== undefined) updateData.image_url = image_url;
-      if (price !== undefined) updateData.price = price;
-      if (dietary_labels !== undefined) updateData.dietary_labels = dietary_labels;
-      if (available !== undefined) updateData.available = available;
-      if (sort_order !== undefined) updateData.sort_order = sort_order;
-
-      await db.update(products).set(updateData).where(eq(products.id, id));
-
-      const updated = await db.select().from(products).where(eq(products.id, id)).limit(1);
-      await invalidateMenuCache();
-      return NextResponse.json({ product: updated[0] });
-    } else {
-      const supabase = getSupabaseAdmin();
-
-      // Primeiro verifica se o produto existe e pertence ao restaurant usando Supabase
-      const { data: existingProduct, error: fetchError } = await supabase
-        .from('products')
-        .select('*, categories!inner(restaurant_id)')
-        .eq('id', id)
-        .single();
-
-      if (fetchError || !existingProduct) {
-        return NextResponse.json({ error: 'Produto não encontrado' }, { status: 404 });
-      }
-
-      const existingCategory = existingProduct.categories as { restaurant_id: string } | null;
-      if (!existingCategory || existingCategory.restaurant_id !== restaurantId) {
-        return NextResponse.json({ error: 'Produto não encontrado' }, { status: 404 });
-      }
-
-      // Verifica se a categoria pertence ao restaurant se category_id for fornecido
-      if (category_id) {
-        const { data: catResult, error: catError } = await supabase
-          .from('categories')
-          .select('id')
-          .eq('id', category_id)
-          .eq('restaurant_id', restaurantId)
-          .single();
-
-        if (catError || !catResult) {
-          return NextResponse.json(
-            { error: 'Categoria não encontrada ou não pertence a este restaurante' },
-            { status: 404 }
-          );
-        }
-      }
-
-      const updateData: Record<string, unknown> = { updated_at: new Date().toISOString() };
-      if (category_id !== undefined) updateData.category_id = category_id;
-      if (name !== undefined) updateData.name = name.trim();
-      if (description !== undefined) updateData.description = description;
-      if (image_url !== undefined) updateData.image_url = image_url;
-      if (price !== undefined) updateData.price = price;
-      if (dietary_labels !== undefined) updateData.dietary_labels = dietary_labels;
-      if (available !== undefined) updateData.available = available;
-      if (sort_order !== undefined) updateData.sort_order = sort_order;
-
-      const { data: updated, error: updateError } = await supabase
-        .from('products')
-        .update(updateData)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (updateError) {
-        console.error('Error updating product:', updateError);
-        return NextResponse.json({ error: 'Erro ao atualizar produto' }, { status: 500 });
-      }
-
-      await invalidateMenuCache();
-      return NextResponse.json({ product: updated });
+    if (!profileResult[0] || (profileResult[0].role !== 'dono' && profileResult[0].role !== 'gerente')) {
+      return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 });
     }
+
+    const now = new Date().toISOString();
+
+    // Update product
+    await sql`
+      UPDATE products
+      SET
+        name = COALESCE(${name || null}, name),
+        description = COALESCE(${description !== undefined ? (description?.trim() || null) : null}, description),
+        price_cents = COALESCE(${price_cents}, price_cents),
+        image_url = COALESCE(${image_url || null}, image_url),
+        category_id = COALESCE(${category_id || null}, category_id),
+        preparation_time_minutes = COALESCE(${preparation_time_minutes}, preparation_time_minutes),
+        active = COALESCE(${active}, active),
+        updated_at = ${now}
+      WHERE id = ${productId}
+    `;
+
+    // Fetch updated product
+    const updatedProduct = await sql`SELECT * FROM products WHERE id = ${productId} LIMIT 1`;
+
+    return NextResponse.json({ product: updatedProduct[0] });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Erro interno';
-    const status = (error as Error & { status?: number }).status || 500;
-    return NextResponse.json({ error: message }, { status });
+    console.error('Error in PUT /api/admin/products/[id]:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const authUser = await requireAuth();
-    requireRole(authUser, ['dono', 'gerente']);
+    const supabaseAuth = await getSupabaseAuth();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
 
-    const restaurantId = getRestaurantId(authUser);
-    const { id } = await params;
-
-    if (isDevDatabase()) {
-      // Verifica se o produto existe e pertence ao restaurant usando Drizzle
-      const existing = await db
-        .select()
-        .from(products)
-        .leftJoin(categories, eq(products.category_id, categories.id))
-        .where(eq(products.id, id))
-        .limit(1);
-
-      if (!existing[0]) {
-        return NextResponse.json({ error: 'Produto não encontrado' }, { status: 404 });
-      }
-
-      const { categories: existingCategory } = existing[0];
-
-      // Verifica ownership
-      if (!existingCategory || existingCategory.restaurant_id !== restaurantId) {
-        return NextResponse.json({ error: 'Produto não encontrado' }, { status: 404 });
-      }
-
-      // Hard delete
-      await db.delete(products).where(eq(products.id, id));
-      await invalidateMenuCache();
-      return NextResponse.json({ success: true });
-    } else {
-      const supabase = getSupabaseAdmin();
-
-      // Verifica se o produto existe e pertence ao restaurant usando Supabase
-      const { data: existingProduct, error: fetchError } = await supabase
-        .from('products')
-        .select('*, categories!inner(restaurant_id)')
-        .eq('id', id)
-        .single();
-
-      if (fetchError || !existingProduct) {
-        return NextResponse.json({ error: 'Produto não encontrado' }, { status: 404 });
-      }
-
-      const existingCategory = existingProduct.categories as { restaurant_id: string } | null;
-      if (!existingCategory || existingCategory.restaurant_id !== restaurantId) {
-        return NextResponse.json({ error: 'Produto não encontrado' }, { status: 404 });
-      }
-
-      const { error: deleteError } = await supabase.from('products').delete().eq('id', id);
-
-      if (deleteError) {
-        console.error('Error deleting product:', deleteError);
-        return NextResponse.json({ error: 'Erro ao deletar produto' }, { status: 500 });
-      }
-
-      await invalidateMenuCache();
-      return NextResponse.json({ success: true });
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
+
+    const { id: productId } = await params;
+
+    // Get product first
+    const productResult = await sql`SELECT * FROM products WHERE id = ${productId} LIMIT 1`;
+
+    if (!productResult[0]) {
+      return NextResponse.json({ error: 'Produto não encontrado' }, { status: 404 });
+    }
+
+    // Verify user has access and is owner/manager
+    const profileResult = await sql`
+      SELECT role FROM users_profiles
+      WHERE user_id = ${user.id} AND restaurant_id = ${productResult[0].restaurant_id}
+      LIMIT 1
+    `;
+
+    if (!profileResult[0] || (profileResult[0].role !== 'dono' && profileResult[0].role !== 'gerente')) {
+      return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 });
+    }
+
+    // Soft delete product
+    await sql`
+      UPDATE products SET active = false, updated_at = ${new Date().toISOString()}
+      WHERE id = ${productId}
+    `;
+
+    return NextResponse.json({ success: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Erro interno';
-    const status = (error as Error & { status?: number }).status || 500;
-    return NextResponse.json({ error: message }, { status });
+    console.error('Error in DELETE /api/admin/products/[id]:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }

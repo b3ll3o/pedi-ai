@@ -1,0 +1,69 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.*
+.yarn
+apps/*/node_modules
+packages/*/node_modules
+
+# Build outputs
+apps/api/dist
+apps/web/.next
+apps/web/out
+packages/shared/dist
+
+# Git
+.git
+.gitignore
+
+# IDE
+.opencode
+.lite
+.vscode
+.idea
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.*
+!.env.example
+!.env.e2e
+
+# Test artifacts
+coverage
+*.log
+*.log.*
+
+# Playwright
+apps/web/tests/e2e/playwright-report
+apps/web/tests/e2e/playwright-results.json
+apps/web/tests/e2e/.playwright
+apps/web/tests/e2e/test-results
+
+# Docker
+docker-compose*.yml
+.dockerignore
+
+# Docs (not needed in image)
+docs
+*.md
+!README.md
+
+# Scripts (not needed in image)
+scripts
+
+# Config files not needed in build
+AGENTS.md
+codemap.md
+PROJECT_CONTEXT.md
+next-sitemap.config.js
+tsconfig.json
+vitest.config.ts
+drizzle.config.ts
+.eslintrc*
+.commitlintrc*
+.prettierrc*
+nest-cli.json

@@ -1,242 +1,146 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, isDevDatabase, getSupabaseAdmin } from '@/infrastructure/database';
-import { orders, orderItems, tables, orderStatusEnum } from '@/infrastructure/database/schema';
-import { eq, and, desc, gte, lte, inArray } from 'drizzle-orm';
-import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin';
+import { sql } from '@/infrastructure/database/pg-client';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
-// GET /api/admin/orders - List orders with filters
+async function getSupabaseAuth() {
+  const cookieStore = await cookies();
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Server component - ignore
+          }
+        },
+      },
+    }
+  );
+}
+
 export async function GET(request: NextRequest) {
   try {
-    const authUser = await requireAuth();
-    requireRole(authUser, ['dono', 'gerente', 'atendente']);
+    const supabaseAuth = await getSupabaseAuth();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
 
-    const restaurantId = getRestaurantId(authUser);
-    const { searchParams } = new URL(request.url);
-
-    const status = searchParams.get('status');
-    const dateFrom = searchParams.get('date_from');
-    const dateTo = searchParams.get('date_to');
-    const limit = parseInt(searchParams.get('limit') || '50', 10);
-    const offset = parseInt(searchParams.get('offset') || '0', 10);
-
-    if (isDevDatabase()) {
-      // Build query conditions using Drizzle
-      const conditions = [eq(orders.restaurant_id, restaurantId)];
-
-      // Apply status filter
-      if (status) {
-        const statuses = status.split(',');
-        if (statuses.length === 1) {
-          conditions.push(eq(orders.status, statuses[0] as (typeof orderStatusEnum)[number]));
-        } else {
-          conditions.push(inArray(orders.status, statuses as (typeof orderStatusEnum)[number][]));
-        }
-      }
-
-      // Apply date range filters
-      if (dateFrom) {
-        conditions.push(gte(orders.created_at, dateFrom));
-      }
-
-      if (dateTo) {
-        conditions.push(lte(orders.created_at, dateTo + 'T23:59:59.999Z'));
-      }
-
-      // Get orders with pagination
-      const ordersResult = await db
-        .select({
-          id: orders.id,
-          status: orders.status,
-          subtotal: orders.subtotal,
-          tax: orders.tax,
-          total: orders.total,
-          payment_method: orders.payment_method,
-          payment_status: orders.payment_status,
-          created_at: orders.created_at,
-          updated_at: orders.updated_at,
-          table_id: orders.table_id,
-        })
-        .from(orders)
-        .where(and(...conditions))
-        .orderBy(desc(orders.created_at))
-        .limit(limit)
-        .offset(offset);
-
-      // Get total count
-      const countResult = await db
-        .select({ count: orders.id })
-        .from(orders)
-        .where(and(...conditions));
-
-      const total = countResult.length;
-
-      // Get table info for each order
-      const tableIds = ordersResult.filter((o) => o.table_id).map((o) => o.table_id as string);
-      const tablesMap: Record<string, { id: string; number: number | null; name: string | null }> =
-        {};
-
-      if (tableIds.length > 0) {
-        const tablesResult = await db
-          .select({ id: tables.id, number: tables.number, name: tables.name })
-          .from(tables)
-          .where(inArray(tables.id, tableIds));
-
-        tablesResult.forEach((t) => {
-          tablesMap[t.id] = t;
-        });
-      }
-
-      // Get items for each order
-      const orderIds = ordersResult.map((o) => o.id);
-      const itemsMap: Record<
-        string,
-        Array<{
-          id: string;
-          product_id: string;
-          combo_id: string | null;
-          quantity: number;
-          unit_price: number;
-          total_price: number;
-          notes: string | null;
-        }>
-      > = {};
-
-      if (orderIds.length > 0) {
-        const itemsResult = await db
-          .select({
-            id: orderItems.id,
-            product_id: orderItems.product_id,
-            combo_id: orderItems.combo_id,
-            quantity: orderItems.quantity,
-            unit_price: orderItems.unit_price,
-            total_price: orderItems.total_price,
-            notes: orderItems.notes,
-            order_id: orderItems.order_id,
-          })
-          .from(orderItems)
-          .where(inArray(orderItems.order_id, orderIds));
-
-        itemsResult.forEach((item) => {
-          if (!itemsMap[item.order_id]) {
-            itemsMap[item.order_id] = [];
-          }
-          itemsMap[item.order_id].push(item);
-        });
-      }
-
-      // Assemble response
-      const ordersWithDetails = ordersResult.map((order) => ({
-        id: order.id,
-        status: order.status,
-        subtotal: order.subtotal,
-        tax: order.tax,
-        total: order.total,
-        payment_method: order.payment_method,
-        payment_status: order.payment_status,
-        created_at: order.created_at,
-        updated_at: order.updated_at,
-        table: order.table_id ? tablesMap[order.table_id] : null,
-        items: itemsMap[order.id] || [],
-      }));
-
-      return NextResponse.json({
-        orders: ordersWithDetails,
-        total,
-        limit,
-        offset,
-      });
-    } else {
-      const supabase = getSupabaseAdmin();
-
-      // Build query using Supabase
-      let query = supabase
-        .from('orders')
-        .select('*', { count: 'exact' })
-        .eq('restaurant_id', restaurantId);
-
-      // Apply status filter
-      if (status) {
-        const statuses = status.split(',');
-        if (statuses.length === 1) {
-          query = query.eq('status', statuses[0]);
-        } else {
-          query = query.in('status', statuses);
-        }
-      }
-
-      // Apply date range filters
-      if (dateFrom) {
-        query = query.gte('created_at', dateFrom);
-      }
-
-      if (dateTo) {
-        query = query.lte('created_at', dateTo + 'T23:59:59.999Z');
-      }
-
-      const {
-        data: ordersResult,
-        error: ordersError,
-        count,
-      } = await query.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
-
-      if (ordersError) {
-        console.error('Error fetching orders:', ordersError);
-        return NextResponse.json({ error: 'Erro ao buscar pedidos' }, { status: 500 });
-      }
-
-      const total = count || 0;
-
-      // Get table IDs
-      const tableIds = ordersResult?.filter((o) => o.table_id).map((o) => o.table_id) || [];
-      const tablesMap: Record<string, { id: string; number: number | null; name: string | null }> =
-        {};
-
-      if (tableIds.length > 0) {
-        const { data: tablesData } = await supabase
-          .from('tables')
-          .select('id, number, name')
-          .in('id', tableIds);
-
-        tablesData?.forEach((t) => {
-          tablesMap[t.id] = t;
-        });
-      }
-
-      // Get items for orders
-      const orderIds = ordersResult?.map((o) => o.id) || [];
-      const itemsMap: Record<string, unknown[]> = {};
-
-      if (orderIds.length > 0) {
-        const { data: itemsData } = await supabase
-          .from('order_items')
-          .select('*')
-          .in('order_id', orderIds);
-
-        itemsData?.forEach((item) => {
-          if (!itemsMap[item.order_id]) {
-            itemsMap[item.order_id] = [];
-          }
-          itemsMap[item.order_id].push(item);
-        });
-      }
-
-      // Assemble response
-      const ordersWithDetails = (ordersResult || []).map((order) => ({
-        ...order,
-        table: order.table_id ? tablesMap[order.table_id] : null,
-        items: itemsMap[order.id] || [],
-      }));
-
-      return NextResponse.json({
-        orders: ordersWithDetails,
-        total,
-        limit,
-        offset,
-      });
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
+
+    const restaurantId = request.nextUrl.searchParams.get('restaurant_id');
+    const status = request.nextUrl.searchParams.get('status');
+    const page = parseInt(request.nextUrl.searchParams.get('page') || '1', 10);
+    const limit = parseInt(request.nextUrl.searchParams.get('limit') || '20', 10);
+
+    if (!restaurantId) {
+      return NextResponse.json({ error: 'restaurant_id é obrigatório' }, { status: 400 });
+    }
+
+    // Verify user has access to this restaurant
+    const profileResult = await sql`
+      SELECT role FROM users_profiles
+      WHERE user_id = ${user.id} AND restaurant_id = ${restaurantId}
+      LIMIT 1
+    `;
+
+    if (!profileResult[0]) {
+      return NextResponse.json({ error: 'Acesso negado a este restaurante' }, { status: 403 });
+    }
+
+    const offset = (page - 1) * limit;
+
+    // Build query based on filters
+    let ordersResult;
+    let totalResult;
+
+    if (status) {
+      ordersResult = await sql`
+        SELECT o.*, t.name as table_name
+        FROM orders o
+        LEFT JOIN tables t ON o.table_id = t.id
+        WHERE o.restaurant_id = ${restaurantId} AND o.status = ${status}
+        ORDER BY o.created_at DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `;
+
+      totalResult = await sql`
+        SELECT COUNT(*) as total FROM orders
+        WHERE restaurant_id = ${restaurantId} AND status = ${status}
+      `;
+    } else {
+      ordersResult = await sql`
+        SELECT o.*, t.name as table_name
+        FROM orders o
+        LEFT JOIN tables t ON o.table_id = t.id
+        WHERE o.restaurant_id = ${restaurantId}
+        ORDER BY o.created_at DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `;
+
+      totalResult = await sql`
+        SELECT COUNT(*) as total FROM orders WHERE restaurant_id = ${restaurantId}
+      `;
+    }
+
+    const total = totalResult[0]?.total || 0;
+
+    // Get order items for each order
+    const orderIds = ordersResult.map((o: { id: string }) => o.id);
+    let orderItems: Record<string, unknown>[] = [];
+
+    if (orderIds.length > 0) {
+      orderItems = await sql`
+        SELECT oi.*, p.name as product_name
+        FROM order_items oi
+        LEFT JOIN products p ON oi.product_id = p.id
+        WHERE oi.order_id = ANY(${orderIds})
+      `;
+    }
+
+    // Group items by order_id
+    const itemsByOrderId = orderItems.reduce<
+      Record<string, { order_id: string; product_name?: string }[]>
+    >((acc, curr) => {
+        const orderId = curr.order_id as string;
+        const item = curr as { order_id: string; product_name?: string };
+        if (!acc[orderId]) {
+          acc[orderId] = [];
+        }
+        acc[orderId].push(item);
+        return acc;
+      },
+      {} as Record<string, { order_id: string; product_name?: string }[]>
+    );
+
+    // Attach items to orders
+    const ordersWithItems = ordersResult.map((o: Record<string, unknown>) => ({
+      ...o,
+      items: itemsByOrderId[o.id as string] || [],
+    }));
+
+    return NextResponse.json({
+      orders: ordersWithItems,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
-    console.error('Unexpected error in /api/admin/orders:', error);
-    const message = error instanceof Error ? error.message : 'Erro interno do servidor';
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error('Error in GET /api/admin/orders:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }

@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, isDevDatabase, getSupabaseAdmin } from '@/infrastructure/database';
-import { restaurants, usersProfiles } from '@/infrastructure/database/schema';
-import { eq } from 'drizzle-orm';
+import { sql } from '@/infrastructure/database/pg-client';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
@@ -30,7 +28,10 @@ async function getSupabaseAuth() {
   );
 }
 
-export async function POST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const supabaseAuth = await getSupabaseAuth();
     const {
@@ -43,102 +44,40 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
 
     const { id: restaurantId } = await params;
 
-    if (isDevDatabase()) {
-      // Verify user is owner
-      const profileResult = await db
-        .select({ role: usersProfiles.role })
-        .from(usersProfiles)
-        .where(eq(usersProfiles.user_id, user.id))
-        .limit(1)
-        .get();
+    // Verify user has access and is owner
+    const profileResult = await sql`
+      SELECT role FROM users_profiles
+      WHERE user_id = ${user.id} AND restaurant_id = ${restaurantId}
+      LIMIT 1
+    `;
 
-      if (!profileResult || profileResult.role !== 'dono') {
-        return NextResponse.json(
-          { error: 'Apenas o proprietário pode desativar um restaurante' },
-          { status: 403 }
-        );
-      }
-
-      // Check if restaurant exists and is active
-      const restaurantResult = await db
-        .select({ active: restaurants.active })
-        .from(restaurants)
-        .where(eq(restaurants.id, restaurantId))
-        .limit(1)
-        .get();
-
-      if (!restaurantResult) {
-        return NextResponse.json({ error: 'Restaurante não encontrado' }, { status: 404 });
-      }
-
-      if (restaurantResult.active === false) {
-        return NextResponse.json({ error: 'Este restaurante já está desativado' }, { status: 400 });
-      }
-
-      // Deactivate restaurant (soft delete)
-      await db
-        .update(restaurants)
-        .set({ active: false, updated_at: new Date().toISOString() })
-        .where(eq(restaurants.id, restaurantId));
-
-      // Fetch updated restaurant
-      const deactivatedRestaurant = await db
-        .select()
-        .from(restaurants)
-        .where(eq(restaurants.id, restaurantId))
-        .limit(1)
-        .get();
-
-      return NextResponse.json({ restaurant: deactivatedRestaurant });
-    }
-
-    // Production: use Supabase
-    const supabaseAdmin = getSupabaseAdmin();
-
-    // Verify user is owner
-    const { data: profile } = await supabaseAdmin
-      .from('users_profiles')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('restaurant_id', restaurantId)
-      .single();
-
-    if (!profile || profile.role !== 'dono') {
+    if (!profileResult[0] || profileResult[0].role !== 'dono') {
       return NextResponse.json(
         { error: 'Apenas o proprietário pode desativar um restaurante' },
         { status: 403 }
       );
     }
 
-    // Check if restaurant exists and is active
-    const { data: restaurant, error: fetchError } = await supabaseAdmin
-      .from('restaurants')
-      .select('active')
-      .eq('id', restaurantId)
-      .single();
+    const now = new Date().toISOString();
 
-    if (fetchError || !restaurant) {
-      return NextResponse.json({ error: 'Restaurante não encontrado' }, { status: 404 });
-    }
+    // Soft delete restaurant
+    await sql`
+      UPDATE restaurants
+      SET active = false, updated_at = ${now}
+      WHERE id = ${restaurantId}
+    `;
 
-    if (restaurant.active === false) {
-      return NextResponse.json({ error: 'Este restaurante já está desativado' }, { status: 400 });
-    }
+    // Also cancel any active subscriptions
+    await sql`
+      UPDATE subscriptions
+      SET status = 'canceled', updated_at = ${now}
+      WHERE restaurant_id = ${restaurantId} AND status = 'active'
+    `;
 
-    // Deactivate restaurant (soft delete)
-    const { data: deactivatedRestaurant, error: deactivateError } = await supabaseAdmin
-      .from('restaurants')
-      .update({ active: false, updated_at: new Date().toISOString() })
-      .eq('id', restaurantId)
-      .select()
-      .single();
-
-    if (deactivateError) {
-      console.error('Error deactivating restaurant:', deactivateError);
-      return NextResponse.json({ error: 'Erro ao desativar restaurante' }, { status: 500 });
-    }
-
-    return NextResponse.json({ restaurant: deactivatedRestaurant });
+    return NextResponse.json({
+      success: true,
+      message: 'Restaurante desativado com sucesso',
+    });
   } catch (error) {
     console.error('Error in POST /api/admin/restaurants/[id]/deactivate:', error);
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });

@@ -1,132 +1,75 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { isDevDatabase, getSupabaseAdmin, db } from '@/infrastructure/database';
-import { subscriptions } from '@/infrastructure/database/schema';
-import { eq } from 'drizzle-orm';
+import { sql } from '@/infrastructure/database/pg-client';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+
+async function getSupabaseAuth() {
+  const cookieStore = await cookies();
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Server component - ignore
+          }
+        },
+      },
+    }
+  );
+}
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const restaurantId = searchParams.get('restaurant_id');
+    const supabaseAuth = await getSupabaseAuth();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+    }
+
+    const restaurantId = request.nextUrl.searchParams.get('restaurant_id');
 
     if (!restaurantId) {
       return NextResponse.json({ error: 'restaurant_id é obrigatório' }, { status: 400 });
     }
 
     // Verify user has access to this restaurant
-    // Note: In production, you'd verify via requireAuth() here
-    // For now we rely on the restaurant_id being passed and validated elsewhere
+    const profileResult = await sql`
+      SELECT role FROM users_profiles
+      WHERE user_id = ${user.id} AND restaurant_id = ${restaurantId}
+      LIMIT 1
+    `;
 
-    if (isDevDatabase()) {
-      const result = await db
-        .select()
-        .from(subscriptions)
-        .where(eq(subscriptions.restaurant_id, restaurantId))
-        .limit(1);
-
-      const subscription = result[0];
-
-      if (!subscription) {
-        return NextResponse.json({
-          subscription: null,
-          acesso: {
-            ativo: false,
-            status: 'expired',
-            diasRestantes: 0,
-            bloqueado: true,
-          },
-        });
-      }
-
-      // Calculate days remaining
-      const trialEndsAt = new Date(subscription.trial_ends_at);
-      const now = new Date();
-      const diffMs = trialEndsAt.getTime() - now.getTime();
-      const diasRestantes = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-
-      const períodoAtivo =
-        (subscription.status === 'trial' && diasRestantes > 0) ||
-        (subscription.status === 'active' &&
-          subscription.subscription_ends_at &&
-          new Date(subscription.subscription_ends_at) > now);
-
-      return NextResponse.json({
-        subscription,
-        acesso: {
-          ativo: períodoAtivo,
-          status: subscription.status,
-          diasRestantes: subscription.status === 'trial' ? diasRestantes : 0,
-          bloqueado: !períodoAtivo,
-        },
-      });
-    } else {
-      const supabase = getSupabaseAdmin();
-
-      // Verify user has access to this restaurant
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
-      }
-
-      const { data: profile } = await supabase
-        .from('users_profiles')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('restaurant_id', restaurantId)
-        .single();
-
-      if (!profile) {
-        return NextResponse.json({ error: 'Acesso negado a este restaurante' }, { status: 403 });
-      }
-
-      // Get subscription
-      const { data: subscription, error: subError } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('restaurant_id', restaurantId)
-        .single();
-
-      if (subError && subError.code !== 'PGRST116') {
-        console.error('Error fetching subscription:', subError);
-        return NextResponse.json({ error: 'Erro ao buscar assinatura' }, { status: 500 });
-      }
-
-      if (!subscription) {
-        return NextResponse.json({
-          subscription: null,
-          acesso: {
-            ativo: false,
-            status: 'expired',
-            diasRestantes: 0,
-            bloqueado: true,
-          },
-        });
-      }
-
-      // Calculate days remaining
-      const trialEndsAt = new Date(subscription.trial_ends_at);
-      const now = new Date();
-      const diffMs = trialEndsAt.getTime() - now.getTime();
-      const diasRestantes = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-
-      const períodoAtivo =
-        (subscription.status === 'trial' && diasRestantes > 0) ||
-        (subscription.status === 'active' &&
-          subscription.subscription_ends_at &&
-          new Date(subscription.subscription_ends_at) > now);
-
-      return NextResponse.json({
-        subscription,
-        acesso: {
-          ativo: períodoAtivo,
-          status: subscription.status,
-          diasRestantes: subscription.status === 'trial' ? diasRestantes : 0,
-          bloqueado: !períodoAtivo,
-        },
-      });
+    if (!profileResult[0]) {
+      return NextResponse.json({ error: 'Acesso negado a este restaurante' }, { status: 403 });
     }
+
+    // Get subscription
+    const subscriptionResult = await sql`
+      SELECT s.*, r.name as restaurant_name
+      FROM subscriptions s
+      LEFT JOIN restaurants r ON s.restaurant_id = r.id
+      WHERE s.restaurant_id = ${restaurantId}
+      LIMIT 1
+    `;
+
+    if (!subscriptionResult[0]) {
+      return NextResponse.json({ error: 'Assinatura não encontrada' }, { status: 404 });
+    }
+
+    return NextResponse.json({ subscription: subscriptionResult[0] });
   } catch (error) {
     console.error('Error in GET /api/admin/subscriptions:', error);
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
@@ -135,193 +78,92 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const supabaseAuth = await getSupabaseAuth();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+    }
+
     const body = await request.json();
-    const { restaurant_id, action } = body;
+    const { restaurant_id, plan_type, price_cents } = body;
 
-    if (!restaurant_id) {
-      return NextResponse.json({ error: 'restaurant_id é obrigatório' }, { status: 400 });
+    if (!restaurant_id || !plan_type) {
+      return NextResponse.json(
+        { error: 'restaurant_id e plan_type são obrigatórios' },
+        { status: 400 }
+      );
     }
 
-    if (isDevDatabase()) {
-      if (action === 'start_trial') {
-        // Check if subscription already exists
-        const existing = await db
-          .select({ id: subscriptions.id })
-          .from(subscriptions)
-          .where(eq(subscriptions.restaurant_id, restaurant_id))
-          .limit(1);
+    // Verify user is owner
+    const profileResult = await sql`
+      SELECT role FROM users_profiles
+      WHERE user_id = ${user.id} AND restaurant_id = ${restaurant_id}
+      LIMIT 1
+    `;
 
-        if (existing.length > 0) {
-          return NextResponse.json({ error: 'Restaurante já possui assinatura' }, { status: 409 });
-        }
+    if (!profileResult[0] || profileResult[0].role !== 'dono') {
+      return NextResponse.json({ error: 'Apenas o proprietário pode alterar a assinatura' }, { status: 403 });
+    }
 
-        const trialDays = 14;
-        const trialEndsAt = new Date();
-        trialEndsAt.setDate(trialEndsAt.getDate() + trialDays);
+    const now = new Date().toISOString();
 
-        const now = new Date().toISOString();
-        const newSubscription = {
-          id: crypto.randomUUID(),
-          restaurant_id,
-          status: 'trial',
-          plan_type: 'trial',
-          price_cents: 0,
-          currency: 'BRL',
-          trial_started_at: now,
-          trial_ends_at: trialEndsAt.toISOString(),
-          trial_days: trialDays,
-          created_at: now,
-          updated_at: now,
-          version: 1,
-        };
+    // Check for existing subscription
+    const existingSubscription = await sql`
+      SELECT * FROM subscriptions WHERE restaurant_id = ${restaurant_id} LIMIT 1
+    `;
 
-        await db.insert(subscriptions).values(newSubscription);
-
-        return NextResponse.json({ subscription: newSubscription }, { status: 201 });
-      }
-
-      if (action === 'activate') {
-        const existingResult = await db
-          .select()
-          .from(subscriptions)
-          .where(eq(subscriptions.restaurant_id, restaurant_id))
-          .limit(1);
-
-        if (existingResult.length === 0) {
-          return NextResponse.json({ error: 'Assinatura não encontrada' }, { status: 404 });
-        }
-
-        const planType = body.plan_type || 'monthly';
-        const subscriptionEndsAt = new Date();
-        subscriptionEndsAt.setDate(
-          subscriptionEndsAt.getDate() + (planType === 'yearly' ? 365 : 30)
-        );
-
-        const now = new Date().toISOString();
-        await db
-          .update(subscriptions)
-          .set({
-            status: 'active',
-            plan_type: planType,
-            price_cents: planType === 'yearly' ? 19990 : 1999,
-            subscription_started_at: now,
-            subscription_ends_at: subscriptionEndsAt.toISOString(),
-            updated_at: now,
-          })
-          .where(eq(subscriptions.restaurant_id, restaurant_id));
-
-        const updatedResult = await db
-          .select()
-          .from(subscriptions)
-          .where(eq(subscriptions.restaurant_id, restaurant_id))
-          .limit(1);
-
-        return NextResponse.json({ subscription: updatedResult[0] });
-      }
-
-      return NextResponse.json({ error: 'Ação desconhecida' }, { status: 400 });
+    if (existingSubscription[0]) {
+      // Update existing subscription
+      await sql`
+        UPDATE subscriptions
+        SET
+          plan_type = ${plan_type},
+          price_cents = ${price_cents || existingSubscription[0].price_cents},
+          status = 'active',
+          updated_at = ${now}
+        WHERE restaurant_id = ${restaurant_id}
+      `;
     } else {
-      const supabase = getSupabaseAdmin();
+      // Create new subscription
+      const trialDays = 14;
+      const trialEndsAt = new Date();
+      trialEndsAt.setDate(trialEndsAt.getDate() + trialDays);
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
-      }
-
-      // Verify user is owner of restaurant
-      const { data: profile } = await supabase
-        .from('users_profiles')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('restaurant_id', restaurant_id)
-        .single();
-
-      if (!profile || profile.role !== 'dono') {
-        return NextResponse.json(
-          { error: 'Apenas o proprietário pode gerenciar assinaturas' },
-          { status: 403 }
-        );
-      }
-
-      if (action === 'start_trial') {
-        // Check if subscription already exists
-        const { data: existing } = await supabase
-          .from('subscriptions')
-          .select('id')
-          .eq('restaurant_id', restaurant_id)
-          .single();
-
-        if (existing) {
-          return NextResponse.json({ error: 'Restaurante já possui assinatura' }, { status: 409 });
-        }
-
-        const trialDays = 14;
-        const trialEndsAt = new Date();
-        trialEndsAt.setDate(trialEndsAt.getDate() + trialDays);
-
-        const { data: subscription, error: createError } = await supabase
-          .from('subscriptions')
-          .insert({
-            restaurant_id,
-            status: 'trial',
-            trial_days: trialDays,
-            trial_started_at: new Date().toISOString(),
-            trial_ends_at: trialEndsAt.toISOString(),
-          })
-          .select()
-          .single();
-
-        if (createError) {
-          console.error('Error creating subscription:', createError);
-          return NextResponse.json({ error: 'Erro ao criar assinatura' }, { status: 500 });
-        }
-
-        return NextResponse.json({ subscription }, { status: 201 });
-      }
-
-      if (action === 'activate') {
-        const { data: existing } = await supabase
-          .from('subscriptions')
-          .select('*')
-          .eq('restaurant_id', restaurant_id)
-          .single();
-
-        if (!existing) {
-          return NextResponse.json({ error: 'Assinatura não encontrada' }, { status: 404 });
-        }
-
-        const planType = body.plan_type || 'monthly';
-        const subscriptionEndsAt = new Date();
-        subscriptionEndsAt.setDate(
-          subscriptionEndsAt.getDate() + (planType === 'yearly' ? 365 : 30)
-        );
-
-        const { data: subscription, error: updateError } = await supabase
-          .from('subscriptions')
-          .update({
-            status: 'active',
-            plan_type: planType,
-            price_cents: planType === 'yearly' ? 19990 : 1999,
-            subscription_started_at: new Date().toISOString(),
-            subscription_ends_at: subscriptionEndsAt.toISOString(),
-          })
-          .eq('restaurant_id', restaurant_id)
-          .select()
-          .single();
-
-        if (updateError) {
-          console.error('Error activating subscription:', updateError);
-          return NextResponse.json({ error: 'Erro ao ativar assinatura' }, { status: 500 });
-        }
-
-        return NextResponse.json({ subscription });
-      }
-
-      return NextResponse.json({ error: 'Ação desconhecida' }, { status: 400 });
+      await sql`
+        INSERT INTO subscriptions (
+          id, restaurant_id, status, plan_type, price_cents, currency,
+          trial_days, trial_started_at, trial_ends_at, created_at, updated_at, version
+        )
+        VALUES (
+          ${crypto.randomUUID()},
+          ${restaurant_id},
+          'trial',
+          ${plan_type},
+          ${price_cents || 1999},
+          'BRL',
+          ${trialDays},
+          ${now},
+          ${trialEndsAt.toISOString()},
+          ${now},
+          ${now},
+          1
+        )
+      `;
     }
+
+    // Fetch updated subscription
+    const updatedSubscription = await sql`
+      SELECT s.*, r.name as restaurant_name
+      FROM subscriptions s
+      LEFT JOIN restaurants r ON s.restaurant_id = r.id
+      WHERE s.restaurant_id = ${restaurant_id}
+      LIMIT 1
+    `;
+
+    return NextResponse.json({ subscription: updatedSubscription[0] });
   } catch (error) {
     console.error('Error in POST /api/admin/subscriptions:', error);
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });

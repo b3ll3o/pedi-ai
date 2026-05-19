@@ -1,225 +1,79 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { db, isDevDatabase, getSupabaseAdmin } from '@/infrastructure/database';
-import { usersProfiles, subscriptions } from '@/infrastructure/database/schema';
-import { eq, and } from 'drizzle-orm';
+import { sql } from '@/infrastructure/database/pg-client';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
-const TRIAL_DAYS = 14;
-const MONTHLY_PRICE = 19.99; // R$ 19,99
+async function getSupabaseAuth() {
+  const cookieStore = await cookies();
 
-/**
- * Get trial and subscription info for the current user's restaurants
- * GET /api/admin/restaurants/with-trial
- */
-export async function GET(_request: NextRequest) {
-  try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
-    }
-
-    if (isDevDatabase()) {
-      // Get user's profiles
-      const profilesResult = await db
-        .select({ restaurant_id: usersProfiles.restaurant_id })
-        .from(usersProfiles)
-        .where(and(eq(usersProfiles.user_id, user.id), eq(usersProfiles.role, 'dono')));
-
-      const hasRestaurants = profilesResult.length > 0;
-      const isFirstRestaurant = !hasRestaurants;
-
-      // For dev, we don't have restaurant_settings table, so we simulate
-      let trialDaysRemaining = TRIAL_DAYS;
-      let subscriptionStatus: 'trial' | 'active' | 'expired' = 'trial';
-      let firstRestaurantCreatedAt: string | null = null;
-
-      // Check if there's an existing subscription
-      if (hasRestaurants && profilesResult[0].restaurant_id) {
-        const subscriptionResult = await db
-          .select()
-          .from(subscriptions)
-          .where(eq(subscriptions.restaurant_id, profilesResult[0].restaurant_id))
-          .limit(1)
-          .get();
-
-        if (subscriptionResult) {
-          firstRestaurantCreatedAt = subscriptionResult.created_at;
-          subscriptionStatus = subscriptionResult.status as 'trial' | 'active' | 'expired';
-
-          if (subscriptionResult.trial_ends_at) {
-            const trialEndDate = new Date(subscriptionResult.trial_ends_at);
-            const now = new Date();
-            trialDaysRemaining = Math.max(
-              0,
-              Math.floor((trialEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
             );
+          } catch {
+            // Server component - ignore
           }
-        }
-      }
-
-      return NextResponse.json({
-        trialDaysRemaining,
-        subscriptionStatus,
-        firstRestaurantCreatedAt,
-        monthlyPrice: MONTHLY_PRICE,
-        isFirstRestaurant,
-        hasRestaurants,
-      });
+        },
+      },
     }
-
-    // Production: use Supabase
-    // Use admin client to bypass RLS
-    const supabaseAdmin = getSupabaseAdmin();
-
-    // Get restaurant settings for this owner
-    const { data: settings, error: settingsError } = await supabaseAdmin
-      .from('restaurant_settings')
-      .select('*')
-      .eq('owner_id', user.id)
-      .single();
-
-    if (settingsError && settingsError.code !== 'PGRST116') {
-      // Not found
-      console.error('Error fetching restaurant settings:', settingsError);
-    }
-
-    // Calculate trial days remaining
-    let trialDaysRemaining = 0;
-    let subscriptionStatus: 'trial' | 'active' | 'expired' = 'trial';
-    let firstRestaurantCreatedAt: string | null = null;
-
-    if (settings) {
-      firstRestaurantCreatedAt = settings.first_restaurant_created_at;
-      const createdAt = new Date(settings.first_restaurant_created_at);
-      const now = new Date();
-      const daysSinceCreation = Math.floor(
-        (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24)
-      );
-      trialDaysRemaining = Math.max(0, TRIAL_DAYS - daysSinceCreation);
-      subscriptionStatus = settings.subscription_status as 'trial' | 'active' | 'expired';
-
-      // Update trial_days_remaining if changed
-      if (trialDaysRemaining !== settings.trial_days_remaining) {
-        await supabaseAdmin
-          .from('restaurant_settings')
-          .update({ trial_days_remaining: trialDaysRemaining })
-          .eq('owner_id', user.id);
-      }
-
-      // Auto-expire if trial ended and not active
-      if (trialDaysRemaining === 0 && subscriptionStatus === 'trial') {
-        subscriptionStatus = 'expired';
-        await supabaseAdmin
-          .from('restaurant_settings')
-          .update({ subscription_status: 'expired' })
-          .eq('owner_id', user.id);
-      }
-    }
-
-    // Check if user has any restaurants
-    const { data: profiles } = await supabaseAdmin
-      .from('users_profiles')
-      .select('restaurant_id')
-      .eq('user_id', user.id)
-      .eq('role', 'dono');
-
-    const hasRestaurants = profiles && profiles.length > 0;
-    const isFirstRestaurant = !hasRestaurants;
-
-    return NextResponse.json({
-      trialDaysRemaining,
-      subscriptionStatus,
-      firstRestaurantCreatedAt,
-      monthlyPrice: MONTHLY_PRICE,
-      isFirstRestaurant,
-      hasRestaurants,
-    });
-  } catch (error) {
-    console.error('Error in GET /api/admin/restaurants/with-trial:', error);
-    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
-  }
+  );
 }
 
-/**
- * Initialize trial when first restaurant is created
- * POST /api/admin/restaurants/with-trial
- */
-export async function POST(_request: NextRequest) {
+export async function GET() {
   try {
-    const supabase = await createClient();
+    const supabaseAuth = await getSupabaseAuth();
     const {
       data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    } = await supabaseAuth.auth.getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
-    if (isDevDatabase()) {
-      // For dev, we don't have restaurant_settings table
-      // This is a no-op in dev mode - settings are created with the first restaurant
-      return NextResponse.json({
-        message: 'Configurações já existem (dev mode)',
-        trialDays: TRIAL_DAYS,
-      });
-    }
-
-    // Production: use Supabase
-    // Use admin client to bypass RLS
-    const supabaseAdmin = getSupabaseAdmin();
-
-    // Check if settings already exist
-    const { data: existingSettings } = await supabaseAdmin
-      .from('restaurant_settings')
-      .select('*')
-      .eq('owner_id', user.id)
-      .single();
-
-    if (existingSettings) {
-      return NextResponse.json({
-        message: 'Configurações já existem',
-        settings: existingSettings,
-      });
-    }
-
-    // Create new settings with trial
     const now = new Date().toISOString();
-    const { data: newSettings, error: insertError } = await supabaseAdmin
-      .from('restaurant_settings')
-      .insert({
-        owner_id: user.id,
-        first_restaurant_created_at: now,
-        trial_days_remaining: TRIAL_DAYS,
-        subscription_status: 'trial',
-        monthly_price_cents: Math.round(MONTHLY_PRICE * 100),
-      })
-      .select()
-      .single();
 
-    if (insertError) {
-      console.error('Error creating restaurant settings:', insertError);
-      return NextResponse.json(
-        { error: 'Erro ao criar configurações de assinatura' },
-        { status: 500 }
-      );
+    // Get all restaurants owned by the user
+    const profilesResult = await sql`
+      SELECT restaurant_id FROM users_profiles
+      WHERE user_id = ${user.id} AND role = 'dono'
+    `;
+
+    if (!profilesResult[0]) {
+      return NextResponse.json({ error: 'Nenhum restaurante encontrado' }, { status: 404 });
     }
 
-    return NextResponse.json(
-      {
-        message: 'Período de teste iniciado',
-        settings: newSettings,
-        trialDays: TRIAL_DAYS,
-      },
-      { status: 201 }
-    );
+    const restaurantIds = profilesResult.map((p: { restaurant_id: string }) => p.restaurant_id);
+
+    // Get restaurants with their subscriptions that are in trial
+    const restaurantsResult = await sql`
+      SELECT r.*, s.status as subscription_status, s.trial_ends_at
+      FROM restaurants r
+      LEFT JOIN subscriptions s ON r.id = s.restaurant_id
+      WHERE r.id = ANY(${restaurantIds}) AND r.active = true
+    `;
+
+    // Filter to only those in trial
+    const restaurantsWithTrial = restaurantsResult.filter((r: Record<string, unknown>) => {
+      const trialEndsAt = r.trial_ends_at as string | null;
+      return (
+        r.subscription_status === 'trial' &&
+        trialEndsAt &&
+        new Date(trialEndsAt) > new Date(now)
+      );
+    });
+
+    return NextResponse.json({ restaurants: restaurantsWithTrial });
   } catch (error) {
-    console.error('Error in POST /api/admin/restaurants/with-trial:', error);
+    console.error('Error in GET /api/admin/restaurants/with-trial:', error);
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }

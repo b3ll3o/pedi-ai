@@ -1,76 +1,81 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, isDevDatabase, getSupabaseAdmin } from '@/infrastructure/database';
-import { tables } from '@/infrastructure/database/schema';
-import { eq } from 'drizzle-orm';
-import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin';
+import { sql } from '@/infrastructure/database/pg-client';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
-interface RouteParams {
-  params: Promise<{ id: string }>;
+async function getSupabaseAuth() {
+  const cookieStore = await cookies();
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Server component - ignore
+          }
+        },
+      },
+    }
+  );
 }
 
-// PATCH /api/admin/tables/[id]/reactivate - Reactivate an inactive table
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
+export async function POST(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const authUser = await requireAuth();
-    requireRole(authUser, ['dono', 'gerente']);
+    const supabaseAuth = await getSupabaseAuth();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
 
-    const { id } = await params;
-    const restaurantId = getRestaurantId(authUser);
-
-    if (isDevDatabase()) {
-      const existingTable = await db
-        .select({ id: tables.id, active: tables.active })
-        .from(tables)
-        .where(eq(tables.id, id))
-        .limit(1)
-        .get();
-
-      if (!existingTable) {
-        return NextResponse.json({ error: 'Mesa não encontrada' }, { status: 404 });
-      }
-
-      if (existingTable.active) {
-        return NextResponse.json({ error: 'Mesa já está ativa' }, { status: 409 });
-      }
-
-      await db.update(tables).set({ active: true }).where(eq(tables.id, id));
-
-      const updated = await db.select().from(tables).where(eq(tables.id, id)).limit(1).get();
-      return NextResponse.json({ table: updated });
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
-    const supabase = getSupabaseAdmin();
+    const { id: tableId } = await params;
 
-    const { data: existingTable, error: fetchError } = await supabase
-      .from('tables')
-      .select('id, active')
-      .eq('id', id)
-      .eq('restaurant_id', restaurantId)
-      .single();
+    // Get table first
+    const tableResult = await sql`SELECT * FROM tables WHERE id = ${tableId} LIMIT 1`;
 
-    if (fetchError || !existingTable) {
+    if (!tableResult[0]) {
       return NextResponse.json({ error: 'Mesa não encontrada' }, { status: 404 });
     }
 
-    if (existingTable.active) {
-      return NextResponse.json({ error: 'Mesa já está ativa' }, { status: 409 });
+    // Verify user has access
+    const profileResult = await sql`
+      SELECT role FROM users_profiles
+      WHERE user_id = ${user.id} AND restaurant_id = ${tableResult[0].restaurant_id}
+      LIMIT 1
+    `;
+
+    if (!profileResult[0]) {
+      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 
-    const { data: table, error } = await supabase
-      .from('tables')
-      .update({ active: true })
-      .eq('id', id)
-      .select()
-      .single();
+    const now = new Date().toISOString();
 
-    if (error) {
-      console.error('Error reactivating table:', error);
-      return NextResponse.json({ error: 'Falha ao reativar mesa' }, { status: 500 });
-    }
+    // Reactivate table
+    await sql`
+      UPDATE tables SET active = true, updated_at = ${now}
+      WHERE id = ${tableId}
+    `;
 
-    return NextResponse.json({ table });
+    // Fetch updated table
+    const updatedTable = await sql`SELECT * FROM tables WHERE id = ${tableId} LIMIT 1`;
+
+    return NextResponse.json({ table: updatedTable[0] });
   } catch (error) {
-    console.error('Unexpected error in /api/admin/tables/[id]/reactivate:', error);
+    console.error('Error in POST /api/admin/tables/[id]/reactivate:', error);
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }

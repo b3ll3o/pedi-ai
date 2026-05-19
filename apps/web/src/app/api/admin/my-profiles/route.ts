@@ -1,68 +1,57 @@
 import { NextResponse } from 'next/server';
+import { sql } from '@/infrastructure/database/pg-client';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { db, isDevDatabase, getGlobalToken } from '@/infrastructure/database';
-import { usersProfiles } from '@/infrastructure/database/schema';
-import { eq } from 'drizzle-orm';
 
-/**
- * GET /api/admin/my-profiles - Get current user's restaurant profiles (with roles)
- * Returns the user's profiles linking them to restaurants with their roles
- */
+async function getSupabaseAuth() {
+  const cookieStore = await cookies();
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Server component - ignore
+          }
+        },
+      },
+    }
+  );
+}
+
 export async function GET() {
   try {
-    let userId: string | null = null;
+    const supabaseAuth = await getSupabaseAuth();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
 
-    if (isDevDatabase()) {
-      // In dev, get user ID from global JWT token
-      const token = getGlobalToken();
-      if (token) {
-        // Decode JWT payload (base64url)
-        const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-        userId = payload.sub || null;
-      }
-    } else {
-      // Get session from cookies (production Supabase)
-      const cookieStore = await cookies();
-      const supabaseAuth = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-          cookies: {
-            getAll() {
-              return cookieStore.getAll();
-            },
-            setAll(cookiesToSet) {
-              try {
-                cookiesToSet.forEach(({ name, value, options }) =>
-                  cookieStore.set(name, value, options)
-                );
-              } catch {
-                // Server component - ignore
-              }
-            },
-          },
-        }
-      );
-
-      const {
-        data: { user },
-        error: authError,
-      } = await supabaseAuth.auth.getUser();
-      if (authError || !user) {
-        return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
-      }
-      userId = user.id;
-    }
-
-    if (!userId) {
+    if (!user) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
     // Get user's profiles
-    const profiles = await db.select().from(usersProfiles).where(eq(usersProfiles.user_id, userId));
+    const profilesResult = await sql`
+      SELECT up.*, r.name as restaurant_name
+      FROM users_profiles up
+      LEFT JOIN restaurants r ON up.restaurant_id = r.id
+      WHERE up.user_id = ${user.id}
+    `;
 
-    return NextResponse.json({ profiles });
+    if (!profilesResult[0]) {
+      return NextResponse.json({ error: 'Perfil não encontrado' }, { status: 404 });
+    }
+
+    return NextResponse.json({ profiles: profilesResult });
   } catch (error) {
     console.error('Error in GET /api/admin/my-profiles:', error);
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });

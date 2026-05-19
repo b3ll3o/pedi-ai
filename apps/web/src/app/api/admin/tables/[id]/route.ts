@@ -1,259 +1,174 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, isDevDatabase, getSupabaseAdmin } from '@/infrastructure/database';
-import { tables } from '@/infrastructure/database/schema';
-import { eq, and, isNull } from 'drizzle-orm';
-import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin';
+import { sql } from '@/infrastructure/database/pg-client';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
-interface RouteParams {
-  params: Promise<{ id: string }>;
+async function getSupabaseAuth() {
+  const cookieStore = await cookies();
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Server component - ignore
+          }
+        },
+      },
+    }
+  );
 }
 
-// GET /api/admin/tables/[id] - Get a single table
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const authUser = await requireAuth();
-    requireRole(authUser, ['dono', 'gerente']);
+    const supabaseAuth = await getSupabaseAuth();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
 
-    const { id } = await params;
-    const restaurantId = getRestaurantId(authUser);
-
-    if (isDevDatabase()) {
-      const table = await db
-        .select()
-        .from(tables)
-        .where(
-          and(eq(tables.id, id), eq(tables.restaurant_id, restaurantId), isNull(tables.deleted_at))
-        )
-        .limit(1)
-        .get();
-
-      if (!table) {
-        return NextResponse.json({ error: 'Table not found' }, { status: 404 });
-      }
-
-      return NextResponse.json({ table });
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
-    const supabase = getSupabaseAdmin();
+    const { id: tableId } = await params;
 
-    const { data: table, error } = await supabase
-      .from('tables')
-      .select('*')
-      .eq('id', id)
-      .eq('restaurant_id', restaurantId)
-      .is('deleted_at', null)
-      .single();
+    // Get table
+    const tableResult = await sql`SELECT * FROM tables WHERE id = ${tableId} LIMIT 1`;
 
-    if (error) {
-      console.error('Error fetching table:', error);
-      return NextResponse.json({ error: 'Failed to fetch table' }, { status: 500 });
+    if (!tableResult[0]) {
+      return NextResponse.json({ error: 'Mesa não encontrada' }, { status: 404 });
     }
 
-    if (!table) {
-      return NextResponse.json({ error: 'Table not found' }, { status: 404 });
+    // Verify user has access to this restaurant
+    const profileResult = await sql`
+      SELECT role FROM users_profiles
+      WHERE user_id = ${user.id} AND restaurant_id = ${tableResult[0].restaurant_id}
+      LIMIT 1
+    `;
+
+    if (!profileResult[0]) {
+      return NextResponse.json({ error: 'Acesso negado a esta mesa' }, { status: 403 });
     }
 
-    return NextResponse.json({ table });
+    return NextResponse.json({ table: tableResult[0] });
   } catch (error) {
-    console.error('Unexpected error in /api/admin/tables/[id]:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Error in GET /api/admin/tables/[id]:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }
 
-// PUT /api/admin/tables/[id] - Update a table
-export async function PUT(request: NextRequest, { params }: RouteParams) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const authUser = await requireAuth();
-    requireRole(authUser, ['dono', 'gerente']);
+    const supabaseAuth = await getSupabaseAuth();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
 
-    const { id } = await params;
-    const restaurantId = getRestaurantId(authUser);
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+    }
+
+    const { id: tableId } = await params;
     const body = await request.json();
-    const { number, name, capacity, active, qr_code } = body;
+    const { name, capacity, table_number, active } = body;
 
-    if (isDevDatabase()) {
-      // Check if table exists
-      const existingTable = await db
-        .select({ id: tables.id, restaurant_id: tables.restaurant_id, number: tables.number })
-        .from(tables)
-        .where(
-          and(eq(tables.id, id), eq(tables.restaurant_id, restaurantId), isNull(tables.deleted_at))
-        )
-        .limit(1)
-        .get();
+    // Get table first
+    const tableResult = await sql`SELECT * FROM tables WHERE id = ${tableId} LIMIT 1`;
 
-      if (!existingTable) {
-        return NextResponse.json({ error: 'Table not found' }, { status: 404 });
-      }
-
-      // If changing number, check conflict
-      if (number !== undefined && number !== existingTable.number) {
-        const conflict = await db
-          .select({ id: tables.id })
-          .from(tables)
-          .where(
-            and(
-              eq(tables.restaurant_id, existingTable.restaurant_id),
-              eq(tables.number, number),
-              isNull(tables.deleted_at)
-            )
-          )
-          .limit(1)
-          .get();
-
-        if (conflict) {
-          return NextResponse.json(
-            { error: 'Table number already exists for this restaurant' },
-            { status: 409 }
-          );
-        }
-      }
-
-      const updateData: Record<string, unknown> = { updated_at: new Date().toISOString() };
-      if (number !== undefined) updateData.number = number;
-      if (name !== undefined) updateData.name = name;
-      if (capacity !== undefined) updateData.capacity = capacity;
-      if (active !== undefined) updateData.active = active;
-      if (qr_code !== undefined) updateData.qr_code = qr_code;
-      if (Object.keys(updateData).length > 0) {
-        await db
-          .update(tables)
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .set(updateData as any)
-          .where(eq(tables.id, id));
-      }
-      const updated = await db.select().from(tables).where(eq(tables.id, id)).limit(1).get();
-      return NextResponse.json({ table: updated });
+    if (!tableResult[0]) {
+      return NextResponse.json({ error: 'Mesa não encontrada' }, { status: 404 });
     }
 
-    const supabase = getSupabaseAdmin();
+    // Verify user has access and is owner/manager
+    const profileResult = await sql`
+      SELECT role FROM users_profiles
+      WHERE user_id = ${user.id} AND restaurant_id = ${tableResult[0].restaurant_id}
+      LIMIT 1
+    `;
 
-    // Check if table exists
-    const { data: existingTable, error: fetchError } = await supabase
-      .from('tables')
-      .select('id, restaurant_id, number')
-      .eq('id', id)
-      .eq('restaurant_id', restaurantId)
-      .is('deleted_at', null)
-      .single();
-
-    if (fetchError || !existingTable) {
-      return NextResponse.json({ error: 'Table not found' }, { status: 404 });
+    if (!profileResult[0] || (profileResult[0].role !== 'dono' && profileResult[0].role !== 'gerente')) {
+      return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 });
     }
 
-    // If changing number, check conflict
-    if (number !== undefined && number !== existingTable.number) {
-      const { data: conflictTable, error: conflictError } = await supabase
-        .from('tables')
-        .select('id')
-        .eq('restaurant_id', existingTable.restaurant_id as string)
-        .eq('number', number)
-        .neq('id', id)
-        .single();
+    const now = new Date().toISOString();
 
-      if (conflictError && conflictError.code !== 'PGRST116') {
-        console.error('Error checking table conflict:', conflictError);
-        return NextResponse.json({ error: 'Failed to check table conflict' }, { status: 500 });
-      }
+    // Update table
+    await sql`
+      UPDATE tables
+      SET
+        name = COALESCE(${name || null}, name),
+        capacity = COALESCE(${capacity}, capacity),
+        table_number = COALESCE(${table_number}, table_number),
+        active = COALESCE(${active}, active),
+        updated_at = ${now}
+      WHERE id = ${tableId}
+    `;
 
-      if (conflictTable) {
-        return NextResponse.json(
-          { error: 'Table number already exists for this restaurant' },
-          { status: 409 }
-        );
-      }
-    }
+    // Fetch updated table
+    const updatedTable = await sql`SELECT * FROM tables WHERE id = ${tableId} LIMIT 1`;
 
-    const updateData: Record<string, unknown> = {};
-    if (number !== undefined) updateData.number = number;
-    if (name !== undefined) updateData.name = name;
-    if (capacity !== undefined) updateData.capacity = capacity;
-    if (active !== undefined) updateData.active = active;
-    if (qr_code !== undefined) updateData.qr_code = qr_code;
-
-    const { data: table, error } = await supabase
-      .from('tables')
-      .update(updateData)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error updating table:', error);
-      return NextResponse.json({ error: 'Failed to update table' }, { status: 500 });
-    }
-
-    return NextResponse.json({ table });
+    return NextResponse.json({ table: updatedTable[0] });
   } catch (error) {
-    console.error('Unexpected error in /api/admin/tables/[id]:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Error in PUT /api/admin/tables/[id]:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }
 
-// DELETE /api/admin/tables/[id] - Delete a table (soft delete)
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const authUser = await requireAuth();
-    requireRole(authUser, ['dono', 'gerente']);
+    const supabaseAuth = await getSupabaseAuth();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
 
-    const { id } = await params;
-    const restaurantId = getRestaurantId(authUser);
-
-    if (isDevDatabase()) {
-      const existingTable = await db
-        .select({ id: tables.id })
-        .from(tables)
-        .where(
-          and(eq(tables.id, id), eq(tables.restaurant_id, restaurantId), isNull(tables.deleted_at))
-        )
-        .limit(1)
-        .get();
-
-      if (!existingTable) {
-        return NextResponse.json({ error: 'Table not found' }, { status: 404 });
-      }
-
-      // Soft delete
-      await db
-        .update(tables)
-        .set({ deleted_at: new Date().toISOString() })
-        .where(eq(tables.id, id));
-
-      return NextResponse.json({
-        success: true,
-        message: 'Mesa removida com sucesso (soft delete)',
-      });
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
-    const supabase = getSupabaseAdmin();
+    const { id: tableId } = await params;
 
-    // Check if table exists
-    const { data: existingTable, error: fetchError } = await supabase
-      .from('tables')
-      .select('id')
-      .eq('id', id)
-      .eq('restaurant_id', restaurantId)
-      .is('deleted_at', null)
-      .single();
+    // Get table first
+    const tableResult = await sql`SELECT * FROM tables WHERE id = ${tableId} LIMIT 1`;
 
-    if (fetchError || !existingTable) {
-      return NextResponse.json({ error: 'Table not found' }, { status: 404 });
+    if (!tableResult[0]) {
+      return NextResponse.json({ error: 'Mesa não encontrada' }, { status: 404 });
     }
 
-    // Soft delete
-    const { error } = await supabase
-      .from('tables')
-      .update({ deleted_at: new Date().toISOString() })
-      .eq('id', id);
+    // Verify user is owner/manager
+    const profileResult = await sql`
+      SELECT role FROM users_profiles
+      WHERE user_id = ${user.id} AND restaurant_id = ${tableResult[0].restaurant_id}
+      LIMIT 1
+    `;
 
-    if (error) {
-      console.error('Error deleting table:', error);
-      return NextResponse.json({ error: 'Failed to delete table' }, { status: 500 });
+    if (!profileResult[0] || (profileResult[0].role !== 'dono' && profileResult[0].role !== 'gerente')) {
+      return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 });
     }
 
-    return NextResponse.json({ success: true, message: 'Mesa removida com sucesso (soft delete)' });
+    // Soft delete table
+    await sql`
+      UPDATE tables SET active = false, updated_at = ${new Date().toISOString()}
+      WHERE id = ${tableId}
+    `;
+
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Unexpected error in /api/admin/tables/[id]:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Error in DELETE /api/admin/tables/[id]:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }

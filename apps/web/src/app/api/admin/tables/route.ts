@@ -1,138 +1,138 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, isDevDatabase, getSupabaseAdmin } from '@/infrastructure/database';
-import { tables } from '@/infrastructure/database/schema';
-import { eq, and, asc, isNull } from 'drizzle-orm';
-import { requireAuth, requireRole, getRestaurantId } from '@/lib/auth/admin';
+import { sql } from '@/infrastructure/database/pg-client';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
-// GET /api/admin/tables - List all tables for a restaurant
-export async function GET(_request: NextRequest) {
+async function getSupabaseAuth() {
+  const cookieStore = await cookies();
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Server component - ignore
+          }
+        },
+      },
+    }
+  );
+}
+
+export async function GET(request: NextRequest) {
   try {
-    const authUser = await requireAuth();
-    requireRole(authUser, ['dono', 'gerente']);
+    const supabaseAuth = await getSupabaseAuth();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
 
-    const restaurantId = getRestaurantId(authUser);
-
-    if (isDevDatabase()) {
-      const tablesResult = await db
-        .select()
-        .from(tables)
-        .where(and(eq(tables.restaurant_id, restaurantId), isNull(tables.deleted_at)))
-        .orderBy(asc(tables.number));
-
-      return NextResponse.json({ tables: tablesResult });
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
-    const supabase = getSupabaseAdmin();
+    const restaurantId = request.nextUrl.searchParams.get('restaurant_id');
 
-    const { data: tablesData, error } = await supabase
-      .from('tables')
-      .select('*')
-      .eq('restaurant_id', restaurantId)
-      .is('deleted_at', null)
-      .order('number', { ascending: true });
-
-    if (error) {
-      console.error('Error fetching tables:', error);
-      return NextResponse.json({ error: 'Failed to fetch tables' }, { status: 500 });
+    if (!restaurantId) {
+      return NextResponse.json({ error: 'restaurant_id é obrigatório' }, { status: 400 });
     }
 
-    return NextResponse.json({ tables: tablesData });
+    // Verify user has access to this restaurant
+    const profileResult = await sql`
+      SELECT role FROM users_profiles
+      WHERE user_id = ${user.id} AND restaurant_id = ${restaurantId}
+      LIMIT 1
+    `;
+
+    if (!profileResult[0]) {
+      return NextResponse.json({ error: 'Acesso negado a este restaurante' }, { status: 403 });
+    }
+
+    // Get tables for this restaurant
+    const tablesResult = await sql`
+      SELECT * FROM tables
+      WHERE restaurant_id = ${restaurantId}
+      ORDER BY created_at DESC
+    `;
+
+    return NextResponse.json({ tables: tablesResult });
   } catch (error) {
-    console.error('Unexpected error in /api/admin/tables:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Error in GET /api/admin/tables:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }
 
-// POST /api/admin/tables - Create a new table
 export async function POST(request: NextRequest) {
   try {
-    const authUser = await requireAuth();
-    requireRole(authUser, ['dono', 'gerente']);
+    const supabaseAuth = await getSupabaseAuth();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
 
-    const restaurantId = getRestaurantId(authUser);
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+    }
+
     const body = await request.json();
-    const { number, name, capacity, active } = body;
+    const { restaurant_id, name, capacity, table_number } = body;
 
-    if (number === undefined) {
-      return NextResponse.json({ error: 'number is required' }, { status: 400 });
-    }
-
-    if (isDevDatabase()) {
-      // Check if table number already exists for this restaurant
-      const existing = await db
-        .select({ id: tables.id })
-        .from(tables)
-        .where(and(eq(tables.restaurant_id, restaurantId), eq(tables.number, number)))
-        .limit(1)
-        .get();
-
-      if (existing) {
-        return NextResponse.json(
-          { error: 'Table number already exists for this restaurant' },
-          { status: 409 }
-        );
-      }
-
-      const now = new Date().toISOString();
-      const newTable = {
-        id: crypto.randomUUID(),
-        restaurant_id: restaurantId,
-        number,
-        name: name || null,
-        capacity: capacity || null,
-        active: active ?? true,
-        deleted_at: null,
-        created_at: now,
-        updated_at: now,
-      };
-
-      await db.insert(tables).values(newTable);
-
-      return NextResponse.json({ table: newTable }, { status: 201 });
-    }
-
-    const supabase = getSupabaseAdmin();
-
-    // Check if table number already exists for this restaurant
-    const { data: existingTable, error: checkError } = await supabase
-      .from('tables')
-      .select('id')
-      .eq('restaurant_id', restaurantId)
-      .eq('number', number)
-      .single();
-
-    if (checkError && checkError.code !== 'PGRST116') {
-      console.error('Error checking existing table:', checkError);
-      return NextResponse.json({ error: 'Failed to check existing table' }, { status: 500 });
-    }
-
-    if (existingTable) {
+    if (!restaurant_id || !name) {
       return NextResponse.json(
-        { error: 'Table number already exists for this restaurant' },
-        { status: 409 }
+        { error: 'restaurant_id e name são obrigatórios' },
+        { status: 400 }
       );
     }
 
-    const { data: table, error } = await supabase
-      .from('tables')
-      .insert({
-        restaurant_id: restaurantId,
-        number,
-        name: name || null,
-        capacity: capacity || null,
-        active: active ?? true,
-      })
-      .select()
-      .single();
+    // Verify user has access and is owner/manager
+    const profileResult = await sql`
+      SELECT role FROM users_profiles
+      WHERE user_id = ${user.id} AND restaurant_id = ${restaurant_id}
+      LIMIT 1
+    `;
 
-    if (error) {
-      console.error('Error creating table:', error);
-      return NextResponse.json({ error: 'Failed to create table' }, { status: 500 });
+    if (!profileResult[0] || (profileResult[0].role !== 'dono' && profileResult[0].role !== 'gerente')) {
+      return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 });
     }
 
-    return NextResponse.json({ table }, { status: 201 });
+    const now = new Date().toISOString();
+
+    // Create new table
+    const newTable = {
+      id: crypto.randomUUID(),
+      restaurant_id,
+      name: name.trim(),
+      capacity: capacity || null,
+      table_number: table_number || null,
+      active: true,
+      created_at: now,
+      updated_at: now,
+    };
+
+    await sql`
+      INSERT INTO tables (id, restaurant_id, name, capacity, table_number, active, created_at, updated_at)
+      VALUES (
+        ${newTable.id},
+        ${newTable.restaurant_id},
+        ${newTable.name},
+        ${newTable.capacity},
+        ${newTable.table_number},
+        ${newTable.active},
+        ${newTable.created_at},
+        ${newTable.updated_at}
+      )
+    `;
+
+    return NextResponse.json({ table: newTable }, { status: 201 });
   } catch (error) {
-    console.error('Unexpected error in /api/admin/tables:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Error in POST /api/admin/tables:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }

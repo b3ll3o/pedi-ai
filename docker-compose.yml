@@ -1,68 +1,87 @@
-version: '3.8'
-
 services:
+  # ── PostgreSQL Database ───────────────────────────────────
   postgres:
     image: postgres:16-alpine
     container_name: pedi_ai_postgres
+    restart: unless-stopped
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: pedi_ai
+      POSTGRES_DB: postgres
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./apps/api/prisma/docker-init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
+  # ── SMTP Mock (Mailpit) ────────────────────────────────────
   mailpit:
-    image: axllent/mailpit
+    image: axllent/mailpit:latest
     container_name: pedi_ai_mailpit
+    restart: unless-stopped
     ports:
-      - "1025:1025"  # SMTP
+      - "1025:1025"  # SMTP server
       - "8025:8025"  # Web UI
     environment:
-      - MTX_DEBUG=0
+      MTX_DEBUG: "0"
 
+  # ── NestJS API ─────────────────────────────────────────────
   api:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
     container_name: pedi_ai_api
+    restart: unless-stopped
     ports:
       - "3001:3001"
     depends_on:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/pedi_ai
-      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-refresh-secret}
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/postgres?schema=public
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change-me-in-production}
       JWT_EXPIRES_IN: 15m
-      PORT: 3001
+      PORT: "3001"
       NODE_ENV: production
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
-    volumes:
-      - ./apps/api/src:/app/src:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q -O- http://localhost:3001/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
+  # ── Next.js Web App ────────────────────────────────────────
   web:
     build:
       context: .
-      dockerfile: Dockerfile.web
+      dockerfile: apps/web/Dockerfile
     container_name: pedi_ai_web
+    restart: unless-stopped
     ports:
       - "3000:3000"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:3001
-      NEXT_PUBLIC_APP_URL: http://localhost:3000
-    volumes:
-      - ./apps/web:/app:ro
-      - ./public:/app/public:ro
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+      DATABASE_URL: postgresql://postgres:***@postgres:5432/postgres?schema=public
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q -O- http://localhost:3000/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
 volumes:
   postgres_data:

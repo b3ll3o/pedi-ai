@@ -22,7 +22,7 @@ import {
   RegistrarUsuarioUseCase,
   type RegistrarUsuarioInput,
 } from '@/application/autenticacao/services/RegistrarUsuarioUseCase';
-import { SupabaseAuthAdapter } from '@/infrastructure/external/SupabaseAuthAdapter';
+import { PostgresAuthAdapter } from '@/infrastructure/external/PostgresAuthAdapter';
 import { UsuarioRepository } from '@/infrastructure/persistence/autenticacao/UsuarioRepository';
 import { SessaoRepository } from '@/infrastructure/persistence/autenticacao/SessaoRepository';
 import { db } from '@/infrastructure/persistence/database';
@@ -149,7 +149,7 @@ export function useAuth(): UseAuthReturn {
     setError(null);
     try {
       // Instanciar adapters e repositories
-      const authAdapter = new SupabaseAuthAdapter();
+      const authAdapter = new PostgresAuthAdapter();
       const sessaoRepo = new SessaoRepository(db);
 
       // Executar use case
@@ -193,7 +193,7 @@ export function useAuth(): UseAuthReturn {
       setError(null);
       try {
         // Instanciar adapters e repositories
-        const authAdapter = new SupabaseAuthAdapter();
+        const authAdapter = new PostgresAuthAdapter();
         const usuarioRepo = new UsuarioRepository(db);
 
         // Executar use case

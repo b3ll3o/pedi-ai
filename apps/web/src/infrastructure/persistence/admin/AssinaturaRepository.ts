@@ -1,11 +1,10 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { sql } from '@/infrastructure/database/pg-client';
 import {
   Assinatura,
   AssinaturaProps,
   StatusAssinatura,
   TipoPlano,
 } from '@/domain/admin/entities/Assinatura';
-import type { Database } from '@/lib/supabase/database.types';
 
 /**
  * Interface para repositório de assinaturas
@@ -18,71 +17,88 @@ export interface IAssinaturaRepository {
   obterDiasRestantesTrial(restauranteId: string): Promise<number>;
 }
 
+interface SubscriptionRow {
+  id: string;
+  restaurant_id: string;
+  status: string;
+  plan_type: string;
+  price_cents: number;
+  currency: string;
+  trial_started_at: string;
+  trial_ends_at: string;
+  trial_days: number;
+  subscription_started_at: string | null;
+  subscription_ends_at: string | null;
+  cancelled_at: string | null;
+  created_at: string;
+  updated_at: string;
+  version: number;
+}
+
 /**
- * Implementação do repositório de assinaturas usando Supabase
+ * Implementação do repositório de assinaturas usando PostgreSQL
  */
 export class AssinaturaRepository implements IAssinaturaRepository {
-  private supabase: SupabaseClient<Database>;
-
-  constructor(supabaseClient?: SupabaseClient<Database>) {
-    this.supabase =
-      supabaseClient ||
-      createClient<Database>(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        {
-          auth: {
-            autoRefreshToken: false,
-            persistSession: false,
-            detectSessionInUrl: false,
-          },
-        }
-      );
-  }
-
   async buscarPorRestauranteId(restauranteId: string): Promise<Assinatura | null> {
-    const { data, error } = await this.supabase
-      .from('subscriptions')
-      .select('*')
-      .eq('restaurant_id', restauranteId)
-      .single();
+    const result = await sql<SubscriptionRow>`
+      SELECT id, restaurant_id, status, plan_type, price_cents, currency,
+             trial_started_at, trial_ends_at, trial_days,
+             subscription_started_at, subscription_ends_at,
+             cancelled_at, created_at, updated_at, version
+      FROM subscriptions
+      WHERE restaurant_id = ${restauranteId}
+      LIMIT 1
+    `;
 
-    if (error || !data) {
+    if (result.length === 0) {
       return null;
     }
 
-    return this.recordToAssinatura(data);
+    return this.recordToAssinatura(result[0]);
   }
 
   async criar(assinatura: Assinatura): Promise<Assinatura> {
-    const { data, error } = await this.supabase
-      .from('subscriptions')
-      .insert(this.assinaturaToRecord(assinatura))
-      .select()
-      .single();
+    const record = this.assinaturaToRecord(assinatura);
 
-    if (error) {
-      console.error('Erro ao criar assinatura:', error);
-      throw new Error('Falha ao criar assinatura');
-    }
+    await sql`
+      INSERT INTO subscriptions (
+        id, restaurant_id, status, plan_type, price_cents, currency,
+        trial_started_at, trial_ends_at, trial_days,
+        subscription_started_at, subscription_ends_at,
+        cancelled_at, created_at, updated_at, version
+      ) VALUES (
+        ${record.id}, ${record.restaurant_id}, ${record.status}, ${record.plan_type},
+        ${record.price_cents}, ${record.currency},
+        ${record.trial_started_at}, ${record.trial_ends_at}, ${record.trial_days},
+        ${record.subscription_started_at}, ${record.subscription_ends_at},
+        ${record.cancelled_at}, ${record.created_at}, ${record.updated_at}, ${record.version}
+      )
+    `;
 
-    return this.recordToAssinatura(data);
+    return assinatura;
   }
 
   async atualizar(assinatura: Assinatura): Promise<Assinatura> {
-    const { data, error } = await this.supabase
-      .from('subscriptions')
-      .update(this.assinaturaToRecord(assinatura))
-      .eq('id', assinatura.id)
-      .select()
-      .single();
+    const record = this.assinaturaToRecord(assinatura);
 
-    if (error) {
-      console.error('Erro ao atualizar assinatura:', error);
-      throw new Error('Falha ao atualizar assinatura');
-    }
+    await sql`
+      UPDATE subscriptions SET
+        status = ${record.status},
+        plan_type = ${record.plan_type},
+        price_cents = ${record.price_cents},
+        currency = ${record.currency},
+        trial_started_at = ${record.trial_started_at},
+        trial_ends_at = ${record.trial_ends_at},
+        trial_days = ${record.trial_days},
+        subscription_started_at = ${record.subscription_started_at},
+        subscription_ends_at = ${record.subscription_ends_at},
+        cancelled_at = ${record.cancelled_at},
+        updated_at = ${record.updated_at},
+        version = ${record.version}
+      WHERE id = ${record.id}
+    `;
 
-    return this.recordToAssinatura(data);
+    return assinatura;
   }
 
   async verificarTrialAtivo(restauranteId: string): Promise<boolean> {
@@ -108,9 +124,7 @@ export class AssinaturaRepository implements IAssinaturaRepository {
   /**
    * Converte record do banco para entidade Assinatura
    */
-  private recordToAssinatura(
-    record: Database['public']['Tables']['subscriptions']['Row']
-  ): Assinatura {
+  private recordToAssinatura(record: SubscriptionRow): Assinatura {
     const props: AssinaturaProps = {
       id: record.id,
       restauranteId: record.restaurant_id,
@@ -139,9 +153,7 @@ export class AssinaturaRepository implements IAssinaturaRepository {
   /**
    * Converte entidade Assinatura para record do banco
    */
-  private assinaturaToRecord(
-    assinatura: Assinatura
-  ): Database['public']['Tables']['subscriptions']['Insert'] {
-    return assinatura.toRecord() as Database['public']['Tables']['subscriptions']['Insert'];
+  private assinaturaToRecord(assinatura: Assinatura): Omit<SubscriptionRow, never> {
+    return assinatura.toRecord() as Omit<SubscriptionRow, never>;
   }
 }
