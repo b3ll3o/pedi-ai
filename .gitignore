@@ -68,6 +68,7 @@ Thumbs.db
 
 .playwright-mcp
 pnpm-lock.yamldata/
+package-lock.json
 
 # Workspace node_modules (pnpm hoists to root)
 /apps/*/node_modules
