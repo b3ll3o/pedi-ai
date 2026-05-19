@@ -6,7 +6,7 @@ Aplicação de **Cardápio Digital** para restaurantes com foco em **mobile-firs
 
 - 📱 **Cardápio Digital** — Navegação por categorias, produtos, filtros dietéticos, busca
 - 🛒 **Carrinho** — Gestão de itens com modificadores, combos e persistência offline
-- 💳 **Pagamentos** — Pix (Mercado Pago) e Cartão (Stripe)
+- 💳 **Pagamentos** — PIX (Mercado Pago)
 - 📊 **Pedidos** — Criação, acompanhamento em tempo real, histórico
 - 🍽️ **QR Code** — Identificação de mesas com assinatura HMAC-SHA256
 - 👨‍💼 **Painel Admin** — CRUD completo de categorias, produtos, modifiers, combos, mesas
@@ -19,24 +19,24 @@ Aplicação de **Cardápio Digital** para restaurantes com foco em **mobile-firs
 - **Backend**: NestJS + Fastify + Prisma ORM + PostgreSQL
 - **Offline**: Service Worker (Workbox) + IndexedDB (Dexie)
 - **Estado**: Zustand + React Query
-- **Testes Unitários**: Vitest (1523 testes, 80%+ cobertura)
+- **Testes Unitários**: Vitest (116 test files, 1441 tests)
 - **Testes E2E**: Playwright (19 specs)
 - **Pagamentos**: Mercado Pago (Pix) + Stripe (Cartão)
 - **Autenticação**: JWT com refresh tokens (bcrypt)
 
 ## Documentação
 
-| Guia | Descrição |
-|------|-----------|
-| [docs/README.md](docs/README.md) | Hub de documentação |
-| [docs/INDICE.md](docs/INDICE.md) | Índice completo |
-| [docs/guides/ARCHITECTURE.md](docs/guides/ARCHITECTURE.md) | Arquitetura DDD |
-| [docs/guides/OFFLINE.md](docs/guides/OFFLINE.md) | Offline-first |
-| [docs/guides/REALTIME.md](docs/guides/REALTIME.md) | Realtime subscriptions |
-| [docs/guides/PAYMENTS.md](docs/guides/PAYMENTS.md) | Pagamentos |
-| [docs/guides/QR_CODE.md](docs/guides/QR_CODE.md) | QR Code e segurança |
-| [docs/guides/ROLES.md](docs/guides/ROLES.md) | Roles e permissões |
-| [docs/guides/MOBILE_PWA.md](docs/guides/MOBILE_PWA.md) | Mobile-first PWA |
+| Guia                                                       | Descrição              |
+| ---------------------------------------------------------- | ---------------------- |
+| [docs/README.md](docs/README.md)                           | Hub de documentação    |
+| [docs/INDICE.md](docs/INDICE.md)                           | Índice completo        |
+| [docs/guides/ARCHITECTURE.md](docs/guides/ARCHITECTURE.md) | Arquitetura DDD        |
+| [docs/guides/OFFLINE.md](docs/guides/OFFLINE.md)           | Offline-first          |
+| [docs/guides/REALTIME.md](docs/guides/REALTIME.md)         | Realtime subscriptions |
+| [docs/guides/PAYMENTS.md](docs/guides/PAYMENTS.md)         | Pagamentos             |
+| [docs/guides/QR_CODE.md](docs/guides/QR_CODE.md)           | QR Code e segurança    |
+| [docs/guides/ROLES.md](docs/guides/ROLES.md)               | Roles e permissões     |
+| [docs/guides/MOBILE_PWA.md](docs/guides/MOBILE_PWA.md)     | Mobile-first PWA       |
 
 ## Feature Flags
 
@@ -49,17 +49,16 @@ O projeto possui um sistema de **feature flags** que permite ativar/desativar fu
 
 ### Flags Disponíveis
 
-| Flag | Descrição |
-|------|-----------|
-| `NEXT_PUBLIC_FEATURE_OFFLINE_ENABLED` | Modo offline com service worker e cache local |
-| `NEXT_PUBLIC_FEATURE_PIX_ENABLED` | Pagamento via Pix (Mercado Pago) |
-| `NEXT_PUBLIC_FEATURE_STRIPE_ENABLED` | Pagamento via Cartão (Stripe) |
-| `NEXT_PUBLIC_FEATURE_WAITER_MODE` | Modo garçom/chamada de atendimento |
-| `NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED` | Leitura e geração de QR codes para mesas |
-| `NEXT_PUBLIC_FEATURE_COMBOS_ENABLED` | Sistema de combos/meal deals |
-| `NEXT_PUBLIC_FEATURE_ANALYTICS_ENABLED` | Dashboard de analytics e rastreamento de eventos |
-| `NEXT_PUBLIC_FEATURE_CASHBACK_ENABLED` | Sistema de cashback/recompensas |
-| `NEXT_PUBLIC_ENABLE_MULTI_RESTAURANT` | Suporte multi-restaurante (relação N:N usuário-restaurante) |
+| Flag                                    | Descrição                                                   |
+| --------------------------------------- | ----------------------------------------------------------- |
+| `NEXT_PUBLIC_FEATURE_OFFLINE_ENABLED`   | Modo offline com service worker e cache local               |
+| `NEXT_PUBLIC_FEATURE_PIX_ENABLED`       | Pagamento via PIX (Mercado Pago)                            |
+| `NEXT_PUBLIC_FEATURE_WAITER_MODE`       | Modo garçom/chamada de atendimento                          |
+| `NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED`   | Leitura e geração de QR codes para mesas                    |
+| `NEXT_PUBLIC_FEATURE_COMBOS_ENABLED`    | Sistema de combos/meal deals                                |
+| `NEXT_PUBLIC_FEATURE_ANALYTICS_ENABLED` | Dashboard de analytics e rastreamento de eventos            |
+| `NEXT_PUBLIC_FEATURE_CASHBACK_ENABLED`  | Sistema de cashback/recompensas                             |
+| `NEXT_PUBLIC_ENABLE_MULTI_RESTAURANT`   | Suporte multi-restaurante (relação N:N usuário-restaurante) |
 
 ### Configuração
 
@@ -117,14 +116,9 @@ API_JWT_SECRET=seu_jwt_secret_minimo_32_chars
 # PostgreSQL (via Docker)
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/pedi_ai
 
-# Mercado Pago (Pix)
+# Mercado Pago (PIX)
 MERCADO_PAGO_ACCESS_TOKEN=seu_token
 MP_WEBHOOK_SECRET=seu_webhook_secret
-
-# Stripe (Cartão)
-STRIPE_SECRET_KEY=sk_test_xxx
-STRIPE_WEBHOOK_SECRET=whsec_xxx
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxx
 
 # QR Code
 QR_SECRET_KEY=sua_chave_secreta_para_hmac
@@ -247,15 +241,23 @@ A aplicação é um **Progressive Web App** com:
 - **QR Code**: Assinatura HMAC-SHA256 para evitar falsificação
 - **Políticas PostgreSQL**: Isolamento de tenants no banco
 - **Webhook Idempotência**: Evita processamento duplicado
-- **Validação de Assinatura**: Webhooks Mercado Pago/Stripe validados
+- **Validação de Assinatura**: Webhooks Mercado Pago validados
 
 ## Testes
 
 ```bash
-# Unit tests (517 testes)
-pnpm test
+# Unit tests
+pnpm test         # apps/web: 116 test files, 1441 tests
+pnpm --filter @pedi-ai/api test  # apps/api: 2 test files, 15 tests
 
-# E2E tests (19 specs) — requer Supabase Cloud configurado em .env.e2e
+# Unit tests with coverage
+pnpm test:coverage  # apps/web
+pnpm --filter @pedi-ai/api test:coverage  # apps/api
+
+# Integration tests
+pnpm test:integration  # apps/web: 2 test files, 32 tests
+
+# E2E tests (19 specs) — requer docker-compose up
 pnpm test:e2e:seed    # Popula dados de teste
 pnpm test:e2e         # Executa testes E2E
 ```
