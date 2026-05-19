@@ -50,6 +50,13 @@ const eslintConfig = defineConfig([
       '@typescript-eslint/ban-ts-comment': 'off',
     },
   },
+  // Source files: disable no-explicit-any (legacy codebase has dynamic types)
+  {
+    files: ['src/**/*.ts', 'src/**/*.tsx'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
   {
     rules: {
       // Ignore unused vars that start with underscore
