@@ -2,6 +2,9 @@ name: CI - Todos os Testes
 
 on:
   pull_request:
+  push:
+    branches:
+      - master
 
 concurrency:
   group: ci-${{ github.ref }}
