@@ -16,7 +16,6 @@
 ### Guias de Configuração
 | Documento | Descrição | Quando Consultar |
 |-----------|-----------|-----------------|
-| [SUPABASE_SETUP.md](setup/SUPABASE_SETUP.md) | Configurar projeto Supabase, migrations, seed E2E | Setup inicial de desenvolvimento |
 | [STRIPE_CLI_SETUP.md](setup/STRIPE_CLI_SETUP.md) | Configurar Stripe CLI para webhooks locais | Testar pagamentos com cartão |
 | [MAILPIT_SETUP.md](setup/MAILPIT_SETUP.md) | Servidor SMTP mock para testes de email | Testar emails em desenvolvimento |
 
@@ -25,7 +24,7 @@
 |-----------|-----------|-----------------|
 | [ARCHITECTURE.md](guides/ARCHITECTURE.md) | Arquitetura DDD em 4 camadas | Entender estrutura domain/application/infrastructure |
 | [OFFLINE.md](guides/OFFLINE.md) | Service Worker, Dexie, BackgroundSync, BroadcastChannel | Implementar/modificar funcionalidade offline |
-| [REALTIME.md](guides/REALTIME.md) | Supabase Realtime, polling fallback, subscriptions | Implementar atualizações em tempo real |
+| [REALTIME.md](guides/REALTIME.md) | ⚠️ DEPRECADO — Socket.io via NestJS | Implementar atualizações em tempo real |
 | [PAYMENTS.md](guides/PAYMENTS.md) | PIX (Mercado Pago), Stripe, webhooks, idempotência | Implementar/modificar pagamentos |
 | [QR_CODE.md](guides/QR_CODE.md) | Segurança HMAC-SHA256, validação de QR codes | Implementar/modificar sistema de mesas |
 | [ROLES.md](guides/ROLES.md) | RBAC, multi-tenant, RLS, autenticação | Implementar/modificar controle de acesso |
@@ -52,7 +51,6 @@ docs/
 ├── README.md                    # Este arquivo - hub de navegação
 ├── INDICE.md                    # Índice completo com todas as referências
 ├── setup/                       # Guias de configuração
-│   ├── SUPABASE_SETUP.md        # Configuração do Supabase
 │   ├── STRIPE_CLI_SETUP.md      # Configuração do Stripe CLI
 │   └── MAILPIT_SETUP.md         # Configuração do Mailpit
 ├── guides/                      # Guias técnicos
@@ -77,7 +75,7 @@ docs/
 1. Clone o repositório
 2. Execute `pnpm install`
 3. Copie `.env.local.example` → `.env.local`
-4. Configure Supabase: SUPABASE_SETUP.md
+4. Configure PostgreSQL: DATABASE_URL
 5. (Opcional) Configure Stripe: STRIPE_CLI_SETUP.md
 6. (Opcional) Configure Mailpit: MAILPIT_SETUP.md
 7. Execute `pnpm dev`
@@ -137,10 +135,14 @@ pnpm mailpit          # Start Mailpit SMTP server
 
 ### Variáveis de Ambiente Principais
 ```bash
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
+# Database
+DATABASE_URL=postgresql://user:pass@localhost:5432/pedi
+
+# Auth
+JWT_SECRET=
+
+# API
+NEXT_PUBLIC_API_URL=http://localhost:3001
 
 # Pagamentos
 NEXT_PUBLIC_DEMO_PAYMENT_MODE=true

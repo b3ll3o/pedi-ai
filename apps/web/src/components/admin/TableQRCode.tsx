@@ -1,11 +1,10 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import type { tables } from '@/lib/supabase/types';
 import styles from './TableQRCode.module.css';
 
 interface TableQRCodeProps {
-  table: tables;
+  table: any;
   qrData?: string;
   onClose: () => void;
   onDownload?: () => void;

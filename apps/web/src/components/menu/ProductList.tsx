@@ -1,10 +1,9 @@
 'use client';
 
-import type { products } from '@/lib/supabase/types';
 import { useCartStore } from '@/infrastructure/persistence/cartStore';
 import styles from './ProductList.module.css';
 
-export type Product = products;
+export type Product = any;
 
 interface ProductListProps {
   products: Product[];

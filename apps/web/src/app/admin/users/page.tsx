@@ -12,25 +12,35 @@ import {
   updateUser,
   type UserRole,
 } from '@/application/services/userService';
-import { requireAuth } from '@/lib/auth/client-admin';
-import type { users_profiles } from '@/lib/supabase/types';
+import { getSession } from '@/lib/auth/client';
+import { redirect } from 'next/navigation';
 
 export default function UsersPage() {
   const router = useRouter();
-  const [users, setUsers] = useState<users_profiles[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole>('dono');
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [editingUser, setEditingUser] = useState<users_profiles | null>(null);
+  const [editingUser, setEditingUser] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
-  const [authUser, setAuthUser] = useState<Awaited<ReturnType<typeof requireAuth>> | null>(null);
+  const [authUser, setAuthUser] = useState<{ id: string; email: string; role: string; restaurant_id: string } | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const user = await requireAuth();
-        setAuthUser(user);
+        // Use getSession for server-side session check
+        const session = await getSession();
+        if (!session) {
+          router.replace('/admin/login');
+          return;
+        }
+        setAuthUser({
+          id: session.user.id,
+          email: session.user.email,
+          role: session.user.role,
+          restaurant_id: session.user.restaurantId ?? '',
+        });
         setAuthChecked(true);
       } catch (error) {
         console.error('Auth check failed:', error);
@@ -93,7 +103,7 @@ export default function UsersPage() {
     [editingUser, authUser]
   );
 
-  const handleEdit = useCallback((user: users_profiles) => {
+  const handleEdit = useCallback((user: any) => {
     setEditingUser(user);
     setShowForm(true);
   }, []);

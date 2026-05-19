@@ -1,11 +1,10 @@
 /**
  * usePedidosKDS Hook
- * Hook para Kitchen Display System (KDS) - lista pedidos e atualiza em tempo real.
+ * Hook para Kitchen Display System (KDS) - lista pedidos e atualiza via polling.
  */
 
 import { useEffect, useCallback, useState, useRef, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { createClient } from '@/lib/supabase/client';
 import type { OrderWithItems, OrderStatus } from '@/application/services/adminOrderService';
 import {
   getOrderAge,
@@ -39,6 +38,7 @@ export interface UsePedidosKDSResult {
 }
 
 const KDS_STATUSES: OrderStatus[] = ['paid', 'preparing', 'ready'];
+const POLLING_INTERVAL = 5000; // 5 seconds
 
 async function tocarSomNovoPedido(): Promise<void> {
   try {
@@ -75,6 +75,8 @@ export function usePedidosKDS({
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const soundPlayedRef = useRef<Set<string>>(new Set());
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  const previousOrderIdsRef = useRef<Set<string>>(new Set());
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['kds-pedidos', restauranteId],
@@ -117,60 +119,57 @@ export function usePedidosKDS({
     [queryClient, restauranteId]
   );
 
+  // Set up polling for order updates
   useEffect(() => {
     if (!enabled || !restauranteId) {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+      setIsConnected(false);
       return;
     }
 
-    const supabase = createClient();
+    // Start polling
+    setIsConnected(true);
+    setError(null);
 
-    const channel = supabase
-      .channel('kds-orders-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'orders',
-          filter: `restaurant_id=eq.${restauranteId}`,
-        },
-        (payload) => {
-          const newOrder = payload.new as OrderWithItems;
-          if (KDS_STATUSES.includes(newOrder.status as OrderStatus)) {
-            queryClient.invalidateQueries({ queryKey: ['kds-pedidos', restauranteId] });
-            if (somAtivado && !soundPlayedRef.current.has(newOrder.id)) {
-              soundPlayedRef.current.add(newOrder.id);
+    const startPolling = () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+      }
+      pollingRef.current = setInterval(() => {
+        // Check for new orders to play sound
+        const currentOrderIds = new Set(
+          (data || []).map((o) => o.id).filter(Boolean)
+        );
+        
+        // Detect new orders
+        currentOrderIds.forEach((orderId) => {
+          if (!previousOrderIdsRef.current.has(orderId) && somAtivado) {
+            if (!soundPlayedRef.current.has(orderId)) {
+              soundPlayedRef.current.add(orderId);
               tocarSomNovoPedido();
             }
           }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'orders',
-          filter: `restaurant_id=eq.${restauranteId}`,
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['kds-pedidos', restauranteId] });
-        }
-      )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          setIsConnected(true);
-          setError(null);
-        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          setIsConnected(false);
-          setError(new Error('Conexão Realtime perdida'));
-        }
-      });
+        });
+        
+        previousOrderIdsRef.current = currentOrderIds;
+        
+        // Refetch data
+        queryClient.invalidateQueries({ queryKey: ['kds-pedidos', restauranteId] });
+      }, POLLING_INTERVAL);
+    };
+
+    startPolling();
 
     return () => {
-      supabase.removeChannel(channel);
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
     };
-  }, [enabled, restauranteId, queryClient, somAtivado]);
+  }, [enabled, restauranteId, queryClient, somAtivado, data]);
 
   const pedidosProcessados = useMemo<PedidoKDS[]>(() => {
     return (data || []).map((pedido) => {

@@ -2,11 +2,10 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSession } from '@/lib/supabase/auth';
+import { getSession } from '@/lib/auth/client';
 import { useRestaurantStore } from '@/infrastructure/persistence/restaurantStore';
 import { TableManagement } from '@/components/admin/TableManagement';
 import { TableQRCode } from '@/components/admin/TableQRCode';
-import type { tables } from '@/lib/supabase/types';
 import styles from './page.module.css';
 
 interface TableFormData {
@@ -21,10 +20,10 @@ export default function TablesPage() {
   const { restauranteSelecionado } = useRestaurantStore();
   const selectedRestaurantId = restauranteSelecionado?.id ?? null;
   const [loading, setLoading] = useState(true);
-  const [tables, setTables] = useState<tables[]>([]);
+  const [tables, setTables] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingTable, setEditingTable] = useState<tables | null>(null);
-  const [selectedTable, setSelectedTable] = useState<tables | null>(null);
+  const [editingTable, setEditingTable] = useState<any | null>(null);
+  const [selectedTable, setSelectedTable] = useState<any | null>(null);
   const [qrData, setQrData] = useState<string | null>(null);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -105,7 +104,7 @@ export default function TablesPage() {
   }, [loading, selectedRestaurantId, fetchTables]);
 
   const handleGenerateQR = useCallback(
-    async (table: tables) => {
+    async (table: any) => {
       try {
         const response = await fetch(`/api/admin/tables/${table.id}/qr`);
 
@@ -217,7 +216,7 @@ export default function TablesPage() {
   );
 
   const handleToggleActive = useCallback(
-    async (table: tables) => {
+    async (table: any) => {
       if (!table.active) {
         // Reactivate
         try {
@@ -263,7 +262,7 @@ export default function TablesPage() {
     [showSuccess, showError]
   );
 
-  const handleEdit = useCallback((table: tables) => {
+  const handleEdit = useCallback((table: any) => {
     setEditingTable(table);
     setFormData({
       number: table.number.toString(),

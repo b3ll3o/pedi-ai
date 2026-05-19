@@ -1,14 +1,10 @@
 /**
  * useCustomerOrderNotifications Hook
- * Escuta atualizações de status de pedidos via Supabase Realtime broadcast
- * para notificar o cliente quando o status do pedido mudar.
- *
- * O admin envia broadcasts pelo canal 'orders' quando atualiza o status.
- * Este hook se inscreve nesse canal e notifica o cliente.
+ * Monitora atualizações de status de pedidos via polling.
+ * Supabase realtime broadcast removido.
  */
 
-import { useEffect, useCallback, useState, useMemo } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { useEffect, useCallback, useState, useMemo, useRef } from 'react';
 
 export type OrderStatus =
   | 'pending_payment'
@@ -58,8 +54,10 @@ export function getStatusLabel(status: OrderStatus): string {
   return STATUS_LABELS[status] ?? status;
 }
 
+const POLLING_INTERVAL = 5000; // 5 seconds
+
 /**
- * Hook para monitorar atualizações de status de pedidos em tempo real.
+ * Hook para monitorar atualizações de status de pedidos em tempo real via polling.
  *
  * @example
  * const { pendingUpdates, clearPendingUpdates } = useCustomerOrderNotifications({
@@ -76,6 +74,8 @@ export function useCustomerOrderNotifications({
   enabled = true,
 }: UseCustomerOrderNotificationsOptions): UseCustomerOrderNotificationsResult {
   const [pendingUpdates, setPendingUpdates] = useState<OrderUpdatePayload[]>([]);
+  const previousStatusesRef = useRef<Record<string, OrderStatus>>({});
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
   const orderIdsKey = useMemo(() => orderIds.join(','), [orderIds]);
 
@@ -99,29 +99,78 @@ export function useCustomerOrderNotifications({
     setPendingUpdates([]);
   }, []);
 
+  const fetchOrderStatus = useCallback(
+    async (orderId: string): Promise<OrderStatus | null> => {
+      try {
+        const response = await fetch(`/api/admin/orders/${orderId}/status`);
+        if (!response.ok) {
+          return null;
+        }
+        const data = await response.json();
+        return data.status as OrderStatus;
+      } catch {
+        return null;
+      }
+    },
+    []
+  );
+
+  const pollOrderStatuses = useCallback(async () => {
+    if (!enabled || orderIds.length === 0) {
+      return;
+    }
+
+    for (const orderId of orderIds) {
+      const currentStatus = await fetchOrderStatus(orderId);
+      
+      if (currentStatus && previousStatusesRef.current[orderId] !== undefined) {
+        if (previousStatusesRef.current[orderId] !== currentStatus) {
+          // Status changed - notify
+          const payload: OrderUpdatePayload = {
+            order_id: orderId,
+            status: currentStatus,
+            updated_at: new Date().toISOString(),
+            updated_by: 'system',
+          };
+          handleOrderUpdated(payload);
+        }
+      }
+      
+      // Update the stored status
+      if (currentStatus) {
+        previousStatusesRef.current[orderId] = currentStatus;
+      }
+    }
+  }, [enabled, orderIds, fetchOrderStatus, handleOrderUpdated]);
+
   useEffect(() => {
     if (!enabled || !orderIdsKey) {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
       return;
     }
 
     // Limpa atualizações pendentes quando orderIds mudou
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setPendingUpdates([]);
+    
+    // Reset previous statuses when orderIds change
+    previousStatusesRef.current = {};
 
-    const supabase = createClient();
-
-    const channel = supabase
-      .channel('orders')
-      .on('broadcast', { event: 'order_updated' }, (payload) => {
-        const data = payload.payload as OrderUpdatePayload;
-        handleOrderUpdated(data);
-      })
-      .subscribe();
+    // Start polling
+    pollOrderStatuses();
+    
+    pollingRef.current = setInterval(pollOrderStatuses, POLLING_INTERVAL);
 
     return () => {
-      supabase.removeChannel(channel);
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
     };
-  }, [enabled, orderIdsKey, handleOrderUpdated]);
+  }, [enabled, orderIdsKey, pollOrderStatuses]);
 
   return {
     pendingUpdates,

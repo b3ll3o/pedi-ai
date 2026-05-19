@@ -3,13 +3,12 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { getSession } from '@/lib/supabase/auth';
-import type { combos, combo_items, products } from '@/lib/supabase/types';
+import { getSession } from '@/lib/auth/client';
 import { ComboForm, type ComboInput } from '@/components/admin/ComboForm';
 import styles from './page.module.css';
 
-interface ComboWithItems extends combos {
-  combo_items?: (combo_items & { product?: products })[];
+interface ComboWithItems extends any {
+  combo_items?: (any & { product?: any })[];
 }
 
 export default function CombosPage() {
@@ -67,7 +66,7 @@ export default function CombosPage() {
       if (response.ok) {
         const data = await response.json();
         setProducts(
-          data.products?.map((p: products) => ({ id: p.id, name: p.name, price: p.price })) || []
+          data.products?.map((p: any) => ({ id: p.id, name: p.name, price: p.price })) || []
         );
       }
     } catch {

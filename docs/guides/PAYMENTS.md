@@ -35,19 +35,19 @@ NEXT_PUBLIC_DEMO_PAYMENT_MODE=true       # Bypassa pagamentos reais (demo/simula
 │  (Checkout)  │                                     │  (route.ts)         │
 └─────────────┘                                      └──────────┬──────────┘
                                                                    │
-                                                    Mercado Pago API
-                                                                    │
-                                                                   ▼
+                                                     Mercado Pago API
+                                                                     │
+                                                                    ▼
 ┌─────────────┐    QR Code + QR Base64                 ┌─────────────────────┐
 │   Cliente    │ ◀────────────────────────────────────  │  Payment Created    │
 │  (Checkout)  │                                        │  (PixCharge)        │
 └─────────────┘                                        └─────────────────────┘
                                                                    │
                                                                    ▼
-                                                         ┌─────────────────────┐
-                                                         │ payment_intents     │
-                                                         │ (Supabase DB)       │
-                                                         └─────────────────────┘
+                                                          ┌─────────────────────┐
+                                                          │ payment_intents     │
+                                                          │ (PostgreSQL)       │
+                                                          └─────────────────────┘
                                                                    │
                                                                    ▼
 ┌─────────────┐    Webhook Notification           ┌─────────────────────────────────────┐
@@ -84,7 +84,7 @@ NEXT_PUBLIC_DEMO_PAYMENT_MODE=true       # Bypassa pagamentos reais (demo/simula
 **Fluxo:**
 
 1. Valida se `order_id` está presente
-2. Busca pedido no banco via Supabase
+2. Busca pedido no banco via PostgreSQL
 3. Verifica se pedido já não está pago (`payment_status === 'paid'`)
 4. Cria pagamento PIX via `MercadoPagoConfig` + `Payment`
 5. Armazena `payment_intent` na tabela `payment_intents` com status `pending`
@@ -137,11 +137,10 @@ async function validateSignature(req: Request, payload: { id: string }): Promise
 Antes de processar o webhook, verifica-se se o evento já foi tratado:
 
 ```typescript
-const { data: existingEvent } = await supabase
-  .from('webhook_events')
-  .select('id')
-  .eq('id', eventId)
-  .single();
+const existingEvent = await prisma.webhookEvent.findUnique({
+  where: { id: eventId },
+  select: { id: true },
+});
 
 if (existingEvent) {
   return Response.json({ status: 'duplicate' }, { status: 200 });
@@ -151,7 +150,9 @@ if (existingEvent) {
 Após processar com sucesso, o evento é registrado:
 
 ```typescript
-await supabase.from('webhook_events').insert({ id: eventId, event_type: type });
+await prisma.webhookEvent.create({
+  data: { id: eventId, event_type: type },
+});
 ```
 
 ### 2.5 Mapeamento de Status

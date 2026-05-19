@@ -71,7 +71,7 @@ Cliente acessa /restaurantes
 ```
 Cliente acessa /login
   → Cliente informa email e senha
-  → Sistema autentica via Supabase Auth
+  → Sistema autentica via JWT (NestJS Auth)
   → Sistema consulta users_profiles para obter role
   → Sistema cria sessão
   → Redireciona para:
@@ -105,7 +105,7 @@ Cliente clica em "Sair"
 Cliente acessa /register
   → Cliente seleciona intenção "Quero fazer pedidos"
   → Cliente preenche email e senha
-  → Sistema cria conta via Supabase Auth
+  → Sistema cria conta via API NestJS
   → Sistema cria users_profiles com role=cliente e intent=fazer_pedidos
   → Redireciona para /login?registered=true&intent=fazer_pedidos
 ```
@@ -118,7 +118,7 @@ Cliente acessa /register
 Cliente acessa /register
   → Cliente seleciona intenção "Quero gerenciar meu restaurante"
   → Cliente preenche email e senha
-  → Sistema cria conta via Supabase Auth
+  → Sistema cria conta via API NestJS
   → Sistema cria users_profiles com role=dono e intent=gerenciar_restaurante
   → Redireciona para /login?registered=true&intent=gerenciar_restaurante
 ```
@@ -359,7 +359,7 @@ Webhook indica falha
 Pedido é confirmado
   → Cliente acessa página de acompanhamento
   → Cliente visualiza status atual do pedido
-  → Cliente recebe atualizações via Supabase Realtime
+  → Cliente recebe atualizações via Socket.io
 
 Status do pedido (FSM):
   pending → confirmed → preparing → ready → delivered
@@ -519,7 +519,7 @@ Cliente seleciona restaurante
 Cliente acessa /login
   → Cliente clica "Esqueci minha senha"
   → Cliente informa email
-  → Sistema envia email de redefinição via Supabase Auth
+  → Sistema envia email de redefinição via API NestJS
 ```
 
 **Fluxos E2E:** `apps/web/apps/web/tests/auth/password-recovery.spec.ts`

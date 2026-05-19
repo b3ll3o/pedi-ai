@@ -3,9 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { getSession } from '@/lib/supabase/auth';
+import { getSession } from '@/lib/auth/client';
 import { RestaurantForm, type RestaurantFormData } from '@/components/admin/RestaurantForm';
-import type { restaurants } from '@/lib/supabase/types';
 import styles from './page.module.css';
 
 export default function EditRestaurantPage() {
@@ -15,7 +14,7 @@ export default function EditRestaurantPage() {
 
   const [loading, setLoading] = useState(true);
   const [_submitting, setSubmitting] = useState(false);
-  const [restaurant, setRestaurant] = useState<restaurants | null>(null);
+  const [restaurant, setRestaurant] = useState<any | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deactivating, setDeactivating] = useState(false);

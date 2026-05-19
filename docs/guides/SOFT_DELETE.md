@@ -142,18 +142,19 @@ desativar(): void {
 
 ## 4. Filtragem em Queries
 
-### 4.1 No Repository (Supabase)
+### 4.1 No Repository (Prisma)
 
 Registros soft deleted devem ser filtrados nas queries:
 
 ```typescript
 // No MesaRepository
 async buscarPorRestauranteId(restauranteId: string): Promise<Mesa[]> {
-  const { data } = await supabase
-    .from('tables')
-    .select('*')
-    .eq('restaurant_id', restauranteId)
-    .is('deleted_at', null);  // Filtra soft deleted
+  return prisma.table.findMany({
+    where: {
+      restaurant_id: restauranteId,
+      deleted_at: null,  // Filtra soft deleted
+    },
+  });
 }
 ```
 
@@ -162,18 +163,19 @@ async buscarPorRestauranteId(restauranteId: string): Promise<Mesa[]> {
 ```typescript
 // GET /api/admin/tables
 // Filtra mesas ativas (não deletadas)
-const { data: mesas } = await supabase
-  .from('tables')
-  .select('*')
-  .eq('restaurant_id', restaurantId)
-  .eq('ativo', true);
+const mesas = await prisma.table.findMany({
+  where: {
+    restaurant_id: restaurantId,
+    ativo: true,
+  },
+});
 
 // DELETE /api/admin/tables/:id
 // Soft delete (não remove do banco)
-await supabase
-  .from('tables')
-  .update({ deleted_at: new Date().toISOString(), ativo: false })
-  .eq('id', tableId);
+await prisma.table.update({
+  where: { id: tableId },
+  data: { deleted_at: new Date(), ativo: false },
+});
 ```
 
 ### 4.3 Em Rotas de Admin
@@ -182,15 +184,18 @@ await supabase
 // src/app/api/admin/tables/[id]/route.ts
 
 // Create - filtra soft deleted ao buscar
-const { data: mesa } = await supabase
-  .from('tables')
-  .select('*')
-  .eq('id', id)
-  .is('deleted_at', null)
-  .single();
+const mesa = await prisma.table.findFirst({
+  where: {
+    id,
+    deleted_at: null,
+  },
+});
 
 // Delete - soft delete (não remove)
-await supabase.from('tables').update({ deleted_at: now, ativo: false }).eq('id', id);
+await prisma.table.update({
+  where: { id },
+  data: { deleted_at: now, ativo: false },
+});
 ```
 
 ---

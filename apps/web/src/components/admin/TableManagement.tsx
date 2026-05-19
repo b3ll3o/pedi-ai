@@ -1,15 +1,14 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import type { tables } from '@/lib/supabase/types';
 import styles from './TableManagement.module.css';
 
 interface TableManagementProps {
-  tables: tables[];
-  onEdit: (table: tables) => void;
+  tables: any[];
+  onEdit: (table: any) => void;
   onDelete: (id: string) => void;
-  onGenerateQR: (table: tables) => void;
-  onToggleActive: (table: tables) => void;
+  onGenerateQR: (table: any) => void;
+  onToggleActive: (table: any) => void;
 }
 
 export function TableManagement({
@@ -37,7 +36,7 @@ export function TableManagement({
   });
 
   const handleDelete = useCallback(
-    (table: tables) => {
+    (table: any) => {
       if (confirm(`Tem certeza que deseja excluir a Mesa ${table.number}?`)) {
         onDelete(table.id);
       }

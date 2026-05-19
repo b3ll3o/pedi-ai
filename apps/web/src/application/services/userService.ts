@@ -3,9 +3,7 @@
  * Handles staff user management operations.
  */
 
-import type { users_profiles, Enum_user_role } from '@/lib/supabase/types';
-
-export type UserRole = Enum_user_role;
+export type UserRole = 'dono' | 'gerente' | 'atendente' | 'cliente';
 
 export interface UserInput {
   restaurant_id: string;
@@ -22,7 +20,7 @@ export interface UserUpdate {
 
 // ── Fetch Users ─────────────────────────────────────────────
 
-export async function getUsers(restaurantId: string): Promise<users_profiles[]> {
+export async function getUsers(restaurantId: string): Promise<any[]> {
   const response = await fetch(`/api/admin/users?restaurant_id=${restaurantId}`);
 
   if (!response.ok) {
@@ -31,10 +29,10 @@ export async function getUsers(restaurantId: string): Promise<users_profiles[]> 
   }
 
   const { users } = await response.json();
-  return users as users_profiles[];
+  return users as any[];
 }
 
-export async function getUser(userId: string): Promise<users_profiles> {
+export async function getUser(userId: string): Promise<any> {
   const response = await fetch(`/api/admin/users/${userId}`);
 
   if (!response.ok) {
@@ -43,7 +41,7 @@ export async function getUser(userId: string): Promise<users_profiles> {
   }
 
   const { user } = await response.json();
-  return user as users_profiles;
+  return user as any;
 }
 
 // ── Invite User ─────────────────────────────────────────────
@@ -77,7 +75,7 @@ export async function inviteUser(input: UserInput): Promise<InviteUserResult> {
 
 // ── Update User ─────────────────────────────────────────────
 
-export async function updateUser(userId: string, updates: UserUpdate): Promise<users_profiles> {
+export async function updateUser(userId: string, updates: UserUpdate): Promise<any> {
   const response = await fetch(`/api/admin/users/${userId}`, {
     method: 'PUT',
     headers: {
@@ -92,7 +90,7 @@ export async function updateUser(userId: string, updates: UserUpdate): Promise<u
   }
 
   const { user } = await response.json();
-  return user as users_profiles;
+  return user as any;
 }
 
 // ── Delete User ─────────────────────────────────────────────

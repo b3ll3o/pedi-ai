@@ -2,11 +2,10 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSession } from '@/lib/supabase/auth';
+import { getSession } from '@/lib/auth/client';
 import { useRestaurantStore } from '@/infrastructure/persistence/restaurantStore';
 import { ProductList } from '@/components/admin/ProductList';
 import { ProductForm, type ProductInput } from '@/components/admin/ProductForm';
-import type { products, categories } from '@/lib/supabase/types';
 import styles from './page.module.css';
 
 type ToastType = 'success' | 'error' | null;
@@ -21,8 +20,8 @@ export default function ProductsPage() {
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Data states
-  const [products, setProducts] = useState<products[]>([]);
-  const [categories, setCategories] = useState<categories[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
 
   // Filter states
   const [selectedCategory, setSelectedCategory] = useState<string>('');
@@ -31,7 +30,7 @@ export default function ProductsPage() {
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<products | null>(null);
+  const [editingProduct, setEditingProduct] = useState<any | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Loading states for operations
@@ -135,7 +134,7 @@ export default function ProductsPage() {
   };
 
   // Open edit modal
-  const handleEdit = (product: products) => {
+  const handleEdit = (product: any) => {
     setEditingProduct(product);
     setIsModalOpen(true);
   };
@@ -171,7 +170,7 @@ export default function ProductsPage() {
   };
 
   // Toggle product availability (via PUT with toggled available)
-  const handleToggleAvailability = async (product: products) => {
+  const handleToggleAvailability = async (product: any) => {
     try {
       const res = await fetch(`/api/admin/products/${product.id}`, {
         method: 'PUT',

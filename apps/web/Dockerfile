@@ -6,7 +6,7 @@
 
 FROM node:20-alpine AS base
 
-RUN corepack enable && corepack prepare pnpm@8 --activate
+RUN corepack enable && corepack prepare pnpm@9 --activate
 
 # Native build tools for modules like better-sqlite3
 RUN apk add --no-cache python3 make g++

@@ -48,9 +48,19 @@ Pedi-AI é uma plataforma de cardápio digital que permite restaurantes gerencia
 pedi-ai/
 ├── apps/
 │   ├── api/       # NestJS backend (admin, orders, realtime websocket)
+│   │   └── src/
+│   │       ├── domain/       # DDD: entidades, value objects, events
+│   │       ├── application/  # DDD: use cases
+│   │       ├── infrastructure/ # DDD: repositories, adapters
+│   │       └── presentation/   # NestJS: controllers, gateways, DTOs
 │   └── web/      # Next.js frontend (cardápio digital, cliente)
 │       ├── public/  # Arquivos estáticos (sw.js, manifest, robots.txt)
-│       └── tests/   # Vitest + Playwright
+│       ├── tests/   # Vitest + Playwright
+│       └── src/
+│           ├── domain/       # DDD: entidades, value objects, events
+│           ├── application/  # DDD: use cases
+│           ├── infrastructure/ # DDD: repositories, adapters
+│           └── presentation/   # Next.js: app, components, hooks
 ├── packages/
 │   └── shared/   # Código compartilhado (@pedi-ai/shared)
 └── docs/          # Documentação
@@ -66,10 +76,12 @@ pedi-ai/
 | `apps/web/src/infrastructure/`             | IMPLEMENTAÇÕES - adapters, repos                                                   | ✅ Implementado | Repository implementations, API client, QR code crypto                 |
 | `apps/web/src/components/`                 | Componentes React organizados por domínio                                          | ✅ Atual        | UI components (admin, cart, menu, order, payment, kitchen, restaurant) |
 | `apps/web/src/components/restaurant/`      | Componentes de listagem pública (RestaurantSearch, RestaurantCard, RestaurantList) | ✅ Novo         | Listagem de restaurantes para delivery                                 |
-| `apps/web/src/hooks/`                      | Custom React hooks (useAuth, useRealtimeOrders, etc)                               | ✅ Atual        | Reutilizáveis em toda a aplicação                                      |
-| `apps/web/src/lib/`                        | Utilitários (auth, offline, QR, api-client, feature-flags)                         | ✅ Atual        | Módulos reutilizáveis                                                  |
-| `apps/web/src/application/services/`       | Lógica de negócio (adminOrderService, userService, etc)                            | ✅ DDD          | antigamente em `apps/web/src/services/`, migrado 2025-05-15            |
-| `apps/web/src/infrastructure/persistence/` | Zustand stores (cart, menu, restaurant, table)                                     | ✅ DDD          | antigamente em `apps/web/src/stores/`, migrado 2025-05-15              |
+| `apps/web/src/hooks/`                     | Custom React hooks (useAuth, useRealtimeOrders, etc)                              | ✅ Atual        | Reutilizáveis em toda a aplicação                                      |
+| `apps/web/src/lib/`                       | Utilitários (auth, offline, QR, feature-flags)                                    | ✅ Atual        | Módulos reutilizáveis                                                  |
+| `apps/api/src/domain/`                      | REGRAS DE NEGÓCIO - pure TypeScript, sem deps de framework                         | 🔲 Pendente    | Aguardando migração DDD                                                |
+| `apps/api/src/application/`                 | CASOS DE USO - orquestração                                                        | 🔲 Pendente    | Aguardando migração DDD                                                |
+| `apps/api/src/infrastructure/`              | IMPLEMENTAÇÕES - adapters, repos Prisma                                           | ✅ Atual        | Repositories Prisma                                                     |
+| `apps/api/src/presentation/`                | NestJS controllers e gateways                                                       | ✅ Atual        | Controllers REST e WebSocket gateways                                   |
 
 ### Domain Codemaps
 
@@ -94,7 +106,7 @@ Cada bounded context DDD possui seu próprio codemap:
 ```
 Cliente escaneia QR code
   → Validação de mesa (apps/web/src/lib/qr.ts)
-  → Navega cardápio (apps/web/src/app/(customer)/menu/)
+  → Navega cardápio (apps/web/src/app/restaurantes/[id]/cardapio/)
   → Adiciona itens ao carrinho (apps/web/src/infrastructure/persistence/cartStore.ts)
   → Checkout via Pix ou Stripe (apps/web/src/components/payment/)
   → Pedido criado (apps/web/src/application/pedido/services/CriarPedidoUseCase.ts)
@@ -107,7 +119,7 @@ Cliente escaneia QR code
 Admin faz login (apps/web/src/lib/auth/)
   → Dashboard admin (apps/web/src/app/admin/dashboard/)
   → Gerencia categorias, produtos, combos, modificadores (apps/web/src/application/admin/services/)
-  → Acompanha pedidos em tempo real (WebSocket Gateway + Socket.io)
+  → Acompanha pedidos em tempo real (Supabase Realtime)
   → Atualiza status de pedidos
 ```
 

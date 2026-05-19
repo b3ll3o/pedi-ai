@@ -1,13 +1,14 @@
 'use client';
 
-import type { users_profiles, Enum_user_role } from '@/lib/supabase/types';
 import { getRoleLabel, getRoleColor } from '@/application/services/userService';
 import styles from './UserManagement.module.css';
 
+type UserRole = 'dono' | 'gerente' | 'atendente' | 'cliente';
+
 interface UserManagementProps {
-  users: users_profiles[];
-  currentUserRole: Enum_user_role;
-  onEdit: (user: users_profiles) => void;
+  users: any[];
+  currentUserRole: UserRole;
+  onEdit: (user: any) => void;
   onDelete: (userId: string) => void;
   onInvite: () => void;
 }
@@ -19,7 +20,7 @@ export function UserManagement({
   onDelete,
   onInvite,
 }: UserManagementProps) {
-  const canManage = (userRole: Enum_user_role) => {
+  const canManage = (userRole: UserRole) => {
     const hierarchy: Record<'dono' | 'gerente' | 'atendente' | 'cliente', number> = {
       cliente: 0,
       atendente: 1,

@@ -2,7 +2,7 @@
 
 import { useState, FormEvent } from 'react';
 import styles from './LoginForm.module.css';
-import { resetPassword, signUp } from '@/lib/supabase/auth';
+import { requestPasswordReset } from '@/lib/auth/client';
 
 interface LoginFormProps {
   onSubmit?: (email: string, password: string) => Promise<void> | void;
@@ -67,7 +67,11 @@ export function LoginForm({ onSubmit, registeredSuccess, resetSuccess }: LoginFo
       return;
     }
     try {
-      await resetPassword(forgotPasswordEmail);
+      const result = await requestPasswordReset(forgotPasswordEmail);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
       setForgotPasswordSuccess(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao enviar email de recuperação');

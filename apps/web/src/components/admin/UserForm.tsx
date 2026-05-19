@@ -1,16 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import type { users_profiles, Enum_user_role } from '@/lib/supabase/types';
 import styles from './UserForm.module.css';
 
+type UserRole = 'dono' | 'gerente' | 'atendente' | 'cliente';
+
 interface UserFormProps {
-  user?: users_profiles;
-  onSubmit: (data: { email: string; name: string; role: Enum_user_role }) => Promise<void>;
+  user?: any;
+  onSubmit: (data: { email: string; name: string; role: UserRole }) => Promise<void>;
   onCancel: () => void;
 }
 
-const ROLES: Array<{ value: Enum_user_role; label: string; description: string }> = [
+const ROLES: Array<{ value: UserRole; label: string; description: string }> = [
   {
     value: 'atendente',
     label: 'Funcionário',
@@ -31,7 +32,7 @@ const ROLES: Array<{ value: Enum_user_role; label: string; description: string }
 export function UserForm({ user, onSubmit, onCancel }: UserFormProps) {
   const [email, setEmail] = useState(user?.email || '');
   const [name, setName] = useState(user?.name || '');
-  const [role, setRole] = useState<Enum_user_role>(user?.role || 'atendente');
+  const [role, setRole] = useState<UserRole>(user?.role || 'atendente');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

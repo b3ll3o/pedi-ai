@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Plus, Store, AlertCircle } from 'lucide-react';
-import { getSession } from '@/lib/supabase/auth';
+import { getSession } from '@/lib/auth/client';
 import { RestaurantCard } from '@/components/admin/RestaurantCard';
 import { ListarRestaurantesDoOwnerUseCase } from '@/application/admin/services/ListarRestaurantesDoOwnerUseCase';
 import { RestauranteRepository } from '@/infrastructure/persistence/admin/RestauranteRepository';

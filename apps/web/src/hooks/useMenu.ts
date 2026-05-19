@@ -1,11 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
-import type { categories, products, restaurants } from '@/lib/supabase/types';
 import { getCachedMenu } from '@/lib/offline/cache';
 import { useMenuStore } from '@/infrastructure/persistence/menuStore';
 
 export type MenuResponse = {
-  restaurant: restaurants;
-  categories: (categories & { products: products[] })[];
+  restaurant: any;
+  categories: any[];
 };
 
 /**
@@ -38,14 +37,14 @@ export function useMenu(restaurantId: string) {
         const cached = await getCachedMenu(restaurantId);
         if (cached) {
           // Hydrate menuStore com dados do cache
-          useMenuStore.getState().setCategories(cached.categories as categories[]);
-          useMenuStore.getState().setProducts(cached.products as products[]);
+          useMenuStore.getState().setCategories(cached.categories as any[]);
+          useMenuStore.getState().setProducts(cached.products as any[]);
           useMenuStore.getState().setModifierGroups(cached.modifiers as never[]);
 
           // Retornar estrutura compatível com MenuResponse
           return {
-            restaurant: { id: restaurantId, name: '', created_at: '' } as restaurants,
-            categories: cached.categories as (categories & { products: products[] })[],
+            restaurant: { id: restaurantId, name: '', created_at: '' },
+            categories: cached.categories as any[],
           };
         }
         throw new Error('Sem conexão e cardápio não disponível em cache');

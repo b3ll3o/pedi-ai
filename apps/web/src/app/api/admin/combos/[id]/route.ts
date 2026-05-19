@@ -1,46 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@/infrastructure/database/pg-client';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
-
-async function getSupabaseAuth() {
-  const cookieStore = await cookies();
-
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {
-            // Server component - ignore
-          }
-        },
-      },
-    }
-  );
-}
+import { getSession } from '@/lib/auth/session';
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabaseAuth = await getSupabaseAuth();
-    const {
-      data: { user },
-    } = await supabaseAuth.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
+
+    const userId = session.user.id;
 
     const { id: comboId } = await params;
 
@@ -54,7 +26,7 @@ export async function GET(
     // Verify user has access to this restaurant
     const profileResult = await sql`
       SELECT role FROM users_profiles
-      WHERE user_id = ${user.id} AND restaurant_id = ${comboResult[0].restaurant_id}
+      WHERE user_id = ${userId} AND restaurant_id = ${comboResult[0].restaurant_id}
       LIMIT 1
     `;
 
@@ -81,14 +53,12 @@ export async function GET(
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const supabaseAuth = await getSupabaseAuth();
-    const {
-      data: { user },
-    } = await supabaseAuth.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
+
+    const userId = session.user.id;
 
     const { id: comboId } = await params;
     const body = await request.json();
@@ -104,7 +74,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     // Verify user has access and is owner/manager
     const profileResult = await sql`
       SELECT role FROM users_profiles
-      WHERE user_id = ${user.id} AND restaurant_id = ${comboResult[0].restaurant_id}
+      WHERE user_id = ${userId} AND restaurant_id = ${comboResult[0].restaurant_id}
       LIMIT 1
     `;
 
@@ -169,14 +139,12 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabaseAuth = await getSupabaseAuth();
-    const {
-      data: { user },
-    } = await supabaseAuth.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
+
+    const userId = session.user.id;
 
     const { id: comboId } = await params;
 
@@ -190,7 +158,7 @@ export async function DELETE(
     // Verify user has access and is owner/manager
     const profileResult = await sql`
       SELECT role FROM users_profiles
-      WHERE user_id = ${user.id} AND restaurant_id = ${comboResult[0].restaurant_id}
+      WHERE user_id = ${userId} AND restaurant_id = ${comboResult[0].restaurant_id}
       LIMIT 1
     `;
 

@@ -282,8 +282,8 @@ apps/web/src/
 
 Não há variáveis de ambiente específicas para assinaturas. O sistema utiliza:
 
-- `SUPABASE_URL` — URL do projeto Supabase
-- `SUPABASE_SERVICE_ROLE_KEY` — Chave de serviço para operações administrativas
+- `DATABASE_URL` — URL do PostgreSQL
+- `JWT_SECRET` — Segredo para assinatura de tokens JWT
 
 ---
 

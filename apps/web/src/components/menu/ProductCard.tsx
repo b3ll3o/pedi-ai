@@ -1,12 +1,11 @@
 'use client';
 
 import Image from 'next/image';
-import type { products } from '@/lib/supabase/types';
 import { useCartStore } from '@/infrastructure/persistence/cartStore';
 import styles from './ProductCard.module.css';
 
 interface ProductCardProps {
-  product: products;
+  product: any;
   onClick?: (productId: string) => void;
 }
 

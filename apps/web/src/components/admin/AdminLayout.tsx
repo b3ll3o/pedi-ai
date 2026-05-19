@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { signOut } from '@/lib/supabase/auth';
+import { logout } from '@/lib/auth/client';
 import {
   LayoutDashboard,
   BarChart3,
@@ -48,7 +48,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const router = useRouter();
 
   const handleLogout = async () => {
-    await signOut();
+    await logout();
     router.push('/login');
   };
 

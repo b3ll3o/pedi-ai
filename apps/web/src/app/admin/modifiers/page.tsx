@@ -3,8 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { getSession } from '@/lib/supabase/auth';
-import type { modifier_groups, modifier_values } from '@/lib/supabase/types';
+import { getSession } from '@/lib/auth/client';
 import {
   ModifierGroupForm,
   type ModifierGroupInput,
@@ -12,8 +11,8 @@ import {
 } from '@/components/admin/ModifierGroupForm';
 import styles from './page.module.css';
 
-interface ModifierGroupWithValues extends modifier_groups {
-  modifier_values?: modifier_values[];
+interface ModifierGroupWithValues extends any {
+  modifier_values?: any[];
 }
 
 export default function ModifiersPage() {

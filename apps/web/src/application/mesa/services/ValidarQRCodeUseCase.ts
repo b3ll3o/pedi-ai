@@ -2,8 +2,6 @@ import { UseCase } from '../../shared/types/UseCase';
 import { QRCodePayload } from '@/domain/mesa';
 import { IQRCodeValidationService } from '@/domain/mesa';
 import type { IMesaRepository } from '@/domain/mesa/repositories/IMesaRepository';
-import { createClient } from '@/lib/supabase/client';
-import type { SupabaseClient } from '@supabase/supabase-js';
 
 export interface ValidarQRCodeInput {
   qrCode: string;
@@ -20,22 +18,13 @@ export interface MesaValidada {
  * Caso de uso para decodificar e validar um QR code de mesa.
  * Suporta dois formatos:
  * 1. QR code complexo: JSON stringified e base64 encoded do QRCodePayload
- * 2. QR code simples: "E2E-TABLE-XXX" - busca diretamente no Supabase
+ * 2. QR code simples: "E2E-TABLE-XXX" - busca via API
  */
 export class ValidarQRCodeUseCase implements UseCase<ValidarQRCodeInput, MesaValidada> {
-  private supabase?: SupabaseClient;
-
   constructor(
     private qrCodeValidationService: IQRCodeValidationService,
     private mesaRepository?: IMesaRepository
   ) {}
-
-  private getSupabase(): SupabaseClient {
-    if (!this.supabase) {
-      this.supabase = createClient();
-    }
-    return this.supabase;
-  }
 
   async execute(input: ValidarQRCodeInput): Promise<MesaValidada> {
     // Primeiro, tentar decodificar como base64 JSON (formato completo)
@@ -79,26 +68,23 @@ export class ValidarQRCodeUseCase implements UseCase<ValidarQRCodeInput, MesaVal
       }
     }
 
-    // Buscar diretamente no Supabase (para testes E2E e modo offline-first)
+    // Buscar via API (para testes E2E e modo offline-first)
     const simpleMatch = input.qrCode.match(/E2E-TABLE-(\d+)/i);
     if (simpleMatch) {
       try {
-        const supabase = this.getSupabase();
-        const { data: table, error } = await supabase
-          .from('tables')
-          .select('id, restaurant_id, qr_code')
-          .eq('qr_code', input.qrCode)
-          .maybeSingle();
-
-        if (table && !error) {
-          return {
-            restauranteId: table.restaurant_id,
-            mesaId: table.id,
-            valido: true,
-          };
+        const response = await fetch(`/api/tables/by-qrcode?qr_code=${encodeURIComponent(input.qrCode)}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.table) {
+            return {
+              restauranteId: data.table.restaurant_id,
+              mesaId: data.table.id,
+              valido: true,
+            };
+          }
         }
       } catch {
-        // Falha ao buscar no Supabase, continuar com erro
+        // Falha ao buscar via API, continuar com erro
       }
     }
 

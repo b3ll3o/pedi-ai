@@ -20,11 +20,9 @@ import {
   CardapioSyncService,
 } from '@/infrastructure/persistence/repositories';
 import { db } from '@/infrastructure/persistence/database';
-import type { categories, products } from '@/lib/supabase/types';
-
 // Transformação de domain entities para tipos Supabase (compatibilidade com a interface existente)
 function transformarCardapio(cardapio: CardapioCompleto, restauranteId: string) {
-  const categoriesTransformadas: (categories & { products: products[] })[] =
+  const categoriesTransformadas: any[] =
     cardapio.categorias.map((cat) => ({
       id: cat.categoria.id,
       restaurant_id: cat.categoria.restauranteId,
@@ -78,7 +76,7 @@ export type MenuResponse = {
     created_at: string;
     updated_at: string;
   };
-  categories: (categories & { products: products[] })[];
+  categories: any[];
 };
 
 /**

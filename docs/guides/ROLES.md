@@ -7,7 +7,7 @@ O Pedi-AI implementa um sistema de **Controle de Acesso Baseado em Funções (RB
 O controle de acesso é aplicado em duas camadas:
 
 - **Camada de Aplicação (presentation)**: Validações em componentes, páginas e API routes
-- **Camada de Banco de Dados (infrastructure)**: **Row Level Security (RLS)** do Supabase para isolamento obrigatório de dados entre restaurantes
+- **Camada de Banco de Dados (infrastructure)**: **Políticas de acesso PostgreSQL** para isolamento obrigatório de dados entre restaurantes
 
 ---
 
@@ -186,18 +186,16 @@ Cada restaurante mantém sua própria atribuição de função para o usuário.
 
 ### 5.1 Como o RLS Funciona
 
-O Supabase RLS aplica políticas de acesso **linha por linha** em todas as operações do banco. Para implementar isolamento multi-tenant, o Pedi-AI utiliza a sessão do usuário para definir o `restaurant_id` contexto:
+Políticas de acesso PostgreSQL aplicam **filtros por restaurante** em todas as operações do banco. Para implementar isolamento multi-tenant, o Pedi-AI utiliza `restaurant_id` em todas as queries:
 
 ```sql
 -- Exemplo: Política para ler pedidos
 CREATE POLICY "Staff can read restaurant orders"
   ON orders FOR SELECT
-  USING (
-    restaurant_id = current_setting('app.current_restaurant_id')::uuid
-  );
+  USING (restaurant_id = current_setting('app.current_restaurant_id')::uuid);
 ```
 
-O `current_setting('app.current_restaurant_id')` é definido **na aplicação** antes de cada requisição, tipicamente através de um trigger ou middleware que define o contexto com base no restaurante selecionado pelo usuário.
+O `restaurant_id` é definido **na aplicação** via middleware ou contexto de requisição.
 
 ### 5.2 Políticas Implementadas
 
@@ -245,7 +243,7 @@ Usuário abre /admin/login
     │
     ├─> Insere email + senha
     │
-    ├─> Supabase valida credenciais
+    ├─> NestJS valida credenciais (JWT)
     │
     ├─> Busca perfil em users_profiles
     │
@@ -262,7 +260,7 @@ Usuário abre /login (ou /menu)
     │
     ├─> Insere email + senha
     │
-    ├─> Supabase valida credenciais
+    ├─> NestJS valida credenciais (JWT)
     │
     ├─> Busca perfil em users_profiles
     │
@@ -276,34 +274,21 @@ Usuário abre /login (ou /menu)
 
 | Função   | Arquivo                             | Descrição                 |
 | -------- | ----------------------------------- | ------------------------- |
-| Cadastro | `apps/web/src/lib/supabase/auth.ts` | `signUp(email, password)` |
-| Login    | `apps/web/src/lib/supabase/auth.ts` | `signIn(email, password)` |
-| Logout   | `apps/web/src/lib/supabase/auth.ts` | `signOut()`               |
-| Sessão   | `apps/web/src/lib/supabase/auth.ts` | `getSession()`            |
-| Usuário  | `apps/web/src/lib/supabase/auth.ts` | `getUser()`               |
-| Recovery | `apps/web/src/lib/supabase/auth.ts` | `resetPassword(email)`    |
+| Cadastro | `apps/web/src/lib/auth/client.ts`   | `signUp(email, password)` |
+| Login    | `apps/web/src/lib/auth/client.ts`   | `signIn(email, password)` |
+| Logout   | `apps/web/src/lib/auth/client.ts`   | `signOut()`               |
+| Sessão   | `apps/web/src/lib/auth/session.ts`  | `getSession()`            |
+| Usuário  | `apps/web/src/lib/auth/client.ts`   | `getUser()`               |
+| Recovery | `apps/api/src/auth/` (NestJS)      | `resetPassword(email)`    |
 
 ### 6.3 Middleware de Autenticação
 
-O arquivo `apps/web/src/lib/supabase/middleware.ts` cria o cliente Supabase para Server Components e API Routes:
+O arquivo `apps/web/src/lib/auth/session.ts` gerencia sessões JWT para Server Components e API Routes:
 
 ```typescript
-export async function createClient(request: NextRequest) {
-  const supabase = createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          /* ... */
-        },
-      },
-    }
-  );
-  return { supabase, supabaseResponse };
+// Gerenciamento de sessão JWT
+export async function getSession(): Promise<Session | null> {
+  // Recupera sessão do cookie ou contexto
 }
 ```
 
@@ -406,8 +391,7 @@ CREATE TYPE user_role AS ENUM ('dono', 'gerente', 'atendente', 'cliente');
 
 | Arquivo                                                      | Descrição                     |
 | ------------------------------------------------------------ | ----------------------------- |
-| `apps/web/src/lib/supabase/auth.ts`                          | Funções de autenticação       |
-| `apps/web/src/lib/supabase/middleware.ts`                    | Middleware Supabase           |
+| `apps/web/src/lib/auth/`                                    | Módulos de autenticação       |
 | `apps/web/src/infrastructure/persistence/restaurantStore.ts` | Store Zustand de restaurantes |
 | `apps/web/tests/admin/auth.spec.ts`                         | Testes E2E de auth admin      |
 | `apps/web/tests/customer/auth.spec.ts`                      | Testes E2E de auth cliente    |

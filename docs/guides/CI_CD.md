@@ -101,7 +101,7 @@ Arquivos que não são contados para cobertura (por serem difíceis de unit-test
 - `apps/web/src/app/api/**` — rotas de API (testadas por E2E)
 - `apps/web/src/app/**/page.tsx` e `layout.tsx` — páginas (testadas por E2E)
 - `apps/web/src/components/**` — componentes UI (testados por E2E)
-- `apps/web/src/lib/supabase/auth.ts`, `client.ts`, `server.ts` — clientes Supabase (inicialização, testados por E2E)
+- `apps/web/src/lib/auth/*.ts` — clientes de autenticação (inicialização, testados por E2E)
 - `apps/web/src/lib/sw/**` — service workers (testados por E2E)
 - `apps/web/src/domain/**/aggregates/*.ts` — agregados com dependências complexas
 
@@ -180,9 +180,8 @@ Os workflows E2E requerem:
 
 | Secret                          | Descrição                          |
 | ------------------------------- | ---------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`      | URL do projeto Supabase            |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Chave anônima do Supabase          |
-| `SUPABASE_SERVICE_ROLE_KEY`     | Chave de serviço (para seed/admin) |
+| `DATABASE_URL`                  | URL do PostgreSQL                  |
+| `JWT_SECRET`                    | Segredo para assinatura de JWT     |
 
 Configure em: **GitHub repo → Settings → Secrets and variables → Actions**
 

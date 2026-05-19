@@ -63,9 +63,10 @@ frontend:
   - IndexedDB (Dexie)
 
 backend:
-  - Next.js API Routes
-  - Supabase (PostgreSQL + Auth + Storage)
-  - Prisma ORM
+  - NestJS + Fastify
+  - PostgreSQL (Prisma ORM)
+  - Socket.io (Realtime)
+  - JWT Auth (bcrypt)
 
 infrastructure:
   - Vercel (deploy)

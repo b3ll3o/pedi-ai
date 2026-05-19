@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSession } from '@/lib/supabase/auth';
+import { getSession } from '@/lib/auth/client';
 import { useRestaurantStore } from '@/infrastructure/persistence/restaurantStore';
 import {
   getOrders,

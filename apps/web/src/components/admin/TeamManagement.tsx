@@ -1,17 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import type { users_profiles, Enum_user_role } from '@/lib/supabase/types';
 import { getRoleLabel, getRoleColor } from '@/application/services/userService';
 import styles from './TeamManagement.module.css';
 
+type UserRole = 'dono' | 'gerente' | 'atendente' | 'cliente';
+
 interface TeamManagementProps {
-  users: users_profiles[];
+  users: any[];
   currentUserId: string;
-  currentUserRole: Enum_user_role;
+  currentUserRole: UserRole;
   restaurantId: string;
-  onInvite: (email: string, name: string, role: Enum_user_role) => Promise<void>;
-  onUpdateRole: (userId: string, newRole: Enum_user_role) => Promise<void>;
+  onInvite: (email: string, name: string, role: UserRole) => Promise<void>;
+  onUpdateRole: (userId: string, newRole: UserRole) => Promise<void>;
   onRemove: (userId: string) => Promise<void>;
 }
 
@@ -31,13 +32,13 @@ export function TeamManagement({
   // New member form
   const [newMemberName, setNewMemberName] = useState('');
   const [newMemberEmail, setNewMemberEmail] = useState('');
-  const [newMemberRole, setNewMemberRole] = useState<Enum_user_role>('atendente');
+  const [newMemberRole, setNewMemberRole] = useState<UserRole>('atendente');
 
   // Editing state
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
-  const [editingRole, setEditingRole] = useState<Enum_user_role | null>(null);
+  const [editingRole, setEditingRole] = useState<UserRole | null>(null);
 
-  const canManage = (userRole: Enum_user_role): boolean => {
+  const canManage = (userRole: UserRole): boolean => {
     const hierarchy: Record<'dono' | 'gerente' | 'atendente' | 'cliente', number> = {
       cliente: 0,
       atendente: 1,
@@ -47,7 +48,7 @@ export function TeamManagement({
     return hierarchy[currentUserRole] > hierarchy[userRole];
   };
 
-  const canEditRole = (userRole: Enum_user_role): boolean => {
+  const canEditRole = (userRole: UserRole): boolean => {
     // Can't change owner role, and can only change roles lower than current user
     return userRole !== 'dono' && canManage(userRole);
   };
@@ -178,7 +179,7 @@ export function TeamManagement({
                 <select
                   className={styles.roleSelect}
                   value={editingRole ?? user.role}
-                  onChange={(e) => setEditingRole(e.target.value as Enum_user_role)}
+                  onChange={(e) => setEditingRole(e.target.value as UserRole)}
                   disabled={isSubmitting}
                 >
                   <option value="atendente">Funcionário</option>
@@ -308,7 +309,7 @@ export function TeamManagement({
               <select
                 id="member-role"
                 value={newMemberRole}
-                onChange={(e) => setNewMemberRole(e.target.value as Enum_user_role)}
+                onChange={(e) => setNewMemberRole(e.target.value as UserRole)}
               >
                 <option value="atendente">Funcionário</option>
                 <option value="gerente">Gerente</option>

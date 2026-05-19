@@ -3,11 +3,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { getSession } from '@/lib/supabase/auth';
+import { getSession } from '@/lib/auth/client';
 import { TeamManagement } from '@/components/admin/TeamManagement';
 import { useRestaurantStore } from '@/infrastructure/persistence/restaurantStore';
 import { Restaurante, type RestauranteProps } from '@/domain/admin/entities/Restaurante';
-import type { restaurants, users_profiles, Enum_user_role } from '@/lib/supabase/types';
 import styles from './page.module.css';
 
 type ToastType = 'success' | 'error' | null;
@@ -20,10 +19,10 @@ export default function TeamPage() {
   const { setRestaurante } = useRestaurantStore();
 
   const [loading, setLoading] = useState(true);
-  const [restaurant, setRestaurant] = useState<restaurants | null>(null);
-  const [users, setUsers] = useState<users_profiles[]>([]);
+  const [restaurant, setRestaurant] = useState<any | null>(null);
+  const [users, setUsers] = useState<any[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>('');
-  const [currentUserRole, setCurrentUserRole] = useState<Enum_user_role>('atendente');
+  const [currentUserRole, setCurrentUserRole] = useState<any>('atendente');
   const [notFound, setNotFound] = useState(false);
   const [toast, setToast] = useState<{ type: ToastType; message: string }>({
     type: null,
@@ -68,7 +67,7 @@ export default function TeamPage() {
 
         // Find current user's role
         const currentUser = usersData.users?.find(
-          (u: users_profiles) => u.user_id === sessionUserId
+          (u: any) => u.user_id === sessionUserId
         );
         if (currentUser) {
           setCurrentUserId(currentUser.id);
@@ -101,7 +100,7 @@ export default function TeamPage() {
     checkAuth();
   }, [router, fetchData]);
 
-  const handleInvite = async (email: string, name: string, role: Enum_user_role) => {
+  const handleInvite = async (email: string, name: string, role: any) => {
     const res = await fetch('/api/admin/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -122,7 +121,7 @@ export default function TeamPage() {
     await fetchData(currentUserId);
   };
 
-  const handleUpdateRole = async (userId: string, newRole: Enum_user_role) => {
+  const handleUpdateRole = async (userId: string, newRole: any) => {
     const res = await fetch(`/api/admin/users/${userId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },

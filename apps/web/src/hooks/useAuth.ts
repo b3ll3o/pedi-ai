@@ -1,35 +1,28 @@
 /**
  * useAuth Hook
  * Hook para gerenciamento de estado de autenticação.
- * Usa AutenticarUsuarioUseCase e RegistrarUsuarioUseCase do application layer.
+ * Usa lib/auth/client.ts para operações de autenticação.
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import type { Session, User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
-import {
-  signIn as _supabaseSignIn,
-  signOut as supabaseSignOut,
-  getSession,
-  getUser,
-  onAuthStateChange,
-} from '@/lib/supabase/auth';
-import {
-  AutenticarUsuarioUseCase,
-  type AutenticarInput,
-} from '@/application/autenticacao/services/AutenticarUsuarioUseCase';
-import {
-  RegistrarUsuarioUseCase,
-  type RegistrarUsuarioInput,
-} from '@/application/autenticacao/services/RegistrarUsuarioUseCase';
-import { PostgresAuthAdapter } from '@/infrastructure/external/PostgresAuthAdapter';
-import { UsuarioRepository } from '@/infrastructure/persistence/autenticacao/UsuarioRepository';
-import { SessaoRepository } from '@/infrastructure/persistence/autenticacao/SessaoRepository';
-import { db } from '@/infrastructure/persistence/database';
+import { login, logout, getSession } from '@/lib/auth/client';
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  role: string;
+  restaurantId?: string;
+}
+
+export interface AuthSession {
+  user: AuthUser;
+  token: string;
+}
 
 export interface UseAuthReturn {
-  user: User | null;
-  session: Session | null;
+  user: AuthUser | null;
+  session: AuthSession | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   error: string | null;
@@ -41,7 +34,7 @@ export interface UseAuthReturn {
 /**
  * React hook for managing authentication state.
  * Provides user session, loading states, and auth actions.
- * Usa use cases do application layer para operações de autenticação.
+ * Usa lib/auth/client.ts para operações de autenticação.
  *
  * @example
  * ```tsx
@@ -50,41 +43,26 @@ export interface UseAuthReturn {
  */
 export function useAuth(): UseAuthReturn {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [session, setSession] = useState<AuthSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Initialize auth state
   useEffect(() => {
     let isMounted = true;
-    const AUTH_INIT_TIMEOUT_MS = 10000;
 
     async function initAuth() {
-      const TIMEOUT_ERROR = new Error('Auth init timeout');
-
       try {
-        const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(TIMEOUT_ERROR), AUTH_INIT_TIMEOUT_MS)
-        );
-
-        const authPromise = Promise.all([getSession(), getUser()]);
-        const [sessionResult, userResult] = await Promise.race([authPromise, timeoutPromise]).catch(
-          async (err) => {
-            // Apenas timeout trata como sem sessão; erros reais são relançados
-            if (err === TIMEOUT_ERROR) {
-              console.warn('Auth init timed out, retrying session check...');
-              // Retry once more before giving up - session might just be slow
-              const retrySession = await getSession().catch(() => null);
-              return [retrySession, null];
-            }
-            throw err; // Re-lança erros reais para o catch externo
-          }
-        );
-
+        const sessionData = await getSession();
         if (isMounted) {
-          setSession(sessionResult);
-          setUser(userResult as User | null);
+          if (sessionData) {
+            setUser(sessionData.user);
+            setSession({ user: sessionData.user, token: sessionData.token });
+          } else {
+            setUser(null);
+            setSession(null);
+          }
           setError(null);
         }
       } catch (err) {
@@ -105,106 +83,34 @@ export function useAuth(): UseAuthReturn {
     };
   }, []);
 
-  // Listen to auth state changes and handle session expiry
-  useEffect(() => {
-    // Páginas públicas que não devem ter redirect automático
-    const publicPaths = ['/login', '/register', '/reset-password'];
-    const isPublicPath = publicPaths.includes(window.location.pathname);
-
-    const {
-      data: { subscription },
-    } = onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT' || session === null) {
-        // Session expired or user signed out - redirect to login
-        // ONLY redirect if not on a public path (login/register)
-        if (!isPublicPath) {
-          setSession(null);
-          setUser(null);
-          router.push('/login');
-        } else {
-          // On public paths, just update state without redirect
-          setSession(null);
-          setUser(null);
-        }
-      } else if (event === 'TOKEN_REFRESHED' && session) {
-        // Token refreshed - update session
-        setSession(session);
-      } /* istanbul ignore next */ else if (event === 'SIGNED_IN' && session) {
-        // User signed in - update state
-        setSession(session);
-        setUser(session.user);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [router]);
-
-  /**
-   * Autentica usuário usando AutenticarUsuarioUseCase.
-   */
+  // Handle sign in
   const handleSignIn = useCallback(async (email: string, password: string) => {
     setIsLoading(true);
     setError(null);
     try {
-      // Instanciar adapters e repositories
-      const authAdapter = new PostgresAuthAdapter();
-      const sessaoRepo = new SessaoRepository(db);
-
-      // Executar use case
-      const autenticarUseCase = new AutenticarUsuarioUseCase(authAdapter, sessaoRepo);
-      const input: AutenticarInput = {
-        email,
-        senha: password,
-        dispositivo: typeof window !== 'undefined' ? window.navigator.userAgent : 'unknown',
-      };
-
-      await autenticarUseCase.execute(input);
-
-      // Atualizar estado após autenticação bem-sucedida
-      // Retry getSession/getUser até 3 vezes com 100ms de delay
-      // para evitar race condition onde session ainda não está disponível
-      let sessionResult = null;
-      let userResult = null;
-      for (let i = 0; i < 3; i++) {
-        [sessionResult, userResult] = await Promise.all([getSession(), getUser()]);
-        if (sessionResult?.user) break;
-        await new Promise((r) => setTimeout(r, 100));
+      const result = await login(email, password);
+      const sessionData = await getSession();
+      if (sessionData) {
+        setUser(sessionData.user);
+        setSession({ user: sessionData.user, token: result.token });
       }
-      setSession(sessionResult);
-      setUser(userResult);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Falha na autenticação';
       setError(errorMessage);
-      // Lança erro para que o LoginForm possa exibir a mensagem
       throw new Error(errorMessage);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  /**
-   * Registra novo usuário usando RegistrarUsuarioUseCase.
-   */
+  // Handle sign up (placeholder - not implemented in lib/auth/client.ts)
   const handleSignUp = useCallback(
-    async (email: string, password: string, papel: string = 'cliente') => {
+    async (email: string, password: string, _papel: string = 'cliente') => {
       setIsLoading(true);
       setError(null);
       try {
-        // Instanciar adapters e repositories
-        const authAdapter = new PostgresAuthAdapter();
-        const usuarioRepo = new UsuarioRepository(db);
-
-        // Executar use case
-        const registrarUseCase = new RegistrarUsuarioUseCase(usuarioRepo, authAdapter);
-        const input: RegistrarUsuarioInput = {
-          email,
-          senha: password,
-          papel: papel as RegistrarUsuarioInput['papel'],
-        };
-
-        await registrarUseCase.execute(input);
+        // Registration is not yet implemented in lib/auth/client.ts
+        throw new Error('Registro não implementado');
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Falha no registro');
       } finally {
@@ -214,29 +120,26 @@ export function useAuth(): UseAuthReturn {
     []
   );
 
-  /**
-   * Realiza logout usando Supabase diretamente (limpa sessão local).
-   */
+  // Handle sign out
   const handleSignOut = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      await supabaseSignOut();
+      await logout();
       setSession(null);
       setUser(null);
+      router.push('/login');
     } catch (err) {
       /* istanbul ignore next */ setError(err instanceof Error ? err.message : 'Falha ao sair');
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [router]);
 
   return {
     user,
     session,
     isLoading,
-    // Session is the ground truth for authentication state
-    // User can be null even with valid session during initial load
     isAuthenticated: !!session,
     error,
     signIn: handleSignIn,

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
 import { getAnalytics } from '@/application/services/analyticsService';
-import { getSession } from '@/lib/supabase/auth';
+import { getSession } from '@/lib/auth/client';
 import { useRestaurantStore } from '@/infrastructure/persistence/restaurantStore';
 import type { AnalyticsData } from '@/application/services/analyticsService';
 

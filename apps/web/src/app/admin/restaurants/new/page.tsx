@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getSession } from '@/lib/supabase/auth';
+import { getSession } from '@/lib/auth/client';
 import { RestaurantForm, type RestaurantFormData } from '@/components/admin/RestaurantForm';
 import styles from './page.module.css';
 

@@ -8,7 +8,7 @@
 
 ## 1. Visão Geral
 
-O Pedi-AI funciona **100% offline**. O cliente pode navegar pelo cardápio, montar o carrinho e fazer pedidos mesmo sem conexão com a internet. Quando a conexão é restaurada, todos os dados são sincronizados automaticamente com o servidor Supabase.
+O Pedi-AI funciona **100% offline**. O cliente pode navegar pelo cardápio, montar o carrinho e fazer pedidos mesmo sem conexão com a internet. Quando a conexão é restaurada, todos os dados são sincronizados automaticamente com a API NestJS.
 
 ### Stack Offline
 
@@ -34,8 +34,8 @@ O Pedi-AI funciona **100% offline**. O cliente pode navegar pelo cardápio, mont
                     └────────────────┬───────────────────┘
                                      │
                     ┌────────────────▼───────────────────┐
-                    │           Supabase API             │
-                    │     ( quando online )              │
+                     │           NestJS API             │
+                     │     ( quando online )              │
                     └────────────────────────────────────┘
 ```
 
@@ -78,8 +78,8 @@ O Pedi-AI funciona **100% offline**. O cliente pode navegar pelo cardápio, mont
 └─────────────────────────────────────────────────────────────────────────────────┘
                                       │
                     ┌─────────────────▼─────────────────┐
-                    │         SUPABASE (online)          │
-                    │   PostgreSQL + Realtime + Auth     │
+                     │         NestJS API (online)       │
+                     │   PostgreSQL + Socket.io          │
                     └─────────────────────────────────────┘
 ```
 
@@ -621,7 +621,7 @@ if (navigator.onLine === false) {
 12. Toast "Conexão restaurada" aparece por 3s
     │
     ▼
-13. Tela de sucesso do pedido (via webhook Supabase)
+13. Tela de sucesso do pedido (via API NestJS)
 ```
 
 ### Código do Fluxo

@@ -3,9 +3,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getSession } from '@/lib/supabase/auth';
+import { getSession } from '@/lib/auth/client';
 import { CategoryForm, type CategoryInput } from '@/components/admin/CategoryForm';
-import type { categories } from '@/lib/supabase/types';
 import styles from './page.module.css';
 
 interface PageProps {
@@ -15,7 +14,7 @@ interface PageProps {
 export default function CategoryEditPage({ params }: PageProps) {
   const router = useRouter();
   const [categoryId, setCategoryId] = useState<string | null>(null);
-  const [category, setCategory] = useState<categories | null>(null);
+  const [category, setCategory] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);

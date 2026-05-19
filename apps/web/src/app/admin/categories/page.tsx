@@ -2,11 +2,10 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSession } from '@/lib/supabase/auth';
+import { getSession } from '@/lib/auth/client';
 import { useRestaurantStore } from '@/infrastructure/persistence/restaurantStore';
 import { CategoryList } from '@/components/admin/CategoryList';
 import { CategoryForm, type CategoryInput } from '@/components/admin/CategoryForm';
-import type { categories } from '@/lib/supabase/types';
 import styles from './page.module.css';
 
 type ToastType = 'success' | 'error' | null;
@@ -16,13 +15,13 @@ export default function CategoriesPage() {
   const { restauranteSelecionado } = useRestaurantStore();
   const selectedRestaurantId = restauranteSelecionado?.id ?? null;
   const [loading, setLoading] = useState(true);
-  const [categories, setCategories] = useState<categories[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<categories | null>(null);
+  const [editingCategory, setEditingCategory] = useState<any | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Loading states for operations
@@ -93,7 +92,7 @@ export default function CategoriesPage() {
   };
 
   // Handle edit category
-  const handleEdit = (category: categories) => {
+  const handleEdit = (category: any) => {
     setEditingCategory(category);
     setIsModalOpen(true);
   };

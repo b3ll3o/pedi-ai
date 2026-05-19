@@ -3,8 +3,6 @@
  * Handles order management operations for admin/kitchen/waiter.
  */
 
-import type { orders, order_items, order_status_history } from '@/lib/supabase/types';
-
 export type OrderStatus =
   | 'pending_payment'
   | 'paid'
@@ -24,12 +22,7 @@ export interface OrderFilters {
   offset?: number;
 }
 
-export interface OrderWithItems extends orders {
-  items: order_items[];
-  status_history?: order_status_history[];
-  table?: { id: string; number: number; name: string | null } | null;
-  customer?: { id: string; name: string; email: string } | null;
-}
+export type OrderWithItems = Record<string, any>;
 
 // ── Fetch Orders ─────────────────────────────────────────────
 

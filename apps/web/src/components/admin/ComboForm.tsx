@@ -2,9 +2,16 @@
 
 import { useState, useRef } from 'react';
 import Image from 'next/image';
-import type { combos, combo_items } from '@/lib/supabase/types';
-import { uploadProductImage, deleteProductImage } from '@/lib/supabase/storage';
 import styles from './ComboForm.module.css';
+
+// TODO: Implement file upload via API route (Supabase Storage removed)
+async function uploadProductImage(_file: File): Promise<string> {
+  console.warn('uploadProductImage: Storage não disponível - implementação via API pendente');
+  return '';
+}
+async function deleteProductImage(_url: string): Promise<void> {
+  console.warn('deleteProductImage: Storage não disponível');
+}
 
 export interface ComboInput {
   name: string;
@@ -16,7 +23,7 @@ export interface ComboInput {
 }
 
 interface ComboFormProps {
-  combo?: combos & { combo_items?: combo_items[] };
+  combo?: any;
   products: { id: string; name: string; price: number }[];
   onSubmit: (data: ComboInput) => void;
   onCancel: () => void;

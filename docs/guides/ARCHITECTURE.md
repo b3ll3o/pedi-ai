@@ -78,9 +78,9 @@ O Pedi-AI adota uma arquitetura **Domain-Driven Design (DDD)** em 4 camadas, org
 │   ┌─────────────────────────────┐    ┌─────────────────────────────────┐    │
 │   │     persistence/            │    │          external/               │    │
 │   │                             │    │                                  │    │
-│   │  pedido/PedidoRepository.ts │    │  SupabaseAuthAdapter.ts         │    │
-│   │  pedido/CarrinhoRepository.ts│    │  StripeAdapter.ts               │    │
-│   │  cardapio/CategoriaRepo.ts  │    │  PixAdapter.ts                  │    │
+│   │  pedido/PedidoRepository.ts │    │  JwtAuthAdapter.ts             │    │
+│   │  pedido/CarrinhoRepository.ts│    │  StripeAdapter.ts              │    │
+│   │  cardapio/CategoriaRepo.ts  │    │  PixAdapter.ts                 │    │
 │   │  mesa/MesaRepository.ts     │    │  QRCodeCryptoService.ts         │    │
 │   │  pagamento/PagamentoRepo.ts │    │                                  │    │
 │   │                             │    │                                  │    │
@@ -96,9 +96,9 @@ O Pedi-AI adota uma arquitetura **Domain-Driven Design (DDD)** em 4 camadas, org
 │                          EXTERNAL APIS                                       │
 │                                                                              │
 │   ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                       │
-│   │  Supabase   │  │   Stripe    │  │Mercado Pago │                       │
+│   │  NestJS     │  │   Stripe    │  │Mercado Pago │                       │
 │   │  (Auth +    │  │  (Payments) │  │   (Pix)     │                       │
-│   │   Realtime) │  │             │  │             │                       │
+│   │   API)      │  │             │  │             │                       │
 │   └─────────────┘  └─────────────┘  └─────────────┘                       │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -384,7 +384,7 @@ export class CriarPedidoUseCase implements UseCase<CriarPedidoInput, CriarPedido
 
 ### 3.3 Infrastructure Layer (`apps/web/apps/web/src/infrastructure/`)
 
-**Propósito:** Implementa os contratos definidos em domain (repositórios, adapters). Contém persistência (Dexie/IndexedDB), adapters externos (Supabase, Stripe, Pix) e serviços técnicos.
+**Propósito:** Implementa os contratos definidos em domain (repositórios, adapters). Contém persistência (Dexie/IndexedDB), adapters externos (JWT, Stripe, Pix) e serviços técnicos.
 
 #### Estrutura
 
@@ -402,7 +402,7 @@ apps/web/src/infrastructure/
 │   ├── autenticacao/
 │   └── admin/
 ├── external/
-│   ├── SupabaseAuthAdapter.ts    # Adapter para Supabase Auth
+│   ├── JwtAuthAdapter.ts        # Adapter para autenticação JWT
 │   ├── StripeAdapter.ts         # Adapter para Stripe
 │   └── PixAdapter.ts            # Adapter para Pix/Mercado Pago
 └── services/
@@ -667,7 +667,7 @@ O sistema é dividido em **6 contextos delimitados**, cada um com sua própria e
 │  ├── db.pedidos.put(dbModel) → persiste em IndexedDB         │
 │  └── Retorna pedido deserializado                            │
 │                                                              │
-│  Se online: sync com Supabase (background sync)              │
+│  Se online: sync com API NestJS (background sync)            │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -739,7 +739,7 @@ domain: PagamentoAggregate.confirmar()
 ```typescript
 // ❌ PROIBIDO em apps/web/src/domain/pedido/entities/Pedido.ts
 import { useState } from 'react'; // BLOQUEADO
-import { SupabaseClient } from '@supabase/supabase-js'; // BLOQUEADO
+import { createClient } from '@/lib/auth/client'; // BLOQUEADO - domain não pode acessar infrastructure
 import '@/stores/cartStore'; // BLOQUEADO
 import '@/infrastructure/persistence/pedido/PedidoRepository'; // BLOQUEADO
 import 'next/navigation'; // BLOQUEADO
@@ -1111,7 +1111,7 @@ A migração para DDD está **em andamento**. As camadas Domain, Application e I
 | ------------------ | --------------- | ---------------------------------------------------------------------------------------- |
 | **Domain**         | ✅ Implementado | Entidades, VOs, Aggregates, Events, Services, Repositories (interfaces) para 6 contextos |
 | **Application**    | ✅ Implementado | Use Cases para 6 contextos (migrados de services antigos)                                |
-| **Infrastructure** | ✅ Implementado | Repositories (Dexie), Adapters (Stripe, Pix, Supabase)                                   |
+| **Infrastructure** | ✅ Implementado | Repositories (Dexie), Adapters (Stripe, Pix, JWT)                                       |
 | **Presentation**   | ⚠️ Parcial      | Estrutura existe mas hooks/pages ainda não usam use cases consistentemente               |
 
 ### 8.3 Status por Bounded Context
@@ -1215,7 +1215,7 @@ apps/web/src/infrastructure/
 │   ├── autenticacao/UsuarioRepository.ts, SessaoRepository.ts
 │   └── admin/RestauranteRepository.ts, UsuarioRestauranteRepository.ts, EstatisticasRepository.ts
 ├── external/
-│   ├── SupabaseAuthAdapter.ts
+│   ├── JwtAuthAdapter.ts
 │   ├── StripeAdapter.ts
 │   └── PixAdapter.ts
 └── services/
@@ -1250,7 +1250,7 @@ apps/web/src/infrastructure/
 |                 | Arquivo           | Responsabilidade Original               | Status |
 | --------------- | ----------------- | --------------------------------------- | ------ |
 | `src/lib/qr.ts` | Validação QR code | ⚠️ Deprecated, usar MesaAggregate       |
-| `src/lib/auth/` | Autenticação      | ⚠️ Deprecated, usar SupabaseAuthAdapter |
+| `src/lib/auth/` | Autenticação      | ✅ Válido, usar JWT Auth via NestJS    |
 
 ---
 

@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getSession, signIn } from '@/lib/supabase/auth';
+import { getSession } from '@/lib/auth/client';
 import { LoginForm } from '@/components/auth/LoginForm';
 import styles from './page.module.css';
 
@@ -31,9 +31,16 @@ function AdminLoginContent() {
   }, [router]);
 
   const handleLogin = async (email: string, password: string) => {
-    const { error } = await signIn(email, password);
-    if (error) {
-      throw new Error(error.message);
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Erro ao fazer login');
     }
     router.push('/admin/dashboard');
   };

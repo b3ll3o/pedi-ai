@@ -3,8 +3,6 @@
  * Handles table CRUD operations and QR code generation.
  */
 
-import type { tables } from '@/lib/supabase/types';
-
 export interface TableInput {
   restaurant_id: string;
   number: number;
@@ -28,7 +26,7 @@ export interface TableQRData {
 
 // ── Fetch Tables ─────────────────────────────────────────────
 
-export async function getTables(restaurantId: string): Promise<tables[]> {
+export async function getTables(restaurantId: string): Promise<any[]> {
   const response = await fetch(`/api/admin/tables?restaurant_id=${restaurantId}`);
 
   if (!response.ok) {
@@ -37,10 +35,10 @@ export async function getTables(restaurantId: string): Promise<tables[]> {
   }
 
   const { tables } = await response.json();
-  return tables as tables[];
+  return tables as any[];
 }
 
-export async function getTable(tableId: string): Promise<tables> {
+export async function getTable(tableId: string): Promise<any> {
   const response = await fetch(`/api/admin/tables/${tableId}`);
 
   if (!response.ok) {
@@ -49,12 +47,12 @@ export async function getTable(tableId: string): Promise<tables> {
   }
 
   const { table } = await response.json();
-  return table as tables;
+  return table as any;
 }
 
 // ── Create Table ─────────────────────────────────────────────
 
-export async function createTable(input: TableInput): Promise<tables> {
+export async function createTable(input: TableInput): Promise<any> {
   const response = await fetch('/api/admin/tables', {
     method: 'POST',
     headers: {
@@ -69,15 +67,15 @@ export async function createTable(input: TableInput): Promise<tables> {
   }
 
   const { table } = await response.json();
-  return table as tables;
+  return table as any;
 }
 
 // ── Update Table ─────────────────────────────────────────────
 
 export async function updateTable(
   tableId: string,
-  updates: Partial<Omit<tables, 'id' | 'created_at'>>
-): Promise<tables> {
+  updates: Partial<any>
+): Promise<any> {
   const response = await fetch(`/api/admin/tables/${tableId}`, {
     method: 'PUT',
     headers: {
@@ -92,7 +90,7 @@ export async function updateTable(
   }
 
   const { table } = await response.json();
-  return table as tables;
+  return table as any;
 }
 
 // ── Delete Table ─────────────────────────────────────────────

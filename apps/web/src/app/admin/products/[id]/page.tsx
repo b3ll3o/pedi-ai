@@ -3,10 +3,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
-import { getSession } from '@/lib/supabase/auth';
+import { getSession } from '@/lib/auth/client';
 import { ProductForm, type ProductInput } from '@/components/admin/ProductForm';
-import type { products, categories } from '@/lib/supabase/types';
 import styles from './page.module.css';
 
 interface PageProps {
@@ -16,8 +14,8 @@ interface PageProps {
 export default function ProductEditPage({ params }: PageProps) {
   const router = useRouter();
   const [productId, setProductId] = useState<string | null>(null);
-  const [product, setProduct] = useState<products | null>(null);
-  const [categoriesList, setCategoriesList] = useState<categories[]>([]);
+  const [product, setProduct] = useState<any | null>(null);
+  const [categoriesList, setCategoriesList] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
@@ -53,37 +51,24 @@ export default function ProductEditPage({ params }: PageProps) {
       setError(null);
 
       try {
-        const supabase = createClient();
-
-        // Fetch product
-        const { data: productData, error: productError } = await supabase
-          .from('products')
-          .select('*')
-          .eq('id', productId)
-          .single();
-
-        if (productError) {
-          throw productError;
+        // Fetch product via API
+        const productRes = await fetch(`/api/admin/products/${productId}`);
+        if (!productRes.ok) {
+          if (productRes.status === 404) {
+            setError('Produto não encontrado');
+            return;
+          }
+          throw new Error('Erro ao carregar produto');
         }
+        const productData = await productRes.json();
+        setProduct(productData.product);
 
-        if (!productData) {
-          setError('Produto não encontrado');
-          return;
+        // Fetch categories via API
+        const categoriesRes = await fetch('/api/admin/categories');
+        if (categoriesRes.ok) {
+          const categoriesData = await categoriesRes.json();
+          setCategoriesList(categoriesData.categories || []);
         }
-
-        setProduct(productData as products);
-
-        // Fetch categories for the form dropdown
-        const { data: categoriesData, error: categoriesError } = await supabase
-          .from('categories')
-          .select('*')
-          .order('name');
-
-        if (categoriesError) {
-          throw categoriesError;
-        }
-
-        setCategoriesList(categoriesData as categories[]);
       } catch (err) {
         console.error('Failed to fetch product:', err);
         setError('Erro ao carregar produto');
@@ -99,10 +84,10 @@ export default function ProductEditPage({ params }: PageProps) {
     async (input: ProductInput) => {
       if (!productId) return;
 
-      const supabase = createClient();
-      const { error: updateError } = await supabase
-        .from('products')
-        .update({
+      const res = await fetch(`/api/admin/products/${productId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           name: input.name,
           description: input.description ?? null,
           price: input.price,
@@ -110,11 +95,12 @@ export default function ProductEditPage({ params }: PageProps) {
           image_url: input.image_url ?? null,
           dietary_labels: input.dietary_labels ?? null,
           available: input.available ?? true,
-        })
-        .eq('id', productId);
+        }),
+      });
 
-      if (updateError) {
-        throw updateError;
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Erro ao atualizar produto');
       }
 
       router.push('/admin/produtos');

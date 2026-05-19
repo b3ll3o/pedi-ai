@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getTable, updateTable } from '@/application/services/tableService';
-import { getSession } from '@/lib/supabase/auth';
-import type { tables } from '@/lib/supabase/types';
+import { getSession } from '@/lib/auth/client';
 import styles from './page.module.css';
 
 export default function TableEditPage() {
@@ -13,7 +12,7 @@ export default function TableEditPage() {
   const router = useRouter();
   const tableId = params.id as string;
 
-  const [table, setTable] = useState<tables | null>(null);
+  const [table, setTable] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);

@@ -1,5 +1,16 @@
 # Guia de Subscriptions Realtime — Pedi-AI
 
+> **⚠️ DEPRECADO**: Este documento descreve uma arquitetura que não está mais em uso.
+> O Pedi-AI agora utiliza **Socket.io via NestJS Gateway** para realtime.
+> A implementação anterior com Supabase Realtime foi descontinuada na migração para PostgreSQL.
+>
+> - Ver: `apps/api/src/realtime/realtime.gateway.ts` (Socket.io)
+> - Ver: `apps/web/src/hooks/useRealtimeOrders.ts` (implementação atual com API polling)
+>
+> Este documento será removido após atualização completa da documentação de realtime.
+
+---
+
 Este documento descreve a arquitetura de subscriptions realtime implementada no Pedi-AI, incluindo o fallback via polling e as melhores práticas para manter pedidos e itens sincronizados em tempo real.
 
 ---

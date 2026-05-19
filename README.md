@@ -191,48 +191,31 @@ O projeto segue regras definidas em [AGENTS.md](./AGENTS.md):
 ## Estrutura do Projeto
 
 ```
-src/
-├── app/                    # Next.js App Router
-│   ├── (customer)/        # Rotas do cliente (cardápio, checkout, pedido)
-│   │   ├── cart/         # Carrinho
-│   │   ├── checkout/     # Finalização
-│   │   ├── menu/        # Cardápio (lista categorias)
-│   │   ├── order/       # Acompanhamento pedido
-│   │   └── product/     # Detalhe do produto
-│   ├── (waiter)/         # Rotas garçom (display cozinha)
-│   │   └── dashboard/   # Dashboard cozinha
-│   ├── admin/            # Painel administrativo
-│   │   ├── analytics/   # Analytics
-│   │   ├── categories/  # CRUD categorias
-│   │   ├── combos/      # CRUD combos
-│   │   ├── configuracoes/ # Configurações
-│   │   ├── dashboard/   # Dashboard principal
-│   │   ├── login/       # Login admin
-│   │   ├── modifiers/   # CRUD modificadores
-│   │   ├── orders/      # Gestão pedidos
-│   │   ├── products/    # CRUD produtos
-│   │   ├── restaurants/  # CRUD restaurantes (multi-tenant)
-│   │   ├── tables/      # CRUD mesas/QR
-│   │   └── users/       # Gestão usuários
-│   ├── api/              # API routes
-│   ├── kitchen/          # Display cozinha
-│   ├── login/            # Login cliente
-│   ├── register/         # Registro cliente
-│   └── table/            # QR code scan
-├── components/            # Componentes React (admin, cart, menu, order, payment, shared)
-├── hooks/               # React Hooks
-├── lib/
-│   ├── auth/            # Auth
-│   ├── offline/         # IndexedDB, sync
-│   ├── qr/              # QR code
-│   └── supabase/        # Cliente Supabase
-├── services/             # Lógica de negócio
-└── stores/              # Zustand stores
+pedi-ai/
+├── apps/
+│   ├── api/              # NestJS + Prisma + PostgreSQL
+│   │   └── src/
+│   │       ├── domain/       # DDD: entidades, value objects
+│   │       ├── application/   # DDD: use cases
+│   │       ├── infrastructure/ # DDD: repositories
+│   │       └── presentation/  # NestJS: controllers, gateways
+│   └── web/              # Next.js 16 + TypeScript
+│       └── src/
+│           ├── app/           # Next.js App Router
+│           ├── components/    # Componentes React
+│           ├── hooks/         # React Hooks
+│           ├── lib/           # Auth, offline, QR
+│           ├── domain/        # DDD: entidades, value objects
+│           ├── application/   # DDD: use cases
+│           └── infrastructure/ # DDD: repositories
+├── packages/
+│   └── shared/           # Código compartilhado
+└── docs/                  # Documentação
 ```
 
 ## Database Schema
 
-O banco de dados possui as seguintes tabelas:
+O schema Prisma (`apps/api/prisma/schema.prisma`) define as tabelas:
 
 - `restaurants` — Restaurantes (multi-tenant)
 - `user_restaurants` — Junction table N:N (usuários com múltiplos restaurantes)
@@ -262,7 +245,7 @@ A aplicação é um **Progressive Web App** com:
 ## Segurança
 
 - **QR Code**: Assinatura HMAC-SHA256 para evitar falsificação
-- **RLS**: Row Level Security no Supabase para isolamento de tenants
+- **Políticas PostgreSQL**: Isolamento de tenants no banco
 - **Webhook Idempotência**: Evita processamento duplicado
 - **Validação de Assinatura**: Webhooks Mercado Pago/Stripe validados
 

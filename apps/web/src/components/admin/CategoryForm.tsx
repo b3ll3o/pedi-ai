@@ -2,7 +2,6 @@
 
 import { useState, useRef } from 'react';
 import Image from 'next/image';
-import type { categories } from '@/lib/supabase/types';
 import styles from './CategoryForm.module.css';
 
 export interface CategoryInput {
@@ -12,7 +11,7 @@ export interface CategoryInput {
 }
 
 interface CategoryFormProps {
-  category?: categories;
+  category?: any;
   onSubmit: (data: CategoryInput) => void;
   onCancel: () => void;
 }

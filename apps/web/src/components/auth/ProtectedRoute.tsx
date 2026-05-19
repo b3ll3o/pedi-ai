@@ -2,15 +2,14 @@
 
 import { type ReactNode, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
-import type { Enum_user_role } from '@/lib/supabase/types';
+import { getSession } from '@/lib/auth/client';
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  allowedRoles?: Enum_user_role[];
+  allowedRoles?: any[];
 }
 
-type UserRole = Enum_user_role;
+type UserRole = any;
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -30,11 +29,7 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
 
   useEffect(() => {
     async function checkAuth() {
-      const supabase = createClient();
-
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const session = await getSession();
 
       if (!session?.user) {
         setAuthState({
@@ -46,19 +41,11 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
         return;
       }
 
-      // Fetch user profile to get role
-      const userId = session.user.id;
-      const { data: profile } = await supabase
-        .from('users_profiles')
-        .select('role')
-        .eq('user_id', userId)
-        .single();
-
       setAuthState({
         isAuthenticated: true,
         isLoading: false,
-        userId,
-        userRole: (profile?.role as Enum_user_role | null) ?? null,
+        userId: session.user.id,
+        userRole: session.user.role as any | null,
       });
     }
 

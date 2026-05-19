@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { useQuery } from '@tanstack/react-query';
-import type { products, modifier_groups, modifier_values } from '@/lib/supabase/types';
 import { ModifierSelector } from './ModifierSelector';
 import type { CartItem, SelectedModifier } from './types';
 import styles from './ProductDetail.module.css';
@@ -16,13 +15,11 @@ interface ProductDetailProps {
   onAddToCart: (item: CartItem) => void;
 }
 
-type ModifierGroupFromDB = Omit<modifier_groups, 'created_at'> & {
-  modifier_values: Omit<modifier_values, 'modifier_group_id' | 'created_at'>[];
+type ModifierGroupFromDB = {
+  modifier_values: any[];
 };
 
-type ProductWithModifiers = products & {
-  modifier_groups?: ModifierGroupFromDB[];
-};
+type ProductWithModifiers = any;
 
 interface ProductResponse {
   product: ProductWithModifiers;

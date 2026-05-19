@@ -1,14 +1,13 @@
 /**
  * useRealtimeOrders Hook
- * Subscribes to order updates via Supabase Realtime with polling fallback.
+ * Subscribes to order updates via polling (Supabase realtime removed).
  */
 
 import { useEffect, useCallback, useState, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { createClient } from '@/lib/supabase/client';
 import type { OrderWithItems } from '@/application/services/adminOrderService';
 
-const POLLING_INTERVAL = 10000; // 10 seconds fallback
+const POLLING_INTERVAL = 10000; // 10 seconds
 
 export interface UseRealtimeOrdersOptions {
   restaurantId?: string;
@@ -55,7 +54,7 @@ export function useRealtimeOrders({
     staleTime: 5000,
   });
 
-  // Set up polling fallback
+  // Set up polling
   const startPolling = useCallback(() => {
     if (pollingRef.current) {
       clearInterval(pollingRef.current);
@@ -72,94 +71,22 @@ export function useRealtimeOrders({
     }
   }, []);
 
-  // Set up Supabase Realtime subscription
+  // Set up polling for order updates
   useEffect(() => {
     if (!enabled || !restaurantId) {
       stopPolling();
+      setIsConnected(false);
       return;
     }
 
-    const supabase = createClient();
-
-    const channel = supabase
-      .channel('admin-orders-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'orders',
-          filter: `restaurant_id=eq.${restaurantId}`,
-        },
-        /* istanbul ignore next */ (_payload) => {
-          queryClient.invalidateQueries({ queryKey: ['admin-orders', restaurantId] });
-          setIsConnected(true);
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'orders',
-          filter: `restaurant_id=eq.${restaurantId}`,
-        },
-        /* istanbul ignore next */ (_payload) => {
-          queryClient.invalidateQueries({ queryKey: ['admin-orders', restaurantId] });
-          setIsConnected(true);
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'order_items',
-        },
-        /* istanbul ignore next */ (_payload) => {
-          queryClient.invalidateQueries({ queryKey: ['admin-orders', restaurantId] });
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'order_items',
-        },
-        /* istanbul ignore next */ (_payload) => {
-          queryClient.invalidateQueries({ queryKey: ['admin-orders', restaurantId] });
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'order_items',
-        },
-        /* istanbul ignore next */ (_payload) => {
-          queryClient.invalidateQueries({ queryKey: ['admin-orders', restaurantId] });
-        }
-      )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          setIsConnected(true);
-          stopPolling();
-        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          setIsConnected(false);
-          startPolling();
-        }
-      });
-
-    // Start polling as backup
+    // Start polling
+    setIsConnected(true);
     startPolling();
 
     return () => {
       stopPolling();
-      supabase.removeChannel(channel);
     };
-  }, [enabled, restaurantId, queryClient, startPolling, stopPolling]);
+  }, [enabled, restaurantId, startPolling, stopPolling]);
 
   return {
     orders: data || [],
@@ -178,14 +105,20 @@ export function useRealtimeConnection() {
   const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    const supabase = createClient();
-
     const measureLatency = async () => {
       const start = Date.now();
       try {
-        await supabase.from('restaurants').select('id').limit(1);
-        setLatency(Date.now() - start);
-        setIsConnected(true);
+        const response = await fetch('/api/health', {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        if (response.ok) {
+          setLatency(Date.now() - start);
+          setIsConnected(true);
+        } else {
+          setIsConnected(false);
+          setLatency(null);
+        }
       } catch {
         setIsConnected(false);
         setLatency(null);

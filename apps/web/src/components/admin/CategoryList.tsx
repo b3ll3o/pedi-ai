@@ -1,13 +1,12 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { categories } from '@/lib/supabase/types';
 import styles from './CategoryList.module.css';
 
 interface CategoryListProps {
-  categories: categories[];
+  categories: any[];
   onReorder: (updates: { id: string; sort_order: number }[]) => Promise<void>;
-  onEdit: (category: categories) => void;
+  onEdit: (category: any) => void;
   onDelete: (id: string) => void;
 }
 

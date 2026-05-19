@@ -10,228 +10,49 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 # Pedi-AI — Application Rules
 
-## Idioma / Language
+---
+
+## REGRAS DO MONOREPO (TODAS AS APPS)
+
+### Idioma
 
 - **Idioma padrão**: Todo o código, UI, mensagens, e documentação DEVE estar em **português brasileiro (pt-BR)**
 - Todos os textos visíveis ao usuário, labels, placeholders, mensagens de erro, logs, e documentação devem ser em pt-BR
 - Nomes de variáveis, funções, e componentes podem ser em inglês (convenção técnica)
 - Mensagens de erro e validação sempre em português
 
-## Design Responsivo
+### Qualidade & Testes
 
-- A aplicação **DEVE** funcionar em qualquer tamanho de tela
-- Usar CSS responsivo (media queries, flexbox, grid)
-- Breakpoints recomendados:
-  - Mobile: < 640px
-  - Tablet: 640px - 1024px
-  - Desktop: > 1024px
-- Testar sempre em mobile primeiro durante desenvolvimento
-
-## Mobile-First
-
-- Desenvolver **sempre** para mobile primeiro
-- Começar pelo menor breakpoint e escalar para cima
-- Usar `min-width` media queries (mobile base, desktop enhancement)
-- Touch-friendly: botões mínimo 44x44px, gaps adequados
-- Performance mobile优先 — evitar bundle grande em mobile
-
-## CSS Best Practices
-
-### Unidades Relativas (Preferir sempre que possível)
-
-- **Usar `rem` para tamanhos de fonte e espaçamento**: `1rem = 16px` base, permite scaling correto quando usuário muda tamanho de fonte do navegador
-- **Usar `em` para valores que devem escalar em relação ao elemento pai**: margens, paddings relativos
-- **Evitar `px` para tamanhos de fonte**: `px` não escala com preferências do usuário
-- **Exceção**: valores muito pequenos (< 4px), bordas (`1px`), sombras e valores que precisam ser exatamente `0` podem usar `px`
-
-### Regras Gerais de CSS
-
-- **Usar CSS Custom Properties (variáveis)**: Definir cores, espaçamentos e valores reutilizáveis em `:root`
-  ```css
-  :root {
-    --spacing-sm: 0.5rem;
-    --spacing-md: 1rem;
-    --color-primary: #007bff;
-  }
-  ```
-- **Evitar números mágicos**: Usar variáveis ou múltiplos de uma base (ex: `0.25rem`, `0.5rem`, `1rem`)
-- **Usar shorthand properties**: `margin: 0 auto` em vez de `margin-top: 0; margin-right: auto; ...`
-- **Agrupar propriedades relacionadas**: layout (display, position), box model (margin, padding), visual (color, background)
-- **Ordem de propriedades**: seguir convenção (visual → layout → tipografia → outros)
-- **Evitar `!important`**: Preferir specificity adequada; usar apenas como último recurso
-- **Usar `clamp()` para valores fluidos**: `font-size: clamp(1rem, 2.5vw, 1.5rem)` para responsividade automática
-- **Minificar e usar sourcemaps em produção**
-
-### Breakpoints
-
-- Mobile: < 640px
-- Tablet: 640px - 1024px
-- Desktop: > 1024px
-- Usar `em` em media queries: `@media (min-width: 40em)` (equivalente a 640px)
-
-## Offline-First
-
-- A aplicação **DEVE** funcionar sem conexão de internet
-- Usar Service Worker (Workbox) para cache
-- Usar IndexedDB (Dexie) para persistência local
-- Carrinho e dados do cardápio devem estar disponíveis offline
-- Pedidos feitos offline devem ser enfileirados e syncados automaticamente ao reconectar
-- Sempre dar feedback visual de status de conectividade
-- Implementar retry com backoff exponencial para operações offline
-
-## HTML Semântico
-
-### Regras Obrigatórias
-
-- **Heading hierarchy**: Apenas UM `h1` por página; `h2`-`h6` em ordem lógica sem saltos (nunca pular de h2 para h4)
-- **Landmarks**: Usar elementos HTML5 corretos — `<header>`, `<nav>`, `<main>`, `<section>`, `<article>`, `<footer>`, `<aside>`
-- **Sections**: Cada `<section>` DEVE ter `aria-labelledby` apontando para o ID do seu título
-- **Nav**: Usar `<nav>` com `aria-label` descritivo (ex: `aria-label="Navegação principal"`)
-- **Listas**: Usar `<ul>` e `<li>` para listas de itens relacionados; não usar `<div>` ou `<br>` para separar itens
-- **Botões vs Links**: Usar `<button>` para ações (filtrar, toggle, submit); usar `<a>` para navegação
-- **Ênfase**: Usar `<strong>` para texto importante; `<em>` para ênfase/italico semântico
-- **Decorative Icons**: Ícones decorativos devem ter `aria-hidden="true"`
-- **Accessible Names**: Todos os elementos interativos devem ter nome acessível (texto visível ou `aria-label`)
-- **Paragraphs**: Usar `<p>` para parágrafos; não usar `<br>` para criar espaçamento entre blocos de texto
-
-### Estrutura Recomendada por Tipo de Página
-
-**Landing Page / Página de Marketing:**
-
-```
-<header><nav aria-label="Navegação principal">...</nav></header>
-<main>
-  <section aria-labelledby="hero-title"><h1>Título Principal</h1></section>
-  <section aria-labelledby="features-title"><h2>Features</h2></section>
-  ...
-</main>
-<footer>...</footer>
-```
-
-**Páginas de Lista/Grid:**
-
-```
-<main>
-  <header><h1>Título da Página</h1></header>
-  <section>
-    <ul>
-      <li><article>Item 1</article></li>
-      <li><article>Item 2</article></li>
-    </ul>
-  </section>
-</main>
-```
-
-**FAQ:**
-
-```
-<section aria-labelledby="faq-title">
-  <h2 id="faq-title">Perguntas Frequentes</h2>
-  <dl>
-    <dt><strong>Pergunta?</strong></dt>
-    <dd>Resposta.</dd>
-  </dl>
-</section>
-```
-
-## SEO (Search Engine Optimization)
-
-### Regras Obrigatórias
-
-- **Toda página DEVE ter metadata completa**: `title`, `description`, `og:*`, `twitter:*`, `robots`, `canonical`
-- **Títulos SEO**: Máximo 60 caracteres, incluir palavra-chave principal no início
-- **Descriptions**: Meta description entre 120-160 caracteres, incluir CTAs e palavras-chave
-- **Imagens**: Sempre usar `next/image` com `alt` descritivo; nunca imagens sem alt
-- **Links**: Usar `aria-label` quando o texto do link não for autoexplicativo
-- **URLs**: Devem ser semânticas, em minúsculas, com hífens (ex: `/cardapio-digital` não `/cardapio_digital`)
-- **Structured Data**: Implementar JSON-LD para Organization, WebSite, FAQPage, Restaurant conforme apropriado
-- **Performance**: Core Web Vitals (LCP < 2.5s, FID < 100ms, CLS < 0.1); usar `next/font` para fontes
-- **Sitemap**: Manter `sitemap.xml` e `robots.txt` atualizados; usar `next-sitemap` para geração automática
-
-### Landing Page SEO Checklist
-
-- [ ] Title: "Cardápio Digital para Restaurantes | Pedi-AI - Funciona Offline"
-- [ ] Meta description com principais USPs (offline, tempo real, QR codes)
-- [ ] Open Graph: `og:title`, `og:description`, `og:image`, `og:url`, `og:type`
-- [ ] Twitter Card: `twitter:card`, `twitter:title`, `twitter:description`, `twitter:image`
-- [ ] JSON-LD: Organization + WebSite schema
-- [ ] FAQPage schema para seção de perguntas frequentes
-- [ ] Canonical URL apontando para domínio principal
-- [ ] robots.txt permitindo indexing da landing page
-
-### Technical SEO
-
-- Gerar `sitemap.xml` automaticamente via `next-sitemap` em build
-- Configurar `robots.txt` com diretivas adequadas
-- Usar `<link rel="canonical">` em todas as páginas
-- Implementar redirect 301 para URLs antigas se houver
-- Verificar que não há conteúdo duplicado (usar canonical tags)
-- Adicionar `@nuxtjs/google-fonts` ou `next/font` para fontes otimizadas
-
-## Qualidade & Testes
-
-### Cobertura de Testes Unitários
+#### Cobertura de Testes Unitários
 
 - **Cobertura mínima**: A cobertura de testes unitários DEVE ser de pelo menos **80%** para todas as métricas (statements, branches, functions, lines)
-- Verificar cobertura com `npm run test:coverage` ou comando equivalente
+- Verificar cobertura com `pnpm test:coverage`
 - Métricas de cobertura devem ser monitoradas em CI/CD
 - Arquivos com cobertura abaixo do limiar devem ser tratados como dívida técnica
 
-### Testes de Integração e E2E
+#### Testes de Integração
 
-- **Todos os fluxos principais DEVEM ser cobertos** por testes de integração e E2E
-- Fluxos obrigatórios incluem:
-  - Fluxo de pedido completo (montar carrinho → fechar pedido → pagamento)
-  - Fluxo de autenticação (login, logout, recuperação de senha)
-  - Fluxo offline (precisar executar online, sync ao reconectar)
-  - Fluxo de administração (CRUD de cardápio, mesas, pedidos)
-- Testes E2E usar Playwright (preferencial) ou Cypress
+- **Todos os fluxos principais DEVEM ser cobertos** por testes de integração
 - Testes de integração usar Vitest com mocks de APIs
 - Configurar pipelines de CI para rodar todos os testes automaticamente
 
-### Manutenção de Testes E2E
+### Arquitetura DDD (TODAS AS APPS)
 
-- **Testes E2E DEVEM ser atualizados IMEDIATAMENTE** sempre que:
-  - Uma nova funcionalidade for adicionada
-  - Uma funcionalidade existente for modificada
-  - Um bug for corrigido
-  - Uma mudança de UI/UX for implementada
-- **Todos os fluxos da aplicação DEVEM ter teste E2E**, incluindo:
-  - Fluxos de usuário (cliente, admin, garçom)
-  - Fluxos de negócio (pedidos, pagamentos, autenticação)
-  - Fluxos de admin (CRUD de cardápio, mesas, pedidos, usuários)
-  - Fluxos de edge cases e tratamento de erros
-- **Antes de.merge de PR**: Todos os testes E2E DEVEM passar localmente
-- **CI/CD**: Pipeline E2E deve bloquear merge se testes falharem
-- **Cobertura de fluxos**: Manter inventário atualizado de fluxos cobertos em `apps/web/tests/e2e/README.md`
+> Todas as apps do monorepo (`apps/web` e `apps/api`) DEVEM seguir a arquitetura DDD.
 
-## Arquitetura DDD (Domain-Driven Design)
+#### Bounded Contexts Implementados (apps/web)
 
-> ✅ **STATUS**: A arquitetura DDD está **MAJORITARIAMENTE IMPLEMENTADA**. A estrutura DDD existe em `apps/web/src/domain/`, `apps/web/src/application/`, e `apps/web/src/infrastructure/`.
-> A estrutura coexiste com código em `apps/web/src/components/`, `apps/web/src/hooks/`, e `apps/web/src/lib/` (legacy).
+| Bounded Context | Status | Entities | Value Objects | Events | Repos |
+| --------------- | ------ | -------- | ------------- | ------ | ----- |
+| `admin/` | ✅ | Restaurante, UsuarioRestaurante | ConfiguracoesRestaurante, PapelRestaurante | 7 events | ✅ |
+| `autenticacao/` | ✅ | Usuario, Sessao | Papel, Credenciais | 3 events | ✅ |
+| `cardapio/` | ✅ | Categoria, Produto, GrupoModificador | Preco, Alergeno, ValorModificador | - | ✅ |
+| `mesa/` | ✅ | Mesa | NumeroMesa | - | ✅ |
+| `pagamento/` | ✅ | Pagamento, Transacao | StatusPagamento, MetodoPagamento | 4 events | ✅ |
+| `pedido/` | ✅ | Pedido, ItemPedido | StatusPedido, Dinheiro, MetodoPagamento | 3 events | ✅ |
+| `shared/` | ✅ | AggregateRootClass | Excecoes, Types | - | - |
 
-### Bounded Contexts Implementados
-
-| Bounded Context | Status | Entities                             | Value Objects                              | Events   | Repos |
-| --------------- | ------ | ------------------------------------ | ------------------------------------------ | -------- | ----- |
-| `admin/`        | ✅     | Restaurante, UsuarioRestaurante      | ConfiguracoesRestaurante, PapelRestaurante | 7 events | ✅    |
-| `autenticacao/` | ✅     | Usuario, Sessao                      | Papel, Credenciais                         | 3 events | ✅    |
-| `cardapio/`     | ✅     | Categoria, Produto, GrupoModificador | Preco, Alergeno, ValorModificador          | -        | ✅    |
-| `mesa/`         | ✅     | Mesa                                 | NumeroMesa                                 | -        | ✅    |
-| `pagamento/`    | ✅     | Pagamento, Transacao                 | StatusPagamento, MetodoPagamento           | 4 events | ✅    |
-| `pedido/`       | ✅     | Pedido, ItemPedido                   | StatusPedido, Dinheiro, MetodoPagamento    | 3 events | ✅    |
-| `shared/`       | ✅     | AggregateRootClass                   | Excecoes, Types                            | -        | -     |
-
-### Regras Obrigatórias
-
-- **NOVO código** deve seguir arquitetura DDD
-- O domínio (**domain/**) **DEVE** ser independente de frameworks — sem imports de Next.js, React, ou bibliotecas de infra
-- Entidades, value objects, aggregates e events são pura lógica de negócio em TypeScript
-- Casos de uso no **application/** orchestrating domínio e infra
-- **presentation/** (Next.js) **SÓ** faz renderização e coleta input do usuário
-- **Migração gradual**: código legacy em `apps/web/src/lib/` será migrado conforme necessidade
-
-### Estrutura de Diretórios
+#### Estrutura de Diretórios DDD (apps/web)
 
 ```
 apps/web/src/
@@ -248,33 +69,56 @@ apps/web/src/
 │   └── [bounded-context]/
 │       └── services/          # Application services (use cases)
 ├── infrastructure/            # IMPLEMENTAÇÕES - adapters, repos, APIs
-│   ├── persistence/           # Dexie/IndexedDB implementations
-│   ├── external/              # APIs externas
+│   ├── persistence/           # Dexie/IndexedDB, Zustand stores
+│   ├── external/              # APIs externas (Supabase, Stripe)
 │   └── repositories/          # Repository implementations
 └── presentation/              # NEXT.JS - UI, API routes, web-only
-    ├── pages/
-    ├── components/
-    └── hooks/
+    ├── app/                   # App Router
+    ├── components/            # Componentes React
+    └── hooks/                 # Custom hooks
 ```
 
+#### Estrutura de Diretórios DDD (apps/api)
 
-### O que vai em cada camada
+```
+apps/api/src/
+├── domain/                    # REGRAS DE NEGÓCIO - puro, testável, sem deps
+│   ├── [bounded-context]/    # ex: pedidos/, pagamentos/, restaurantes/
+│   │   ├── entities/         # Entidades com identity
+│   │   ├── value-objects/    # Value objects imutáveis
+│   │   ├── aggregates/        # Aggregate roots
+│   │   ├── events/            # Domain events
+│   │   ├── services/          # Regras que não pertencem a uma entidade
+│   │   └── repositories/       # Interfaces (contratos, não implementations)
+│   └── shared/                # Tipos, utils, events compartilhados
+├── application/               # CASOS DE USO - orquestração
+│   └── [bounded-context]/
+│       └── services/          # Application services (use cases)
+├── infrastructure/            # IMPLEMENTAÇÕES - adapters, repos, Prisma
+│   ├── persistence/           # Repositories Prisma
+│   ├── external/              # APIs externas (Stripe, MercadoPago)
+│   └── repositories/          # Repository implementations
+└── presentation/              # NESTJS - Controllers, Gateways, DTOs
+    ├── controllers/           # Controllers REST
+    ├── gateways/             # WebSocket gateways
+    └── dto/                  # Data Transfer Objects
+```
 
-| Camada              | Responsabilidade                       | Dependências                |
-| ------------------- | -------------------------------------- | --------------------------- |
-| **domain/**         | Entidades, regras, validações, eventos | Nenhuma (puro)              |
-| **application/**    | Casos de uso, coordena domain + infra  | domain, interfaces da infra |
-| **infrastructure/** | Implementações concretas               | domain, libraries externas  |
-| **presentation/**   | UI, input do usuário, API routes       | application, components     |
+#### Regras de Dependência (DDD)
 
-### Regras de Dependência
+**apps/web:**
+- **apps/web/src/domain/** não pode importar de **application/**, **infrastructure/**, ou **presentation/**
+- **apps/web/src/application/** só importa de **domain/** e interfaces (não implementations)
+- **apps/web/src/infrastructure/** implementa interfaces definidas em **domain/**
+- **apps/web/src/presentation/** depende de **application/** — nunca acessa **domain/** diretamente
 
-- **apps/web/src/domain/** não pode importar de **apps/web/src/application/**, **apps/web/src/infrastructure/**, ou **apps/web/src/presentation/**
-- **apps/web/src/application/** só importa de **apps/web/src/domain/** e interfaces (não implementations)
-- **apps/web/src/infrastructure/** implementa interfaces definidas em **apps/web/src/domain/**
-- **apps/web/src/presentation/** depende de **apps/web/src/application/** — nunca acessa **apps/web/src/domain/** diretamente
+**apps/api:**
+- **apps/api/src/domain/** não pode importar de **application/**, **infrastructure/**, ou **presentation/**
+- **apps/api/src/application/** só importa de **domain/** e interfaces (não implementations)
+- **apps/api/src/infrastructure/** implementa interfaces definidas em **domain/**
+- **apps/api/src/presentation/** depende de **application/** — nunca acessa **domain/** diretamente
 
-### Naming
+#### Naming DDD
 
 - Entidades: `Pedido`, `ItemCardapio`, `Mesa` (substantivos de negócio)
 - Value Objects: `Dinheiro`, `Quantidade`, `Endereco` (características imutáveis)
@@ -283,29 +127,184 @@ apps/web/src/
 
 ---
 
-## Arquitetura Atual do Projeto
+## REGRAS apps/web
 
-O projeto é um **monorepo pnpm** com três workspaces:
+### Design Responsivo
+
+- A aplicação **DEVE** funcionar em qualquer tamanho de tela
+- Usar CSS responsivo (media queries, flexbox, grid)
+- Breakpoints:
+  - Mobile: < 640px
+  - Tablet: 640px - 1024px
+  - Desktop: > 1024px
+- Testar sempre em mobile primeiro durante desenvolvimento
+
+### Mobile-First
+
+- Desenvolver **sempre** para mobile primeiro
+- Começar pelo menor breakpoint e escalar para cima
+- Usar `min-width` media queries (mobile base, desktop enhancement)
+- Touch-friendly: botões mínimo 44x44px, gaps adequados
+- Evitar bundle grande em mobile
+
+### CSS Best Practices (apps/web)
+
+#### Unidades Relativas
+
+- **Usar `rem` para tamanhos de fonte e espaçamento**: `1rem = 16px` base
+- **Usar `em` para valores que devem escalar em relação ao elemento pai**
+- **Evitar `px` para tamanhos de fonte**: não escala com preferências do usuário
+- **Exceção**: valores < 4px, bordas (`1px`), sombras e valores exatamente `0` podem usar `px`
+
+#### Regras Gerais
+
+- **CSS Custom Properties**: Definir cores e espaçamentos reutilizáveis em `:root`
+  ```css
+  :root {
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --color-primary: #007bff;
+  }
+  ```
+- **Evitar números mágicos**: usar variáveis ou múltiplos de uma base
+- **Usar shorthand properties**: `margin: 0 auto` em vez de propriedades separadas
+- **Agrupar propriedades relacionadas**: layout → box model → visual → tipografia
+- **Evitar `!important`**: preferir specificity adequada
+- **Usar `clamp()` para valores fluidos**: `font-size: clamp(1rem, 2.5vw, 1.5rem)`
+
+#### Breakpoints
+
+- Mobile: < 640px (40em)
+- Tablet: 640px - 1024px
+- Desktop: > 1024px
+- Usar `em` em media queries: `@media (min-width: 40em)`
+
+### Offline-First
+
+- A aplicação **DEVE** funcionar sem conexão de internet
+- Service Worker (Workbox) para cache de assets
+- IndexedDB (Dexie) para persistência local
+- Carrinho e dados do cardápio disponíveis offline
+- Pedidos feitos offline devem ser enfileirados e syncados automaticamente ao reconectar
+- Sempre dar feedback visual de status de conectividade
+- Implementar retry com backoff exponencial para operações offline
+
+### HTML Semântico
+
+- **Heading hierarchy**: Apenas UM `h1` por página; `h2`-`h6` em ordem lógica sem saltos
+- **Landmarks**: Usar elementos HTML5 — `<header>`, `<nav>`, `<main>`, `<section>`, `<article>`, `<footer>`, `<aside>`
+- **Sections**: Cada `<section>` DEVE ter `aria-labelledby` apontando para o ID do seu título
+- **Nav**: Usar `<nav>` com `aria-label` descritivo
+- **Listas**: Usar `<ul>` e `<li>` para listas de itens relacionados
+- **Botões vs Links**: `<button>` para ações; `<a>` para navegação
+- **Ênfase**: `<strong>` para texto importante; `<em>` para ênfase semântica
+- **Ícones decorativos**: `aria-hidden="true"`
+- **Accessible Names**: Todos os elementos interativos devem ter nome acessível
+
+### SEO (apps/web)
+
+#### Regras Obrigatórias
+
+- **Toda página DEVE ter metadata completa**: `title`, `description`, `og:*`, `twitter:*`, `robots`, `canonical`
+- **Títulos SEO**: Máximo 60 caracteres, incluir palavra-chave principal no início
+- **Descriptions**: 120-160 caracteres, incluir CTAs e palavras-chave
+- **Imagens**: Sempre usar `next/image` com `alt` descritivo
+- **Links**: Usar `aria-label` quando o texto não for autoexplicativo
+- **URLs**: Semânticas, minúsculas, com hífens (ex: `/cardapio-digital`)
+- **Structured Data**: JSON-LD para Organization, WebSite, FAQPage, Restaurant
+- **Performance**: Core Web Vitals (LCP < 2.5s, FID < 100ms, CLS < 0.1); usar `next/font`
+
+#### Landing Page SEO Checklist
+
+- [ ] Title: "Cardápio Digital para Restaurantes | Pedi-AI - Funciona Offline"
+- [ ] Meta description com principais USPs
+- [ ] Open Graph: `og:title`, `og:description`, `og:image`, `og:url`, `og:type`
+- [ ] Twitter Card: `twitter:card`, `twitter:title`, `twitter:description`, `twitter:image`
+- [ ] JSON-LD: Organization + WebSite schema
+- [ ] FAQPage schema para seção de perguntas frequentes
+- [ ] Canonical URL e robots.txt
+
+### Testes E2E (apps/web)
+
+- **Todos os fluxos principais DEVEM ter teste E2E** com Playwright
+- Fluxos obrigatórios:
+  - Fluxo de pedido completo (montar carrinho → fechar pedido → pagamento)
+  - Fluxo de autenticação (login, logout, recuperação de senha)
+  - Fluxo offline (executar online, sync ao reconectar)
+  - Fluxo de administração (CRUD de cardápio, mesas, pedidos)
+- **Testes E2E DEVEM ser atualizados IMEDIATAMENTE** quando:
+  - Nova funcionalidade for adicionada
+  - Funcionalidade existente for modificada
+  - Bug for corrigido
+  - UI/UX for implementada
+- **Antes de merge de PR**: Todos os testes E2E DEVEM passar localmente
+- **CI/CD**: Pipeline E2E deve bloquear merge se testes falharem
+- Manter inventário de fluxos cobertos em `apps/web/tests/e2e/README.md`
+
+---
+
+## REGRAS apps/api
+
+### Stack
+
+- **NestJS + Fastify** para performance
+- **Prisma ORM** com PostgreSQL
+- **Socket.io** para comunicação em tempo real
+
+### Regras de API
+
+- Validar inputs com class-validator
+- Usar DTOs para transferência de dados
+- Implementar tratamento de erros consistente
+- Logs em português para operações de negócio
+- Seguir arquitetura DDD conforme definido acima
+
+---
+
+## Estrutura do Monorepo
 
 ```
 pedi-ai/
 ├── apps/
-│   ├── api/                  # NestJS + Prisma + PostgreSQL (admin dashboard, websocket)
+│   ├── api/                  # NestJS + Prisma + PostgreSQL
+│   │   └── src/
+│   │       ├── domain/       # DDD: entidades, value objects, events
+│   │       ├── application/  # DDD: use cases
+│   │       ├── infrastructure/ # DDD: repositories, adapters
+│   │       └── presentation/   # NestJS: controllers, gateways, DTOs
+│   └── web/                  # Next.js 16 + TypeScript
+│       ├── public/           # Arquivos estáticos (sw.js, manifest, robots.txt)
+│       ├── tests/            # Vitest + Playwright
+│       └── src/
+│           ├── domain/       # DDD: entidades, value objects, events
+│           ├── application/  # DDD: use cases
+│           ├── infrastructure/ # DDD: repositories, adapters
+│           └── presentation/   # Next.js: app, components, hooks
+├── packages/
+│   └── shared/               # Código compartilhado (sem deps de framework)
+│       └── src/
+│           ├── constants/    # Feature flags, constantes de negócio
+│           └── utils/        # Logger, helpers puros
+└── docs/                     # Documentação
+```
+pedi-ai/
+├── apps/
+│   ├── api/                  # NestJS + Prisma + PostgreSQL
 │   │   └── src/
 │   │       ├── auth/         # JWT authentication
 │   │       ├── orders/       # Orders module
 │   │       ├── payments/     # Payments (Stripe/Pix)
 │   │       ├── restaurants/  # Restaurant CRUD
 │   │       ├── realtime/     # Socket.io gateway
-│   │       └── prisma/      # Database schema
-│   └── web/                  # Next.js 16 + TypeScript (cardápio digital)
+│   │       └── prisma/       # Database schema
+│   └── web/                  # Next.js 16 + TypeScript
 │       ├── public/           # Arquivos estáticos (sw.js, manifest, robots.txt)
-│       ├── tests/            # Vitest (unit + integration) + Playwright (E2E)
+│       ├── tests/            # Vitest + Playwright
 │       └── src/
-│           ├── app/          # App Router (páginas, layouts, API routes)
+│           ├── app/          # App Router
 │           ├── components/   # Componentes React
 │           ├── hooks/       # Custom hooks
-│           ├── lib/          # Utilitários (auth, offline, QR, supabase, logger)
+│           ├── lib/          # Utilitários (auth, offline, QR, supabase)
 │           ├── domain/       # DDD: entidades, value objects, events
 │           ├── application/  # DDD: use cases
 │           └── infrastructure/ # DDD: repositories, adapters
@@ -314,40 +313,20 @@ pedi-ai/
 │       └── src/
 │           ├── constants/    # Feature flags, constantes de negócio
 │           └── utils/        # Logger, helpers puros
-└── docs/                     # Guias e documentação
+└── docs/                     # Documentação
 ```
 
-### Estrutura DDD (Recomendada para novo código)
+---
 
-```
-apps/web/src/
-├── domain/                 # REGRAS DE NEGÓCIO - puro, testável, sem deps
-├── application/            # CASOS DE USO - orquestração
-├── infrastructure/         # IMPLEMENTAÇÕES - adapters, repos
-└── presentation/           # NEXT.JS - UI, API routes, web-only
-```
+## Progresso da Migração DDD
 
-### Estrutura Legacy (Em migração gradual)
-
-```
-apps/web/src/
-├── app/                    # Next.js App Router - páginas e API routes
-├── components/             # Componentes React organizados por domínio
-├── hooks/                  # Custom React hooks
-└── lib/                    # Módulos reutilizáveis (auth, offline, QR, logger)
-```
-
-| Camada Legacy | Responsabilidade                                        | Status DDD              |
-| ------------- | ------------------------------------------------------- | ----------------------- |
-| `app/`        | Rotas, layouts, API routes                              | -                       |
-| `components/` | Componentes UI                                          | -                       |
-| `hooks/`      | Lógica de interface (React hooks)                       | -                       |
-| `lib/`        | Utilitários e integrações (auth, offline, qr, supabase) | ⚠️ Parcialmente migrado |
-
-### Progresso da Migração DDD
-
+### apps/web
 > ✅ **COMPLETO**: `apps/web/src/services/` migrado para `apps/web/src/application/services/`
 > ✅ **COMPLETO**: `apps/web/src/stores/` migrado para `apps/web/src/infrastructure/persistence/`
+
+### apps/api
+> 🔲 **PENDENTE**: `apps/api` ainda não segue estrutura DDD completa
+> Módulos atuais (`auth/`, `orders/`, `payments/`, `restaurants/`, `realtime/`) precisam ser reorganizados em `domain/`, `application/`, `infrastructure/`, `presentation/`
 
 <!-- END:pedi-ai-rules -->
 

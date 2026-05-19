@@ -2,9 +2,16 @@
 
 import { useState, useRef } from 'react';
 import Image from 'next/image';
-import type { products } from '@/lib/supabase/types';
-import { uploadProductImage, deleteProductImage } from '@/lib/supabase/storage';
 import styles from './ProductForm.module.css';
+
+// TODO: Implement file upload via API route (Supabase Storage removed)
+async function uploadProductImage(_file: File): Promise<string> {
+  console.warn('uploadProductImage: Storage não disponível - implementação via API pendente');
+  return '';
+}
+async function deleteProductImage(_url: string): Promise<void> {
+  console.warn('deleteProductImage: Storage não disponível');
+}
 
 export interface ProductInput {
   category_id: string;
@@ -18,7 +25,7 @@ export interface ProductInput {
 }
 
 interface ProductFormProps {
-  product?: products;
+  product?: any;
   categories: { id: string; name: string }[];
   onSubmit: (data: ProductInput) => void;
   onCancel: () => void;

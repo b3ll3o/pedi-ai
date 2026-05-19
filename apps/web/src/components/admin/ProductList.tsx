@@ -1,14 +1,15 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { products } from '@/lib/supabase/types';
 import styles from './ProductList.module.css';
 
+export type Product = Record<string, any>;
+
 interface ProductListProps {
-  products: products[];
-  onEdit: (product: products) => void;
+  products: Product[];
+  onEdit: (product: Product) => void;
   onDelete: (id: string) => void;
-  onToggleAvailability: (product: products) => void;
+  onToggleAvailability: (product: Product) => void;
 }
 
 export function ProductList({

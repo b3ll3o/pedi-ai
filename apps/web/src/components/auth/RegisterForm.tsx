@@ -2,7 +2,7 @@
 
 import { useState, FormEvent } from 'react';
 import styles from './RegisterForm.module.css';
-import { signUp as signUpAuth } from '@/lib/supabase/auth';
+
 
 type Intent = 'gerenciar_restaurante' | 'fazer_pedidos';
 
@@ -78,10 +78,7 @@ export function RegisterForm({ onSubmit }: RegisterFormProps) {
       if (onSubmit) {
         await onSubmit(email, password, intent!);
       } else {
-        const { error: signUpError } = await signUpAuth(email, password);
-        if (signUpError) {
-          throw new Error(signUpError.message);
-        }
+        throw new Error('onSubmit handler not provided');
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

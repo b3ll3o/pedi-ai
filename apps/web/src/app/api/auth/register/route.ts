@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { PostgresAuthAdapter } from '@/infrastructure/external/PostgresAuthAdapter';
 import { logger } from '@/lib/logger';
 import { sql } from '@/infrastructure/database/pg-client';
+import { createSession, createSessionCookie } from '@/lib/auth/session';
 
 type Intent = 'gerenciar_restaurante' | 'fazer_pedidos';
 type Role = 'dono' | 'cliente';
@@ -14,10 +14,10 @@ function intentToRole(intent: Intent): Role {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, intent } = body;
+    const { email, senha, intent } = body;
 
-    if (!email || !intent) {
-      return NextResponse.json({ error: 'email e intent são obrigatórios' }, { status: 400 });
+    if (!email || !senha || !intent) {
+      return NextResponse.json({ error: 'email, senha e intent são obrigatórios' }, { status: 400 });
     }
 
     if (intent !== 'gerenciar_restaurante' && intent !== 'fazer_pedidos') {
@@ -27,48 +27,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create server client to get authenticated user from session cookies
-    const cookieStore = await cookies();
-    const supabaseAuth = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              );
-            } catch {
-              // Server Component - ignore
-            }
-          },
-        },
-      }
-    );
+    // Create user using PostgresAuthAdapter
+    const resultado = await PostgresAuthAdapter.criarUsuario(email, senha);
 
-    // Get authenticated user from session (set after signUp)
-    const {
-      data: { user },
-      error: userError,
-    } = await supabaseAuth.auth.getUser();
-
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Usuário não autenticado' }, { status: 401 });
+    if (!resultado || !resultado.usuarioId) {
+      return NextResponse.json(
+        { error: resultado?.error || 'Erro ao criar usuário' },
+        { status: 400 }
+      );
     }
 
+    const { usuarioId } = resultado;
     const role: Role = intentToRole(intent);
 
     // Check if profile already exists
     const existingProfile = await sql`
-      SELECT id FROM users_profiles WHERE user_id = ${user.id} LIMIT 1
+      SELECT id FROM users_profiles WHERE user_id = ${usuarioId} LIMIT 1
     `;
 
     if (existingProfile.length > 0) {
-      return NextResponse.json({ success: true, message: 'Perfil já existe' });
+      // Already has profile, just create session
+      const token = await createSession(usuarioId, email.toLowerCase(), role, null);
+      const sessionCookie = createSessionCookie(token);
+
+      const response = NextResponse.json({ success: true });
+      response.headers.set('Set-Cookie', sessionCookie);
+      return response;
     }
 
     // Create user profile
@@ -79,7 +63,7 @@ export async function POST(request: NextRequest) {
       INSERT INTO users_profiles (id, user_id, email, role, name, restaurant_id, created_at)
       VALUES (
         ${profileId},
-        ${user.id},
+        ${usuarioId},
         ${email.toLowerCase()},
         ${role},
         ${''},
@@ -88,7 +72,13 @@ export async function POST(request: NextRequest) {
       )
     `;
 
-    return NextResponse.json({ success: true }, { status: 201 });
+    // Create session
+    const token = await createSession(usuarioId, email.toLowerCase(), role, null);
+    const sessionCookie = createSessionCookie(token);
+
+    const response = NextResponse.json({ success: true }, { status: 201 });
+    response.headers.set('Set-Cookie', sessionCookie);
+    return response;
   } catch (error) {
     logger.error('auth', 'Unexpected error in /api/auth/register:', { error: error });
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });

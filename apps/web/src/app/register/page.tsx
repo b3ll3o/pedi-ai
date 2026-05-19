@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSession } from '@/lib/supabase/auth';
+import { getSession } from '@/lib/auth/client';
 import { useAuth } from '@/hooks/useAuth';
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import styles from './page.module.css';

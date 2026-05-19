@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import type { categories, products, modifier_groups } from '@/lib/supabase/types';
 import { getCachedMenu } from '@/lib/offline/cache';
 
 // ── Types ────────────────────────────────────────────────────
@@ -19,9 +18,9 @@ export interface MenuState {
   restaurantId: string | null;
 
   // Menu data
-  categories: categories[];
-  products: products[];
-  modifierGroups: modifier_groups[];
+  categories: any[];
+  products: any[];
+  modifierGroups: any[];
 
   // Filter state
   selectedCategoryId: string | null;
@@ -38,9 +37,9 @@ export interface MenuActions {
   setRestaurantId: (restaurantId: string | null) => void;
 
   // Data setters
-  setCategories: (categories: categories[]) => void;
-  setProducts: (products: products[]) => void;
-  setModifierGroups: (modifierGroups: modifier_groups[]) => void;
+  setCategories: (categories: any[]) => void;
+  setProducts: (products: any[]) => void;
+  setModifierGroups: (modifierGroups: any[]) => void;
 
   // Filter setters
   setSelectedCategory: (categoryId: string | null) => void;
@@ -149,7 +148,7 @@ export const useMenuStore = create<MenuStore>()(
  * Dietary filter uses AND logic: product must match ALL selected labels.
  * If no category selected, returns all products (filtered by dietary + search).
  */
-export function getFilteredProducts(state: MenuState): products[] {
+export function getFilteredProducts(state: MenuState): any[] {
   let filtered = state.products;
 
   // Filter by category
@@ -177,7 +176,7 @@ export function getFilteredProducts(state: MenuState): products[] {
 /**
  * Get products by category ID.
  */
-export function getProductsByCategory(state: MenuState, categoryId: string): products[] {
+export function getProductsByCategory(state: MenuState, categoryId: string): any[] {
   return state.products.filter((p) => p.category_id === categoryId);
 }
 
@@ -193,9 +192,9 @@ export async function hydrateFromCache(restaurantId: string): Promise<void> {
   if (!cached) return;
 
   useMenuStore.getState().setRestaurantId(restaurantId);
-  useMenuStore.getState().setCategories(cached.categories as categories[]);
-  useMenuStore.getState().setProducts(cached.products as products[]);
-  useMenuStore.getState().setModifierGroups(cached.modifiers as modifier_groups[]);
+  useMenuStore.getState().setCategories(cached.categories as any[]);
+  useMenuStore.getState().setProducts(cached.products as any[]);
+  useMenuStore.getState().setModifierGroups(cached.modifiers as any[]);
 }
 
 /**
@@ -213,9 +212,9 @@ export async function useHydratedMenu(
     if (!cached) return { success: false, fromCache: false };
 
     useMenuStore.getState().setRestaurantId(restaurantId);
-    useMenuStore.getState().setCategories(cached.categories as categories[]);
-    useMenuStore.getState().setProducts(cached.products as products[]);
-    useMenuStore.getState().setModifierGroups(cached.modifiers as modifier_groups[]);
+    useMenuStore.getState().setCategories(cached.categories as any[]);
+    useMenuStore.getState().setProducts(cached.products as any[]);
+    useMenuStore.getState().setModifierGroups(cached.modifiers as any[]);
     return { success: true, fromCache: true };
   }
 }

@@ -2,18 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import { useTableStore } from '@/infrastructure/persistence/tableStore';
-import type { order_items, order_status_history } from '@/lib/supabase/types';
 
 interface OrderDetailProps {
   orderId: string;
   onReorder: () => void;
 }
 
-interface OrderItem extends Omit<order_items, 'created_at'> {
+interface OrderItem {
   productName?: string;
 }
 
-interface StatusHistoryEntry extends Omit<order_status_history, 'order_id'> {
+interface StatusHistoryEntry {
   created_at: string;
 }
 

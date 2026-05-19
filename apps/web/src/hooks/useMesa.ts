@@ -16,7 +16,6 @@ import {
 import { MesaRepository } from '@/infrastructure/persistence/mesa';
 import { QRCodeCryptoService } from '@/infrastructure/services/QRCodeCryptoService';
 import { db } from '@/infrastructure/persistence/database';
-import type { tables } from '@/lib/supabase/types';
 
 // Transformação de domain Mesa para formato Supabase (compatibilidade com a interface existente)
 function _transformarMesa(mesa: {
@@ -24,7 +23,7 @@ function _transformarMesa(mesa: {
   restauranteId: string;
   label: string;
   ativo: boolean;
-}): tables {
+}): any {
   return {
     id: mesa.id,
     restaurant_id: mesa.restauranteId,
@@ -45,7 +44,7 @@ function _transformarMesa(mesa: {
  * @returns UseQueryResult com mesas transformadas para formato compatível
  */
 export function useListarMesas(restauranteId: string) {
-  return useQuery<tables[]>({
+  return useQuery<any[]>({
     queryKey: ['mesas', restauranteId],
     queryFn: async () => {
       // Instanciar repository com o banco de dados
@@ -94,7 +93,7 @@ export function useValidarQRCode() {
  * Hook para buscar uma mesa por ID.
  */
 export function useMesa(mesaId: string | null) {
-  return useQuery<tables | null>({
+  return useQuery<any | null>({
     queryKey: ['mesa', mesaId],
     queryFn: async () => {
       if (!mesaId) return null;

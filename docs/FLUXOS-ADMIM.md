@@ -31,7 +31,7 @@ Documentação completa de todos os fluxos do administrador (gestor do restauran
 ```
 Admin acessa /login (ou /admin/login)
   → Admin informa email e senha
-  → Sistema autentica via Supabase Auth
+  → Sistema autentica via JWT (NestJS Auth)
   → Sistema consulta users_profiles para obter role
   → Sistema verifica se role é: owner, manager, ou staff
   → Sistema cria sessão
@@ -48,7 +48,7 @@ Admin acessa /login (ou /admin/login)
 **Arquivos:**
 
 - `apps/web/src/lib/auth/` — Módulo de autenticação
-- `apps/web/src/lib/supabase/middleware.ts` — Proteção de rotas admin
+- `apps/web/src/lib/auth/` — Middleware de autenticação JWT
 
 **Fluxos E2E:** `apps/web/apps/web/tests/admin/auth.spec.ts`
 
@@ -56,7 +56,7 @@ Admin acessa /login (ou /admin/login)
 
 ```
 Admin clica em "Sair"
-  → Sistema limpa sessão (Supabase Auth)
+  → Sistema limpa sessão (JWT)
   → Redireciona para /login
 ```
 
@@ -161,7 +161,7 @@ Owner/Manager preenche formulário de convite
   → Informa email do novo membro
   → Seleciona papel: manager ou staff
   → Clica em "Convidar"
-  → Sistema cria usuário no Supabase Auth (se não existir)
+  → Sistema cria usuário no banco (se não existir)
   → Sistema cria UsuarioRestaurante com papel selecionado
   → Sistema envia email de convite
   → Sistema emite evento UsuarioVinculadoRestauranteEvent
@@ -228,7 +228,7 @@ Membro recebe email de convite
 ```
 Membro acessa /login
   → Informa email e senha
-  → Sistema autentica via Supabase Auth
+  → Sistema autentica via JWT (NestJS Auth)
   → Sistema consulta users_profiles para papel
   → Sistema verifica vínculo com restaurante
   → Redireciona para /admin/dashboard
@@ -334,7 +334,7 @@ Admin acessa /admin/products/new
   → Clica em "Criar"
   → Sistema valida dados
   → Sistema cria ItemCardapio (tipo='produto')
-  → Sistema faz upload da imagem para Supabase Storage
+  → Sistema faz upload da imagem para o servidor
   → Produto visível no cardápio
 ```
 
@@ -703,11 +703,11 @@ Pedido em received ou preparing há > 5 minutos
 
 ## 12. Fluxo de Atualizações em Tempo Real
 
-### 12.1 Supabase Realtime - Admin
+### 12.1 Socket.io Realtime - Admin
 
 ```
 Admin acessa /admin/orders ou /kitchen
-  → Sistema conecta ao canal Realtime do Supabase
+  → Sistema conecta ao gateway Socket.io do NestJS
   → Assina eventos de INSERT/UPDATE na tabela pedidos
   → Quando pedido é modificado:
     → Cliente recebe atualização instantânea
@@ -835,7 +835,7 @@ Usuário autenticado sem vínculo UsuarioRestaurante
 Admin na tela de login clica "Esqueci minha senha"
   → Informa email cadastrado
   → Clica em "Enviar link"
-  → Sistema envia email de redefinição via Supabase Auth
+  → Sistema envia email de redefinição via API NestJS
   → Mensagem: "Verifique seu email para redefinir a senha"
 ```
 
@@ -846,7 +846,7 @@ Admin acessa link no email
   → Sistema valida token
   → Exibe formulário de nova senha
   → Admin define nova senha
-  → Sistema atualiza senha no Supabase Auth
+  → Sistema atualiza senha no banco de dados
   → Sistema invalida sessões anteriores
   → Redireciona para /login
 ```

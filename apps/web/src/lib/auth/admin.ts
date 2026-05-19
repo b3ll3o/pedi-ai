@@ -1,14 +1,12 @@
 /**
  * Admin Authentication Helpers
  * Helper functions for admin role-based authentication and authorization.
+ * Uses getSession from @/lib/auth/session (no Supabase).
  */
 
-import { createServerClient } from '@supabase/ssr';
-import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
-import type { Enum_user_role, users_profiles } from '@/lib/supabase/types';
+import { getSession } from '@/lib/auth/session';
 
-export type Role = Extract<Enum_user_role, 'dono' | 'gerente' | 'atendente'>;
+export type Role = 'dono' | 'gerente' | 'atendente';
 
 export interface AuthUser {
   id: string;
@@ -19,69 +17,25 @@ export interface AuthUser {
 
 /**
  * Require a valid authenticated admin user.
- * Uses server-side Supabase client (ANON key) to read session from cookies.
- * Uses service role key to query users_profiles (bypasses RLS).
- * Throws an error if no session or user not found in database.
+ * Uses server-side session from cookies via getSession().
+ * Throws an error if no session or user not found.
  */
 async function requireAuth(): Promise<AuthUser> {
-  // Client for session validation - reads cookies with ANON key
-  const cookieStore = await cookies();
-  const supabaseAuth = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {
-            // Server Component - ignore
-          }
-        },
-      },
-    }
-  );
+  const session = await getSession();
 
-  const {
-    data: { session },
-    error: sessionError,
-  } = await supabaseAuth.auth.getSession();
-
-  if (sessionError || !session?.user) {
+  if (!session) {
     throw new Error('Não autenticado');
   }
 
-  const user = session.user;
-
-  // Admin client for data queries - uses SERVICE ROLE KEY to bypass RLS
-  const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-
-  const { data: profile, error: profileError } = await supabaseAdmin
-    .from('users_profiles')
-    .select('*')
-    .eq('user_id', user.id)
-    .single();
-
-  if (profileError || !profile) {
-    throw new Error('Usuário não encontrado');
+  if (!session.user.restaurantId) {
+    throw new Error('Usuário sem restaurante asociado');
   }
 
-  // Cast from generic Json types to expected string types
-  const typedProfile = profile as unknown as users_profiles;
-
   return {
-    id: typedProfile.id,
-    email: typedProfile.email,
-    role: typedProfile.role as Role,
-    restaurant_id: typedProfile.restaurant_id,
+    id: session.user.id,
+    email: session.user.email,
+    role: session.user.role as Role,
+    restaurant_id: session.user.restaurantId,
   };
 }
 

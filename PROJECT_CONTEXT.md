@@ -13,7 +13,7 @@
 |--------|-----------|
 | **Cliente** | Navegação do cardápio, pedidos, pagamentos, acompanhamento em tempo real |
 | **Admin** | Gestão de cardápio (categorias, produtos, combos, modificadores), mesas/QR codes, pedidos, usuários |
-| **Cozinha/Garçom** | Display de pedidos em tempo real via Supabase Realtime |
+| **Cozinha/Garçom** | Display de pedidos em tempo real via Socket.io |
 
 O sistema é **mobile-first**, **offline-first** e **multi-tenant** (um usuário pode gerenciar múltiplos restaurantes).
 
@@ -23,11 +23,12 @@ O sistema é **mobile-first**, **offline-first** e **multi-tenant** (um usuário
 
 | Camada | Tecnologia |
 |--------|------------|
-| **Framework** | Next.js 16 + TypeScript + React 19 |
-| **Backend** | Supabase (Auth, Database, Realtime, Storage) |
+| **Frontend** | Next.js 16 + TypeScript + React 19 |
+| **Backend** | NestJS + Fastify + Prisma ORM + PostgreSQL |
 | **Offline** | Service Worker (Workbox) + IndexedDB (Dexie) |
 | **Estado** | Zustand + React Query |
 | **Pagamentos** | Mercado Pago (Pix) + Stripe (Cartão) |
+| **Autenticação** | JWT com refresh tokens (bcrypt) |
 | **Testes Unitários** | Vitest (517 testes, 97%+ cobertura) |
 | **Testes E2E** | Playwright (19 specs) |
 
@@ -53,7 +54,7 @@ src/
 │   └── [bounded-context]/services/
 ├── infrastructure/           # IMPLEMENTAÇÕES - adapters, repos
 │   ├── persistence/          # Dexie/IndexedDB implementations
-│   ├── external/             # APIs externas (Supabase, Stripe, Mercado Pago)
+│   ├── external/             # APIs externas (NestJS, Stripe, Mercado Pago)
 │   └── repositories/        # Repository implementations
 └── presentation/             # NEXT.JS - UI, API routes, web-only (futuro)
 ```
@@ -87,7 +88,7 @@ src/
 ├── app/                    # Next.js App Router - páginas e API routes
 ├── components/             # Componentes React (admin, cart, menu, order, payment, shared, kitchen, restaurant)
 ├── hooks/                  # Custom React hooks (useAuth, useRealtimeOrders, etc)
-├── lib/                    # Utilitários (auth, offline, QR, supabase, feature-flags)
+├── lib/                    # Utilitários (auth, offline, QR, feature-flags)
 ├── services/               # Lógica de negócio legacy (adminOrderService, userService, etc)
 └── stores/                 # Zustand stores (cartStore, menuStore, restaurantStore, tableStore)
 ```
@@ -116,7 +117,7 @@ Cliente escaneia QR code
 Admin faz login (src/lib/auth/)
   → Dashboard admin (src/app/admin/dashboard/)
   → Gerencia categorias, produtos, combos, modificadores (src/application/admin/services/)
-  → Acompanha pedidos em tempo real (Supabase Realtime)
+  → Acompanha pedidos em tempo real (Socket.io)
   → Atualiza status de pedidos
 ```
 
@@ -249,7 +250,7 @@ if (isPixEnabled()) {
 | Mecanismo | Descrição |
 |-----------|-----------|
 | **QR Code** | Assinatura HMAC-SHA256 para evitar falsificação |
-| **RLS** | Row Level Security no Supabase para isolamento de tenants |
+| **Isolamento PostgreSQL** | Políticas de acesso para isolamento de tenants |
 | **Webhook Idempotência** | Evita processamento duplicado de webhooks |
 | **Validação de Assinatura** | Webhooks Mercado Pago/Stripe validados |
 
@@ -275,7 +276,7 @@ Assinatura: HMAC-SHA256 com `QR_SECRET_KEY`
 
 ## Database Schema
 
-Principais tabelas no Supabase:
+Schema Prisma em `apps/api/prisma/schema.prisma`:
 
 | Tabela | Descrição |
 |--------|-----------|
@@ -348,7 +349,7 @@ pnpm test         # Testes unitários (Vitest)
 pnpm test:watch   # Testes em watch mode
 pnpm test:coverage # Com cobertura
 
-# E2E (requer .env.e2e com Supabase Cloud)
+# E2E (requer .env.e2e com PostgreSQL)
 pnpm test:e2e           # Rodar E2E (Chromium headless)
 pnpm test:e2e:seed     # Popular dados de teste
 pnpm test:e2e:cleanup   # Limpar dados de teste
@@ -365,11 +366,11 @@ pnpm format         # Prettier
 ## Variáveis de Ambiente
 
 ```env
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=sua_url_do_supabase
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sua_chave_anon
-SUPABASE_SERVICE_ROLE_KEY=sua_chave_service_role
-NEXT_PUBLIC_SUPABASE_SITE_URL=http://localhost:3000
+# PostgreSQL (apps/api)
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/pedi_ai
+
+# API (apps/api)
+API_JWT_SECRET=seu_jwt_secret_minimo_32_chars
 
 # Mercado Pago (Pix)
 MERCADO_PAGO_ACCESS_TOKEN=seu_token
@@ -396,13 +397,13 @@ NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED=true
 
 1. **Este NÃO é o Next.js que você conhece** — Next.js 16 tem APIs e convenções diferentes. Leia `node_modules/next/dist/docs/` antes de escrever código.
 
-2. **Arquitetura híbrida** — O projeto está em transição de código legacy (`services/`, `stores/`) para DDD (`domain/`, `application/`, `infrastructure/`). Novo código deve seguir DDD.
+2. **Arquitetura DDD** — Todas as apps (`apps/web` e `apps/api`) DEVEM seguir arquitetura DDD em camadas. Código legacy em `services/` e `stores/` está em migração gradual.
 
-3. **Código DDD é puro** — `domain/` não pode importar de Next.js, React, ou bibliotecas de infra. É TypeScript puro.
+3. **Código DDD é puro** — `domain/` não pode importar de frameworks ou bibliotecas de infra. É TypeScript puro.
 
-4. **Offline-first** — Toda feature deve funcionar offline. Use Dexie para persistência local e Workbox para background sync.
+4. **Offline-first (apps/web)** — Toda feature deve funcionar offline. Use Dexie para persistência local e Workbox para background sync.
 
-5. **Multi-tenant** — Restaurants são isolados por RLS no Supabase. Stores e queries devem sempre filtrar por `restaurantId`.
+5. **Multi-tenant** — Restaurants são isolados no PostgreSQL. Queries DEVEM sempre filtrar por `restaurantId`.
 
 6. **Testes** — 517 testes unitários com 97%+ cobertura. Antes de merge, todos os testes DEVEM passar.
 

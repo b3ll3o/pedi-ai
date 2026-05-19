@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import type { modifier_groups, modifier_values } from '@/lib/supabase/types';
 import styles from './ModifierGroupForm.module.css';
 
 export interface ModifierValueInput {
@@ -20,8 +19,8 @@ export interface ModifierGroupInput {
 }
 
 interface ModifierGroupFormProps {
-  modifierGroup?: modifier_groups;
-  modifierValues?: modifier_values[];
+  modifierGroup?: any;
+  modifierValues?: any[];
   onSubmit: (data: ModifierGroupInput) => void;
   onCancel: () => void;
 }

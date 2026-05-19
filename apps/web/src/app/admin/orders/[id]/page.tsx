@@ -8,7 +8,7 @@ import {
   updateOrderStatus,
   type OrderStatus,
 } from '@/application/services/adminOrderService';
-import { getSession } from '@/lib/supabase/auth';
+import { getSession } from '@/lib/auth/client';
 import type { OrderWithItems } from '@/application/services/adminOrderService';
 
 export default function OrderDetailPage() {

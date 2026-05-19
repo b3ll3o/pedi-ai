@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { signOut, getSession } from '@/lib/supabase/auth';
+import { getSession } from '@/lib/auth/client';
 import {
   LayoutDashboard,
   BarChart3,
@@ -184,8 +184,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, [isStoreLoading, restaurantesAcessiveis, restauranteSelecionado, setRestaurante]);
 
   const handleLogout = async () => {
-    await signOut();
-    router.push('/admin/login');
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } finally {
+      router.push('/admin/login');
+    }
   };
 
   const toggleSidebar = () => {

@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { CheckCircle, Clock, ChefHat, Bell, Truck, XCircle } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
-import type { Enum_order_status, order_status_history } from '@/lib/supabase/types';
+
+type Enum_order_status = 'pending_payment' | 'paid' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
 
 interface OrderStatusProps {
   orderId: string;
@@ -30,51 +30,40 @@ const STATUS_ORDER: Enum_order_status[] = [
 ];
 
 export function OrderStatus({ orderId }: OrderStatusProps) {
-  const supabase = createClient();
   const [currentStatus, setCurrentStatus] = useState<Enum_order_status | null>(null);
-  const [history, setHistory] = useState<order_status_history[]>([]);
+  const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const loadHistory = useCallback(async () => {
-    // Use API route to bypass RLS for history
+    // Use API route to fetch history
     try {
       const response = await fetch(`/api/orders/${orderId}/status`);
       if (response.ok) {
-        // History not available via API yet, keep using supabase for now
-        const { data: historyData } = await supabase
-          .from('order_status_history')
-          .select('*')
-          .eq('order_id', orderId)
-          .order('created_at', { ascending: true });
-        if (historyData) setHistory(historyData as order_status_history[]);
+        const data = await response.json();
+        if (data.history) {
+          setHistory(data.history as any[]);
+        }
       }
     } catch {
-      // Fallback: try direct query
-      const { data: historyData } = await supabase
-        .from('order_status_history')
-        .select('*')
-        .eq('order_id', orderId)
-        .order('created_at', { ascending: true });
-      if (historyData) setHistory(historyData as order_status_history[]);
+      // Silently fail
     }
-  }, [supabase, orderId]);
+  }, [orderId]);
 
   const loadCurrentStatus = useCallback(async () => {
-    // Use API route to bypass RLS - API uses server-side client without RLS restrictions
+    // Use API route to bypass RLS
     try {
       const response = await fetch(`/api/orders/${orderId}/status`);
       if (response.ok) {
         const data = await response.json();
         setCurrentStatus(data.status as Enum_order_status);
-        return;
+        return true;
       }
     } catch (error) {
       console.error('Error fetching order status via API:', error);
     }
-    // Fallback: try direct query (may fail due to RLS)
-    const { data } = await supabase.from('orders').select('status').eq('id', orderId).single();
-    if (data) setCurrentStatus(data.status as Enum_order_status);
-  }, [supabase, orderId]);
+    return false;
+  }, [orderId]);
 
   useEffect(() => {
     const init = async () => {
@@ -84,38 +73,18 @@ export function OrderStatus({ orderId }: OrderStatusProps) {
     };
     init();
 
-    const channel = supabase
-      .channel(`order:${orderId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'orders',
-          filter: `id=eq.${orderId}`,
-        },
-        (payload) => {
-          setCurrentStatus(payload.new.status as Enum_order_status);
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'order_status_history',
-          filter: `order_id=eq.${orderId}`,
-        },
-        (payload) => {
-          setHistory((prev) => [...prev, payload.new as order_status_history]);
-        }
-      )
-      .subscribe();
+    // Poll for updates every 5 seconds
+    pollingIntervalRef.current = setInterval(async () => {
+      await loadCurrentStatus();
+      await loadHistory();
+    }, 5000);
 
     return () => {
-      supabase.removeChannel(channel);
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
     };
-  }, [orderId, supabase, loadCurrentStatus, loadHistory]);
+  }, [orderId, loadCurrentStatus, loadHistory]);
 
   if (loading) {
     return (
@@ -190,7 +159,7 @@ export function OrderStatus({ orderId }: OrderStatusProps) {
           <h3 className="text-sm font-medium">Histórico</h3>
           <div className="flex flex-col gap-2">
             {history.map((entry) => {
-              const config = STATUS_CONFIG[entry.status];
+              const config = STATUS_CONFIG[entry.status as Enum_order_status];
               const Icon = config.icon;
               return (
                 <div key={entry.id} className="flex items-center gap-3 text-sm">
