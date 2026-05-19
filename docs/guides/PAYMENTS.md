@@ -1,6 +1,6 @@
 # Guia de Fluxos de Pagamento — Pedi-AI
 
-Este documento descreve a arquitetura e os fluxos de pagamento implementados no Pedi-AI, incluindo PIX via Mercado Pago, Cartão via Stripe, e o modo de demonstração.
+Este documento descreve a arquitetura e os fluxos de pagamento implementados no Pedi-AI, incluindo PIX via Mercado Pago e o modo de demonstração.
 
 ---
 
@@ -13,7 +13,6 @@ O Pedi-AI suporta dois provedores de pagamento para processar transações de cl
 | **Mercado Pago** | PIX      | Pagamentos instantâneos, sem custo de transação  | ✅ Implementado |
 | **Demo Mode**    | Simulado | Testes sem custo real (bypassa provedores reais) | ✅ Implementado |
 
-> **Nota:** Pagamento com cartão de crédito/débito (Stripe) não está implementado. O projeto suporta apenas PIX via Mercado Pago.
 
 ### Variáveis de Ambiente
 
@@ -104,8 +103,6 @@ NEXT_PUBLIC_DEMO_PAYMENT_MODE=true       # Bypassa pagamentos reais (demo/simula
 **Expiração:** PIX do Mercado Pago expira em **30 minutos**.
 
 ### 2.3 Validação de Webhook — Mercado Pago
-
-O webhook PIX é processado via Stripe.
 
 **Validação de Assinatura (HMAC-SHA256):**
 
@@ -199,10 +196,10 @@ if (isDemoMode) {
 }
 ```
 
-### 4.3 Webhook Demo
+### 3.3 Webhook Demo
 
 ```typescript
-// POST /api/webhooks/stripe/webhook
+// POST /api/webhooks/pix
 if (isDemoMode) {
   return NextResponse.json({ received: true, demo: true });
 }
@@ -222,20 +219,10 @@ if (isDemoMode) {
 | **Dados assinados** | `webhook_id.body`                       |
 | **Proteção**        | `timingSafeEqual` contra timing attacks |
 
-### 5.2 Validação de Assinatura — Stripe
-
-| Aspecto       | Implementação                      |
-| ------------- | ---------------------------------- |
-| **Algoritmo** | HMAC-SHA256 (via SDK)              |
-| **Header**    | `stripe-signature`                 |
-| **Método**    | `Stripe.webhooks.constructEvent()` |
-| **Proteção**  | SDK interno do Stripe              |
-
-### 5.3 Idempotência
+### 4.2 Idempotência
 
 Todos os webhooks verificam se o evento já foi processadon antes de aplicar qualquer alteração:
 
-- **Stripe:** Via `transacaoRepo.buscarPorProviderId(eventoId)` → `Transacao`
 - **PIX:** Via `webhook_events` table → idempotency key
 
 ---
@@ -335,23 +322,15 @@ type StatusPagamentoValue = 'pending' | 'confirmed' | 'failed' | 'refunded' | 'c
 export function isPixEnabled(): boolean {
   return process.env.NEXT_PUBLIC_FEATURE_PIX_ENABLED === 'true';
 }
-
-/** Enable Stripe as a payment method */
-export function isStripeEnabled(): boolean {
-  return process.env.NEXT_PUBLIC_FEATURE_STRIPE_ENABLED === 'true';
-}
 ```
 
 ### 8.2 Uso no Frontend
 
 ```typescript
-import { isPixEnabled, isStripeEnabled } from '@/lib/feature-flags'
+import { isPixEnabled } from '@/lib/feature-flags'
 
 // Exibir opção PIX no checkout
 {isPixEnabled() && <PixPaymentOption />}
-
-// Exibir opção cartão no checkout
-{isStripeEnabled() && <CardPaymentOption />}
 ```
 
 ### 8.3 Todas as Flags
@@ -360,7 +339,6 @@ import { isPixEnabled, isStripeEnabled } from '@/lib/feature-flags'
 | --------------------------------------- | ------------------------------- |
 | `NEXT_PUBLIC_FEATURE_OFFLINE_ENABLED`   | Modo offline com service worker |
 | `NEXT_PUBLIC_FEATURE_PIX_ENABLED`       | PIX como método de pagamento    |
-| `NEXT_PUBLIC_FEATURE_STRIPE_ENABLED`    | Stripe como método de pagamento |
 | `NEXT_PUBLIC_FEATURE_WAITER_MODE`       | Chamado de garçom               |
 | `NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED`   | Leitura de QR codes             |
 | `NEXT_PUBLIC_FEATURE_COMBOS_ENABLED`    | Combos/promotions               |

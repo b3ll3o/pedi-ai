@@ -5,14 +5,7 @@ import React from 'react';
 
 import { RegisterForm } from '@/components/auth/RegisterForm';
 
-// ── Mocks ──────────────────────────────────────────────────────────────
-
-const mockSignUpFn = vi.fn();
-
-vi.mock('@/lib/supabase/auth', () => ({
-  signUp: (...args: unknown[]) => mockSignUpFn(...args),
-}));
-
+// Mock next/navigation
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: vi.fn(),
@@ -31,7 +24,6 @@ vi.mock('next/navigation', () => ({
 
 afterEach(() => {
   cleanup();
-  mockSignUpFn.mockClear();
 });
 
 // ── Tests ─────────────────────────────────────────────────────────────────
@@ -45,10 +37,8 @@ describe('RegisterForm — loading state (bug fix verification)', () => {
    */
 
   it('botão NÃO está desabilitado após erro de registro', async () => {
-    mockSignUpFn.mockImplementation(() =>
-      Promise.resolve({ error: { message: 'Email já cadastrado' } })
-    );
-    const { getByTestId, getByText } = render(<RegisterForm />);
+    const onSubmit = vi.fn().mockRejectedValue(new Error('Email já cadastrado'));
+    const { getByTestId, getByText } = render(<RegisterForm onSubmit={onSubmit} />);
 
     fireEvent.change(getByTestId('email-input'), { target: { value: 'existente@email.com' } });
     fireEvent.change(getByTestId('password-input'), { target: { value: 'senha123' } });
@@ -92,7 +82,6 @@ describe('RegisterForm — loading state (bug fix verification)', () => {
   });
 
   it('botão NÃO está desabilitado após sucesso (finally executa mesmo com redirect)', async () => {
-    // Este teste usa onSubmit ao invés de signUpAuth mockado para controlar melhor
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     const { getByTestId, getByText } = render(<RegisterForm onSubmit={onSubmit} />);
 
@@ -113,13 +102,13 @@ describe('RegisterForm — loading state (bug fix verification)', () => {
   });
 
   it('botão ESTÁ desabilitado durante loading (estado transitório)', async () => {
-    mockSignUpFn.mockImplementation(
+    const onSubmit = vi.fn(
       () =>
         new Promise((resolve) =>
-          setTimeout(() => resolve({ error: null }), 100)
+          setTimeout(() => resolve(undefined), 100)
         )
     );
-    const { getByTestId, getByText } = render(<RegisterForm />);
+    const { getByTestId, getByText } = render(<RegisterForm onSubmit={onSubmit} />);
 
     fireEvent.change(getByTestId('email-input'), { target: { value: 'teste@email.com' } });
     fireEvent.change(getByTestId('password-input'), { target: { value: 'senha123' } });
@@ -136,10 +125,8 @@ describe('RegisterForm — loading state (bug fix verification)', () => {
   });
 
   it('mensagem de erro é exibida quando registro falha', async () => {
-    mockSignUpFn.mockImplementation(() =>
-      Promise.resolve({ error: { message: 'Email já cadastrado' } })
-    );
-    const { getByTestId, getByText } = render(<RegisterForm />);
+    const onSubmit = vi.fn().mockRejectedValue(new Error('Email já cadastrado'));
+    const { getByTestId, getByText } = render(<RegisterForm onSubmit={onSubmit} />);
 
     fireEvent.change(getByTestId('email-input'), { target: { value: 'existente@email.com' } });
     fireEvent.change(getByTestId('password-input'), { target: { value: 'senha123' } });
@@ -156,15 +143,15 @@ describe('RegisterForm — loading state (bug fix verification)', () => {
 
   it('reset de loading permite novo submit após erro', async () => {
     let callCount = 0;
-    mockSignUpFn.mockImplementation(() => {
+    const onSubmit = vi.fn().mockImplementation(() => {
       callCount++;
       if (callCount === 1) {
-        return Promise.resolve({ error: { message: 'Primeiro erro' } });
+        return Promise.reject(new Error('Primeiro erro'));
       }
-      return Promise.resolve({ error: null });
+      return Promise.resolve(undefined);
     });
 
-    const { getByTestId, getByText } = render(<RegisterForm />);
+    const { getByTestId, getByText } = render(<RegisterForm onSubmit={onSubmit} />);
 
     fireEvent.change(getByTestId('email-input'), { target: { value: 'teste@email.com' } });
     fireEvent.change(getByTestId('password-input'), { target: { value: 'senha123' } });
@@ -188,7 +175,7 @@ describe('RegisterForm — loading state (bug fix verification)', () => {
     fireEvent.click(getByTestId('register-button'));
 
     await waitFor(() => {
-      expect(mockSignUpFn).toHaveBeenCalledTimes(2);
+      expect(onSubmit).toHaveBeenCalledTimes(2);
     });
   });
 });

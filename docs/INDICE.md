@@ -20,7 +20,6 @@
 
 | Documento            | Localização                   | Descrição                                                                  | Quando Consultar                                |
 | -------------------- | ----------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------- |
-| **STRIPE_CLI_SETUP** | `./setup/STRIPE_CLI_SETUP.md` | Configurar Stripe CLI para webhooks locais, testar pagamentos              | Testar pagamentos com cartão em desenvolvimento |
 | **MAILPIT_SETUP**    | `./setup/MAILPIT_SETUP.md`    | Servidor SMTP mock para capturar emails em testes                          | Testar emails em desenvolvimento                |
 | **FLUXOS**           | `./fluxos.html`               | Visualização HTML dos fluxos da aplicação (cliente, admin, KDS, PIX, auth) | Entender fluxos de dados e eventos              |
 
@@ -33,7 +32,7 @@
 | **ARCHITECTURE** | `./guides/ARCHITECTURE.md` | Arquitetura DDD em 4 camadas (domain/application/infrastructure/presentation) | Entender a estrutura DDD e regras de dependência   |
 | **OFFLINE**      | `./guides/OFFLINE.md`      | Service Worker (Workbox), Dexie (IndexedDB), BackgroundSync, BroadcastChannel | Implementar/modificar funcionalidade offline-first |
 | **REALTIME**     | `./guides/REALTIME.md`     | Socket.io para updates realtime com polling fallback                          | Implementar atualizações em tempo real de pedidos  |
-| **PAYMENTS**     | `./guides/PAYMENTS.md`     | PIX (Mercado Pago), Stripe (cartão), webhooks, idempotência, modo demo        | Implementar/modificar fluxos de pagamento          |
+| **PAYMENTS**     | `./guides/PAYMENTS.md`     | PIX (Mercado Pago), webhooks, idempotência, modo demo        | Implementar/modificar fluxos de pagamento          |
 | **QR_CODE**      | `./guides/QR_CODE.md`      | Segurança HMAC-SHA256, validação de QR codes, timestamp expiry                | Implementar/modificar sistema de mesas e QR codes  |
 | **ROLES**        | `./guides/ROLES.md`        | RBAC, multi-tenant, Row Level Security (RLS), autenticação admin/cliente      | Implementar/modificar controle de acesso           |
 | **MOBILE_PWA**   | `./guides/MOBILE_PWA.md`   | Mobile-first, PWA, safe areas iOS, CSS responsive, touch targets              | Desenvolver UI responsiva e PWA                    |

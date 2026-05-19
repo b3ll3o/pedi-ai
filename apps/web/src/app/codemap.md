@@ -76,8 +76,6 @@ Cliente → /menu → Adiciona item → /cart → /checkout → Pagamento → /o
 /api/cart/              - Validação do carrinho
 /api/payments/pix/create/       - Criação PIX
 /api/payments/pix/status/       - Status PIX
-/api/payments/stripe/create-intent/ - Stripe payment
-/api/payments/stripe/webhook/    - Stripe webhook
 /api/tables/validate/   - Validação QR mesa
 /api/admin/orders/      - Gestão admin de pedidos
 /api/admin/products/    - CRUD produtos
@@ -94,8 +92,7 @@ Cliente → /menu → Adiciona item → /cart → /checkout → Pagamento → /o
 | Service               | Usage                             |
 | --------------------- | --------------------------------- |
 | **Supabase**          | Auth, Realtime, Database (PG)     |
-| **Stripe**            | Pagamentos via webhook (cartão)   |
-| **PIX API**           | Pagamentos instantâneos           |
+| **Mercado Pago**     | Pagamentos PIX instantâneos       |
 | **Dexie (IndexedDB)** | Persistência offline              |
 | **Workbox**           | Service Worker para cache offline |
 

@@ -2,54 +2,9 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 
 import { useAuth } from '@/hooks/useAuth';
-import type { Session, User } from '@supabase/supabase-js';
+import { login, logout, getSession } from '@/lib/auth/client';
 
-// Mock the auth functions - must use hoisted factory
-vi.mock('@/lib/supabase/auth', () => {
-  const mockUnsubscribe = vi.fn();
-  return {
-    signIn: vi.fn<() => Promise<unknown>>(),
-    signOut: vi.fn<() => Promise<void>>(),
-    getSession: vi.fn<() => Promise<Session | null>>(),
-    getUser: vi.fn<() => Promise<User | null>>(),
-    onAuthStateChange: vi.fn(() => ({
-      data: {
-        subscription: {
-          unsubscribe: mockUnsubscribe,
-        },
-      },
-    })),
-    _mockUnsubscribe: mockUnsubscribe,
-  };
-});
-
-// Mock AutenticarUsuarioUseCase
-const { mockExecute } = vi.hoisted(() => ({
-  mockExecute: vi.fn()
-}));
-
-vi.mock('@/application/autenticacao/services/AutenticarUsuarioUseCase', () => {
-  function MockAutenticarUsuarioUseCase() {
-    return { execute: mockExecute };
-  }
-  return {
-    AutenticarUsuarioUseCase: vi.fn(MockAutenticarUsuarioUseCase),
-  };
-});
-
-export { mockExecute };
-
-// Mock RegistrarUsuarioUseCase
-vi.mock('@/application/autenticacao/services/RegistrarUsuarioUseCase', () => {
-  function MockRegistrarUsuarioUseCase() {
-    return { execute: vi.fn() };
-  }
-  return {
-    RegistrarUsuarioUseCase: vi.fn(MockRegistrarUsuarioUseCase),
-  };
-});
-
-// Mock useRouter
+// Mock next/navigation
 const mockPush = vi.fn();
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
@@ -79,34 +34,30 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
+// Mock lib/auth/client
+vi.mock('@/lib/auth/client', () => ({
+  login: vi.fn<() => Promise<{ error?: string }>>(),
+  logout: vi.fn<() => Promise<void>>(),
+  getSession: vi.fn<() => Promise<{ user?: { id: string; email: string; role: string; restaurantId?: string } } | null>>(),
+  requestPasswordReset: vi.fn<() => Promise<{ error?: string }>>(),
+}));
+
 export { mockPush };
 
-import { getSession, getUser, _mockUnsubscribe } from '@/lib/supabase/auth';
-
-const mockUser: User = {
+const mockUser = {
   id: 'user-123',
   email: 'admin@test.com',
-  role: 'authenticated',
-  aud: 'authenticated',
-  created_at: '2024-01-01T00:00:00Z',
-  updated_at: '2024-01-01T00:00:00Z',
-  app_metadata: { provider: 'email', providers: ['email'] },
-  user_metadata: { name: 'Admin User' },
-} as User;
+  role: 'admin',
+  restaurantId: 'restaurant-123',
+};
 
-const mockSession: Session = {
-  access_token: 'access-token-123',
-  refresh_token: 'refresh-token-123',
-  expires_in: 3600,
-  expires_at: Math.floor(Date.now() / 1000) + 3600,
-  token_type: 'bearer',
+const mockSession = {
   user: mockUser,
-} as Session;
+};
 
 describe('useAuth timeout', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.useFakeTimers();
   });
 
   afterEach(() => {
@@ -114,70 +65,45 @@ describe('useAuth timeout', () => {
   });
 
   describe('timeout behavior', () => {
-    it('isLoading becomes false after timeout when getSession is slow', async () => {
+    it('isLoading becomes false after getSession fails', async () => {
       (getSession as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('timeout'));
-      (getUser as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('timeout'));
 
       const { result } = renderHook(() => useAuth());
 
       expect(result.current.isLoading).toBe(true);
 
-      await act(async () => {
-        vi.advanceTimersByTimeAsync(11000);
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
       });
-
-      expect(result.current.isLoading).toBe(false);
     });
 
-    it('isAuthenticated is false after timeout', async () => {
+    it('isAuthenticated is false after getSession fails', async () => {
       (getSession as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('timeout'));
-      (getUser as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('timeout'));
 
       const { result } = renderHook(() => useAuth());
 
-      await act(async () => {
-        vi.advanceTimersByTimeAsync(11000);
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
       });
 
-      expect(result.current.isLoading).toBe(false);
       expect(result.current.isAuthenticated).toBe(false);
     });
 
-    it('component does not stay in infinite loading after timeout', async () => {
+    it('user and session are null after getSession fails', async () => {
       (getSession as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('timeout'));
-      (getUser as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('timeout'));
 
       const { result } = renderHook(() => useAuth());
 
-      expect(result.current.isLoading).toBe(true);
-
-      await act(async () => {
-        vi.advanceTimersByTimeAsync(11000);
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
       });
 
-      expect(result.current.isLoading).toBe(false);
-    });
-
-    it('user and session are null after timeout', async () => {
-      (getSession as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('timeout'));
-      (getUser as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('timeout'));
-
-      const { result } = renderHook(() => useAuth());
-
-      await act(async () => {
-        vi.advanceTimersByTimeAsync(11000);
-      });
-
-      expect(result.current.isLoading).toBe(false);
       expect(result.current.user).toBeNull();
       expect(result.current.session).toBeNull();
     });
 
-    it('successful auth completes before timeout', async () => {
-      vi.useRealTimers(); // Need real timers for this test
-
+    it('successful auth completes successfully', async () => {
       (getSession as ReturnType<typeof vi.fn>).mockResolvedValue(mockSession);
-      (getUser as ReturnType<typeof vi.fn>).mockResolvedValue(mockUser);
 
       const { result } = renderHook(() => useAuth());
 
@@ -191,10 +117,7 @@ describe('useAuth timeout', () => {
     });
 
     it('auth fails fast with error, isLoading becomes false', async () => {
-      vi.useRealTimers();
-
       (getSession as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Network error'));
-      (getUser as ReturnType<typeof vi.fn>).mockResolvedValue(null);
 
       const { result } = renderHook(() => useAuth());
 

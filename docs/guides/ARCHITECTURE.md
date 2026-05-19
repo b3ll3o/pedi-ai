@@ -79,7 +79,7 @@ O Pedi-AI adota uma arquitetura **Domain-Driven Design (DDD)** em 4 camadas, org
 │   │     persistence/            │    │          external/               │    │
 │   │                             │    │                                  │    │
 │   │  pedido/PedidoRepository.ts │    │  JwtAuthAdapter.ts             │    │
-│   │  pedido/CarrinhoRepository.ts│    │  StripeAdapter.ts              │    │
+│   │  pedido/CarrinhoRepository.ts│    │  PixAdapter.ts                 │    │
 │   │  cardapio/CategoriaRepo.ts  │    │  PixAdapter.ts                 │    │
 │   │  mesa/MesaRepository.ts     │    │  QRCodeCryptoService.ts         │    │
 │   │  pagamento/PagamentoRepo.ts │    │                                  │    │
@@ -95,11 +95,11 @@ O Pedi-AI adota uma arquitetura **Domain-Driven Design (DDD)** em 4 camadas, org
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                          EXTERNAL APIS                                       │
 │                                                                              │
-│   ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                       │
-│   │  NestJS     │  │   Stripe    │  │Mercado Pago │                       │
-│   │  (Auth +    │  │  (Payments) │  │   (Pix)     │                       │
-│   │   API)      │  │             │  │             │                       │
-│   └─────────────┘  └─────────────┘  └─────────────┘                       │
+│   ┌─────────────┐  ┌─────────────┐
+│   │  NestJS     │  │Mercado Pago │
+│   │  (Auth +    │  │   (Pix)     │
+│   │   API)      │  │             │
+│   └─────────────┘  └─────────────┘                       │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -384,7 +384,7 @@ export class CriarPedidoUseCase implements UseCase<CriarPedidoInput, CriarPedido
 
 ### 3.3 Infrastructure Layer (`apps/web/apps/web/src/infrastructure/`)
 
-**Propósito:** Implementa os contratos definidos em domain (repositórios, adapters). Contém persistência (Dexie/IndexedDB), adapters externos (JWT, Stripe, Pix) e serviços técnicos.
+**Propósito:** Implementa os contratos definidos em domain (repositórios, adapters). Contém persistência (Dexie/IndexedDB), adapters externos (JWT, Pix) e serviços técnicos.
 
 #### Estrutura
 
@@ -403,7 +403,7 @@ apps/web/src/infrastructure/
 │   └── admin/
 ├── external/
 │   ├── JwtAuthAdapter.ts        # Adapter para autenticação JWT
-│   ├── StripeAdapter.ts         # Adapter para Stripe
+│   ├── StripeAdapter.ts         # Deprecated - usar PixAdapter
 │   └── PixAdapter.ts            # Adapter para Pix/Mercado Pago
 └── services/
     └── QRCodeCryptoService.ts   # Serviço de criptografia de QR code
@@ -450,26 +450,26 @@ export class PedidoRepository implements IPedidoRepository {
 }
 ```
 
-#### Exemplo: StripeAdapter
+#### Exemplo: PixAdapter
 
 ```typescript
-// apps/web/src/infrastructure/external/StripeAdapter.ts
-export class StripeAdapter implements IStripeAdapter {
+// apps/web/src/infrastructure/external/PixAdapter.ts
+export class PixAdapter implements IPixAdapter {
   constructor(
-    private secretKey: string = process.env.STRIPE_SECRET_KEY ?? '',
-    private baseUrl: string = 'https://api.stripe.com'
+    private accessToken: string = process.env.MERCADO_PAGO_ACCESS_TOKEN ?? '',
+    private baseUrl: string = 'https://api.mercadopago.com'
   ) {}
 
-  async criarPaymentIntent(
+  async criarPixCharge(
     valorEmCentavos: number,
     pedidoId: string
-  ): Promise<StripePaymentIntent> {
-    // Implementação real faria chamada HTTP para Stripe API
+  ): Promise<PixCharge> {
+    // Implementação real faria chamada HTTP para Mercado Pago API
     return {
-      id: `pi_${pedidoId}_${Date.now()}`,
-      clientSecret: `pi_${pedidoId}_secret_${Date.now()}`,
-      valor: valorEmCentavos,
-      status: 'requires_payment_method',
+      id: `pix_${pedidoId}_${Date.now()}`,
+      qrCode: '00020101021226880014br.gov.bcb.pix2565...',
+      qrCodeBase64: 'data:image/png;base64,...',
+      expiresAt: new Date(Date.now() + 30 * 60 * 1000),
     };
   }
 }
@@ -697,28 +697,28 @@ domain: Retorna MesaAggregate se válido
 presentation: Redireciona para cardápio da mesa
 ```
 
-### 5.3 Fluxo: Pagamento com Stripe
+### 5.3 Fluxo: Pagamento com PIX
 
 ```
-Cliente seleciona "Cartão de Crédito"
+Cliente seleciona "PIX"
         │
         ▼
 presentation: checkout/page.tsx
         │
-        ▼ useCriarPaymentIntent()
-application: CriarStripePaymentIntentUseCase.execute({ valor, pedidoId })
+        ▼ useCriarPixCharge()
+application: CriarPixChargeUseCase.execute({ valor, pedidoId })
         │
         ├── IPagamentoRepository.create(pagamento)
         │
         ▼
-infrastructure: StripeAdapter.criarPaymentIntent(valorEmCentavos, pedidoId)
+infrastructure: PixAdapter.criarPixCharge(valorEmCentavos, pedidoId)
         │
-        ├── HTTP POST para https://api.stripe.com/v1/payment_intents
+        ├── HTTP POST para https://api.mercadopago.com/v1/payments
         │
         ▼
 domain: PagamentoAggregate.confirmar()
         │
-        └── PagamentoConfirmadoEvent disparado
+        └── PagamentoConfirmadoEvent disparado (via webhook)
 ```
 
 ---
@@ -1111,7 +1111,7 @@ A migração para DDD está **em andamento**. As camadas Domain, Application e I
 | ------------------ | --------------- | ---------------------------------------------------------------------------------------- |
 | **Domain**         | ✅ Implementado | Entidades, VOs, Aggregates, Events, Services, Repositories (interfaces) para 6 contextos |
 | **Application**    | ✅ Implementado | Use Cases para 6 contextos (migrados de services antigos)                                |
-| **Infrastructure** | ✅ Implementado | Repositories (Dexie), Adapters (Stripe, Pix, JWT)                                       |
+| **Infrastructure** | ✅ Implementado | Repositories (Dexie), Adapters (Pix, JWT)                                       |
 | **Presentation**   | ⚠️ Parcial      | Estrutura existe mas hooks/pages ainda não usam use cases consistentemente               |
 
 ### 8.3 Status por Bounded Context
@@ -1185,7 +1185,7 @@ apps/web/src/application/
 │   ├── ValidarQRCodeUseCase.ts
 │   └── ListarMesasUseCase.ts
 ├── pagamento/services/
-│   ├── CriarStripePaymentIntentUseCase.ts
+│   ├── CriarPixChargeUseCase.ts
 │   ├── CriarPixChargeUseCase.ts
 │   ├── ProcessarWebhookUseCase.ts
 │   └── IniciarReembolsoUseCase.ts
@@ -1216,7 +1216,6 @@ apps/web/src/infrastructure/
 │   └── admin/RestauranteRepository.ts, UsuarioRestauranteRepository.ts, EstatisticasRepository.ts
 ├── external/
 │   ├── JwtAuthAdapter.ts
-│   ├── StripeAdapter.ts
 │   └── PixAdapter.ts
 └── services/
     └── QRCodeCryptoService.ts

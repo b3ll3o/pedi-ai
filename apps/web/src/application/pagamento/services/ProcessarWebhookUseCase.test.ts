@@ -113,7 +113,7 @@ describe('ProcessarWebhookUseCase', () => {
   describe('execute', () => {
     it('deve rejeitar provider não suportado', async () => {
       const result = await useCase.execute({
-        provider: 'stripe' as 'pix',
+        provider: 'mercadopago' as 'pix',
         payload: {},
         signature: 'any',
       });

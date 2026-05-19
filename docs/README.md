@@ -16,7 +16,6 @@
 ### Guias de Configuração
 | Documento | Descrição | Quando Consultar |
 |-----------|-----------|-----------------|
-| [STRIPE_CLI_SETUP.md](setup/STRIPE_CLI_SETUP.md) | Configurar Stripe CLI para webhooks locais | Testar pagamentos com cartão |
 | [MAILPIT_SETUP.md](setup/MAILPIT_SETUP.md) | Servidor SMTP mock para testes de email | Testar emails em desenvolvimento |
 
 ### Guias Técnicos
@@ -25,7 +24,7 @@
 | [ARCHITECTURE.md](guides/ARCHITECTURE.md) | Arquitetura DDD em 4 camadas | Entender estrutura domain/application/infrastructure |
 | [OFFLINE.md](guides/OFFLINE.md) | Service Worker, Dexie, BackgroundSync, BroadcastChannel | Implementar/modificar funcionalidade offline |
 | [REALTIME.md](guides/REALTIME.md) | ⚠️ DEPRECADO — Socket.io via NestJS | Implementar atualizações em tempo real |
-| [PAYMENTS.md](guides/PAYMENTS.md) | PIX (Mercado Pago), Stripe, webhooks, idempotência | Implementar/modificar pagamentos |
+| [PAYMENTS.md](guides/PAYMENTS.md) | PIX (Mercado Pago), webhooks, idempotência | Implementar/modificar pagamentos |
 | [QR_CODE.md](guides/QR_CODE.md) | Segurança HMAC-SHA256, validação de QR codes | Implementar/modificar sistema de mesas |
 | [ROLES.md](guides/ROLES.md) | RBAC, multi-tenant, RLS, autenticação | Implementar/modificar controle de acesso |
 | [MOBILE_PWA.md](guides/MOBILE_PWA.md) | Mobile-first, PWA, safe areas iOS, CSS | Desenvolver UI responsiva |
@@ -51,7 +50,6 @@ docs/
 ├── README.md                    # Este arquivo - hub de navegação
 ├── INDICE.md                    # Índice completo com todas as referências
 ├── setup/                       # Guias de configuração
-│   ├── STRIPE_CLI_SETUP.md      # Configuração do Stripe CLI
 │   └── MAILPIT_SETUP.md         # Configuração do Mailpit
 ├── guides/                      # Guias técnicos
 │   ├── ARCHITECTURE.md          # Arquitetura DDD
@@ -76,7 +74,7 @@ docs/
 2. Execute `pnpm install`
 3. Copie `.env.local.example` → `.env.local`
 4. Configure PostgreSQL: DATABASE_URL
-5. (Opcional) Configure Stripe: STRIPE_CLI_SETUP.md
+5. Configure PostgreSQL: DATABASE_URL
 6. (Opcional) Configure Mailpit: MAILPIT_SETUP.md
 7. Execute `pnpm dev`
 ```
@@ -98,7 +96,7 @@ docs/
 ### Implementando Pagamentos
 ```
 1. Leia PAYMENTS.md para entender os fluxos
-2. Configure Stripe CLI (STRIPE_CLI_SETUP.md) para testes
+2. Configure Mercado Pago (MERCADO_PAGO_ACCESS_TOKEN)
 3. Consulte QR_CODE.md se trabalhar com mesas
 ```
 
@@ -129,7 +127,6 @@ pnpm test:e2e          # E2E tests
 pnpm test:coverage     # Coverage report
 
 # Offline/Pagamentos
-pnpm stripe:listen     # Stripe webhook listener
 pnpm mailpit          # Start Mailpit SMTP server
 ```
 
@@ -146,7 +143,7 @@ NEXT_PUBLIC_API_URL=http://localhost:3001
 
 # Pagamentos
 NEXT_PUBLIC_DEMO_PAYMENT_MODE=true
-STRIPE_WEBHOOK_SECRET=
+MERCADO_PAGO_ACCESS_TOKEN=
 
 # QR Code
 QR_SECRET_KEY=

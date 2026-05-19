@@ -3,14 +3,12 @@ import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/re
 import { LoginForm } from '@/components/auth/LoginForm';
 
 // Mocks
-const mockSignUp = vi.fn();
 const mockResetPassword = vi.fn();
 const mockOnSubmit = vi.fn();
 const mockRouterPush = vi.fn();
 
-vi.mock('@/lib/supabase/auth', () => ({
-  signUp: (...args: unknown[]) => mockSignUp(...args),
-  resetPassword: (...args: unknown[]) => mockResetPassword(...args),
+vi.mock('@/lib/auth/client', () => ({
+  requestPasswordReset: (...args: unknown[]) => mockResetPassword(...args),
 }));
 
 vi.mock('next/navigation', () => ({
@@ -22,7 +20,6 @@ vi.mock('next/navigation', () => ({
 describe('LoginForm', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockSignUp.mockResolvedValue({ error: null });
     mockResetPassword.mockResolvedValue({ error: null });
     mockOnSubmit.mockResolvedValue(undefined);
   });
@@ -366,7 +363,7 @@ describe('LoginForm', () => {
 
   // ========== Cenário 12: Reenvio de email de confirmação ==========
   describe('Reenvio de email de confirmação', () => {
-    it('deve chamar signUp ao clicar em reenviar confirmação', async () => {
+    it('deve exibir erro quando recurso não está disponível', async () => {
       render(<LoginForm registeredSuccess={true} />);
 
       fireEvent.change(screen.getByTestId('email-input'), { target: { value: 'test@example.com' } });
@@ -375,57 +372,19 @@ describe('LoginForm', () => {
       fireEvent.click(screen.getByText('Reenviar email de confirmação'));
 
       await waitFor(() => {
-        expect(mockSignUp).toHaveBeenCalledWith('test@example.com', 'password123');
-      });
-    });
-
-    it('deve mudar texto do botão para "Enviando..." durante o reenvio', async () => {
-      render(<LoginForm registeredSuccess={true} />);
-
-      fireEvent.change(screen.getByTestId('email-input'), { target: { value: 'test@example.com' } });
-      fireEvent.change(screen.getByTestId('password-input'), { target: { value: 'password123' } });
-
-      fireEvent.click(screen.getByText('Reenviar email de confirmação'));
-
-      await waitFor(() => {
-        expect(screen.getByText('Enviando...')).toBeInTheDocument();
-      });
-    });
-
-    it('deve desabilitar botão durante o reenvio', async () => {
-      render(<LoginForm registeredSuccess={true} />);
-
-      fireEvent.change(screen.getByTestId('email-input'), { target: { value: 'test@example.com' } });
-      fireEvent.change(screen.getByTestId('password-input'), { target: { value: 'password123' } });
-
-      const resendButton = screen.getByText('Reenviar email de confirmação');
-      fireEvent.click(resendButton);
-
-      await waitFor(() => {
-        expect(resendButton).toBeDisabled();
-      });
-    });
-
-    it('deve reabilitar botão após reenvio', async () => {
-      render(<LoginForm registeredSuccess={true} />);
-
-      fireEvent.change(screen.getByTestId('email-input'), { target: { value: 'test@example.com' } });
-      fireEvent.change(screen.getByTestId('password-input'), { target: { value: 'password123' } });
-
-      fireEvent.click(screen.getByText('Reenviar email de confirmação'));
-
-      await waitFor(() => {
-        expect(screen.getByText('Reenviar email de confirmação')).not.toBeDisabled();
+        expect(screen.getByText('Registro não disponível pelo app')).toBeInTheDocument();
       });
     });
 
     it('não deve chamar signUp se email estiver vazio', async () => {
       render(<LoginForm registeredSuccess={true} />);
 
-      // Email vazio
+      // Email vazio - button click should show validation error
       fireEvent.click(screen.getByText('Reenviar email de confirmação'));
 
-      expect(mockSignUp).not.toHaveBeenCalled();
+      await waitFor(() => {
+        expect(screen.getByText('Por favor, insira seu email para reenviar a confirmação')).toBeInTheDocument();
+      });
     });
   });
 

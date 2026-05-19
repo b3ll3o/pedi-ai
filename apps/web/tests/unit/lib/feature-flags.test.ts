@@ -51,23 +51,6 @@ describe('feature-flags', () => {
     })
   })
 
-  describe('isStripeEnabled', () => {
-    it('retorna true quando NEXT_PUBLIC_FEATURE_STRIPE_ENABLED é "true"', () => {
-      process.env.NEXT_PUBLIC_FEATURE_STRIPE_ENABLED = 'true'
-      expect(featureFlags.isStripeEnabled()).toBe(true)
-    })
-
-    it('retorna false quando NEXT_PUBLIC_FEATURE_STRIPE_ENABLED é "false"', () => {
-      process.env.NEXT_PUBLIC_FEATURE_STRIPE_ENABLED = 'false'
-      expect(featureFlags.isStripeEnabled()).toBe(false)
-    })
-
-    it('retorna false quando NEXT_PUBLIC_FEATURE_STRIPE_ENABLED não está definido', () => {
-      delete process.env.NEXT_PUBLIC_FEATURE_STRIPE_ENABLED
-      expect(featureFlags.isStripeEnabled()).toBe(false)
-    })
-  })
-
   describe('isWaiterModeEnabled', () => {
     it('retorna true quando NEXT_PUBLIC_FEATURE_WAITER_MODE é "true"', () => {
       process.env.NEXT_PUBLIC_FEATURE_WAITER_MODE = 'true'
