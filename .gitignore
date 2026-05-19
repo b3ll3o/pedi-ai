@@ -74,11 +74,6 @@ package-lock.json
 /apps/*/node_modules
 /packages/*/node_modules
 
-# Local SQLite dev database
-apps/web/data/*.db
-apps/web/data/*.db-shm
-apps/web/data/*.db-wal
-
 # Build outputs
 apps/web/.next
 apps/web/out
