@@ -22,7 +22,7 @@ Aplicação de **Cardápio Digital** para restaurantes com foco em **mobile-firs
 - **Testes Unitários**: Vitest (116 test files, 1441 tests)
 - **Testes E2E**: Playwright (19 specs)
 - **Pagamentos**: Mercado Pago (PIX)
-- **Autenticação**: JWT com refresh tokens (bcrypt)
+- **Autenticação**: JWT com bcrypt
 
 ## Documentação
 
@@ -33,19 +33,14 @@ Aplicação de **Cardápio Digital** para restaurantes com foco em **mobile-firs
 | [docs/guides/ARCHITECTURE.md](docs/guides/ARCHITECTURE.md) | Arquitetura DDD        |
 | [docs/guides/OFFLINE.md](docs/guides/OFFLINE.md)           | Offline-first          |
 | [docs/guides/REALTIME.md](docs/guides/REALTIME.md)         | Realtime subscriptions |
-| [docs/guides/PAYMENTS.md](docs/guides/PAYMENTS.md)         | Pagamentos             |
+| [docs/guides/PAYMENTS.md](docs/guides/PAYMENTS.md)         | Pagamentos PIX         |
 | [docs/guides/QR_CODE.md](docs/guides/QR_CODE.md)           | QR Code e segurança    |
 | [docs/guides/ROLES.md](docs/guides/ROLES.md)               | Roles e permissões     |
 | [docs/guides/MOBILE_PWA.md](docs/guides/MOBILE_PWA.md)     | Mobile-first PWA       |
 
 ## Feature Flags
 
-O projeto possui um sistema de **feature flags** que permite ativar/desativar funcionalidades de forma granular via variáveis de ambiente. Isso é útil para:
-
-- **Desenvolvimento**: Ativar apenas funcionalidades em desenvolvimento sem afetar outras áreas
-- **Testes**: Testar funcionalidades específicas isoladamente
-- **Rollout gradual**: Liberar funcionalidades para um subconjunto de usuários ou ambientes
-- **Produção**: Desabilitar funcionalidades problemáticas sem fazer deploy
+O projeto possui um sistema de **feature flags** que permite ativar/desativar funcionalidades de forma granular via variáveis de ambiente.
 
 ### Flags Disponíveis
 
@@ -53,41 +48,9 @@ O projeto possui um sistema de **feature flags** que permite ativar/desativar fu
 | --------------------------------------- | ----------------------------------------------------------- |
 | `NEXT_PUBLIC_FEATURE_OFFLINE_ENABLED`   | Modo offline com service worker e cache local               |
 | `NEXT_PUBLIC_FEATURE_PIX_ENABLED`       | Pagamento via PIX (Mercado Pago)                            |
-| `NEXT_PUBLIC_FEATURE_WAITER_MODE`       | Modo garçom/chamada de atendimento                          |
 | `NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED`   | Leitura e geração de QR codes para mesas                    |
 | `NEXT_PUBLIC_FEATURE_COMBOS_ENABLED`    | Sistema de combos/meal deals                                |
-| `NEXT_PUBLIC_FEATURE_ANALYTICS_ENABLED` | Dashboard de analytics e rastreamento de eventos            |
-| `NEXT_PUBLIC_FEATURE_CASHBACK_ENABLED`  | Sistema de cashback/recompensas                             |
 | `NEXT_PUBLIC_ENABLE_MULTI_RESTAURANT`   | Suporte multi-restaurante (relação N:N usuário-restaurante) |
-
-### Configuração
-
-Adicione ao seu `.env.local`:
-
-```env
-# Feature Flags (valores padrão: false)
-NEXT_PUBLIC_FEATURE_OFFLINE_ENABLED=true
-NEXT_PUBLIC_FEATURE_PIX_ENABLED=true
-NEXT_PUBLIC_FEATURE_WAITER_MODE=false
-NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED=true
-NEXT_PUBLIC_FEATURE_COMBOS_ENABLED=false
-NEXT_PUBLIC_FEATURE_ANALYTICS_ENABLED=false
-NEXT_PUBLIC_FEATURE_CASHBACK_ENABLED=false
-NEXT_PUBLIC_ENABLE_MULTI_RESTAURANT=false
-```
-
-### Uso no Código
-
-```typescript
-import { isPixEnabled, isOfflineEnabled } from '@/lib/feature-flags';
-
-// Verificar se uma flag está ativa
-if (isPixEnabled()) {
-  // Mostrar opção de pagamento Pix
-}
-```
-
-Todas as flags são **client-side** (prefixadas com `NEXT_PUBLIC_`) e podem ser verificadas em qualquer componente ou hook React.
 
 ## Getting Started
 
@@ -99,29 +62,11 @@ pnpm install
 
 ### 2. Configurar ambiente
 
-Copie o arquivo de exemplo e preencha com suas credenciais:
-
 ```bash
 cp .env.local.example .env.local
 ```
 
-Edite `.env.local` com:
-
-```env
-# API (NestJS)
-NEXT_PUBLIC_API_URL=http://localhost:3001
-API_JWT_SECRET=seu_jwt_secret_minimo_32_chars
-
-# PostgreSQL (via Docker)
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/pedi_ai
-
-# Mercado Pago (PIX)
-MERCADO_PAGO_ACCESS_TOKEN=seu_token
-MP_WEBHOOK_SECRET=seu_webhook_secret
-
-# QR Code
-QR_SECRET_KEY=sua_chave_secreta_para_hmac
-```
+Edite `.env.local` com suas credenciais.
 
 ### 3. Subir infraestrutura com Docker
 
@@ -135,9 +80,8 @@ Isso sobe PostgreSQL + API em containers.
 
 ```bash
 cd apps/api
-pnpm install
-pnpm prisma db push    # Cria tabelas no Postgres
-pnpm db:seed          # Popula dados de exemplo
+pnpm prisma db push
+pnpm db:seed
 ```
 
 ### 5. Rodar em desenvolvimento
@@ -154,32 +98,20 @@ Abrir [http://localhost:3000](http://localhost:3000)
 # Desenvolvimento
 pnpm dev          # Rodar app
 pnpm build        # Build de produção
-pnpm start        # Start em produção
 
 # Testes
 pnpm test         # Testes unitários (Vitest)
 pnpm test:watch   # Testes em watch mode
 pnpm test:coverage # Com cobertura
 
-# Testes E2E (Playwright) — requer docker-compose up
-pnpm test:e2e           # Rodar E2E (Chromium headless)
+# E2E (Playwright) — requer docker-compose up
+pnpm test:e2e           # Rodar E2E
+pnpm test:e2e:seed     # Popular dados de teste
 pnpm test:e2e:ui        # E2E com UI
-pnpm test:e2e:all       # E2E em todos os browsers
 
 # Lint
 pnpm lint           # ESLint
-pnpm format         # Prettier
 ```
-
-## Regras do Projeto
-
-O projeto segue regras definidas em [AGENTS.md](./AGENTS.md):
-
-- **Idioma**: Todo código, UI e documentação em **português brasileiro (pt-BR)**
-- **Mobile-first**: Desenvolver para mobile primeiro, escalar para desktop
-- **Offline-first**: Funciona sem internet, sync automático ao reconectar
-- **Cobertura mínima**: 80% para unit tests
-- **Testes E2E**: Atualizados imediatamente ao modificar qualquer funcionalidade
 
 ## Estrutura do Projeto
 
@@ -194,72 +126,33 @@ pedi-ai/
 │   │       └── presentation/  # NestJS: controllers, gateways
 │   └── web/              # Next.js 16 + TypeScript
 │       └── src/
-│           ├── app/           # Next.js App Router
-│           ├── components/    # Componentes React
-│           ├── hooks/         # React Hooks
-│           ├── lib/           # Auth, offline, QR
 │           ├── domain/        # DDD: entidades, value objects
 │           ├── application/   # DDD: use cases
-│           └── infrastructure/ # DDD: repositories
+│           ├── infrastructure/ # DDD: repositories
+│           └── presentation/   # Next.js: app, components, hooks
 ├── packages/
 │   └── shared/           # Código compartilhado
 └── docs/                  # Documentação
 ```
 
-## Database Schema
+## Arquitetura DDD
 
-O schema Prisma (`apps/api/prisma/schema.prisma`) define as tabelas:
+O projeto segue **Domain-Driven Design** com bounded contexts:
 
-- `restaurants` — Restaurantes (multi-tenant)
-- `user_restaurants` — Junction table N:N (usuários com múltiplos restaurantes)
-- `tables` — Mesas com QR Code
-- `categories` — Categorias do cardápio
-- `products` — Produtos com modifiers
-- `modifier_groups` — Grupos de modificadores
-- `modifier_values` — Valores de modificadores
-- `combos` — Combos com preço fixo
-- `combo_items` — Itens dos combos
-- `orders` — Pedidos
-- `order_items` — Itens do pedido
-- `order_status_history` — Histórico de status
-- `users_profiles` — Perfis de usuário (owner/manager/staff)
-- `webhook_events` — Eventos de webhook (idempotência)
-- `combo_products` — Associação de produtos a combos
-
-## PWA
-
-A aplicação é um **Progressive Web App** com:
-
-- Instalável em dispositivos móveis
-- Funciona offline (menu em cache, pedidos em fila)
-- Sync automático ao reconectar
-- Notificações de status de pedido
+| Context | Descrição |
+|---------|-----------|
+| `admin/` | Restaurantes, usuários-restaurante |
+| `autenticacao/` | Usuários, sessões |
+| `cardapio/` | Categorias, produtos, modificadores |
+| `mesa/` | Mesas, QR codes |
+| `pagamento/` | Pagamentos PIX |
+| `pedido/` | Pedidos, itens |
 
 ## Segurança
 
 - **QR Code**: Assinatura HMAC-SHA256 para evitar falsificação
-- **Políticas PostgreSQL**: Isolamento de tenants no banco
 - **Webhook Idempotência**: Evita processamento duplicado
 - **Validação de Assinatura**: Webhooks Mercado Pago validados
-
-## Testes
-
-```bash
-# Unit tests
-pnpm test         # apps/web: 116 test files, 1441 tests
-pnpm --filter @pedi-ai/api test  # apps/api: 2 test files, 15 tests
-
-# Unit tests with coverage
-pnpm test:coverage  # apps/web
-pnpm --filter @pedi-ai/api test:coverage  # apps/api
-
-# Integration tests
-pnpm test:integration  # apps/web: 2 test files, 32 tests
-
-# E2E tests (19 specs) — requer docker-compose up
-pnpm test:e2e:seed    # Popula dados de teste
-pnpm test:e2e         # Executa testes E2E
-```
 
 ## License
 

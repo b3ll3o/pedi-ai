@@ -70,7 +70,7 @@ apps/web/src/
 │       └── services/          # Application services (use cases)
 ├── infrastructure/            # IMPLEMENTAÇÕES - adapters, repos, APIs
 │   ├── persistence/           # Dexie/IndexedDB, Zustand stores
-│   ├── external/              # APIs externas (Supabase, Stripe)
+│   ├── external/              # APIs externas (PostgresAuthAdapter, Pix)
 │   └── repositories/          # Repository implementations
 └── presentation/              # NEXT.JS - UI, API routes, web-only
     ├── app/                   # App Router
@@ -96,7 +96,7 @@ apps/api/src/
 │       └── services/          # Application services (use cases)
 ├── infrastructure/            # IMPLEMENTAÇÕES - adapters, repos, Prisma
 │   ├── persistence/           # Repositories Prisma
-│   ├── external/              # APIs externas (Stripe, MercadoPago)
+│   ├── external/              # APIs externas (MercadoPago)
 │   └── repositories/          # Repository implementations
 └── presentation/              # NESTJS - Controllers, Gateways, DTOs
     ├── controllers/           # Controllers REST
@@ -250,6 +250,7 @@ apps/api/src/
 - **NestJS + Fastify** para performance
 - **Prisma ORM** com PostgreSQL
 - **Socket.io** para comunicação em tempo real
+- **JWT** para autenticação (via `passport-jwt`)
 
 ### Regras de API
 
@@ -280,34 +281,6 @@ pedi-ai/
 │           ├── application/  # DDD: use cases
 │           ├── infrastructure/ # DDD: repositories, adapters
 │           └── presentation/   # Next.js: app, components, hooks
-├── packages/
-│   └── shared/               # Código compartilhado (sem deps de framework)
-│       └── src/
-│           ├── constants/    # Feature flags, constantes de negócio
-│           └── utils/        # Logger, helpers puros
-└── docs/                     # Documentação
-```
-pedi-ai/
-├── apps/
-│   ├── api/                  # NestJS + Prisma + PostgreSQL
-│   │   └── src/
-│   │       ├── auth/         # JWT authentication
-│   │       ├── orders/       # Orders module
-│   │       ├── payments/     # Payments (Stripe/Pix)
-│   │       ├── restaurants/  # Restaurant CRUD
-│   │       ├── realtime/     # Socket.io gateway
-│   │       └── prisma/       # Database schema
-│   └── web/                  # Next.js 16 + TypeScript
-│       ├── public/           # Arquivos estáticos (sw.js, manifest, robots.txt)
-│       ├── tests/            # Vitest + Playwright
-│       └── src/
-│           ├── app/          # App Router
-│           ├── components/   # Componentes React
-│           ├── hooks/       # Custom hooks
-│           ├── lib/          # Utilitários (auth, offline, QR, supabase)
-│           ├── domain/       # DDD: entidades, value objects, events
-│           ├── application/  # DDD: use cases
-│           └── infrastructure/ # DDD: repositories, adapters
 ├── packages/
 │   └── shared/               # Código compartilhado (sem deps de framework)
 │       └── src/

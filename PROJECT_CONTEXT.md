@@ -1,6 +1,6 @@
 # Pedi-AI — Contexto do Projeto
 
-> **Versão:** 1.2.0 | **Atualizado em:** 2026-05-11
+> **Versão:** 1.5.0 | **Atualizado em:** 2026-05-22
 > **Idioma:** Todo código, UI e documentação em **português brasileiro (pt-BR)**
 
 ---
@@ -27,9 +27,9 @@ O sistema é **mobile-first**, **offline-first** e **multi-tenant** (um usuário
 | **Backend** | NestJS + Fastify + Prisma ORM + PostgreSQL |
 | **Offline** | Service Worker (Workbox) + IndexedDB (Dexie) |
 | **Estado** | Zustand + React Query |
-| **Pagamentos** | Mercado Pago (Pix) + Stripe (Cartão) |
-| **Autenticação** | JWT com refresh tokens (bcrypt) |
-| **Testes Unitários** | Vitest (517 testes, 97%+ cobertura) |
+| **Pagamentos** | Mercado Pago (PIX apenas) |
+| **Autenticação** | JWT com bcrypt (PostgresAuthAdapter) |
+| **Testes Unitários** | Vitest (116 test files, 1441 tests) |
 | **Testes E2E** | Playwright (19 specs) |
 
 ---
@@ -54,9 +54,9 @@ src/
 │   └── [bounded-context]/services/
 ├── infrastructure/           # IMPLEMENTAÇÕES - adapters, repos
 │   ├── persistence/          # Dexie/IndexedDB implementations
-│   ├── external/             # APIs externas (NestJS, Stripe, Mercado Pago)
+│   ├── external/             # APIs externas (NestJS, Mercado Pago)
 │   └── repositories/        # Repository implementations
-└── presentation/             # NEXT.JS - UI, API routes, web-only (futuro)
+└── presentation/             # NEXT.JS - UI, API routes, web-only
 ```
 
 ### Regras de Dependência
@@ -81,22 +81,6 @@ src/
 
 ---
 
-## Estrutura Legacy (Coexiste com DDD)
-
-```
-src/
-├── app/                    # Next.js App Router - páginas e API routes
-├── components/             # Componentes React (admin, cart, menu, order, payment, shared, kitchen, restaurant)
-├── hooks/                  # Custom React hooks (useAuth, useRealtimeOrders, etc)
-├── lib/                    # Utilitários (auth, offline, QR, feature-flags)
-├── services/               # Lógica de negócio legacy (adminOrderService, userService, etc)
-└── stores/                 # Zustand stores (cartStore, menuStore, restaurantStore, tableStore)
-```
-
-> **Nota:** `services/` e `stores/` são legacy e estão em migração gradual para DDD.
-
----
-
 ## Fluxos Principais
 
 ### 1. Fluxo Cliente (Pedido)
@@ -104,9 +88,9 @@ src/
 ```
 Cliente escaneia QR code
   → Validação de mesa (src/lib/qr.ts com HMAC-SHA256)
-  → Navega cardápio (src/app/(customer)/menu/)
+  → Navega cardápio (src/app/restaurantes/[restaurantId]/cardapio/)
   → Adiciona itens ao carrinho (src/infrastructure/persistence/cartStore.ts)
-  → Checkout via Pix ou Stripe (src/components/payment/)
+  → Checkout via PIX (src/components/payment/)
   → Pedido criado (src/application/pedido/services/CriarPedidoUseCase.ts)
   → Sincronização offline se sem conexão (src/lib/offline/)
 ```
@@ -141,7 +125,7 @@ Cozinha recebe pedido via realtime (src/hooks/useRealtimeOrders.ts)
 | `/` | Landing page (marketing) |
 | `/restaurantes` | Lista pública de restaurantes (delivery) |
 | `/restaurantes/[restaurantId]/cardapio` | Cardápio digital |
-| `/menu` | Cardápio digital legado (redireciona para `/restaurantes`) |
+| `/menu` | Cardápio digital legado (redireciona) |
 | `/cart` | Carrinho de compras |
 | `/checkout` | Pagamento e finalização |
 | `/order/[orderId]` | Acompanhamento do pedido |
@@ -158,7 +142,6 @@ Cozinha recebe pedido via realtime (src/hooks/useRealtimeOrders.ts)
 | `/admin/users` | Gestão de usuários |
 | `/admin/combos` | CRUD de combos |
 | `/admin/modifiers` | CRUD de modificadores |
-| `/admin/analytics` | Dashboard de analytics |
 | `/admin/configuracoes` | Configurações do restaurante |
 
 ### Cozinha/Garçom
@@ -166,7 +149,6 @@ Cozinha recebe pedido via realtime (src/hooks/useRealtimeOrders.ts)
 | Rota | Descrição |
 |------|-----------|
 | `/kitchen` | Display de cozinha (KDS) |
-| `/dashboard` | Dashboard garçom em tempo real |
 
 ---
 
@@ -193,7 +175,7 @@ A aplicação **funciona sem internet** através de:
 
 ## Pagamentos
 
-### Pix (Mercado Pago)
+### PIX (Mercado Pago)
 
 ```
 1. Cliente seleciona Pix
@@ -205,16 +187,6 @@ A aplicação **funciona sem internet** através de:
 7. Pedido atualizado para confirmed
 ```
 
-### Cartão (Stripe)
-
-```
-1. Cliente insere dados do cartão
-2. Stripe PaymentIntent criado
-3. Confirmação do pagamento
-4. Webhook Stripe processa
-5. Pedido atualizado
-```
-
 ---
 
 ## Feature Flags
@@ -224,24 +196,10 @@ O projeto possui um sistema de **feature flags** via variáveis de ambiente:
 | Flag | Descrição |
 |------|-----------|
 | `NEXT_PUBLIC_FEATURE_OFFLINE_ENABLED` | Modo offline com service worker e cache local |
-| `NEXT_PUBLIC_FEATURE_PIX_ENABLED` | Pagamento via Pix (Mercado Pago) |
-| `NEXT_PUBLIC_FEATURE_STRIPE_ENABLED` | Pagamento via Cartão (Stripe) |
-| `NEXT_PUBLIC_FEATURE_WAITER_MODE` | Modo garçom/chamada de atendimento |
+| `NEXT_PUBLIC_FEATURE_PIX_ENABLED` | Pagamento via PIX (Mercado Pago) |
 | `NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED` | Leitura e geração de QR codes para mesas |
 | `NEXT_PUBLIC_FEATURE_COMBOS_ENABLED` | Sistema de combos/meal deals |
-| `NEXT_PUBLIC_FEATURE_ANALYTICS_ENABLED` | Dashboard de analytics e rastreamento de eventos |
-| `NEXT_PUBLIC_FEATURE_CASHBACK_ENABLED` | Sistema de cashback/recompensas |
 | `NEXT_PUBLIC_ENABLE_MULTI_RESTAURANT` | Suporte multi-restaurante (N:N usuário-restaurante) |
-
-**Uso no código:**
-
-```typescript
-import { isPixEnabled, isOfflineEnabled } from '@/lib/feature-flags';
-
-if (isPixEnabled()) {
-  // Mostrar opção de pagamento Pix
-}
-```
 
 ---
 
@@ -252,25 +210,7 @@ if (isPixEnabled()) {
 | **QR Code** | Assinatura HMAC-SHA256 para evitar falsificação |
 | **Isolamento PostgreSQL** | Políticas de acesso para isolamento de tenants |
 | **Webhook Idempotência** | Evita processamento duplicado de webhooks |
-| **Validação de Assinatura** | Webhooks Mercado Pago/Stripe validados |
-
-### Validação de Mesa (QR Code)
-
-O QR code codifica:
-```
-https://pedi.ai/menu?r={restauranteId}&m={mesaId}
-```
-
-Formato do payload:
-```typescript
-{
-  restauranteId: string;
-  mesaId: string;
-  timestamp: number;
-}
-```
-
-Assinatura: HMAC-SHA256 com `QR_SECRET_KEY`
+| **Validação de Assinatura** | Webhooks Mercado Pago validados |
 
 ---
 
@@ -298,49 +238,11 @@ Schema Prisma em `apps/api/prisma/schema.prisma`:
 
 ---
 
-## Regras do Projeto
-
-### Idioma
-- Todo código, UI, mensagens e documentação em **português brasileiro (pt-BR)**
-- Nomes de variáveis, funções e componentes em inglês (convenção técnica)
-- Mensagens de erro sempre em português
-
-### Design Responsivo
-- Mobile-first: desenvolver para mobile primeiro, escalar para desktop
-- Breakpoints: Mobile (< 640px), Tablet (640-1024px), Desktop (> 1024px)
-- Touch-friendly: botões mínimo 44x44px
-
-### CSS
-- Usar `rem` para tamanhos de fonte e espaçamento
-- Usar `em` para valores relativos ao elemento pai
-- Evitar `px` para tamanhos de fonte (exceto valores < 4px)
-- Usar CSS Custom Properties (variáveis)
-- Usar `clamp()` para valores fluidos
-
-### HTML Semântico
-- Heading hierarchy: apenas UM `h1` por página
-- Landmarks: `<header>`, `<nav>`, `<main>`, `<section>`, `<article>`, `<footer>`, `<aside>`
-- Listas: `<ul>` e `<li>` para listas de itens
-- Botões vs Links: `<button>` para ações, `<a>` para navegação
-
-### SEO
-- Metadata completa em todas as páginas: `title`, `description`, `og:*`, `twitter:*`, `robots`, `canonical`
-- Usar `next/image` com `alt` descritivo
-- URLs semânticas em minúsculas com hífens
-- Structured Data JSON-LD para Organization, WebSite, FAQPage, Restaurant
-
-### Testes
-- Cobertura mínima: **80%** para unit tests
-- Testes E2E devem ser atualizados IMEDIATAMENTE ao modificar qualquer funcionalidade
-- Todos os fluxos principais DEVEM ter teste E2E
-
----
-
 ## Comandos Principais
 
 ```bash
 # Desenvolvimento
-pnpm dev          # Rodar app
+pnpm dev          # Rodar app (Next.js :3000 + API :3001)
 pnpm build        # Build de produção
 pnpm start        # Start em produção
 
@@ -349,46 +251,13 @@ pnpm test         # Testes unitários (Vitest)
 pnpm test:watch   # Testes em watch mode
 pnpm test:coverage # Com cobertura
 
-# E2E (requer .env.e2e com PostgreSQL)
-pnpm test:e2e           # Rodar E2E (Chromium headless)
+# E2E (requer docker-compose up)
+pnpm test:e2e           # Rodar E2E
 pnpm test:e2e:seed     # Popular dados de teste
-pnpm test:e2e:cleanup   # Limpar dados de teste
 pnpm test:e2e:ui        # E2E com UI
-pnpm test:e2e:all       # E2E em todos os browsers
 
 # Lint
 pnpm lint           # ESLint
-pnpm format         # Prettier
-```
-
----
-
-## Variáveis de Ambiente
-
-```env
-# PostgreSQL (apps/api)
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/pedi_ai
-
-# API (apps/api)
-API_JWT_SECRET=seu_jwt_secret_minimo_32_chars
-
-# Mercado Pago (Pix)
-MERCADO_PAGO_ACCESS_TOKEN=seu_token
-MP_WEBHOOK_SECRET=seu_webhook_secret
-
-# Stripe (Cartão)
-STRIPE_SECRET_KEY=sk_test_xxx
-STRIPE_WEBHOOK_SECRET=whsec_xxx
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxx
-
-# QR Code
-QR_SECRET_KEY=sua_chave_secreta_para_hmac
-
-# Feature Flags (valores padrão: false)
-NEXT_PUBLIC_FEATURE_OFFLINE_ENABLED=true
-NEXT_PUBLIC_FEATURE_PIX_ENABLED=true
-NEXT_PUBLIC_FEATURE_STRIPE_ENABLED=true
-NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED=true
 ```
 
 ---
@@ -397,7 +266,7 @@ NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED=true
 
 1. **Este NÃO é o Next.js que você conhece** — Next.js 16 tem APIs e convenções diferentes. Leia `node_modules/next/dist/docs/` antes de escrever código.
 
-2. **Arquitetura DDD** — Todas as apps (`apps/web` e `apps/api`) DEVEM seguir arquitetura DDD em camadas. Código legacy em `services/` e `stores/` está em migração gradual.
+2. **Arquitetura DDD** — `apps/web` segue arquitetura DDD em camadas. Código legacy em `services/` e `stores/` foi migrado para `application/` e `infrastructure/`.
 
 3. **Código DDD é puro** — `domain/` não pode importar de frameworks ou bibliotecas de infra. É TypeScript puro.
 
@@ -405,9 +274,11 @@ NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED=true
 
 5. **Multi-tenant** — Restaurants são isolados no PostgreSQL. Queries DEVEM sempre filtrar por `restaurantId`.
 
-6. **Testes** — 517 testes unitários com 97%+ cobertura. Antes de merge, todos os testes DEVEM passar.
+6. **Testes** — 1441 testes unitários. Antes de merge, todos os testes DEVEM passar.
 
-7. **Acessibilidade** — Seguir regras de HTML semântico, ARIA labels, e hierarquia de headings.
+7. **Pagamentos** — Apenas PIX via Mercado Pago (sem Stripe).
+
+8. **Autenticação** — JWT com bcrypt via `PostgresAuthAdapter`.
 
 ---
 
@@ -416,11 +287,11 @@ NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED=true
 | Arquivo | Descrição |
 |---------|-----------|
 | `AGENTS.md` | Regras do projeto e convenções |
+| `CLAUDE.md` | Orientação para Claude Code |
 | `codemap.md` | Visão geral da arquitetura |
-| `src/app/codemap.md` | Estrutura de rotas |
-| `src/domain/*/codemap.md` | Bounded contexts DDD |
 | `README.md` | Documentação principal |
 | `docs/guides/ARCHITECTURE.md` | Guia de arquitetura DDD |
 | `docs/guides/OFFLINE.md` | Guia offline-first |
-| `docs/guides/PAYMENTS.md` | Guia de pagamentos |
+| `docs/guides/PAYMENTS.md` | Guia de pagamentos PIX |
 | `docs/guides/QR_CODE.md` | Guia de QR code |
+| `docs/guides/ROLES.md` | Guia de roles e permissões |
