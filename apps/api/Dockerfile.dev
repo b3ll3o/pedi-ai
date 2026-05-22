@@ -21,9 +21,9 @@ COPY apps/api ./apps/api
 RUN pnpm install --no-frozen-lockfile
 
 # Generate Prisma client
-RUN pnpm --filter @pedi-ai/api exec prisma generate --schema apps/api/prisma/schema.prisma
+RUN cd /app/apps/api && npx prisma@5.22.0 generate
 
 EXPOSE 3001
 
 # Development command with hot reload
-CMD ["sh", "-c", "pnpm --filter @pedi-ai/api exec prisma migrate deploy --schema apps/api/prisma/schema.prisma || pnpm --filter @pedi-ai/api exec prisma db push --accept-data-loss --schema apps/api/prisma/schema.prisma && pnpm --filter @pedi-ai/api start:dev"]
+CMD ["sh", "-c", "cd /app/apps/api && npx prisma@5.22.0 migrate deploy || npx prisma@5.22.0 db push --accept-data-loss && pnpm start:dev"]
