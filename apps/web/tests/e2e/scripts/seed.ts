@@ -17,8 +17,8 @@ import * as path from 'path'
 import * as fs from 'fs'
 import { randomBytes, createHmac, randomUUID } from 'crypto'
 
-// Carregar .env.e2e explicitamente
-dotenv.config({ path: path.join(process.cwd(), '.env.e2e') })
+// Carregar .env.e2e explicitamente (resolve relativo ao script, não ao cwd)
+dotenv.config({ path: path.join(__dirname, '..', '.env.e2e') })
 
 // ============================================
 // Configuração

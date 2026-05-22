@@ -1,4 +1,3 @@
-import { chromium, type BrowserContext } from '@playwright/test'
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import * as path from 'path'
@@ -7,95 +6,45 @@ import * as fs from 'fs'
 const execAsync = promisify(exec)
 
 /**
- * URLs to block in E2E tests to improve performance.
- * These are third-party resources that aren't needed for tests.
- */
-const BLOCKED_URLS = [
-  // Google Fonts
-  '**/fonts.googleapis.com/**',
-  '**/fonts.gstatic.com/**',
-  // Analytics
-  '**/google-analytics.com/**',
-  '**/googletagmanager.com/**',
-  '**/gtag/**',
-  '**/analytics/**',
-  // Facebook
-  '**/facebook.net/**',
-  '**/fbcdn.net/**',
-  '**/connect.facebook.net/**',
-  // Hotjar / Session Recording
-  '**/hotjar.com/**',
-  '**/static.hotjar.com/**',
-  // Intercom / Customer Support
-  '**/intercom.io/**',
-  '**/widget.intercom.io/**',
-  // Drift
-  '**/driftt.com/**',
-  // StatusPage
-  '**/statuspage.io/**',
-  // Other third-party scripts
-  '**/segment.com/**',
-  '**/segment.io/**',
-  '**/mixpanel.com/**',
-  '**/amplitude.com/**',
-  '**/optimizely.com/**',
-  '**/crazyegg.com/**',
-  '**/fullstory.com/**',
-]
-
-/**
- * Creates a context with network blocking enabled.
- */
-export async function createBlockedContext(
-  browser: import('@playwright/test').Browser,
-  options?: Parameters<import('@playwright/test').Browser['newPage']>[0]
-): Promise<BrowserContext> {
-  const context = await browser.newContext(options)
-
-  for (const pattern of BLOCKED_URLS) {
-    await context.route(pattern, (route) => {
-      route.abort()
-    })
-  }
-
-  return context
-}
-
-/**
  * Global setup for E2E tests.
+ *
+ * Responsabilities:
+ * 1. Validar DATABASE_URL
+ * 2. Executar seed com cache (criado pelo seed.ts)
+ *
+ * Tudo mais (pré-aquecimento do browser, escrita de cache de rede)
+ * foi removido — não agrega valor e adiciona tempo.
  */
 const globalSetup = async () => {
   console.log('========================================')
   console.log('🚀 E2E Global Setup')
   console.log('========================================\n')
 
-  // 1. Validate environment - check DATABASE_URL for PostgreSQL
+  // 1. Validar DATABASE_URL
   const databaseUrl = process.env.DATABASE_URL
-
   if (!databaseUrl) {
-    console.log('⚠️ DATABASE_URL not configured. Skipping E2E tests.')
-    console.log('Set DATABASE_URL environment variable to enable E2E tests.\n')
+    console.log('⚠️ DATABASE_URL não configurada. Pulando seed E2E.')
+    console.log('Defina DATABASE_URL no .env.e2e para executar os testes.\n')
     return
   }
 
-  // 2. Run seed to ensure test data exists
-  // Skip seed if already done (cache valid) - check seed result file directly
+  // 2. Seed com cache — seed.ts grava .seed-result.json que é verificado antes de rodar
   const seedResultPath = path.join(__dirname, 'scripts', '.seed-result.json')
   let seedValid = false
   try {
     if (fs.existsSync(seedResultPath)) {
       const result = JSON.parse(fs.readFileSync(seedResultPath, 'utf-8'))
       if (result.restaurant?.id && result.users?.customer?.id) {
-        console.log('✅ Seed cache valid, skipping seed execution')
+        console.log('✅ Seed cache válido, pulando seed.')
         seedValid = true
       }
     }
   } catch {
-    // File doesn't exist or invalid JSON
+    // Cache inválido, rodar seed
   }
 
   if (!seedValid) {
-    console.log('🌱 Running E2E seed...')
+    console.log('🌱 Executando seed E2E...')
     try {
       const { stdout, stderr } = await execAsync('pnpm test:e2e:seed', {
         cwd: path.join(__dirname, '..'),
@@ -103,46 +52,15 @@ const globalSetup = async () => {
       })
       if (stdout) console.log(stdout)
       if (stderr) console.warn(stderr)
-      console.log('✅ Seed completed successfully\n')
+      console.log('✅ Seed concluído.\n')
     } catch (error) {
-      console.error('❌ Seed failed:', error)
+      console.error('❌ Seed falhou:', error)
       throw error
     }
   }
 
-  // 3. Pre-warm browser with network blocking
-  console.log('🔰 Pre-warming browser with network blocking...')
-  try {
-    const browser = await chromium.launch()
-    const context = await createBlockedContext(browser)
-    const page = await context.newPage()
-    const baseUrl = process.env.BASE_URL || 'http://localhost:3000'
-
-    try {
-      await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 })
-    } catch {
-      // Ignore if server isn't running yet
-    }
-
-    await context.close()
-    await browser.close()
-    console.log('✅ Browser pre-warmed\n')
-  } catch (error) {
-    console.warn('⚠️ Browser pre-warm failed:', error)
-  }
-
-  // 4. Save blocked URLs for workers
-  const cacheDir = path.join(process.cwd(), '.playwright')
-  if (!fs.existsSync(cacheDir)) {
-    fs.mkdirSync(cacheDir, { recursive: true })
-  }
-  fs.writeFileSync(
-    path.join(cacheDir, '.network-blocked.json'),
-    JSON.stringify(BLOCKED_URLS)
-  )
-
   console.log('========================================')
-  console.log('✅ Global Setup Complete')
+  console.log('✅ Global Setup Completo')
   console.log('========================================\n')
 }
 

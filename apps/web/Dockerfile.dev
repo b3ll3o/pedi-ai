@@ -1,0 +1,35 @@
+# ============================================================
+# Next.js Web Dockerfile — Development (hot reload)
+# Build context: repo root (.)
+# ============================================================
+
+FROM node:20-alpine AS base
+
+RUN corepack enable && corepack prepare pnpm@9 --activate
+
+# Native build tools for sharp and other native modules
+RUN apk add --no-cache python3 make g++
+
+WORKDIR /app
+
+# Copy workspace files for monorepo resolution
+COPY pnpm-workspace.yaml ./
+
+# Copy packages (for monorepo deps resolution)
+COPY packages ./packages
+
+# Copy Next.js app source
+COPY apps/web/src ./src
+COPY apps/web/public ./public
+COPY apps/web/next.config.ts ./
+COPY apps/web/tsconfig.json ./
+COPY apps/web/next-env.d.ts ./
+COPY apps/web/package.json ./
+
+# Install dependencies
+RUN pnpm install --ignore-scripts
+
+EXPOSE 3000
+
+# Development command with hot reload
+CMD ["pnpm", "--filter", "@pedi-ai/web", "dev", "--host", "0.0.0.0", "--port", "3000"]

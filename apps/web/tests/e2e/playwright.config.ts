@@ -45,12 +45,11 @@ const _skipNewTests = process.env.E2E_SKIP_NEW_TESTS === 'true'
 
 export default defineConfig({
   testDir: path.resolve(__dirname, 'tests'),
-  fullyParallel: false,
+  fullyParallel: true,
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
-  // Use 1 worker locally to avoid IndexedDB conflicts between workers
-  // IndexedDB is shared between browser contexts and causes conflicts
-  workers: isCI ? 1 : 1,
+  // Local: usa 75% dos cores em paralelo. CI: 1 worker para estabilidade (base de dados compartilhado entre shards).
+  workers: isCI ? 1 : Math.max(1, Math.floor(os.cpus().length * 0.75)),
   shard: isCI && !shardMatch ? { current: 1, total: 4 } : { current: shardCurrent, total: shardTotal },
   globalSetup: path.join(__dirname, 'global-setup.ts'),
   globalTeardown: path.join(__dirname, 'global-teardown.ts'),

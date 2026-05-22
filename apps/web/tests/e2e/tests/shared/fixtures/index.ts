@@ -48,99 +48,6 @@ export interface SeedData {
  */
 const seedDataCache = new Map<number, SeedData>()
 
-/** TTL of 10 minutes for session cache (reduced from 1 hour for fresher data) */
-const STORAGE_TTL_MS = 10 * 60 * 1000
-
-/** Auth storage directory */
-const STORAGE_DIR = '.playwright/.auth'
-
-interface StorageMeta {
-  createdAt: number
-  email: string
-}
-
-function generateId(): string {
-  return Math.random().toString(36).substring(2, 15)
-}
-
-function _generateEmail(): string {
-  return `test-${generateId()}@pedi-ai.test`
-}
-
-/**
- * Ensures storage directory exists.
- */
-function ensureStorageDir(): void {
-  const dir = path.join(process.cwd(), STORAGE_DIR)
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true })
-  }
-}
-
-/**
- * Returns storage state file path for an email.
- */
-function getStoragePath(email: string): string {
-  ensureStorageDir()
-  const safeName = email.replace(/[^a-zA-Z0-9]/g, '_')
-  return path.join(process.cwd(), STORAGE_DIR, `${safeName}.json`)
-}
-
-/**
- * Returns storage metadata file path for an email.
- */
-function getMetaPath(email: string): string {
-  ensureStorageDir()
-  const safeName = email.replace(/[^a-zA-Z0-9]/g, '_')
-  return path.join(process.cwd(), STORAGE_DIR, `${safeName}.meta.json`)
-}
-
-/**
- * Loads existing storage state if valid (not expired).
- */
-async function _loadStorageState(email: string, page: Page): Promise<boolean> {
-  const storagePath = getStoragePath(email)
-  if (!isStorageValid(email) || !fs.existsSync(storagePath)) {
-    return false
-  }
-
-  try {
-    await page.context().addCookies([])
-    const storageState = JSON.parse(fs.readFileSync(storagePath, 'utf-8'))
-    if (storageState.cookies && storageState.cookies.length > 0) {
-      // Use storage state to restore session
-      return true
-    }
-  } catch {
-    // Invalid storage state
-  }
-  return false
-}
-
-/**
- * Checks if storage state is valid (exists and not expired).
- */
-function isStorageValid(email: string): boolean {
-  const metaPath = getMetaPath(email)
-  if (!fs.existsSync(metaPath)) return false
-
-  try {
-    const meta: StorageMeta = JSON.parse(fs.readFileSync(metaPath, 'utf-8'))
-    const now = Date.now()
-    return (now - meta.createdAt) < STORAGE_TTL_MS
-  } catch {
-    return false
-  }
-}
-
-/**
- * Saves storage metadata (creation timestamp).
- */
-function _writeStorageMeta(email: string): void {
-  const meta: StorageMeta = { createdAt: Date.now(), email }
-  fs.writeFileSync(getMetaPath(email), JSON.stringify(meta))
-}
-
 /**
  * Reads seed data from `.seed-result.json`.
  * Seed must be executed via `pnpm test:e2e:seed` before tests.
@@ -267,9 +174,7 @@ async function performLogin(
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type _AnyPage = any
 
-export const test = base.extend<Fixtures, { reuse: boolean }>({
-  reuse: [true, { scope: 'worker', option: true }],
-
+export const test = base.extend<Fixtures>({
   // Fresh browser context for each test to avoid state pollution
   freshPage: async ({ browser }, fixtureUse) => {
     const context = await browser.newContext({

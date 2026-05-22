@@ -1,0 +1,29 @@
+# ============================================================
+# NestJS API Dockerfile — Development (hot reload)
+# Build context: repo root (.)
+# ============================================================
+
+FROM node:20-alpine AS base
+
+RUN corepack enable && corepack prepare pnpm@9 --activate
+
+# Build tools for native modules (bcrypt, etc)
+RUN apk add --no-cache python3 make g++ wget
+
+WORKDIR /app
+
+# Copy workspace files
+COPY pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY packages ./packages
+COPY apps/api ./apps/api
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Generate Prisma client
+RUN cd /app/apps/api && npx prisma generate
+
+EXPOSE 3001
+
+# Development command with hot reload
+CMD ["sh", "-c", "cd /app/apps/api && npx prisma migrate deploy --schema prisma/schema.prisma || npx prisma db push --accept-data-loss --schema prisma/schema.prisma && pnpm --filter @pedi-ai/api start:dev"]
