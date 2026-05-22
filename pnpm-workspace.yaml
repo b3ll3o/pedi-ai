@@ -8,3 +8,8 @@ allowBuilds:
   esbuild: true
   sharp: true
   unrs-resolver: true
+  bcrypt: true
+  prisma: true
+  '@prisma/client': true
+  '@prisma/engines': true
+  '@nestjs/core': true
