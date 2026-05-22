@@ -31,4 +31,4 @@ RUN pnpm install --ignore-scripts
 EXPOSE 3000
 
 # Development command with hot reload
-CMD ["sh", "-c", "cd /app/apps/web && pnpm dev --host 0.0.0.0 --port 3000"]
+CMD ["sh", "-c", "pnpm dev --host 0.0.0.0 --port 3000"]
