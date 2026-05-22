@@ -1,0 +1,23 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          known_hosts: github.com,${{ secrets.VPS_HOST }}
+          script: |
+            cd pedi-ai
+            git pull origin master
+            docker compose -f docker-compose.dev.yml down
+            docker compose -f docker-compose.dev.yml up -d --build
