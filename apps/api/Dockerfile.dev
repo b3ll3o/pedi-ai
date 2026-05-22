@@ -5,7 +5,7 @@
 
 FROM node:20-slim AS base
 
-RUN corepack enable && corepack prepare pnpm@11 --activate
+RUN corepack enable && corepack prepare pnpm@9 --activate
 
 # Build tools for native modules (bcrypt, prisma) and curl for healthcheck
 RUN apt-get update && apt-get install -y python3 make g++ wget curl && rm -rf /var/lib/apt/lists/*
