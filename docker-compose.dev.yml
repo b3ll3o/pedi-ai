@@ -87,7 +87,7 @@ services:
       - ./apps/web/src:/app/src:ro
       - ./packages:/app/packages:ro
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:3000/ || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:3000/api/health || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
