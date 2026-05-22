@@ -33,7 +33,7 @@ function hashSenha(senha: string, salt: string): string {
  * Em produção, considere usar um serviço dedicado como Auth0, Clerk, etc.
  */
 export class PostgresAuthAdapter implements IAuthAdapter {
-  static async criarUsuario(email: string, senha: string): Promise<{ id: string }> {
+  async criarUsuario(email: string, senha: string): Promise<{ id: string }> {
     // Validar senha
     if (senha.length < 6) {
       throw new Error('A senha deve ter pelo menos 6 caracteres');
@@ -59,7 +59,7 @@ export class PostgresAuthAdapter implements IAuthAdapter {
     }
   }
 
-  static async confirmarEmail(userId: string): Promise<void> {
+  async confirmarEmail(userId: string): Promise<void> {
     // Em uma implementação real, verificaríamos token de confirmação
     // Por agora, apenas marcamos como confirmado
     await sql`
@@ -68,27 +68,22 @@ export class PostgresAuthAdapter implements IAuthAdapter {
     `;
   }
 
-  static async enviarRedefinicaoSenha(email: string): Promise<{ success: boolean; error?: string }> {
-    try {
-      // Gerar token de redefinição
-      const token = randomBytes(32).toString('hex');
-      const expiresAt = new Date(Date.now() + 3600000); // 1 hora
+  async enviarRedefinicaoSenha(email: string): Promise<void> {
+    // Gerar token de redefinição
+    const token = randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 3600000); // 1 hora
 
-      await sql`
-        INSERT INTO password_reset_tokens (token, email, expires_at, used)
-        VALUES (${token}, ${email}, ${expiresAt.toISOString()}, false)
-      `;
+    await sql`
+      INSERT INTO password_reset_tokens (token, email, expires_at, used)
+      VALUES (${token}, ${email}, ${expiresAt.toISOString()}, false)
+    `;
 
-      // Em produção, enviar email com link de redefinição
-      // Por enquanto, apenas logamos
-      console.log(`Password reset token for ${email}: ${token}`);
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' };
-    }
+    // Em produção, enviar email com link de redefinição
+    // Por enquanto, apenas logamos
+    console.log(`Password reset token for ${email}: ${token}`);
   }
 
-  static async validarToken(token: string): Promise<{ valido: boolean; usuarioId?: string }> {
+  async validarToken(token: string): Promise<{ valido: boolean; usuarioId?: string }> {
     try {
       const result = await sql<{ user_id: string }>`
         SELECT user_id FROM sessions WHERE token = ${token} AND expires_at > NOW() LIMIT 1
@@ -104,7 +99,7 @@ export class PostgresAuthAdapter implements IAuthAdapter {
     }
   }
 
-  static async autenticar(email: string, senha: string): Promise<{ token: string; usuarioId: string }> {
+  async autenticar(email: string, senha: string): Promise<{ token: string; usuarioId: string }> {
     try {
       // Buscar usuário
       const users = await sql<{ id: string; password_hash: string; salt: string }>`

@@ -3,13 +3,21 @@
 import { useState, useMemo } from 'react';
 import styles from './ProductList.module.css';
 
-export type Product = Record<string, any>;
+export interface ProductListProduct {
+  id: string;
+  name: string;
+  description?: string | null;
+  price: number;
+  available: boolean;
+  dietary_labels?: string[];
+  [key: string]: any;
+}
 
 interface ProductListProps {
-  products: Product[];
-  onEdit: (product: Product) => void;
+  products: ProductListProduct[];
+  onEdit: (product: any) => void;
   onDelete: (id: string) => void;
-  onToggleAvailability: (product: Product) => void;
+  onToggleAvailability: (product: any) => void;
 }
 
 export function ProductList({
@@ -91,7 +99,7 @@ export function ProductList({
                 <span className={styles.price}>{formatPrice(product.price)}</span>
                 {product.dietary_labels && product.dietary_labels.length > 0 && (
                   <div className={styles.labels}>
-                    {product.dietary_labels.map((label) => (
+                    {product.dietary_labels.map((label: string) => (
                       <span key={label} className={styles.label}>
                         {label}
                       </span>

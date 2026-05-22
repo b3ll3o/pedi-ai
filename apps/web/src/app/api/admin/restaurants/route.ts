@@ -18,7 +18,7 @@ export async function GET() {
 
     const restaurantIds = profilesResult
       .map((p: { restaurant_id: string | null }) => p.restaurant_id)
-      .filter((id): id is string => id !== null);
+      .filter((id: string | null): id is string => id !== null);
 
     if (restaurantIds.length === 0) {
       return NextResponse.json({ restaurants: [] });

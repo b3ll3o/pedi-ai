@@ -4,7 +4,7 @@ import { getSession } from '@/lib/auth/session';
 
 export interface OpeningHours {
   open: string;
-  close: string;
+  close?: string;
 }
 
 export interface RestaurantSettings {

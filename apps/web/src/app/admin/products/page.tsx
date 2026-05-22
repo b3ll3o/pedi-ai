@@ -4,18 +4,13 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSession } from '@/lib/auth/client';
 import { useRestaurantStore } from '@/infrastructure/persistence/restaurantStore';
-import { ProductList } from '@/components/admin/ProductList';
+import { ProductList, type ProductListProduct } from '@/components/admin/ProductList';
 import { ProductForm, type ProductInput } from '@/components/admin/ProductForm';
 import styles from './page.module.css';
 
 type ToastType = 'success' | 'error' | null;
 
-interface Product {
-  id: string;
-  name: string;
-  description?: string | null;
-  price: number;
-  available: boolean;
+interface Product extends ProductListProduct {
   categoryId: string;
   imageUrl?: string | null;
 }

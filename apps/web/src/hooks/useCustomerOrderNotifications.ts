@@ -134,11 +134,11 @@ export function useCustomerOrderNotifications({
     };
 
     if (socketConnected) {
-      on('orderUpdate', handleOrderUpdate);
+      on('orderUpdate', handleOrderUpdate as (...args: unknown[]) => void);
     }
 
     return () => {
-      off('orderUpdate', handleOrderUpdate);
+      off('orderUpdate', handleOrderUpdate as (...args: unknown[]) => void);
     };
   }, [socketConnected, orderIds, handleOrderUpdated, on, off]);
 

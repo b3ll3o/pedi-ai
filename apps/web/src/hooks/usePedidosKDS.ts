@@ -136,11 +136,11 @@ export function usePedidosKDS({
     };
 
     if (socketConnected) {
-      on('newOrder', handleNewOrder);
+      on('newOrder', handleNewOrder as (...args: unknown[]) => void);
     }
 
     return () => {
-      off('newOrder', handleNewOrder);
+      off('newOrder', handleNewOrder as (...args: unknown[]) => void);
     };
   }, [socketConnected, restauranteId, queryClient, somAtivado, on, off]);
 

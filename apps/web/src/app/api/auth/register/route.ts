@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create user using PostgresAuthAdapter
-    const resultado = await PostgresAuthAdapter.criarUsuario(email, senha);
+    const resultado = await new PostgresAuthAdapter().criarUsuario(email, senha);
 
     if (!resultado || !resultado.id) {
       return NextResponse.json(

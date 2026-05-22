@@ -212,7 +212,7 @@ export default function SettingsPage() {
               <input
                 id="hours-open"
                 type="time"
-                value={formData.opening_hours.open}
+                value={formData.opening_hours!.open}
                 onChange={(e) => handleHoursChange('open', e.target.value)}
               />
             </div>
@@ -222,7 +222,7 @@ export default function SettingsPage() {
               <input
                 id="hours-close"
                 type="time"
-                value={formData.opening_hours.close}
+                value={formData.opening_hours!.close}
                 onChange={(e) => handleHoursChange('close', e.target.value)}
               />
             </div>

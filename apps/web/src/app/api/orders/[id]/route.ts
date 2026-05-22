@@ -85,7 +85,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       id: order.id,
       status: order.status as OrderStatus,
       payment_status: order.payment_status as PaymentStatus,
-      items: itemsResult.map((item) => ({
+      items: itemsResult.map((item: OrderItemResponse) => ({
         id: item.id,
         order_id: item.order_id,
         product_id: item.product_id,
@@ -95,7 +95,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         total_price: item.total_price,
         notes: item.notes,
       })),
-      status_history: historyResult.map((entry) => ({
+      status_history: historyResult.map((entry: { id: string; status: string; notes: string | null; created_at: string }) => ({
         id: entry.id,
         status: entry.status as OrderStatus,
         notes: entry.notes,

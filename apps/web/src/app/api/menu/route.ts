@@ -92,8 +92,8 @@ export async function GET(request: NextRequest) {
     `;
 
     // Filter products by restaurant_id via category join
-    const categoryIds = categoriesData.map((c) => c.id);
-    const filteredProducts = productsData.filter((p) => categoryIds.includes(p.category_id));
+    const categoryIds = categoriesData.map((c: { id: string; restaurant_id: string; name: string; description: string | null; image_url: string | null; sort_order: number; active: boolean }) => c.id);
+    const filteredProducts = productsData.filter((p: { id: string; category_id: string; name: string; description: string | null; image_url: string | null; price: number; available: boolean; sort_order: number; dietary_labels: string[] | null }) => categoryIds.includes(p.category_id));
 
     // Fetch modifier groups
     const modifierGroupsData = await sql<{
@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
     `;
 
     // Fetch modifier values
-    const modifierGroupIds = modifierGroupsData.map((mg) => mg.id);
+    const modifierGroupIds = modifierGroupsData.map((mg: { id: string; restaurant_id: string; name: string; required: boolean; min_selections: number; max_selections: number }) => mg.id);
     const modifierValuesData =
       modifierGroupIds.length > 0
         ? await sql<{
@@ -127,7 +127,7 @@ export async function GET(request: NextRequest) {
         : [];
 
     // Nest modifier values within groups
-    const modifierGroupsWithValues = modifierGroupsData.map((mg) => ({
+    const modifierGroupsWithValues = modifierGroupsData.map((mg: { id: string; restaurant_id: string; name: string; required: boolean; min_selections: number; max_selections: number }) => ({
       id: mg.id,
       restaurant_id: mg.restaurant_id,
       name: mg.name,
@@ -135,8 +135,8 @@ export async function GET(request: NextRequest) {
       min_selections: mg.min_selections,
       max_selections: mg.max_selections,
       modifier_values: modifierValuesData
-        .filter((mv) => mv.modifier_group_id === mg.id)
-        .map((mv) => ({
+        .filter((mv: { id: string; modifier_group_id: string; name: string; price_adjustment: number; available: boolean }) => mv.modifier_group_id === mg.id)
+        .map((mv: { id: string; modifier_group_id: string; name: string; price_adjustment: number; available: boolean }) => ({
           id: mv.id,
           name: mv.name,
           price_adjustment: mv.price_adjustment,

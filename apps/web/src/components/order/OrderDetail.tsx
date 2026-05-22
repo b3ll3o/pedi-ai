@@ -9,11 +9,20 @@ interface OrderDetailProps {
 }
 
 interface OrderItem {
+  id: string;
+  product_id: string;
   productName?: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+  notes?: string;
 }
 
 interface StatusHistoryEntry {
+  id: string;
+  status: string;
   created_at: string;
+  notes?: string;
 }
 
 interface OrderData {

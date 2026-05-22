@@ -55,7 +55,7 @@ export function OrderCard({
       </header>
 
       <ul className={styles.items} aria-label="Itens do pedido">
-        {order.items?.slice(0, 3).map((item) => (
+        {order.items?.slice(0, 3).map((item: { id: string; product_id: string; quantity: number }) => (
           <li key={item.id} className={styles.item}>
             <span className={styles.itemQty}>{item.quantity}x</span>
             <span className={styles.itemName}>#{item.product_id.slice(-6)} - Item</span>

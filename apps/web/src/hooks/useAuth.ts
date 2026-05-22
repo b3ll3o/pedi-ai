@@ -58,7 +58,7 @@ export function useAuth(): UseAuthReturn {
         if (isMounted) {
           if (sessionData) {
             setUser(sessionData.user);
-            setSession({ user: sessionData.user, token: sessionData.token });
+            setSession({ user: sessionData.user, token: '' });
           } else {
             setUser(null);
             setSession(null);
@@ -89,10 +89,13 @@ export function useAuth(): UseAuthReturn {
     setError(null);
     try {
       const result = await login(email, password);
+      if (result.error) {
+        throw new Error(result.error);
+      }
       const sessionData = await getSession();
       if (sessionData) {
         setUser(sessionData.user);
-        setSession({ user: sessionData.user, token: result.token });
+        setSession({ user: sessionData.user, token: '' });
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Falha na autenticação';

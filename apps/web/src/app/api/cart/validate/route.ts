@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     `;
 
     const modifierGroupIds = [
-      ...new Set(productModifierGroupsData.map((pmg) => String(pmg.modifier_group_id))),
+      ...new Set(productModifierGroupsData.map((pmg: { modifier_group_id: string }) => String(pmg.modifier_group_id))),
     ];
 
     // Get required modifier groups
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
     const requiredModifiersByProduct = new Map<string, typeof modifierGroups>();
     for (const mg of modifierGroups) {
       const productModifierGroup = productModifierGroupsData.find(
-        (pmg) => String(pmg.modifier_group_id) === String(mg.id)
+        (pmg: { product_id: string; modifier_group_id: string }) => String(pmg.modifier_group_id) === String(mg.id)
       );
       if (productModifierGroup) {
         const existing =

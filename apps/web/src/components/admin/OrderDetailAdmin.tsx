@@ -99,9 +99,9 @@ export function OrderDetailAdmin({ order, onUpdateStatus, onCancel }: OrderDetai
           <h1 className={styles.title}>Pedido #{order.id.slice(0, 8)}</h1>
           <span
             className={styles.statusBadge}
-            style={{ backgroundColor: STATUS_COLORS[order.status] }}
+            style={{ backgroundColor: STATUS_COLORS[order.status as OrderStatus] }}
           >
-            {STATUS_LABELS[order.status]}
+            {STATUS_LABELS[order.status as OrderStatus]}
           </span>
         </div>
       </div>
@@ -112,7 +112,7 @@ export function OrderDetailAdmin({ order, onUpdateStatus, onCancel }: OrderDetai
           <div className={styles.section}>
             <h2 className={styles.sectionTitle}>Itens do Pedido</h2>
             <div className={styles.itemsList}>
-              {order.items?.map((item) => (
+              {order.items?.map((item: { id: string; product_id: string; quantity: number; unit_price: number }) => (
                 <div key={item.id} className={styles.item}>
                   <div className={styles.itemInfo}>
                     <span className={styles.itemQuantity}>{item.quantity}x</span>
@@ -195,7 +195,7 @@ export function OrderDetailAdmin({ order, onUpdateStatus, onCancel }: OrderDetai
             <div className={styles.section}>
               <h2 className={styles.sectionTitle}>Histórico</h2>
               <div className={styles.historyList}>
-                {order.status_history.map((entry) => (
+                {order.status_history.map((entry: { id: string; status: string; notes: string | null; created_at: string }) => (
                   <div key={entry.id} className={styles.historyItem}>
                     <span
                       className={styles.historyStatus}

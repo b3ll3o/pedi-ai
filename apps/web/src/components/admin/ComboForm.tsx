@@ -5,9 +5,10 @@ import Image from 'next/image';
 import styles from './ComboForm.module.css';
 
 // TODO: Implement file upload via API route (Supabase Storage removed)
-async function uploadProductImage(_file: File): Promise<string> {
+async function uploadProductImage(_file: File, _onProgress?: { onProgress: (info: { fraction: number }) => void }): Promise<{ url: string }> {
   console.warn('uploadProductImage: Storage não disponível - implementação via API pendente');
-  return '';
+  _onProgress?.onProgress({ fraction: 1 });
+  return { url: '' };
 }
 async function deleteProductImage(_url: string): Promise<void> {
   console.warn('deleteProductImage: Storage não disponível');
@@ -42,7 +43,7 @@ export function ComboForm({ combo, products, onSubmit, onCancel }: ComboFormProp
   // Map existing combo_items to product selections
   const [selectedProducts, setSelectedProducts] = useState<Record<string, number>>(() => {
     const initial: Record<string, number> = {};
-    combo?.combo_items?.forEach((item) => {
+    combo?.combo_items?.forEach((item: { product_id: string; quantity: number }) => {
       initial[item.product_id] = item.quantity;
     });
     return initial;

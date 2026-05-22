@@ -18,14 +18,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ResetPass
     }
 
     // Send password reset email using PostgresAuthAdapter
-    const resultado = await PostgresAuthAdapter.enviarRedefinicaoSenha(email);
-
-    if (!resultado?.success) {
-      return NextResponse.json(
-        { success: false, error: resultado?.error || 'Erro ao solicitar recuperação de senha' },
-        { status: 400 }
-      );
-    }
+    await new PostgresAuthAdapter().enviarRedefinicaoSenha(email);
 
     return NextResponse.json(
       { success: true, message: 'Email de recuperação enviado' },

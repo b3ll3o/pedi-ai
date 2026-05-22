@@ -18,7 +18,7 @@ export async function GET() {
     `;
 
     const response = {
-      restaurants: result.map((r) => ({
+      restaurants: result.map((r: { id: string; name: string; description: string | null; address: string | null; phone: string | null; logo_url: string | null; settings: Record<string, unknown> | null }) => ({
         id: r.id,
         name: r.name,
         description: r.description,

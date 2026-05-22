@@ -25,8 +25,7 @@ if (!connectionString) {
   const dummyFn = (..._args: unknown[]) => {
     throw new Error('DATABASE_URL environment variable is not set');
   };
-  sql = dummyFn as DummySql;
-  sql.__brand = 'dummy';
+  sql = dummyFn as unknown as DummySql;
 } else {
   // Create postgres.js client with connection pooling
   sql = postgres(connectionString, {

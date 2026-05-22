@@ -53,6 +53,7 @@ const mockUser = {
 
 const mockSession = {
   user: mockUser,
+  token: '',
 };
 
 describe('useAuth hook', () => {

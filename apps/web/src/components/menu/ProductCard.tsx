@@ -143,7 +143,7 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
 
             {product.dietary_labels && product.dietary_labels.length > 0 && (
               <div className={styles.badges}>
-                {product.dietary_labels.slice(0, 3).map((label) => {
+                {product.dietary_labels.slice(0, 3).map((label: string) => {
                   const labelInfo = DIETARY_LABELS[label.toLowerCase()];
                   return (
                     <span

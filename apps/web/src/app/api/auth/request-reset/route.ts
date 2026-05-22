@@ -12,14 +12,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Request password reset using PostgresAuthAdapter
-    const resultado = await PostgresAuthAdapter.enviarRedefinicaoSenha(email);
-
-    if (!resultado?.success) {
-      return NextResponse.json(
-        { error: resultado?.error || 'Erro ao solicitar recuperação de senha' },
-        { status: 400 }
-      );
-    }
+    await new PostgresAuthAdapter().enviarRedefinicaoSenha(email);
 
     return NextResponse.json({ success: true, message: 'Email de recuperação enviado' });
   } catch (error) {

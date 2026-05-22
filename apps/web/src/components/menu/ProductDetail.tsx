@@ -215,7 +215,7 @@ export function ProductDetail({ productId, restaurantId, onAddToCart }: ProductD
 
         {product.dietary_labels && product.dietary_labels.length > 0 && (
           <div className={styles.badges}>
-            {product.dietary_labels.map((label) => {
+            {product.dietary_labels.map((label: string) => {
               const labelInfo = DIETARY_LABELS[label.toLowerCase()];
               return (
                 <span
@@ -238,7 +238,7 @@ export function ProductDetail({ productId, restaurantId, onAddToCart }: ProductD
         {product.modifier_groups && product.modifier_groups.length > 0 && (
           <div className={styles.modifiersSection}>
             <h3 className={styles.modifiersTitle}>Personalize seu pedido</h3>
-            {product.modifier_groups.map((group) => (
+            {product.modifier_groups.map((group: { id: string; name: string; required: boolean; min_selections: number; max_selections: number; values: Array<{ id: string; name: string; price_adjustment: number }> }) => (
               <ModifierSelector
                 key={group.id}
                  

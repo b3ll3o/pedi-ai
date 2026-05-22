@@ -78,7 +78,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       WHERE product_id = ${id}
     `;
 
-    const modifierGroupIds = productModifierGroupsResult.map((pmg) => pmg.modifier_group_id);
+    const modifierGroupIds = productModifierGroupsResult.map((pmg: { product_id: string; modifier_group_id: string }) => pmg.modifier_group_id);
 
     // Fetch modifier groups
     const modifierGroupsData =
@@ -121,15 +121,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       dietary_labels: product.dietary_labels,
       available: product.available,
       category: { id: category.id, name: category.name },
-      modifier_groups: modifierGroupsData.map((mg) => ({
+      modifier_groups: modifierGroupsData.map((mg: { id: string; name: string; required: boolean; min_selections: number; max_selections: number }) => ({
         id: mg.id,
         name: mg.name,
         required: mg.required,
         min_selections: mg.min_selections,
         max_selections: mg.max_selections,
         values: modifierValuesData
-          .filter((mv) => mv.modifier_group_id === mg.id)
-          .map((mv) => ({
+          .filter((mv: { id: string; modifier_group_id: string; name: string; price_adjustment: number }) => mv.modifier_group_id === mg.id)
+          .map((mv: { id: string; modifier_group_id: string; name: string; price_adjustment: number }) => ({
             id: mv.id,
             name: mv.name,
             price_adjustment: mv.price_adjustment,

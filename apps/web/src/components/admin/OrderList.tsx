@@ -122,15 +122,15 @@ export function OrderList({ orders, onViewDetails, onUpdateStatus, isLoading }: 
         </div>
       ) : (
         <div className={styles.list} data-testid="admin-order-item">
-          {filtered.map((order) => (
+          {filtered.map((order: OrderWithItems) => (
             <div key={order.id} className={styles.orderCard} data-testid="order-card">
               <div className={styles.orderHeader}>
                 <span
                   className={styles.statusBadge}
-                  style={{ backgroundColor: STATUS_COLORS[order.status] }}
+                  style={{ backgroundColor: STATUS_COLORS[order.status as OrderStatus] }}
                   data-testid="order-status"
                 >
-                  {STATUS_LABELS[order.status]}
+                  {STATUS_LABELS[order.status as OrderStatus]}
                 </span>
                 <span className={styles.orderId} data-testid="order-id">
                   #{order.id.slice(0, 8)}

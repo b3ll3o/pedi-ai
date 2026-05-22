@@ -5,9 +5,10 @@ import Image from 'next/image';
 import styles from './ProductForm.module.css';
 
 // TODO: Implement file upload via API route (Supabase Storage removed)
-async function uploadProductImage(_file: File): Promise<string> {
+async function uploadProductImage(_file: File, _onProgress?: { onProgress: (info: { fraction: number }) => void }): Promise<{ url: string }> {
   console.warn('uploadProductImage: Storage não disponível - implementação via API pendente');
-  return '';
+  _onProgress?.onProgress({ fraction: 1 });
+  return { url: '' };
 }
 async function deleteProductImage(_url: string): Promise<void> {
   console.warn('deleteProductImage: Storage não disponível');

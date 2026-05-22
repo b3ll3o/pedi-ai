@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Authenticate using PostgresAuthAdapter
-    const resultado = await PostgresAuthAdapter.autenticar(email, senha);
+    const resultado = await new PostgresAuthAdapter().autenticar(email, senha);
 
     if (!resultado || !resultado.token) {
       return NextResponse.json(
