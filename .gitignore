@@ -70,9 +70,12 @@ Thumbs.db
 pnpm-lock.yamldata/
 package-lock.json
 
-# Workspace node_modules (pnpm hoists to root)
+# Workspace node_modules
 /apps/*/node_modules
 /packages/*/node_modules
+apps/api/node_modules
+apps/web/node_modules
+packages/shared/node_modules
 
 # Build outputs
 apps/web/.next
