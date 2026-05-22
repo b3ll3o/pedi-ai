@@ -44,7 +44,7 @@ services:
     container_name: pedi_ai_api
     restart: unless-stopped
     ports:
-      - "3001:3001"
+      - "127.0.0.1:3001:3001"
     depends_on:
       postgres:
         condition: service_healthy
