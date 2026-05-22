@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_response.filePath // .tool_input.file_path' 2>/dev/null | { read -r f; case \"$f\" in *.ts|*.tsx|*.js|*.jsx|*.css|*.json|*.md) npx prettier --write \"$f\" 2>/dev/null ;; esac } || true",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
