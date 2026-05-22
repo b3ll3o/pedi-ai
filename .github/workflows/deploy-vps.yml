@@ -20,6 +20,17 @@ jobs:
             ssh-keyscan -H github.com >> ~/.ssh/known_hosts 2>/dev/null
             ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
             cd pedi-ai
+
+            # Copy nginx config
+            sudo cp infrastructure/nginx/nginx.dev.conf /etc/nginx/sites-available/pedi-ai
+            sudo ln -sf /etc/nginx/sites-available/pedi-ai /etc/nginx/sites-enabled/pedi-ai
+
+            # Pull latest changes
             git pull origin master
+
+            # Stop and restart containers
             docker compose -f docker-compose.dev.yml down
             docker compose -f docker-compose.dev.yml up -d --build
+
+            # Restart nginx to pick up new config
+            sudo systemctl reload nginx
