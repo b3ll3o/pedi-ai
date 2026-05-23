@@ -16,9 +16,8 @@ const LOG_LEVELS: Record<LogLevel, number> = {
 };
 
 function getCurrentLevel(): LogLevel {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const isProd = (process.env as any).NODE_ENV === 'production';
-  return isProd ? 'warn' : 'debug';
+  const nodeEnv = typeof process !== 'undefined' ? process.env?.NODE_ENV : undefined;
+  return nodeEnv === 'production' ? 'warn' : 'debug';
 }
 
 function formatMessage(level: LogLevel, context: string, message: string, meta?: unknown): string {
