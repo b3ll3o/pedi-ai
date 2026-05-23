@@ -157,14 +157,15 @@ export function usePedidosKDS({
         clearInterval(pollingRef.current);
         pollingRef.current = null;
       }
-      /* eslint-disable react-hooks/set-state-in-effect */
+      // Necessário para resetar estado quando enabled=false ou restauranteId muda
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsConnected(false);
       return;
     }
 
     setError(null);
 
-    // Use socket if connected, otherwise fall back to polling
+    // Socket conectado: atualiza UI e para polling
     if (socketConnected) {
       setIsConnected(true);
       if (pollingRef.current) {
@@ -172,6 +173,7 @@ export function usePedidosKDS({
         pollingRef.current = null;
       }
     } else {
+      // Sem socket: polling fallback e estado desconectado
       setIsConnected(false);
 
       const startPolling = () => {
@@ -179,8 +181,14 @@ export function usePedidosKDS({
           clearInterval(pollingRef.current);
         }
         pollingRef.current = setInterval(() => {
-          // Check for new orders to play sound
-          const currentOrderIds = new Set((data || []).map((o) => o.id).filter(Boolean));
+          // Lê dados diretamente do cache do React Query para evitar dependência de data
+          const cachedData = queryClient.getQueryData<OrderWithItems[]>([
+            'kds-pedidos',
+            restauranteId,
+          ]);
+          const currentOrderIds = new Set(
+            (cachedData || []).map((o: OrderWithItems) => o.id).filter(Boolean)
+          ) as Set<string>;
 
           // Detect new orders
           currentOrderIds.forEach((orderId) => {
@@ -208,7 +216,7 @@ export function usePedidosKDS({
         pollingRef.current = null;
       }
     };
-  }, [enabled, restauranteId, queryClient, somAtivado, data, socketConnected]);
+  }, [enabled, restauranteId, queryClient, somAtivado, socketConnected]);
 
   const pedidosProcessados = useMemo<PedidoKDS[]>(() => {
     return (data || []).map((pedido) => {
