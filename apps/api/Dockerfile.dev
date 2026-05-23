@@ -18,9 +18,9 @@ COPY apps/api ./apps/api
 RUN pnpm install --no-frozen-lockfile
 
 # Generate Prisma client
-RUN cd /app/apps/api && pnpm exec prisma@5.22.0 generate
+RUN cd /app/apps/api && pnpm exec prisma generate
 
 EXPOSE 3001
 
 # Development command with hot reload
-CMD ["sh", "-c", "cd /app/apps/api && pnpm exec prisma@5.22.0 migrate deploy || pnpm exec prisma@5.22.0 db push --accept-data-loss && pnpm start:dev"]
+CMD ["sh", "-c", "cd /app/apps/api && pnpm exec prisma migrate deploy || pnpm exec prisma db push --accept-data-loss && pnpm start:dev"]
