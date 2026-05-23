@@ -9,7 +9,7 @@ O Pedi-AI utiliza **Socket.io** para receber atualizações de pedidos em tempo 
 ## 1. Arquitetura
 
 ### Stack
-- **Server**: `@nestjs/websockets` + `socket.io` (v4.8.3)
+- **Server**: `@nestjs/websockets` + `socket.io` (v11.x)
 - **Client**: `socket.io-client` (v4.x)
 
 ### Diagrama

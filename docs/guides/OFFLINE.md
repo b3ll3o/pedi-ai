@@ -1,7 +1,7 @@
 # Guia de Implementação Offline-First — Pedi-AI
 
-> **Última atualização:** 2026-04-28  
-> **Versão do Service Worker:** Workbox 8.x  
+> **Última atualização:** 2026-05-23  
+> **Versão do Service Worker:** Workbox 7.4.1  
 > **Banco local:** Dexie (IndexedDB)
 
 ---

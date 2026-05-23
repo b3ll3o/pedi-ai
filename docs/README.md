@@ -35,8 +35,7 @@
 | [CI_CD.md](guides/CI_CD.md)                                 | GitHub Actions, docker-compose, deploy VPS              | Configurar/modificar pipeline de CI/CD               |
 | [DDD_MIGRACAO_API.md](guides/DDD_MIGRACAO_API.md)           | Plano de migração DDD do apps/api                       | Migrar API para arquitetura DDD                      |
 | [ESLINT_BEST_PRACTICES.md](guides/ESLINT_BEST_PRACTICES.md) | Regras ESLint, complexity threshold                     | Manter qualidade de código                           |
-| [SOFT_DELETE.md](guides/SOFT_DELETE.md)                     | Soft delete pattern (deletedAt, archived)               | Implementar exclusão reversível                      |
-| [SUBSCRIPTIONS.md](guides/SUBSCRIPTIONS.md)                 | Sistema de assinaturas, trial, planos                   | Implementar/modificar assinaturas                    |
+|| [SOFT_DELETE.md](guides/SOFT_DELETE.md)                     | Soft delete pattern (deletedAt, archived)               | Implementar exclusão reversível                      |
 | [PUBLIC_NAVIGATION.md](guides/PUBLIC_NAVIGATION.md)         | Navegação pública vs protegida, middleware              | Implementar rotas públicas e auth                    |
 
 ### Fluxos Detalhados
@@ -87,8 +86,7 @@ docs/
     ├── QR_CODE.md
     ├── REALTIME.md
     ├── ROLES.md
-    ├── SOFT_DELETE.md
-    └── SUBSCRIPTIONS.md
+    └── SOFT_DELETE.md
 ```
 
 ---
@@ -100,7 +98,7 @@ docs/
 ```
 1. Clone o repositório
 2. Execute `pnpm install`
-3. Copie `.env.local.example` → `.env.local`
+3. Copie `.env.example` → `.env.local`
 4. Configure PostgreSQL: DATABASE_URL
 5. (Opcional) Configure Mailpit: MAILPIT_SETUP.md
 6. Execute `pnpm dev`
@@ -134,7 +132,7 @@ docs/
 
 ```
 1. Consulte ROLES.md para RBAC e multi-tenant
-2. Veja REALTIME.md para como roles afetam subscriptions
+2. Veja REALTIME.md para updates em tempo real de pedidos
 ```
 
 ---
@@ -154,7 +152,7 @@ pnpm dev
 pnpm build
 
 # Tests
-pnpm test:unit        # Unit tests (116 files, 1443 tests)
+pnpm test:unit        # Unit tests (126 files, 1549 tests)
 pnpm test:coverage    # Coverage report (thresholds: 80%)
 
 # E2E (requer .env.e2e configurado)
@@ -174,6 +172,7 @@ DATABASE_URL=postgresql://user:***@localhost:5432/pedi
 
 # Auth
 JWT_SECRET=
+JWT_REFRESH_SECRET=
 
 # API
 NEXT_PUBLIC_API_URL=http://localhost:3001

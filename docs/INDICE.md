@@ -38,10 +38,9 @@
 | **MOBILE_PWA**            | `./guides/MOBILE_PWA.md`            | Mobile-first, PWA, safe areas iOS, CSS responsive, touch targets                      | Desenvolver UI responsiva e PWA                    |
 | **LIGHTHOUSE**            | `./guides/LIGHTHOUSE.md`            | Auditoria de performance manual (FCP, LCP, CLS, TTI, PWA, A11y)                       | Verificar performance e PWA                        |
 | **CI_CD**                 | `./guides/CI_CD.md`                 | GitHub Actions, docker-compose, deploy VPS, testes E2E em CI                          | Configurar/modificar pipeline de CI/CD             |
-| **SUBSCRIPTIONS**         | `./guides/SUBSCRIPTIONS.md`         | Sistema de assinaturas (trial, planos), webhooks de pagamento, gestão de restaurantes | Implementar/modificar sistema de assinaturas       |
+| **SOFT_DELETE**           | `./guides/SOFT_DELETE.md`           | Implementação de soft delete (deletedAt, archived status)                             | Implementar/modificar exclusão reversível          |
 | **DDD_MIGRACAO_API**      | `./guides/DDD_MIGRACAO_API.md`      | Plano de migração da API NestJS para arquitetura DDD (bounded contexts, status atual) | Migrar módulos da API para DDD                     |
 | **ESLINT_BEST_PRACTICES** | `./guides/ESLINT_BEST_PRACTICES.md` | Regras ESLint, complexity threshold, patterns e anti-patterns                         | Manter qualidade de código                         |
-| **SOFT_DELETE**           | `./guides/SOFT_DELETE.md`           | Implementação de soft delete (deletedAt, archived status)                             | Implementar/modificar exclusão reversível          |
 | **PUBLIC_NAVIGATION**     | `./guides/PUBLIC_NAVIGATION.md`     | Navegação pública vs protegida, middleware de autenticação,redirects                  | Implementar rotas públicas e auth middleware       |
 
 ---

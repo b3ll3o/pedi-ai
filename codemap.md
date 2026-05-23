@@ -2,7 +2,7 @@
 
 > Cardápio Digital para Restaurantes (offline-first, multi-tenant)
 >
-> **Versão:** 1.4.0 | **Atualizado em:** 2026-05-16 | **Monorepo:** pnpm workspaces
+> **Versão:** 1.4.0 | **Atualizado em:** 2026-05-23 | **Monorepo:** pnpm workspaces
 
 ## Project Responsibility
 
@@ -16,7 +16,7 @@ Pedi-AI é uma plataforma de cardápio digital que permite restaurantes gerencia
 | Backend  | NestJS + Fastify + Prisma ORM + PostgreSQL                       |
 | Offline  | Service Worker (Workbox) + IndexedDB (Dexie)                     |
 | Estado   | Zustand + React Query                                            |
-| Testes   | Vitest (116 test files, 1443 testes) + Playwright (43 specs E2E) |
+| Testes   | Vitest (126 test files, 1549 testes) + Playwright (43 specs E2E) |
 
 ---
 
@@ -105,7 +105,7 @@ Cada bounded context DDD possui seu próprio codemap:
 
 ```
 Cliente escaneia QR code
-  → Validação de mesa (apps/web/src/lib/qr.ts)
+  → Validação de mesa (apps/web/src/lib/qr/validator.ts)
   → Navega cardápio (apps/web/src/app/restaurantes/[id]/cardapio/)
   → Adiciona itens ao carrinho (apps/web/src/infrastructure/persistence/cartStore.ts)
   → Checkout via PIX (apps/web/src/application/pagamento/services/CriarPixChargeUseCase.ts)
