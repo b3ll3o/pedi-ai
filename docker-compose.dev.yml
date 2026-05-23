@@ -61,7 +61,7 @@ services:
       - ./apps/api/src:/app/apps/api/src:ro
       - ./packages:/app/packages:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h localhost -U postgres -d pedi_ai"]
+      test: ["CMD-SHELL", "pg_isready -h postgres -U postgres -d pedi_ai"]
       interval: 10s
       timeout: 5s
       retries: 5
