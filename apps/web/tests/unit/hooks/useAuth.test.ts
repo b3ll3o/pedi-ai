@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import { useAuth } from '@/hooks/useAuth';
 import { login, logout, getSession } from '@/lib/auth/client';
@@ -38,7 +38,11 @@ vi.mock('next/navigation', () => ({
 vi.mock('@/lib/auth/client', () => ({
   login: vi.fn<() => Promise<{ error?: string }>>(),
   logout: vi.fn<() => Promise<void>>(),
-  getSession: vi.fn<() => Promise<{ user?: { id: string; email: string; role: string; restaurantId?: string } } | null>>(),
+  getSession: vi.fn<
+    () => Promise<{
+      user?: { id: string; email: string; role: string; restaurantId?: string };
+    } | null>
+  >(),
   requestPasswordReset: vi.fn<() => Promise<{ error?: string }>>(),
 }));
 
@@ -139,9 +143,7 @@ describe('useAuth hook', () => {
       let sessionCallCount = 0;
       (getSession as ReturnType<typeof vi.fn>).mockImplementation(() => {
         sessionCallCount++;
-        return sessionCallCount > 1
-          ? Promise.resolve(mockSession)
-          : Promise.resolve(null);
+        return sessionCallCount > 1 ? Promise.resolve(mockSession) : Promise.resolve(null);
       });
 
       const { result } = renderHook(() => useAuth());
@@ -171,7 +173,9 @@ describe('useAuth hook', () => {
       });
 
       await act(async () => {
-        await expect(result.current.signIn('admin@test.com', 'wrongpassword')).rejects.toThrow('Invalid credentials');
+        await expect(result.current.signIn('admin@test.com', 'wrongpassword')).rejects.toThrow(
+          'Invalid credentials'
+        );
       });
 
       await waitFor(() => {

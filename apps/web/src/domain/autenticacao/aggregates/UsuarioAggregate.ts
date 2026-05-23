@@ -1,7 +1,8 @@
-import { Usuario, UsuarioProps } from '../entities/Usuario';
-import { Papel } from '../value-objects/Papel';
 import { EventDispatcher } from '@/domain/shared';
+
+import { Usuario, UsuarioProps } from '../entities/Usuario';
 import { UsuarioCriadoEvent } from '../events/UsuarioCriadoEvent';
+import { Papel } from '../value-objects/Papel';
 
 export class UsuarioAggregate {
   private usuario: Usuario;

@@ -1,7 +1,8 @@
+import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
+
 import { ItemPedido } from '../entities/ItemPedido';
 import { Pedido, PedidoProps } from '../entities/Pedido';
 import { StatusPedido } from '../value-objects/StatusPedido';
-import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 
 /**
  * Tipo de método de pagamento - usa string simples para evitar

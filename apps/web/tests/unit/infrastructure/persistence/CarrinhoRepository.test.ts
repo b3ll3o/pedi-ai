@@ -1,7 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { CarrinhoRepository } from '@/infrastructure/persistence/pedido/CarrinhoRepository';
+
 import { CarrinhoAggregate } from '@/domain/pedido/aggregates/CarrinhoAggregate';
 import { _Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
+import { CarrinhoRepository } from '@/infrastructure/persistence/pedido/CarrinhoRepository';
+
 import { createTestDatabase } from '../_test-helpers';
 
 describe('CarrinhoRepository', () => {
@@ -14,7 +16,9 @@ describe('CarrinhoRepository', () => {
     repository = new CarrinhoRepository(db);
   });
 
-  function criarCarrinhoValido(overrides?: Partial<{ id: string; restauranteId: string }>): CarrinhoAggregate {
+  function criarCarrinhoValido(
+    overrides?: Partial<{ id: string; restauranteId: string }>
+  ): CarrinhoAggregate {
     return CarrinhoAggregate.criar({
       restauranteId: overrides?.restauranteId ?? 'rest-123',
       clienteId: 'cliente-abc',

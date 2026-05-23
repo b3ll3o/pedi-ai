@@ -1,6 +1,7 @@
-import { PediDatabase, UsuarioRestauranteRecord } from '../database';
-import { IUsuarioRestauranteRepository } from '@/domain/admin/repositories/IUsuarioRestauranteRepository';
 import { UsuarioRestaurante } from '@/domain/admin/entities/UsuarioRestaurante';
+import { IUsuarioRestauranteRepository } from '@/domain/admin/repositories/IUsuarioRestauranteRepository';
+
+import { PediDatabase, UsuarioRestauranteRecord } from '../database';
 
 /**
  * Implementação do repositório de vínculo usuário-restaurante usando Dexie (IndexedDB)

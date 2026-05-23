@@ -34,7 +34,9 @@ const MAX_RETENTION_TIME_MINUTES = 24 * 60; // 1440 minutes = 24 hours
 
 // ── Helpers ─────────────────────────────────────────────────────────
 
-function createMockBackgroundSyncPlugin(maxRetentionTimeMinutes: number = MAX_RETENTION_TIME_MINUTES): MockBackgroundSyncPlugin {
+function createMockBackgroundSyncPlugin(
+  maxRetentionTimeMinutes: number = MAX_RETENTION_TIME_MINUTES
+): MockBackgroundSyncPlugin {
   const requests: QueuedRequest[] = [];
 
   const shiftRequest = vi.fn(async (): Promise<QueuedRequest | undefined> => {
@@ -60,11 +62,7 @@ function createMockBackgroundSyncPlugin(maxRetentionTimeMinutes: number = MAX_RE
   };
 }
 
-async function createMockRequest(
-  method: string,
-  url: string,
-  body?: unknown
-): Promise<Request> {
+async function createMockRequest(method: string, url: string, body?: unknown): Promise<Request> {
   const fullUrl = url.startsWith('http') ? url : `${BASE_URL}${url}`;
   return new Request(fullUrl, {
     method,
@@ -134,7 +132,10 @@ describe('BackgroundSyncPlugin', () => {
       const plugin = createMockBackgroundSyncPlugin();
       const orderData = { tableId: 't1', items: [] };
       const request1 = await createMockRequest('POST', '/api/orders', orderData);
-      const request2 = await createMockRequest('POST', '/api/orders', { ...orderData, extra: true });
+      const request2 = await createMockRequest('POST', '/api/orders', {
+        ...orderData,
+        extra: true,
+      });
 
       plugin.queue.requests.push({ request: request1, timestamp: Date.now() });
       plugin.queue.requests.push({ request: request2, timestamp: Date.now() });
@@ -205,9 +206,9 @@ describe('BackgroundSyncPlugin', () => {
       const now = Date.now();
 
       // Request from 25 hours ago (expired)
-      const expiredTimestamp = now - (25 * 60 * 60 * 1000);
+      const expiredTimestamp = now - 25 * 60 * 60 * 1000;
       // Request from 23 hours ago (valid)
-      const recentTimestamp = now - (23 * 60 * 60 * 1000);
+      const recentTimestamp = now - 23 * 60 * 60 * 1000;
 
       const expiredEntry: QueuedRequest = {
         request: await createMockRequest('POST', '/api/orders', { expired: true }),
@@ -230,11 +231,11 @@ describe('BackgroundSyncPlugin', () => {
 
       // Entry from 30 hours ago (expired)
       const expiredRequest = await createMockRequest('POST', '/api/orders', { expired: true });
-      const expiredTimestamp = now - (30 * 60 * 60 * 1000);
+      const expiredTimestamp = now - 30 * 60 * 60 * 1000;
 
       // Entry from 12 hours ago (valid)
       const validRequest = await createMockRequest('POST', '/api/orders', { valid: true });
-      const validTimestamp = now - (12 * 60 * 60 * 1000);
+      const validTimestamp = now - 12 * 60 * 60 * 1000;
 
       plugin.queue.requests.push({ request: expiredRequest, timestamp: expiredTimestamp });
       plugin.queue.requests.push({ request: validRequest, timestamp: validTimestamp });

@@ -1,4 +1,5 @@
 import { EntityClass } from '@/domain/shared';
+
 import { QRCodePayload } from '../value-objects/QRCodePayload';
 
 export interface MesaProps {

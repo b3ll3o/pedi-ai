@@ -1,4 +1,5 @@
 import { vi } from 'vitest';
+
 import { IPixAdapter, PixCharge } from '@/application/pagamento/services/adapters/IPixAdapter';
 
 /**
@@ -42,9 +43,10 @@ export interface MockPixConfig {
 export function createMockPixPaymentAdapter(config?: MockPixConfig): IPixAdapter {
   const defaultPixCharge: PixCharge = {
     id: `pix_mock_${Date.now()}`,
-    valor: 50.00,
+    valor: 50.0,
     imagemQrCode: 'data:image/png;base64,mock_qr_code_base64',
-    codigoPix: '00020126580014br.gov.bcb.pix0136mock_pedido_id520400005303986540410000005802BR5901mock6011MATO700801',
+    codigoPix:
+      '00020126580014br.gov.bcb.pix0136mock_pedido_id520400005303986540410000005802BR5901mock6011MATO700801',
     expiracao: new Date(Date.now() + 30 * 60 * 1000), // 30 minutos
   };
 
@@ -55,7 +57,7 @@ export function createMockPixPaymentAdapter(config?: MockPixConfig): IPixAdapter
 
       return {
         id: criarCobrancaConfig?.id ?? generatedId,
-        valor: criarCobrancaConfig?.valor ?? (valorEmCentavos / 100),
+        valor: criarCobrancaConfig?.valor ?? valorEmCentavos / 100,
         imagemQrCode: criarCobrancaConfig?.imagemQrCode ?? defaultPixCharge.imagemQrCode,
         codigoPix: criarCobrancaConfig?.codigoPix ?? defaultPixCharge.codigoPix,
         expiracao: criarCobrancaConfig?.expiracao ?? defaultPixCharge.expiracao,
@@ -87,9 +89,14 @@ export const PixChargeMock = {
    */
   pendente: (pedidoId: string = 'pedido-pendente'): PixCharge => ({
     id: `pix_${pedidoId}_${Date.now()}`,
-    valor: 100.00,
+    valor: 100.0,
     imagemQrCode: 'data:image/png;base64,pendente_qr',
-    codigoPix: '00020126580014br.gov.bcb.pix0136' + pedidoId + '520400005303986540410000005802BR5901' + pedidoId + '6011MATO700801',
+    codigoPix:
+      '00020126580014br.gov.bcb.pix0136' +
+      pedidoId +
+      '520400005303986540410000005802BR5901' +
+      pedidoId +
+      '6011MATO700801',
     expiracao: new Date(Date.now() + 30 * 60 * 1000),
   }),
 
@@ -98,9 +105,14 @@ export const PixChargeMock = {
    */
   confirmado: (pedidoId: string = 'pedido-confirmado'): PixCharge => ({
     id: `pix_${pedidoId}_${Date.now()}`,
-    valor: 100.00,
+    valor: 100.0,
     imagemQrCode: 'data:image/png;base64,confirmado_qr',
-    codigoPix: '00020126580014br.gov.bcb.pix0136' + pedidoId + '520400005303986540410000005802BR5901' + pedidoId + '6011MATO700801',
+    codigoPix:
+      '00020126580014br.gov.bcb.pix0136' +
+      pedidoId +
+      '520400005303986540410000005802BR5901' +
+      pedidoId +
+      '6011MATO700801',
     expiracao: new Date(Date.now() + 30 * 60 * 1000),
   }),
 
@@ -109,9 +121,14 @@ export const PixChargeMock = {
    */
   expirado: (pedidoId: string = 'pedido-expirado'): PixCharge => ({
     id: `pix_${pedidoId}_${Date.now()}`,
-    valor: 100.00,
+    valor: 100.0,
     imagemQrCode: 'data:image/png;base64,expirado_qr',
-    codigoPix: '00020126580014br.gov.bcb.pix0136' + pedidoId + '520400005303986540410000005802BR5901' + pedidoId + '6011MATO700801',
+    codigoPix:
+      '00020126580014br.gov.bcb.pix0136' +
+      pedidoId +
+      '520400005303986540410000005802BR5901' +
+      pedidoId +
+      '6011MATO700801',
     expiracao: new Date(Date.now() - 60 * 1000), // Expirado há 1 minuto
   }),
 };

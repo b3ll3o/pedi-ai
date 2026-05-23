@@ -1,4 +1,5 @@
 import { DomainEvent } from '@/domain/shared';
+
 import { Mesa } from '../entities/Mesa';
 
 export class MesaCriadaEvent implements DomainEvent {

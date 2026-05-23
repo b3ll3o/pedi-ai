@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { getSession } from '@/lib/auth/client';
+import { useRouter, useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
 import { RestaurantForm, type RestaurantFormData } from '@/components/admin/RestaurantForm';
+import { getSession } from '@/lib/auth/client';
+
 import styles from './page.module.css';
 
 export default function EditRestaurantPage() {

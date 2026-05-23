@@ -1,9 +1,7 @@
-import { NestFactory } from '@nestjs/core';
-import {
-  FastifyAdapter,
-  NestFastifyApplication,
-} from '@nestjs/platform-fastify';
 import { ValidationPipe } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
+
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -11,7 +9,7 @@ async function bootstrap() {
     AppModule,
     new FastifyAdapter({
       logger: true,
-    }),
+    })
   );
 
   app.enableCors({
@@ -24,7 +22,7 @@ async function bootstrap() {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
-    }),
+    })
   );
 
   const port = process.env.PORT || 3001;

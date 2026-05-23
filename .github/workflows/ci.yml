@@ -15,26 +15,9 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     timeout-minutes: 10
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v6
-        with:
-          node-version: 20
-
-      - name: Instalar pnpm
-        uses: pnpm/action-setup@v6
-        with:
-          version: 9
-
-      - name: Instalar node-gyp
-        run: npm install -g node-gyp
-
-      - name: Instalar dependências
-        run: pnpm install --frozen-lockfile
+      - name: Setup
+        uses: ./.github/actions/setup
 
       - name: Executar ESLint
         run: pnpm lint
@@ -43,54 +26,22 @@ jobs:
     name: Type Check
     runs-on: ubuntu-latest
     timeout-minutes: 10
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v6
-        with:
-          node-version: 20
-
-      - name: Instalar pnpm
-        uses: pnpm/action-setup@v6
-        with:
-          version: 9
-
-      - name: Instalar node-gyp
-        run: npm install -g node-gyp
-
-      - name: Instalar dependências
-        run: pnpm install --frozen-lockfile
+      - name: Setup
+        uses: ./.github/actions/setup
 
       - name: Executar type-check
-        run: pnpm tsc --noEmit
+        run: |
+          pnpm --filter @pedi-ai/web exec tsc --noEmit
+          pnpm --filter @pedi-ai/api exec tsc --noEmit
 
   unit-tests:
     name: Testes Unitários
     runs-on: ubuntu-latest
     timeout-minutes: 15
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v6
-        with:
-          node-version: 20
-
-      - name: Instalar pnpm
-        uses: pnpm/action-setup@v6
-        with:
-          version: 9
-
-      - name: Instalar node-gyp
-        run: npm install -g node-gyp
-
-      - name: Instalar dependências
-        run: pnpm install --frozen-lockfile
+      - name: Setup
+        uses: ./.github/actions/setup
 
       - name: Executar testes unitários
         run: pnpm test:unit
@@ -99,130 +50,296 @@ jobs:
     name: Testes de Integração
     runs-on: ubuntu-latest
     timeout-minutes: 15
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v6
-        with:
-          node-version: 20
-
-      - name: Instalar pnpm
-        uses: pnpm/action-setup@v6
-        with:
-          version: 9
-
-      - name: Instalar node-gyp
-        run: npm install -g node-gyp
-
-      - name: Instalar dependências
-        run: pnpm install --frozen-lockfile
+      - name: Setup
+        uses: ./.github/actions/setup
 
       - name: Executar testes de integração
         run: pnpm test:integration
-
-  coverage:
-    name: Verificar Cobertura
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: [unit-tests, integration-tests]
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v6
-        with:
-          node-version: 20
-
-      - name: Instalar pnpm
-        uses: pnpm/action-setup@v6
-        with:
-          version: 9
-
-      - name: Instalar node-gyp
-        run: npm install -g node-gyp
-
-      - name: Instalar dependências
-        run: pnpm install --frozen-lockfile
-
-      - name: Executar verificação de cobertura
-        run: pnpm test:coverage
 
   complexity:
     name: Análise de Complexidade
     runs-on: ubuntu-latest
     timeout-minutes: 10
-
     steps:
-      - name: Checkout code
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Analisar complexidade ciclomática (web)
+        id: complexity-web
+        run: |
+          pnpm --filter @pedi-ai/web exec eslint apps/web/src \
+            --quiet \
+            --format json --output-file eslint-complexity-web.json
+
+          echo "=== Complexidade web ==="
+          COMPLEXITY_ERRORS=$(cat eslint-complexity-web.json | \
+            jq '[.[] | select(.messages[]? | .ruleId == "complexity") | .messages[]] | length')
+          echo "Violações de complexidade (web): $COMPLEXITY_ERRORS"
+
+          if [ "$COMPLEXITY_ERRORS" -gt 0 ]; then
+            echo ""
+            echo "=== Funções acima do limiar (15) ==="
+            cat eslint-complexity-web.json | \
+              jq -r '.[] | select(.messages[]? | .ruleId == "complexity") | .messages[] |
+                "  \(.message) — \(.filePath):\(.line)"'
+            echo ""
+            echo "::error::Complexidade ciclomática acima do limiar (15) — $COMPLEXITY_ERRORS violações"
+          fi
+
+          echo "web_violations=$COMPLEXITY_ERRORS" >> $GITHUB_OUTPUT
+
+      - name: Analisar complexidade ciclomática (api)
+        id: complexity-api
+        run: |
+          pnpm --filter @pedi-ai/api exec eslint apps/api/src \
+            --quiet \
+            --format json --output-file eslint-complexity-api.json
+
+          echo "=== Complexidade api ==="
+          COMPLEXITY_ERRORS=$(cat eslint-complexity-api.json | \
+            jq '[.[] | select(.messages[]? | .ruleId == "complexity") | .messages[]] | length')
+          echo "Violações de complexidade (api): $COMPLEXITY_ERRORS"
+
+          if [ "$COMPLEXITY_ERRORS" -gt 0 ]; then
+            echo ""
+            echo "=== Funções acima do limiar (15) ==="
+            cat eslint-complexity-api.json | \
+              jq -r '.[] | select(.messages[]? | .ruleId == "complexity") | .messages[] |
+                "  \(.message) — \(.filePath):\(.line)"'
+            echo ""
+            echo "::error::Complexidade ciclomática acima do limiar (15) — $COMPLEXITY_ERRORS violações"
+          fi
+
+          echo "api_violations=$COMPLEXITY_ERRORS" >> $GITHUB_OUTPUT
+
+      - name: Verificar limiar de complexidade
+        run: |
+          WEB_VIO=${{ steps.complexity-web.outputs.web_violations }}
+          API_VIO=${{ steps.complexity-api.outputs.api_violations }}
+          TOTAL=$((WEB_VIO + API_VIO))
+
+          if [ "$TOTAL" -gt 0 ]; then
+            echo "::error::Total de violações de complexidade: $TOTAL (web: $WEB_VIO, api: $API_VIO)"
+            exit 1
+          fi
+          echo "✅ Nenhuma violação de complexidade — todas as funções dentro do limiar (15)"
+
+  coverage:
+    name: Verificar Cobertura
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [unit-tests]
+    steps:
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Executar verificação de cobertura
+        run: pnpm test:coverage
+
+  ci-pass:
+    name: CI Pass
+    runs-on: ubuntu-latest
+    needs: [lint, type-check, unit-tests, integration-tests, coverage, complexity, e2e-tests, e2e-report]
+    if: always()
+    steps:
+      - name: Verificar status final
+        run: |
+          FAILED=""
+          for job in lint type-check unit-tests integration-tests coverage complexity e2e-tests; do
+            if [ "${{ needs[job].result }}" != "success" ]; then
+              FAILED="$FAILED $job"
+            fi
+          done
+          if [ -n "$FAILED" ]; then
+            echo "❌ Jobs falharam:$FAILED"
+            exit 1
+          fi
+          echo "✅ Todos os checks passaram"
+
+  # ── E2E Tests (4 shards) — bloqueia PR merge até completar ──────────────
+  # Integra no ci.yml para ser um único status check (ci-pass).
+  # Cada shard é um job paralelo independente.
+  e2e-tests:
+    name: E2E Shard ${{ matrix.shard }}/4
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: pedi_ai
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
         uses: actions/checkout@v6
 
       - name: Setup Node.js 20
         uses: actions/setup-node@v6
         with:
           node-version: 20
+          cache: pnpm
 
-      - name: Instalar pnpm
+      - name: Install pnpm
         uses: pnpm/action-setup@v6
         with:
           version: 9
 
-      - name: Instalar dependências
+      - name: Install node-gyp
+        run: npm install -g node-gyp
+
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Executar análise de complexidade
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install chromium --with-deps
+
+      - name: Setup environment
         run: |
-          echo "=== Contagem de arquivos e linhas ==="
-          find apps/web/src -name "*.ts" -o -name "*.tsx" | wc -l
-          find apps/web/src -name "*.ts" -o -name "*.tsx" | xargs wc -l | tail -1
+          echo "CI=true" >> $GITHUB_ENV
+          echo "SHARD=${{ matrix.shard }}/4" >> $GITHUB_ENV
+          echo "BASE_URL=http://localhost:3000" >> $GITHUB_ENV
+          # CORRIGIDO: API roda na porta 3001 (NestJS), não na 3000 (Next.js)
+          echo "NEXT_PUBLIC_API_URL=http://localhost:3001" >> $GITHUB_ENV
+          echo "NODE_ENV=e2e" >> $GITHUB_ENV
+          echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/pedi_ai?schema=public" >> $GITHUB_ENV
+          echo "JWT_SECRET=e2e-jwt-secret-for-testing-only" >> $GITHUB_ENV
+          echo "JWT_REFRESH_SECRET=e2e-jwt-refresh-secret-for-testing-only" >> $GITHUB_ENV
 
-          echo ""
-          echo "=== Complexidade ciclomática ( ESLint ) ==="
-          npx eslint apps/web/src --format json --output-file eslint-complexity-report.json 2>/dev/null || true
+      - name: Verificar PostgreSQL
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h localhost -U postgres -d pedi_ai; then
+              echo "PostgreSQL pronto (tentativa $i)"
+              break
+            fi
+            echo "Aguardando PostgreSQL... ($i/30)"
+            sleep 2
+          done
 
-          echo ""
-          echo "=== Funções mais complexas ==="
-          npx eslint apps/web/src \
-            --no-eslintrc \
-            --parser @typescript-eslint/parser \
-            --parser-options project:./tsconfig.json \
-            --rule '{"@typescript-eslint/complexity": ["warn", { "max": 15 }]}' \
-            --format table 2>/dev/null || echo "Análise de complexidade não disponível"
+      - name: Setup database schema
+        run: |
+          cd apps/api
+          npx prisma db push --accept-data-loss --skip-generate
+          npx prisma generate
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pedi_ai?schema=public
 
-  ci-pass:
-    name: CI Pass
+      - name: Seed database (shard-isolated)
+        run: pnpm test:e2e:seed
+        env:
+          SHARD: ${{ matrix.shard }}/4
+
+      # Inicia API e Web em background (cada shard inicia sua própria instância)
+      # webServer do Playwright NÃO é usado em CI — shards teriam race condition
+      - name: Iniciar API
+        run: |
+          cd apps/api
+          pnpm exec nest start --entryFile main &
+          API_PID=$!
+          echo "$API_PID" > /tmp/pedi-ai-api.pid
+          for i in {1..30}; do
+            curl -sf http://localhost:3001/api/health > /dev/null 2>&1 && echo "API pronta (tentativa $i)" && break
+            echo "Aguardando API... ($i/30)"
+            sleep 2
+          done
+
+      - name: Iniciar Web
+        run: |
+          cd apps/web
+          pnpm dev &
+          WEB_PID=$!
+          echo "$WEB_PID" > /tmp/pedi-ai-web.pid
+          for i in {1..60}; do
+            curl -sf http://localhost:3000 > /dev/null 2>&1 && echo "Web pronto (tentativa $i)" && break
+            echo "Aguardando Web... ($i/60)"
+            sleep 3
+          done
+
+      - name: Run E2E tests (Shard ${{ matrix.shard }}/4)
+        run: pnpm test:e2e --shard=${{ matrix.shard }}/4
+        continue-on-error: false
+
+      - name: Upload artifacts (Shard ${{ matrix.shard }})
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: pw-shard-${{ matrix.shard }}
+          path: |
+            playwright-report-shard-*
+            test-results-shard-*
+            playwright-results-shard-*.json
+            playwright-traces/
+          retention-days: 7
+
+      - name: Cleanup servers
+        if: always()
+        run: |
+          for pid in $(cat /tmp/pedi-ai-api.pid 2>/dev/null) $(cat /tmp/pedi-ai-web.pid 2>/dev/null); do
+            kill $pid 2>/dev/null || true
+          done
+          rm -f /tmp/pedi-ai-api.pid /tmp/pedi-ai-web.pid
+
+  # ── Merge de relatórios E2E ─────────────────────────────────────────────────
+  # baixa todos os artifacts de cada shard e gera um relatório unificado
+  e2e-report:
+    name: E2E Report Merge
     runs-on: ubuntu-latest
-    needs: [lint, type-check, unit-tests, integration-tests, coverage, complexity]
-    if: always()
+    needs: [e2e-tests]
     steps:
-      - name: Verificar status final
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download all Playwright reports
+        uses: actions/download-artifact@v7
+        with:
+          pattern: pw-shard-*
+          merge-multiple: true
+          path: pw-reports-merged
+        continue-on-error: true
+
+      - name: Merge Playwright reports
         run: |
-          if [ "${{ needs.lint.result }}" != "success" ]; then
-            echo "❌ Lint falhou"
-            exit 1
+          JSON_FILES=$(find pw-reports-merged -name "playwright-results-shard-*.json" 2>/dev/null | sort -V | tr '\n' ' ')
+          if [ -n "$JSON_FILES" ]; then
+            echo "=== Merge de $(echo $JSON_FILES | wc -w) arquivos de shard ==="
+            cd apps/web
+            pnpm exec playwright merge-reports \
+              --reporter=list,json \
+              ../pw-reports-merged
+          else
+            echo "Nenhum resultado encontrado para merge"
           fi
-          if [ "${{ needs.type-check.result }}" != "success" ]; then
-            echo "❌ Type check falhou"
-            exit 1
-          fi
-          if [ "${{ needs.unit-tests.result }}" != "success" ]; then
-            echo "❌ Testes unitários falharam"
-            exit 1
-          fi
-          if [ "${{ needs.integration-tests.result }}" != "success" ]; then
-            echo "❌ Testes de integração falharam"
-            exit 1
-          fi
-          if [ "${{ needs.coverage.result }}" != "success" ]; then
-            echo "❌ Coverage abaixo do limiar"
-            exit 1
-          fi
-          if [ "${{ needs.complexity.result }}" != "success" ]; then
-            echo "❌ Complexidade alta detectada"
-            exit 1
-          fi
-          echo "✅ Todos os checks passaram"
+
+      - name: Upload merged report
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: pw-report-merged
+          path: |
+            pw-reports-merged/
+            playwright-report/
+          retention-days: 14

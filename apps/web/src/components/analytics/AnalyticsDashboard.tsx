@@ -12,12 +12,14 @@ import {
   LineChart,
   Line,
 } from 'recharts';
+
 import type { AnalyticsData } from '@/application/services/analyticsService';
 import {
   formatCurrency,
   formatNumber,
   formatPercent,
 } from '@/application/services/analyticsService';
+
 import styles from './AnalyticsDashboard.module.css';
 
 interface AnalyticsDashboardProps {

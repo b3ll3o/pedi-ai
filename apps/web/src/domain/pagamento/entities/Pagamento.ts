@@ -1,5 +1,6 @@
 import { AggregateRootClass } from '@/domain/shared';
 import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
+
 import { MetodoPagamento } from '../value-objects/MetodoPagamento';
 import { StatusPagamento } from '../value-objects/StatusPagamento';
 

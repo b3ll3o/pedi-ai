@@ -1,16 +1,18 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
-import { useCardapio } from '@/hooks/useCardapio';
-import { useMenuStore } from '@/infrastructure/persistence/menuStore';
-import { useCartStore } from '@/infrastructure/persistence/cartStore';
-import { SearchBar } from '@/components/menu/SearchBar';
-import { CategoryList } from '@/components/menu/CategoryList';
-import { ProductList } from '@/components/menu/ProductList';
+import { useEffect, useMemo, useRef } from 'react';
+
 import { CustomerHeader } from '@/components/customer/CustomerHeader';
+import { CategoryList } from '@/components/menu/CategoryList';
 import type { Category } from '@/components/menu/CategoryList';
+import { ProductList } from '@/components/menu/ProductList';
+import { SearchBar } from '@/components/menu/SearchBar';
+import { useCardapio } from '@/hooks/useCardapio';
 import type { MenuResponse } from '@/hooks/useCardapio';
+import { useCartStore } from '@/infrastructure/persistence/cartStore';
+import { useMenuStore } from '@/infrastructure/persistence/menuStore';
+
 import styles from './page.module.css';
 
 interface MenuPageClientProps {

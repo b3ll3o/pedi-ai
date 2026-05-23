@@ -36,5 +36,6 @@ export type {
 
 // Repositories
 export type { ICategoriaRepository } from './repositories/ICategoriaRepository';
+export type { IComboRepository } from './repositories/IComboRepository';
 export type { IItemCardapioRepository } from './repositories/IItemCardapioRepository';
 export type { IModificadorGrupoRepository } from './repositories/IModificadorGrupoRepository';

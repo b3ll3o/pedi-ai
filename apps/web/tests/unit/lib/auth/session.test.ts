@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+
 import { createSessionCookie, clearSessionCookie } from '@/lib/auth/session';
 
 describe('lib/auth/session - Cookie utilities', () => {
@@ -38,7 +39,9 @@ describe('lib/auth/session - Cookie utilities', () => {
 
   describe('clearSessionCookie', () => {
     it('deve ser string para limpar cookie', () => {
-      expect(clearSessionCookie).toBe('session_token=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0');
+      expect(clearSessionCookie).toBe(
+        'session_token=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'
+      );
     });
 
     it('deve ter Max-Age=0 para expirar imediatamente', () => {

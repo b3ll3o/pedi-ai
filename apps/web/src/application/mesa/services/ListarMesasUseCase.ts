@@ -1,5 +1,6 @@
-import { UseCase } from '../../shared/types/UseCase';
 import { Mesa, IMesaRepository } from '@/domain/mesa';
+
+import { UseCase } from '../../shared/types/UseCase';
 
 export interface ListarMesasInput {
   restauranteId: string;

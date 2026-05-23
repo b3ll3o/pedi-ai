@@ -32,8 +32,8 @@ mailpit version
 ### Iniciar o Mailpit
 
 ```bash
-# Opção 1: npm script (já configurado no package.json)
-npm run mailpit
+# Opção 1: pnpm script (já configurado no package.json)
+pnpm mailpit
 
 # Opção 2: Diretamente
 ~/.local/bin/mailpit
@@ -84,18 +84,17 @@ EOF
 
 ## Scripts disponíveis
 
-| Script | Descrição |
-|--------|-----------|
-| `npm run mailpit` | Inicia o servidor Mailpit |
-| `npm run mailpit:start` | Alias para mailpit |
+| Script         | Descrição                 |
+| -------------- | ------------------------- |
+| `pnpm mailpit` | Inicia o servidor Mailpit |
 
 ## Ports padrão
 
-| Serviço | Porta |
-|---------|-------|
-| SMTP | 1025 |
-| UI Web | 8025 |
-| POP3 (opcional) | 1110 |
+| Serviço         | Porta |
+| --------------- | ----- |
+| SMTP            | 1025  |
+| UI Web          | 8025  |
+| POP3 (opcional) | 1110  |
 
 ## Troubleshooting
 

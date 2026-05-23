@@ -1,6 +1,18 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
-import { ProductsService } from './products.service';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+
+import { ProductsService } from './products.service';
 
 @Controller('products')
 export class ProductsController {
@@ -23,15 +35,18 @@ export class ProductsController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  async create(@Body() data: {
-    categoryId: string;
-    name: string;
-    description?: string;
-    imageUrl?: string;
-    price: number;
-    dietaryLabels?: string;
-    sortOrder?: number;
-  }) {
+  async create(
+    @Body()
+    data: {
+      categoryId: string;
+      name: string;
+      description?: string;
+      imageUrl?: string;
+      price: number;
+      dietaryLabels?: string;
+      sortOrder?: number;
+    }
+  ) {
     return this.productsService.create(data);
   }
 
@@ -39,12 +54,13 @@ export class ProductsController {
   @UseGuards(JwtAuthGuard)
   async update(
     @Param('id') id: string,
-    @Body() data: {
+    @Body()
+    data: {
       name?: string;
       description?: string;
       price?: number;
       available?: boolean;
-    },
+    }
   ) {
     return this.productsService.update(id, data);
   }

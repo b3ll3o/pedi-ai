@@ -1,11 +1,16 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
-import styles from './LoginForm.module.css';
+
 import { requestPasswordReset } from '@/lib/auth/client';
 
+import styles from './LoginForm.module.css';
+
 // Placeholder for signUp - registration is handled via API
-const signUp = async (_email: string, _password: string): Promise<{ error: { message: string } | null }> => {
+const signUp = async (
+  _email: string,
+  _password: string
+): Promise<{ error: { message: string } | null }> => {
   // Registration is not implemented client-side
   return { error: { message: 'Registro não disponível pelo app' } };
 };

@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { RestaurantSearch } from '@/components/restaurant/RestaurantSearch';
-import { RestaurantList } from '@/components/restaurant/RestaurantList';
+import { useState, useEffect, useMemo } from 'react';
+
 import type { Restaurant } from '@/components/restaurant/RestaurantCard';
+import { RestaurantList } from '@/components/restaurant/RestaurantList';
+import { RestaurantSearch } from '@/components/restaurant/RestaurantSearch';
+
 import styles from './page.module.css';
 
 export default function RestaurantesPageClient() {

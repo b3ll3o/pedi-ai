@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { PostgresAuthAdapter } from '@/infrastructure/external/PostgresAuthAdapter';
-import { logger } from '@/lib/logger';
 import { createSession, createSessionCookie } from '@/lib/auth/session';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,10 +17,7 @@ export async function POST(request: NextRequest) {
     const resultado = await new PostgresAuthAdapter().autenticar(email, senha);
 
     if (!resultado || !resultado.token) {
-      return NextResponse.json(
-        { error: 'Email ou senha incorretos' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Email ou senha incorretos' }, { status: 401 });
     }
 
     const { token: _token, usuarioId } = resultado;

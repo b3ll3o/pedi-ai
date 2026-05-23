@@ -1,9 +1,11 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getSession } from '@/lib/auth/client';
+import { Suspense, useEffect, useState } from 'react';
+
 import { LoginForm } from '@/components/auth/LoginForm';
+import { getSession } from '@/lib/auth/client';
+
 import styles from './page.module.css';
 
 function AdminLoginContent() {

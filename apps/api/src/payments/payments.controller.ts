@@ -1,6 +1,8 @@
 import { Controller, Post, Get, Param, Body, UseGuards } from '@nestjs/common';
-import { PaymentsService } from './payments.service';
+
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+
+import { PaymentsService } from './payments.service';
 
 @Controller('payments')
 export class PaymentsController {
@@ -8,11 +10,7 @@ export class PaymentsController {
 
   @Post('pix/create')
   @UseGuards(JwtAuthGuard)
-  async createPixPayment(@Body() data: {
-    orderId: string;
-    restaurantId: string;
-    amount: number;
-  }) {
+  async createPixPayment(@Body() data: { orderId: string; restaurantId: string; amount: number }) {
     return this.paymentsService.createPixPayment(data);
   }
 

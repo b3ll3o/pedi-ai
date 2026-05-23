@@ -5,6 +5,7 @@
  */
 
 import { useEffect, useCallback, useState, useMemo, useRef } from 'react';
+
 import { useSocketIO } from './useSocketIO';
 
 export type OrderStatus =
@@ -84,7 +85,11 @@ export function useCustomerOrderNotifications({
 
   const orderIdsKey = useMemo(() => orderIds.join(','), [orderIds]);
 
-  const { isConnected: socketConnected, on, off } = useSocketIO({
+  const {
+    isConnected: socketConnected,
+    on,
+    off,
+  } = useSocketIO({
     restaurantId,
     enabled,
   });
@@ -119,8 +124,10 @@ export function useCustomerOrderNotifications({
         return;
       }
 
-      if (previousStatusesRef.current[orderId] !== undefined &&
-          previousStatusesRef.current[orderId] !== newStatus) {
+      if (
+        previousStatusesRef.current[orderId] !== undefined &&
+        previousStatusesRef.current[orderId] !== newStatus
+      ) {
         const updatePayload: OrderUpdatePayload = {
           order_id: orderId,
           status: newStatus,
@@ -142,21 +149,18 @@ export function useCustomerOrderNotifications({
     };
   }, [socketConnected, orderIds, handleOrderUpdated, on, off]);
 
-  const fetchOrderStatus = useCallback(
-    async (orderId: string): Promise<OrderStatus | null> => {
-      try {
-        const response = await fetch(`/api/admin/orders/${orderId}/status`);
-        if (!response.ok) {
-          return null;
-        }
-        const data = await response.json();
-        return data.status as OrderStatus;
-      } catch {
+  const fetchOrderStatus = useCallback(async (orderId: string): Promise<OrderStatus | null> => {
+    try {
+      const response = await fetch(`/api/admin/orders/${orderId}/status`);
+      if (!response.ok) {
         return null;
       }
-    },
-    []
-  );
+      const data = await response.json();
+      return data.status as OrderStatus;
+    } catch {
+      return null;
+    }
+  }, []);
 
   const pollOrderStatuses = useCallback(async () => {
     if (!enabled || orderIds.length === 0) {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+
 import styles from './TableQRCode.module.css';
 
 interface TableQRCodeProps {

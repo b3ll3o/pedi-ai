@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+
+import { updateOrderStatus } from '@/application/services/adminOrderService';
 import type { KitchenOrder } from '@/hooks/useKitchenOrders';
+import { useKitchenOrders } from '@/hooks/useKitchenOrders';
+
+import { ConnectionStatus } from './ConnectionStatus';
 import { KitchenDisplay } from './KitchenDisplay';
 import { OrderNotification } from './OrderNotification';
-import { ConnectionStatus } from './ConnectionStatus';
-import { useKitchenOrders } from '@/hooks/useKitchenOrders';
-import { updateOrderStatus } from '@/application/services/adminOrderService';
 import styles from './WaiterDashboard.module.css';
 
 interface WaiterDashboardProps {

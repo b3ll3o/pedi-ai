@@ -1,6 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { sql } from '@/infrastructure/database/pg-client';
 import { createHmac, timingSafeEqual } from 'crypto';
+
+import { NextRequest, NextResponse } from 'next/server';
+
+import { sql } from '@/infrastructure/database/pg-client';
 import { logger } from '@/lib/logger';
 
 type OrderStatus = 'pending_payment' | 'paid' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
@@ -61,9 +63,72 @@ interface MpPaymentResponse {
   };
 }
 
+function mapToOrderStatus(mpStatus: string): OrderStatus {
+  return (STATUS_MAP[mpStatus] ?? 'pending_payment') as OrderStatus;
+}
+
+function mapToIntentStatus(mpStatus: string): string {
+  if (mpStatus === 'approved') return 'succeeded';
+  if (mpStatus === 'pending') return 'pending';
+  if (mpStatus === 'rejected' || mpStatus === 'cancelled') return 'failed';
+  return 'pending';
+}
+
+async function fetchMercadoPagoPayment(paymentId: string): Promise<MpPaymentResponse> {
+  const mpResponse = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+    headers: {
+      Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!mpResponse.ok) {
+    throw new Error(`Mercado Pago API error: ${mpResponse.status}`);
+  }
+  return mpResponse.json();
+}
+
+async function updateOrderStatus(orderId: string, orderStatus: OrderStatus): Promise<number> {
+  const updateResult = await sql`
+    UPDATE orders
+    SET status = ${orderStatus}, updated_at = ${new Date().toISOString()}
+    WHERE id = ${orderId}
+  `;
+  return updateResult.count ?? 0;
+}
+
+async function updatePaymentIntent(orderId: string, mpStatus: string): Promise<void> {
+  const paymentIntent = await sql`
+    SELECT id FROM payment_intents WHERE order_id = ${orderId} LIMIT 1
+  `;
+
+  if (paymentIntent.length > 0) {
+    const intentStatus = mapToIntentStatus(mpStatus);
+    await sql`
+      UPDATE payment_intents
+      SET status = ${intentStatus}
+      WHERE order_id = ${orderId}
+    `;
+  }
+}
+
+async function recordWebhookEvent(eventId: string): Promise<void> {
+  await sql`
+    INSERT INTO webhook_events (id, event_type, processed_at)
+    VALUES (${eventId}, 'payment', ${new Date().toISOString()})
+  `;
+}
+
+async function isEventProcessed(eventId: string): Promise<boolean> {
+  const existingEvent = await sql`
+    SELECT id FROM webhook_events WHERE id = ${eventId} LIMIT 1
+  `;
+  return existingEvent.length > 0;
+}
+
 /**
  * POST /api/webhooks/pix
- * Receives webhook payloads from Mercado Pago.
+ * Recebe webhook payloads from Mercado Pago.
  */
 export async function POST(request: NextRequest) {
   let payload: { id: string; type: string; data: { id: string } };
@@ -92,28 +157,14 @@ export async function POST(request: NextRequest) {
   const paymentId = String(data.id);
 
   // Idempotency check
-  const existingEvent = await sql`
-    SELECT id FROM webhook_events WHERE id = ${eventId} LIMIT 1
-  `;
-
-  if (existingEvent.length > 0) {
+  if (await isEventProcessed(eventId)) {
     return NextResponse.json({ status: 'duplicate' }, { status: 200 });
   }
 
   // Fetch full payment details from Mercado Pago
   let mpPayment: MpPaymentResponse;
   try {
-    const mpResponse = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-      headers: {
-        Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!mpResponse.ok) {
-      throw new Error(`Mercado Pago API error: ${mpResponse.status}`);
-    }
-    mpPayment = await mpResponse.json();
+    mpPayment = await fetchMercadoPagoPayment(paymentId);
   } catch (err) {
     logger.error('webhooks/pix', 'Erro ao buscar payment details:', { error: err });
     return NextResponse.json({ error: 'Erro ao buscar detalhes do pagamento' }, { status: 500 });
@@ -124,46 +175,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'order_id não encontrado no metadata' }, { status: 400 });
   }
 
-  const orderStatus = (STATUS_MAP[mpPayment.status] ?? 'pending_payment') as OrderStatus;
+  const orderStatus = mapToOrderStatus(mpPayment.status);
 
   // Update order status in database
-  const updateResult = await sql`
-    UPDATE orders
-    SET status = ${orderStatus}, updated_at = ${new Date().toISOString()}
-    WHERE id = ${orderId}
-  `;
+  const updateCount = await updateOrderStatus(orderId, orderStatus);
 
-  if (updateResult.count === 0) {
+  if (updateCount === 0) {
     logger.error('webhooks/pix', 'Pedido não encontrado:', { orderId });
     return NextResponse.json({ error: 'Pedido não encontrado' }, { status: 404 });
   }
 
   // Also update payment_intents table if exists
-  const paymentIntent = await sql`
-    SELECT id FROM payment_intents WHERE order_id = ${orderId} LIMIT 1
-  `;
-
-  if (paymentIntent.length > 0) {
-    const intentStatus =
-      mpPayment.status === 'approved'
-        ? 'succeeded'
-        : mpPayment.status === 'pending'
-          ? 'pending'
-          : mpPayment.status === 'rejected' || mpPayment.status === 'cancelled'
-            ? 'failed'
-            : 'pending';
-    await sql`
-      UPDATE payment_intents
-      SET status = ${intentStatus}
-      WHERE order_id = ${orderId}
-    `;
-  }
+  await updatePaymentIntent(orderId, mpPayment.status);
 
   // Record webhook event for idempotency
-  await sql`
-    INSERT INTO webhook_events (id, event_type, processed_at)
-    VALUES (${eventId}, 'payment', ${new Date().toISOString()})
-  `;
+  await recordWebhookEvent(eventId);
 
   logger.info('webhooks/pix', 'Pagamento processado com sucesso', {
     orderId,

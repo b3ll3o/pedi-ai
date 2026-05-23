@@ -1,8 +1,5 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { logout } from '@/lib/auth/client';
 import {
   LayoutDashboard,
   BarChart3,
@@ -14,7 +11,12 @@ import {
   ChevronRight,
   LogOut,
 } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+
 import Logo from '@/app/components/Logo';
+import { logout } from '@/lib/auth/client';
+
 import styles from './AdminLayout.module.css';
 
 interface NavItem {

@@ -1,4 +1,5 @@
 import { DomainEvent } from '@/domain/shared';
+
 import { Pedido } from '../entities/Pedido';
 import { StatusPedido } from '../value-objects/StatusPedido';
 

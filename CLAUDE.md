@@ -18,7 +18,7 @@ pnpm dev              # Next.js :3000 + API :3001
 pnpm build            # Production build
 pnpm lint             # ESLint
 
-# Unit tests (apps/web: 116 files, 1441 tests)
+# Unit tests (apps/web: 107 files, 1513 tests)
 pnpm test             # All unit tests
 pnpm test:watch       # Watch mode
 pnpm test:coverage     # With coverage report
@@ -76,14 +76,14 @@ presentation/    → Next.js: app/, components/, hooks/.
 
 ### Bounded Contexts (domain layer)
 
-| Contexto | Descrição |
-|----------|-----------|
-| `pedido/` | Pedidos, carrinho, cálculo de totais |
-| `cardapio/` | Catálogo de produtos, categorias, combos, modificadores |
-| `mesa/` | Mesas e validação de QR codes |
-| `pagamento/` | Processamento PIX via Mercado Pago |
-| `autenticacao/` | Usuários, sessões, papéis |
-| `admin/` | Restaurantes, vínculo usuário-restaurante |
+| Contexto        | Descrição                                               |
+| --------------- | ------------------------------------------------------- |
+| `pedido/`       | Pedidos, carrinho, cálculo de totais                    |
+| `cardapio/`     | Catálogo de produtos, categorias, combos, modificadores |
+| `mesa/`         | Mesas e validação de QR codes                           |
+| `pagamento/`    | Processamento PIX via Mercado Pago                      |
+| `autenticacao/` | Usuários, sessões, papéis                               |
+| `admin/`        | Restaurantes, vínculo usuário-restaurante               |
 
 ### Dependency Rules
 
@@ -106,8 +106,8 @@ O `apps/api` ainda NÃO segue estrutura DDD completa. Usa módulos tradicionais 
 
 ```typescript
 const valor = Dinheiro.criar(1500); // R$ 15,00
-valor.reais  // 15
-valor.valor  // 1500 (centavos)
+valor.reais; // 15
+valor.valor; // 1500 (centavos)
 ```
 
 ### QR Code de Mesa
@@ -126,12 +126,12 @@ Validação usa **HMAC-SHA256**. Assinatura gerada em `domain/mesa/services/QRCo
 
 Flags configuradas via variáveis de ambiente em `.env.local`:
 
-| Flag | Descrição |
-|------|-----------|
-| `NEXT_PUBLIC_FEATURE_OFFLINE_ENABLED` | Modo offline |
-| `NEXT_PUBLIC_FEATURE_PIX_ENABLED` | Pagamento PIX |
-| `NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED` | QR codes de mesa |
-| `NEXT_PUBLIC_FEATURE_COMBOS_ENABLED` | Sistema de combos |
+| Flag                                  | Descrição         |
+| ------------------------------------- | ----------------- |
+| `NEXT_PUBLIC_FEATURE_OFFLINE_ENABLED` | Modo offline      |
+| `NEXT_PUBLIC_FEATURE_PIX_ENABLED`     | Pagamento PIX     |
+| `NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED` | QR codes de mesa  |
+| `NEXT_PUBLIC_FEATURE_COMBOS_ENABLED`  | Sistema de combos |
 | `NEXT_PUBLIC_ENABLE_MULTI_RESTAURANT` | Multi-restaurante |
 
 ---

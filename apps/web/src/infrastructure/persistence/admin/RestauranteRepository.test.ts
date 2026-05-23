@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { RestauranteRepository } from '@/infrastructure/persistence/admin/RestauranteRepository';
-import { PediDatabase } from '@/infrastructure/persistence/database';
+
 import { Restaurante } from '@/domain/admin/entities/Restaurante';
 import { ConfiguracoesRestaurante } from '@/domain/admin/value-objects/ConfiguracoesRestaurante';
+import { RestauranteRepository } from '@/infrastructure/persistence/admin/RestauranteRepository';
+import { PediDatabase } from '@/infrastructure/persistence/database';
 
 // Mock da classe PediDatabase
 const mockRestaurantes: Map<string, Record<string, unknown>> = new Map();

@@ -6,7 +6,10 @@ const { _pendingSyncData, mockDb } = vi.hoisted(() => {
   let idCounter = 0;
 
   const mockPendingSync = {
-    clear: vi.fn(async () => { pendingSyncData.clear(); idCounter = 0; }),
+    clear: vi.fn(async () => {
+      pendingSyncData.clear();
+      idCounter = 0;
+    }),
     add: vi.fn(async (item: any) => {
       const id = ++idCounter;
       pendingSyncData.set(id, { ...item, id });
@@ -21,7 +24,9 @@ const { _pendingSyncData, mockDb } = vi.hoisted(() => {
       pendingSyncData.set(id, { ...item, id });
       return id;
     }),
-    delete: vi.fn(async (id: number) => { pendingSyncData.delete(id); }),
+    delete: vi.fn(async (id: number) => {
+      pendingSyncData.delete(id);
+    }),
     update: vi.fn(async (id: number, changes: any) => {
       const existing = pendingSyncData.get(id);
       if (existing) {
@@ -32,16 +37,12 @@ const { _pendingSyncData, mockDb } = vi.hoisted(() => {
     where: vi.fn(() => ({
       anyOf: vi.fn((values: string[]) => ({
         toArray: vi.fn(async () =>
-          Array.from(pendingSyncData.values()).filter((item) =>
-            values.includes(item.status)
-          )
+          Array.from(pendingSyncData.values()).filter((item) => values.includes(item.status))
         ),
       })),
       equals: vi.fn((value: string) => ({
         toArray: vi.fn(async () =>
-          Array.from(pendingSyncData.values()).filter((item) =>
-            item.status === value
-          )
+          Array.from(pendingSyncData.values()).filter((item) => item.status === value)
         ),
         modify: vi.fn(async (changes: any) => {
           Array.from(pendingSyncData.values())
@@ -100,9 +101,28 @@ describe('sync queue', () => {
 
   describe('getSyncStatus', () => {
     it('returns correct counts', async () => {
-      await db.pending_sync.add({ orderData: {}, retryCount: 0, maxRetries: 3, status: 'pending', createdAt: new Date() });
-      await db.pending_sync.add({ orderData: {}, retryCount: 0, maxRetries: 3, status: 'syncing', createdAt: new Date() });
-      await db.pending_sync.add({ orderData: {}, retryCount: 3, maxRetries: 3, status: 'failed', lastError: 'err', createdAt: new Date() });
+      await db.pending_sync.add({
+        orderData: {},
+        retryCount: 0,
+        maxRetries: 3,
+        status: 'pending',
+        createdAt: new Date(),
+      });
+      await db.pending_sync.add({
+        orderData: {},
+        retryCount: 0,
+        maxRetries: 3,
+        status: 'syncing',
+        createdAt: new Date(),
+      });
+      await db.pending_sync.add({
+        orderData: {},
+        retryCount: 3,
+        maxRetries: 3,
+        status: 'failed',
+        lastError: 'err',
+        createdAt: new Date(),
+      });
 
       const status = await getSyncStatus();
       expect(status.pending).toBe(1);
@@ -113,7 +133,14 @@ describe('sync queue', () => {
 
   describe('retryFailed', () => {
     it('resets failed items to pending', async () => {
-      await db.pending_sync.add({ orderData: {}, retryCount: 3, maxRetries: 3, status: 'failed', lastError: 'err', createdAt: new Date() });
+      await db.pending_sync.add({
+        orderData: {},
+        retryCount: 3,
+        maxRetries: 3,
+        status: 'failed',
+        lastError: 'err',
+        createdAt: new Date(),
+      });
       await retryFailed();
 
       const items = await db.pending_sync.toArray();
@@ -124,8 +151,21 @@ describe('sync queue', () => {
 
   describe('getFailedItems', () => {
     it('returns only failed items', async () => {
-      await db.pending_sync.add({ orderData: {}, retryCount: 0, maxRetries: 3, status: 'pending', createdAt: new Date() });
-      await db.pending_sync.add({ orderData: {}, retryCount: 3, maxRetries: 3, status: 'failed', lastError: 'err', createdAt: new Date() });
+      await db.pending_sync.add({
+        orderData: {},
+        retryCount: 0,
+        maxRetries: 3,
+        status: 'pending',
+        createdAt: new Date(),
+      });
+      await db.pending_sync.add({
+        orderData: {},
+        retryCount: 3,
+        maxRetries: 3,
+        status: 'failed',
+        lastError: 'err',
+        createdAt: new Date(),
+      });
 
       const failed = await getFailedItems();
       expect(failed).toHaveLength(1);
@@ -137,7 +177,13 @@ describe('sync queue', () => {
     it('removes successfully synced orders', async () => {
       global.fetch = vi.fn().mockResolvedValue({ ok: true }) as unknown as typeof fetch;
 
-      await db.pending_sync.add({ orderData: { test: true }, retryCount: 0, maxRetries: 3, status: 'pending', createdAt: new Date() });
+      await db.pending_sync.add({
+        orderData: { test: true },
+        retryCount: 0,
+        maxRetries: 3,
+        status: 'pending',
+        createdAt: new Date(),
+      });
 
       const result = await processQueue();
       expect(result.success).toBe(1);
@@ -150,9 +196,17 @@ describe('sync queue', () => {
     });
 
     it('increments retry count on failure', async () => {
-      global.fetch = vi.fn().mockRejectedValue(new Error('network error')) as unknown as typeof fetch;
+      global.fetch = vi
+        .fn()
+        .mockRejectedValue(new Error('network error')) as unknown as typeof fetch;
 
-      await db.pending_sync.add({ orderData: { test: true }, retryCount: 0, maxRetries: 3, status: 'pending', createdAt: new Date() });
+      await db.pending_sync.add({
+        orderData: { test: true },
+        retryCount: 0,
+        maxRetries: 3,
+        status: 'pending',
+        createdAt: new Date(),
+      });
 
       const result = await processQueue();
       expect(result.failed).toBe(1);
@@ -165,10 +219,18 @@ describe('sync queue', () => {
     });
 
     it('marks as failed after max retries', async () => {
-      global.fetch = vi.fn().mockRejectedValue(new Error('network error')) as unknown as typeof fetch;
+      global.fetch = vi
+        .fn()
+        .mockRejectedValue(new Error('network error')) as unknown as typeof fetch;
 
       // Manually set to pending with 2 retries already
-      await db.pending_sync.add({ orderData: { test: true }, retryCount: 2, maxRetries: 3, status: 'pending', createdAt: new Date() });
+      await db.pending_sync.add({
+        orderData: { test: true },
+        retryCount: 2,
+        maxRetries: 3,
+        status: 'pending',
+        createdAt: new Date(),
+      });
 
       const result = await processQueue();
       expect(result.failed).toBe(1);
@@ -183,7 +245,14 @@ describe('sync queue', () => {
     it('skips already failed items that exceeded max retries', async () => {
       global.fetch = vi.fn() as unknown as typeof fetch;
 
-      await db.pending_sync.add({ orderData: { test: true }, retryCount: 3, maxRetries: 3, status: 'failed', lastError: 'err', createdAt: new Date() });
+      await db.pending_sync.add({
+        orderData: { test: true },
+        retryCount: 3,
+        maxRetries: 3,
+        status: 'failed',
+        lastError: 'err',
+        createdAt: new Date(),
+      });
 
       const result = await processQueue();
       expect(result.success).toBe(0);

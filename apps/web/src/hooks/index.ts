@@ -40,3 +40,4 @@ export { useEstatisticas } from './useEstatisticas';
 export type { UseEstatisticasResult } from './useEstatisticas';
 export { useRedirectByRole } from './useRedirectByRole';
 export type { UseRedirectByRoleResult } from './useRedirectByRole';
+export { useImageUpload } from './useImageUpload';

@@ -10,43 +10,43 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
+
 import {
   ListarCardapioUseCase,
   type CardapioCompleto,
 } from '@/application/cardapio/services/ListarCardapioUseCase';
+import { db } from '@/infrastructure/persistence/database';
 import {
   CategoriaRepository,
   ItemCardapioRepository,
   CardapioSyncService,
 } from '@/infrastructure/persistence/repositories';
-import { db } from '@/infrastructure/persistence/database';
 // Transformação de domain entities para tipos Supabase (compatibilidade com a interface existente)
 function transformarCardapio(cardapio: CardapioCompleto, restauranteId: string) {
-  const categoriesTransformadas: any[] =
-    cardapio.categorias.map((cat) => ({
-      id: cat.categoria.id,
-      restaurant_id: cat.categoria.restauranteId,
-      name: cat.categoria.nome,
-      description: cat.categoria.descricao,
-      image_url: cat.categoria.imagemUrl,
-      sort_order: cat.categoria.ordemExibicao,
-      active: cat.categoria.ativo,
+  const categoriesTransformadas: any[] = cardapio.categorias.map((cat) => ({
+    id: cat.categoria.id,
+    restaurant_id: cat.categoria.restauranteId,
+    name: cat.categoria.nome,
+    description: cat.categoria.descricao,
+    image_url: cat.categoria.imagemUrl,
+    sort_order: cat.categoria.ordemExibicao,
+    active: cat.categoria.ativo,
+    created_at: '',
+    updated_at: '',
+    products: cat.itens.map((item) => ({
+      id: item.id,
+      category_id: item.categoriaId,
+      name: item.nome,
+      description: item.descricao,
+      image_url: item.imagemUrl,
+      price: item.preco.valor,
+      dietary_labels: item.labelsDieteticos.map((l) => l.toString()),
+      available: item.ativo,
+      sort_order: 0,
       created_at: '',
       updated_at: '',
-      products: cat.itens.map((item) => ({
-        id: item.id,
-        category_id: item.categoriaId,
-        name: item.nome,
-        description: item.descricao,
-        image_url: item.imagemUrl,
-        price: item.preco.valor,
-        dietary_labels: item.labelsDieteticos.map((l) => l.toString()),
-        available: item.ativo,
-        sort_order: 0,
-        created_at: '',
-        updated_at: '',
-      })),
-    }));
+    })),
+  }));
 
   return {
     restaurant: {

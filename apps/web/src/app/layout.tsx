@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
-import { ReactQueryProvider } from '@/components/providers/ReactQueryProvider';
-import { StoreProvider } from '@/components/providers/StoreProvider';
-import { ServiceWorkerRegistration } from '@/components/providers/ServiceWorkerRegistration';
-import { AppInitializer } from '@/components/providers/AppInitializer';
-import { OfflineIndicator } from '@/components/providers/OfflineIndicator';
+
 import { CartBadge } from '@/components/cart/CartBadge';
 import { CartDrawer } from '@/components/cart/CartDrawer';
+import { AppInitializer } from '@/components/providers/AppInitializer';
+import { OfflineIndicator } from '@/components/providers/OfflineIndicator';
+import { ReactQueryProvider } from '@/components/providers/ReactQueryProvider';
+import { ServiceWorkerRegistration } from '@/components/providers/ServiceWorkerRegistration';
+import { StoreProvider } from '@/components/providers/StoreProvider';
 import './globals.css';
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://pedi-ai.com';

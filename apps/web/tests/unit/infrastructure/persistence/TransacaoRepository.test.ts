@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { TransacaoRepository } from '@/infrastructure/persistence/pagamento/TransacaoRepository';
+
 import { Transacao, TipoTransacaoValue } from '@/domain/pagamento/entities/Transacao';
+import { TransacaoRepository } from '@/infrastructure/persistence/pagamento/TransacaoRepository';
+
 import { createTestDatabase } from '../_test-helpers';
 
 describe('TransacaoRepository', () => {
@@ -13,7 +15,14 @@ describe('TransacaoRepository', () => {
     repository = new TransacaoRepository(db);
   });
 
-  function criarTransacaoValida(overrides?: Partial<{ id: string; pagamentoId: string; tipo: TipoTransacaoValue; status: 'pending' | 'success' | 'failure' }>): Transacao {
+  function criarTransacaoValida(
+    overrides?: Partial<{
+      id: string;
+      pagamentoId: string;
+      tipo: TipoTransacaoValue;
+      status: 'pending' | 'success' | 'failure';
+    }>
+  ): Transacao {
     return Transacao.criar({
       pagamentoId: overrides?.pagamentoId ?? 'pag-123',
       tipo: overrides?.tipo ?? 'charge',

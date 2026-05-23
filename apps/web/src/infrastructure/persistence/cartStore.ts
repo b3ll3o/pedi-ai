@@ -3,12 +3,13 @@
 import { create } from 'zustand';
 import { persist, subscribeWithSelector } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
-import { db } from '@/lib/offline/db';
-import type { CartItem as DBCartItem } from '@/lib/offline/types';
+
 import {
   createBroadcastChannelManager,
   type BroadcastChannelManager,
 } from '@/lib/broadcast-channel';
+import { db } from '@/lib/offline/db';
+import type { CartItem as DBCartItem } from '@/lib/offline/types';
 
 // ── BroadcastChannel Sync (delegated to separate module) ────────
 

@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+
 import { IQRCodeValidationService } from '@/domain/mesa/services/QRCodeValidationService';
 import { QRCodePayloadProps } from '@/domain/mesa/value-objects/QRCodePayload';
 

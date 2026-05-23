@@ -1,8 +1,10 @@
 'use client';
 
-import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
+
 import { ResetPasswordForm } from '@/components/auth/ResetPasswordForm';
+
 import styles from './page.module.css';
 
 function AdminResetPasswordContent() {

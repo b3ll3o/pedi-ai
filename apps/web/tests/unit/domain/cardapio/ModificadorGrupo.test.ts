@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { ModificadorGrupo, ModificadorGrupoProps } from '@/domain/cardapio/entities/ModificadorGrupo';
+
+import {
+  ModificadorGrupo,
+  ModificadorGrupoProps,
+} from '@/domain/cardapio/entities/ModificadorGrupo';
 import { ModificadorValor } from '@/domain/cardapio/entities/ModificadorValor';
 import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 
@@ -133,7 +137,9 @@ describe('ModificadorGrupo', () => {
       const grupo = criarGrupo();
       const valorOutroGrupo = criarModificadorValor('outro-grupo-id');
 
-      expect(() => grupo.adicionarValor(valorOutroGrupo)).toThrow('Valor não pertence a este grupo de modificador');
+      expect(() => grupo.adicionarValor(valorOutroGrupo)).toThrow(
+        'Valor não pertence a este grupo de modificador'
+      );
     });
   });
 

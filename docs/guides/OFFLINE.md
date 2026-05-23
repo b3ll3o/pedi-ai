@@ -362,7 +362,7 @@ Tentativa 3 ──► Falhou ──► Espera 4s  (4000ms)
                           MAX 30s
 ```
 
-### Implementação (`apps/web/apps/web/src/lib/offline/sync.ts`)
+### Implementação (`apps/web/src/lib/offline/sync.ts`)
 
 ```typescript
 const INITIAL_BACKOFF_MS = 1000;

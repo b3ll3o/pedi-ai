@@ -4,8 +4,9 @@
  * Usa lib/auth/client.ts para operações de autenticação.
  */
 
-import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useState } from 'react';
+
 import { login, logout, getSession } from '@/lib/auth/client';
 
 export interface AuthUser {

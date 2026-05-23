@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect } from 'react';
+
 import { useCartStore, getTotalItems, getTotalPrice } from '@/infrastructure/persistence/cartStore';
-import { CartSummary } from './CartSummary';
+
 import styles from './CartDrawer.module.css';
+import { CartSummary } from './CartSummary';
 
 const SERVICE_TAX_RATE = 0.1;
 

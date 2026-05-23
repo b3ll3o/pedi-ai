@@ -1,5 +1,7 @@
-import { describe, it, expect } from 'vitest';
 import { createHmac } from 'crypto';
+
+import { describe, it, expect } from 'vitest';
+
 import { generateQRPayload } from '@/lib/qr/generator';
 import { validateQRPayload } from '@/lib/qr/validator';
 
@@ -40,9 +42,21 @@ describe('QR Generator', () => {
       const secret = 'test-secret';
       const restaurantId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
 
-      const payload1 = generateQRPayload(restaurantId, 'f1e2d3c4-b5a6-9870-dcba-fedc09876543', secret);
-      const payload2 = generateQRPayload(restaurantId, '12345678-90ab-cdef-1234-567890abcdef', secret);
-      const payload3 = generateQRPayload('11111111-2222-3333-4444-555555555555', 'f1e2d3c4-b5a6-9870-dcba-fedc09876543', secret);
+      const payload1 = generateQRPayload(
+        restaurantId,
+        'f1e2d3c4-b5a6-9870-dcba-fedc09876543',
+        secret
+      );
+      const payload2 = generateQRPayload(
+        restaurantId,
+        '12345678-90ab-cdef-1234-567890abcdef',
+        secret
+      );
+      const payload3 = generateQRPayload(
+        '11111111-2222-3333-4444-555555555555',
+        'f1e2d3c4-b5a6-9870-dcba-fedc09876543',
+        secret
+      );
 
       expect(payload1.signature).not.toBe(payload2.signature);
       expect(payload1.signature).not.toBe(payload3.signature);
@@ -195,7 +209,7 @@ describe('QR Validator', () => {
       const payload = generateQRPayload(restaurantId, tableId, secret);
 
       // Tamper with signature after generation
-      payload.signature = payload.signature.replace(/./g, c =>
+      payload.signature = payload.signature.replace(/./g, (c) =>
         c === 'f' ? '0' : c === '0' ? 'f' : c
       );
 
@@ -222,7 +236,7 @@ describe('QR Validator', () => {
       const tableId = 'f1e2d3c4-b5a6-9870-dcba-fedc09876543';
 
       // Create payload with old timestamp (25 hours ago)
-      const oldTimestamp = Date.now() - (25 * 60 * 60 * 1000);
+      const oldTimestamp = Date.now() - 25 * 60 * 60 * 1000;
       const message = `${restaurantId}:${tableId}:${oldTimestamp}`;
       const signature = createHmac('sha256', secret).update(message).digest('hex');
 
@@ -271,8 +285,14 @@ describe('QR Validator', () => {
       const secret = 'my-secret';
 
       const testCases = [
-        { restaurantId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', tableId: 'f1e2d3c4-b5a6-9870-dcba-fedc09876543' },
-        { restaurantId: '11111111-2222-3333-4444-555555555555', tableId: '66666666-7777-8888-9999-aaaaaaaaaaaa' },
+        {
+          restaurantId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+          tableId: 'f1e2d3c4-b5a6-9870-dcba-fedc09876543',
+        },
+        {
+          restaurantId: '11111111-2222-3333-4444-555555555555',
+          tableId: '66666666-7777-8888-9999-aaaaaaaaaaaa',
+        },
       ];
 
       for (const { restaurantId, tableId } of testCases) {

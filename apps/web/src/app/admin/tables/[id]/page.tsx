@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+
 import { getTable, updateTable } from '@/application/services/tableService';
 import { getSession } from '@/lib/auth/client';
+
 import styles from './page.module.css';
 
 export default function TableEditPage() {

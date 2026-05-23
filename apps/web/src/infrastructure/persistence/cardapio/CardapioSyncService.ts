@@ -1,13 +1,15 @@
-import { type PediDatabase } from '../database';
-import { CategoriaRepository } from './CategoriaRepository';
-import { ItemCardapioRepository } from './ItemCardapioRepository';
-import { ModificadorGrupoRepository } from './ModificadorGrupoRepository';
 import { Categoria } from '@/domain/cardapio/entities/Categoria';
 import { ItemCardapio } from '@/domain/cardapio/entities/ItemCardapio';
 import { ModificadorGrupo } from '@/domain/cardapio/entities/ModificadorGrupo';
-import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
-import { TipoItemCardapio } from '@/domain/cardapio/value-objects/TipoItemCardapio';
 import { LabelDietetico } from '@/domain/cardapio/value-objects/LabelDietetico';
+import { TipoItemCardapio } from '@/domain/cardapio/value-objects/TipoItemCardapio';
+import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
+
+import { type PediDatabase } from '../database';
+
+import { CategoriaRepository } from './CategoriaRepository';
+import { ItemCardapioRepository } from './ItemCardapioRepository';
+import { ModificadorGrupoRepository } from './ModificadorGrupoRepository';
 
 export interface CardapioSyncResult {
   categoriasSincronizadas: number;

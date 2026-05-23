@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { PedidoRepository } from '@/infrastructure/persistence/pedido/PedidoRepository';
+
 import { Pedido } from '@/domain/pedido/entities/Pedido';
 import { StatusPedido } from '@/domain/pedido/value-objects/StatusPedido';
 import { _Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
+import { PedidoRepository } from '@/infrastructure/persistence/pedido/PedidoRepository';
+
 import { createTestDatabase } from '../_test-helpers';
 
 describe('PedidoRepository', () => {
@@ -15,7 +17,9 @@ describe('PedidoRepository', () => {
     repository = new PedidoRepository(db);
   });
 
-  function criarPedidoValido(overrides?: Partial<{ id: string; restauranteId: string; status: StatusPedido }>): Pedido {
+  function criarPedidoValido(
+    overrides?: Partial<{ id: string; restauranteId: string; status: StatusPedido }>
+  ): Pedido {
     return Pedido.criar({
       restauranteId: overrides?.restauranteId ?? 'rest-123',
       itens: [],

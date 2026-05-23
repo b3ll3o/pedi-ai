@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+
 import styles from './ModifierGroupForm.module.css';
 
 export interface ModifierValueInput {
@@ -29,12 +30,61 @@ interface ValueEntry extends ModifierValueInput {
   tempId?: string;
 }
 
-export function ModifierGroupForm({
-  modifierGroup,
-  modifierValues = [],
-  onSubmit,
-  onCancel,
-}: ModifierGroupFormProps) {
+interface ValidationErrors {
+  name?: string;
+  minMax?: string;
+  values?: string;
+}
+
+function validateMinMax(
+  minSelections: number,
+  maxSelections: number,
+  required: boolean
+): string | undefined {
+  if (minSelections < 0) {
+    return 'Valor mínimo não pode ser negativo';
+  }
+  if (maxSelections < 1) {
+    return 'Valor máximo deve ser pelo menos 1';
+  }
+  if (maxSelections < minSelections) {
+    return 'Valor máximo deve ser maior ou igual ao mínimo';
+  }
+  if (required && minSelections < 1) {
+    return 'Se obrigatório, mínimo deve ser pelo menos 1';
+  }
+  return undefined;
+}
+
+function validateName(name: string): string | undefined {
+  if (!name.trim()) {
+    return 'Nome é obrigatório';
+  }
+  return undefined;
+}
+
+function validateModifierGroup(
+  name: string,
+  minSelections: number,
+  maxSelections: number,
+  required: boolean
+): ValidationErrors {
+  const errors: ValidationErrors = {};
+
+  const nameError = validateName(name);
+  if (nameError) errors.name = nameError;
+
+  const minMaxError = validateMinMax(minSelections, maxSelections, required);
+  if (minMaxError) errors.minMax = minMaxError;
+
+  return errors;
+}
+
+function useModifierGroupForm(
+  modifierGroup: any,
+  modifierValues: any[],
+  onSubmitProp: (data: ModifierGroupInput) => void
+) {
   const isEditMode = Boolean(modifierGroup);
   const [name, setName] = useState(modifierGroup?.name ?? '');
   const [required, setRequired] = useState(modifierGroup?.required ?? false);
@@ -42,7 +92,7 @@ export function ModifierGroupForm({
   const [maxSelections, setMaxSelections] = useState(modifierGroup?.max_selections ?? 1);
   const [values, setValues] = useState<ValueEntry[]>(
     modifierValues.length > 0
-      ? modifierValues.map((v) => ({
+      ? modifierValues.map((v: { id: string; name: string; price_adjustment: number }) => ({
           id: v.id,
           name: v.name,
           price_adjustment: v.price_adjustment,
@@ -50,59 +100,95 @@ export function ModifierGroupForm({
       : []
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<{ name?: string; minMax?: string; values?: string }>({});
+  const [errors, setErrors] = useState<ValidationErrors>({});
 
-  const validateForm = (): boolean => {
-    const newErrors: { name?: string; minMax?: string; values?: string } = {};
-
-    if (!name.trim()) {
-      newErrors.name = 'Nome é obrigatório';
-    }
-
-    if (minSelections < 0) {
-      newErrors.minMax = 'Valor mínimo não pode ser negativo';
-    } else if (maxSelections < 1) {
-      newErrors.minMax = 'Valor máximo deve ser pelo menos 1';
-    } else if (maxSelections < minSelections) {
-      newErrors.minMax = 'Valor máximo deve ser maior ou igual ao mínimo';
-    } else if (required && minSelections < 1) {
-      newErrors.minMax = 'Se obrigatório, mínimo deve ser pelo menos 1';
-    }
-
+  const validateForm = useCallback((): boolean => {
+    const newErrors = validateModifierGroup(name, minSelections, maxSelections, required);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
+  }, [name, minSelections, maxSelections, required]);
 
-  const addValue = () => {
+  const addValue = useCallback(() => {
     setValues((prev) => [...prev, { name: '', price_adjustment: 0 }]);
-  };
+  }, []);
 
-  const removeValue = (index: number) => {
+  const removeValue = useCallback((index: number) => {
     setValues((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const updateValue = useCallback(
+    (index: number, field: keyof ModifierValueInput, value: string | number) => {
+      setValues((prev) => prev.map((v, i) => (i === index ? { ...v, [field]: value } : v)));
+    },
+    []
+  );
+
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+
+      if (!validateForm()) return;
+
+      setIsSubmitting(true);
+      try {
+        await onSubmitProp({
+          name: name.trim(),
+          required,
+          min_selections: minSelections,
+          max_selections: maxSelections,
+          values: values.length > 0 ? values : undefined,
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [name, required, minSelections, maxSelections, values, onSubmitProp, validateForm]
+  );
+
+  return {
+    name,
+    setName,
+    required,
+    setRequired,
+    minSelections,
+    setMinSelections,
+    maxSelections,
+    setMaxSelections,
+    values,
+    isSubmitting,
+    errors,
+    isEditMode,
+    addValue,
+    removeValue,
+    updateValue,
+    handleSubmit,
   };
+}
 
-  const updateValue = (index: number, field: keyof ModifierValueInput, value: string | number) => {
-    setValues((prev) => prev.map((v, i) => (i === index ? { ...v, [field]: value } : v)));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm()) return;
-
-    setIsSubmitting(true);
-    try {
-      await onSubmit({
-        name: name.trim(),
-        required,
-        min_selections: minSelections,
-        max_selections: maxSelections,
-        values: values.length > 0 ? values : undefined,
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+export function ModifierGroupForm({
+  modifierGroup,
+  modifierValues = [],
+  onSubmit,
+  onCancel,
+}: ModifierGroupFormProps) {
+  const {
+    name,
+    setName,
+    required,
+    setRequired,
+    minSelections,
+    setMinSelections,
+    maxSelections,
+    setMaxSelections,
+    values,
+    isSubmitting,
+    errors,
+    isEditMode,
+    addValue,
+    removeValue,
+    updateValue,
+    handleSubmit,
+  } = useModifierGroupForm(modifierGroup, modifierValues, onSubmit);
 
   return (
     <form className={styles.form} onSubmit={handleSubmit}>

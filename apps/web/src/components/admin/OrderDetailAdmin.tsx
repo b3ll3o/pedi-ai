@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
+import { useState } from 'react';
+
 import type { OrderWithItems, OrderStatus } from '@/application/services/adminOrderService';
+
 import styles from './OrderDetailAdmin.module.css';
 
 interface OrderDetailAdminProps {
@@ -29,46 +31,177 @@ const STATUS_COLORS: Record<OrderStatus, string> = {
   cancelled: '#ef4444',
 };
 
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  pix: 'PIX',
+  credit_card: 'Cartão de Crédito',
+  debit_card: 'Cartão de Débito',
+};
+
+const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  pending: 'Pendente',
+  paid: 'Pago',
+  refunded: 'Reembolsado',
+};
+
+function formatDate(dateString: string): string {
+  const date = new Date(dateString);
+  return new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+}
+
+function formatPrice(price: number): string {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(price);
+}
+
+function getNextStatus(orderStatus: OrderStatus): OrderStatus | null {
+  switch (orderStatus) {
+    case 'pending_payment':
+      return 'paid';
+    case 'paid':
+      return 'preparing';
+    case 'preparing':
+      return 'ready';
+    case 'ready':
+      return 'delivered';
+    default:
+      return null;
+  }
+}
+
+function PaymentMethodDisplay({ method }: { method: string | null | undefined }) {
+  const label = method ? PAYMENT_METHOD_LABELS[method] : null;
+  return <span>{label || method || '-'}</span>;
+}
+
+function PaymentStatusDisplay({ status }: { status: string | null | undefined }) {
+  const label = status ? PAYMENT_STATUS_LABELS[status] : null;
+  return <span>{label || 'Falhou'}</span>;
+}
+
+function OrderItemsList({ items }: { items: OrderWithItems['items'] }) {
+  if (!items || items.length === 0) {
+    return <p className={styles.noItems}>Nenhum item encontrado</p>;
+  }
+
+  return (
+    <div className={styles.itemsList}>
+      {items.map((item: any) => (
+        <div key={item.id} className={styles.item}>
+          <div className={styles.itemInfo}>
+            <span className={styles.itemQuantity}>{item.quantity}x</span>
+            <span className={styles.itemName}>#{item.product_id.slice(-6)} - Item</span>
+          </div>
+          <span className={styles.itemPrice}>{formatPrice(item.unit_price * item.quantity)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function OrderTotals({ subtotal, tax, total }: { subtotal: number; tax: number; total: number }) {
+  return (
+    <div className={styles.totals}>
+      <div className={styles.totalRow}>
+        <span>Subtotal:</span>
+        <span>{formatPrice(subtotal)}</span>
+      </div>
+      <div className={styles.totalRow}>
+        <span>Taxa:</span>
+        <span>{formatPrice(tax)}</span>
+      </div>
+      <div className={`${styles.totalRow} ${styles.grandTotal}`}>
+        <span>Total:</span>
+        <span>{formatPrice(total)}</span>
+      </div>
+    </div>
+  );
+}
+
+function StatusHistoryList({ history }: { history: OrderWithItems['status_history'] }) {
+  if (!history || history.length === 0) return null;
+
+  return (
+    <div className={styles.historyList}>
+      {history.map((entry: any) => (
+        <div key={entry.id} className={styles.historyItem}>
+          <span
+            className={styles.historyStatus}
+            style={{ color: STATUS_COLORS[entry.status as OrderStatus] }}
+          >
+            {STATUS_LABELS[entry.status as OrderStatus]}
+          </span>
+          <span className={styles.historyDate}>{formatDate(entry.created_at)}</span>
+          {entry.notes && <span className={styles.historyNotes}>{entry.notes}</span>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CancelModal({
+  show,
+  cancelReason,
+  onReasonChange,
+  onCancel,
+  onConfirm,
+  isUpdating,
+}: {
+  show: boolean;
+  cancelReason: string;
+  onReasonChange: (reason: string) => void;
+  onCancel: () => void;
+  onConfirm: () => void;
+  isUpdating: boolean;
+}) {
+  if (!show) return null;
+
+  return (
+    <div className={styles.modalOverlay}>
+      <div className={styles.modal}>
+        <h3 className={styles.modalTitle}>Cancelar Pedido</h3>
+        <p className={styles.modalText}>
+          Tem certeza que deseja cancelar este pedido? Esta ação não pode ser desfeita.
+        </p>
+        <textarea
+          className={styles.cancelReason}
+          placeholder="Motivo do cancelamento (opcional)"
+          value={cancelReason}
+          onChange={(e) => onReasonChange(e.target.value)}
+          rows={3}
+        />
+        <div className={styles.modalActions}>
+          <button type="button" className={styles.modalCancel} onClick={onCancel}>
+            Voltar
+          </button>
+          <button
+            type="button"
+            className={styles.modalConfirm}
+            onClick={onConfirm}
+            disabled={isUpdating}
+          >
+            {isUpdating ? 'Cancelando...' : 'Confirmar Cancelamento'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function OrderDetailAdmin({ order, onUpdateStatus, onCancel }: OrderDetailAdminProps) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(date);
-  };
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(price);
-  };
-
-  const getNextStatus = (): OrderStatus | null => {
-    switch (order.status) {
-      case 'pending_payment':
-        return 'paid';
-      case 'paid':
-        return 'preparing';
-      case 'preparing':
-        return 'ready';
-      case 'ready':
-        return 'delivered';
-      default:
-        return null;
-    }
-  };
-
   const handleUpdateStatus = async () => {
-    const nextStatus = getNextStatus();
+    const nextStatus = getNextStatus(order.status as OrderStatus);
     if (!nextStatus) return;
 
     setIsUpdating(true);
@@ -88,6 +221,9 @@ export function OrderDetailAdmin({ order, onUpdateStatus, onCancel }: OrderDetai
       setIsUpdating(false);
     }
   };
+
+  const nextStatus = getNextStatus(order.status as OrderStatus);
+  const canCancel = order.status !== 'cancelled' && order.status !== 'delivered';
 
   return (
     <div className={styles.container}>
@@ -111,40 +247,12 @@ export function OrderDetailAdmin({ order, onUpdateStatus, onCancel }: OrderDetai
           {/* Order Items */}
           <div className={styles.section}>
             <h2 className={styles.sectionTitle}>Itens do Pedido</h2>
-            <div className={styles.itemsList}>
-              {order.items?.map((item: { id: string; product_id: string; quantity: number; unit_price: number }) => (
-                <div key={item.id} className={styles.item}>
-                  <div className={styles.itemInfo}>
-                    <span className={styles.itemQuantity}>{item.quantity}x</span>
-                    <span className={styles.itemName}>#{item.product_id.slice(-6)} - Item</span>
-                  </div>
-                  <span className={styles.itemPrice}>
-                    {formatPrice(item.unit_price * item.quantity)}
-                  </span>
-                </div>
-              ))}
-            </div>
-            {(!order.items || order.items.length === 0) && (
-              <p className={styles.noItems}>Nenhum item encontrado</p>
-            )}
+            <OrderItemsList items={order.items} />
           </div>
 
           {/* Order Totals */}
           <div className={styles.section}>
-            <div className={styles.totals}>
-              <div className={styles.totalRow}>
-                <span>Subtotal:</span>
-                <span>{formatPrice(order.subtotal)}</span>
-              </div>
-              <div className={styles.totalRow}>
-                <span>Taxa:</span>
-                <span>{formatPrice(order.tax)}</span>
-              </div>
-              <div className={`${styles.totalRow} ${styles.grandTotal}`}>
-                <span>Total:</span>
-                <span>{formatPrice(order.total)}</span>
-              </div>
-            </div>
+            <OrderTotals subtotal={order.subtotal} tax={order.tax} total={order.total} />
           </div>
         </div>
 
@@ -166,66 +274,39 @@ export function OrderDetailAdmin({ order, onUpdateStatus, onCancel }: OrderDetai
               <div className={styles.infoItem}>
                 <span className={styles.infoLabel}>Pagamento</span>
                 <span className={styles.infoValue}>
-                  {order.payment_method === 'pix'
-                    ? 'PIX'
-                    : order.payment_method === 'credit_card'
-                      ? 'Cartão de Crédito'
-                      : order.payment_method === 'debit_card'
-                        ? 'Cartão de Débito'
-                        : order.payment_method || '-'}
+                  <PaymentMethodDisplay method={order.payment_method} />
                 </span>
               </div>
               <div className={styles.infoItem}>
                 <span className={styles.infoLabel}>Status Pagamento</span>
                 <span className={styles.infoValue}>
-                  {order.payment_status === 'pending'
-                    ? 'Pendente'
-                    : order.payment_status === 'paid'
-                      ? 'Pago'
-                      : order.payment_status === 'refunded'
-                        ? 'Reembolsado'
-                        : 'Falhou'}
+                  <PaymentStatusDisplay status={order.payment_status} />
                 </span>
               </div>
             </div>
           </div>
 
           {/* Status History */}
-          {order.status_history && order.status_history.length > 0 && (
-            <div className={styles.section}>
-              <h2 className={styles.sectionTitle}>Histórico</h2>
-              <div className={styles.historyList}>
-                {order.status_history.map((entry: { id: string; status: string; notes: string | null; created_at: string }) => (
-                  <div key={entry.id} className={styles.historyItem}>
-                    <span
-                      className={styles.historyStatus}
-                      style={{ color: STATUS_COLORS[entry.status as OrderStatus] }}
-                    >
-                      {STATUS_LABELS[entry.status as OrderStatus]}
-                    </span>
-                    <span className={styles.historyDate}>{formatDate(entry.created_at)}</span>
-                    {entry.notes && <span className={styles.historyNotes}>{entry.notes}</span>}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <div className={styles.section}>
+            <h2 className={styles.sectionTitle}>Histórico</h2>
+            <StatusHistoryList history={order.status_history} />
+          </div>
 
           {/* Actions */}
           <div className={styles.section}>
             <h2 className={styles.sectionTitle}>Ações</h2>
             <div className={styles.actions}>
-              {getNextStatus() && (
+              {nextStatus && (
                 <button
                   type="button"
                   className={styles.updateButton}
                   onClick={handleUpdateStatus}
                   disabled={isUpdating}
                 >
-                  {isUpdating ? 'Atualizando...' : `Marcar como ${STATUS_LABELS[getNextStatus()!]}`}
+                  {isUpdating ? 'Atualizando...' : `Marcar como ${STATUS_LABELS[nextStatus]}`}
                 </button>
               )}
-              {order.status !== 'cancelled' && order.status !== 'delivered' && (
+              {canCancel && (
                 <button
                   type="button"
                   className={styles.cancelButton}
@@ -241,40 +322,14 @@ export function OrderDetailAdmin({ order, onUpdateStatus, onCancel }: OrderDetai
       </div>
 
       {/* Cancel Modal */}
-      {showCancelModal && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modal}>
-            <h3 className={styles.modalTitle}>Cancelar Pedido</h3>
-            <p className={styles.modalText}>
-              Tem certeza que deseja cancelar este pedido? Esta ação não pode ser desfeita.
-            </p>
-            <textarea
-              className={styles.cancelReason}
-              placeholder="Motivo do cancelamento (opcional)"
-              value={cancelReason}
-              onChange={(e) => setCancelReason(e.target.value)}
-              rows={3}
-            />
-            <div className={styles.modalActions}>
-              <button
-                type="button"
-                className={styles.modalCancel}
-                onClick={() => setShowCancelModal(false)}
-              >
-                Voltar
-              </button>
-              <button
-                type="button"
-                className={styles.modalConfirm}
-                onClick={handleCancel}
-                disabled={isUpdating}
-              >
-                {isUpdating ? 'Cancelando...' : 'Confirmar Cancelamento'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <CancelModal
+        show={showCancelModal}
+        cancelReason={cancelReason}
+        onReasonChange={setCancelReason}
+        onCancel={() => setShowCancelModal(false)}
+        onConfirm={handleCancel}
+        isUpdating={isUpdating}
+      />
     </div>
   );
 }

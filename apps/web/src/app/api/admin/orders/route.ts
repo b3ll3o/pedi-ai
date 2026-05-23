@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { sql } from '@/infrastructure/database/pg-client';
 import { getSession } from '@/lib/auth/session';
 
@@ -84,7 +85,8 @@ export async function GET(request: NextRequest) {
     // Group items by order_id
     const itemsByOrderId = orderItems.reduce<
       Record<string, { order_id: string; product_name?: string }[]>
-    >((acc, curr) => {
+    >(
+      (acc, curr) => {
         const orderId = curr.order_id as string;
         const item = curr as { order_id: string; product_name?: string };
         if (!acc[orderId]) {

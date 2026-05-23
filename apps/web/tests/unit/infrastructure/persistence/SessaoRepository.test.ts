@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { SessaoRepository } from '@/infrastructure/persistence/autenticacao/SessaoRepository';
+
 import { Sessao } from '@/domain/autenticacao/entities/Sessao';
+import { SessaoRepository } from '@/infrastructure/persistence/autenticacao/SessaoRepository';
+
 import { createTestDatabase } from '../_test-helpers';
 
 describe('SessaoRepository', () => {
@@ -13,7 +15,9 @@ describe('SessaoRepository', () => {
     repository = new SessaoRepository(db);
   });
 
-  function criarSessaoValida(overrides?: Partial<{ id: string; usuarioId: string; token: string; dispositivo: string }>): Sessao {
+  function criarSessaoValida(
+    overrides?: Partial<{ id: string; usuarioId: string; token: string; dispositivo: string }>
+  ): Sessao {
     return Sessao.criar({
       usuarioId: overrides?.usuarioId ?? 'usuario-123',
       token: overrides?.token ?? 'token-abc-xyz',
@@ -81,9 +85,17 @@ describe('SessaoRepository', () => {
 
   describe('findByUsuarioId', () => {
     it('deve encontrar sessoes por usuarioId', async () => {
-      const s1 = criarSessaoValida({ token: 'token-1', id: 'sessao-1', usuarioId: 'outro-usuario' });
+      const s1 = criarSessaoValida({
+        token: 'token-1',
+        id: 'sessao-1',
+        usuarioId: 'outro-usuario',
+      });
       const s2 = criarSessaoValida({ token: 'token-2', id: 'sessao-2', usuarioId: 'usuario-123' });
-      const s3 = criarSessaoValida({ token: 'token-3', id: 'sessao-3', usuarioId: 'outro-usuario' });
+      const s3 = criarSessaoValida({
+        token: 'token-3',
+        id: 'sessao-3',
+        usuarioId: 'outro-usuario',
+      });
       await repository.create(s1);
       await repository.create(s2);
       await repository.create(s3);
@@ -109,8 +121,16 @@ describe('SessaoRepository', () => {
 
   describe('deleteByUsuarioId', () => {
     it('deve remover todas as sessoes do usuario', async () => {
-      const s1 = criarSessaoValida({ token: 'token-1', id: 'sessao-1', usuarioId: 'usuario-multi' });
-      const s2 = criarSessaoValida({ token: 'token-2', id: 'sessao-2', usuarioId: 'usuario-multi' });
+      const s1 = criarSessaoValida({
+        token: 'token-1',
+        id: 'sessao-1',
+        usuarioId: 'usuario-multi',
+      });
+      const s2 = criarSessaoValida({
+        token: 'token-2',
+        id: 'sessao-2',
+        usuarioId: 'usuario-multi',
+      });
       await repository.create(s1);
       await repository.create(s2);
 

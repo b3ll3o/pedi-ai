@@ -1,7 +1,7 @@
-import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, waitFor } from '@testing-library/react';
 import { fireEvent, cleanup } from '@testing-library/react';
 import React from 'react';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 
 import { RegisterForm } from '@/components/auth/RegisterForm';
 
@@ -38,13 +38,18 @@ describe('RegisterForm — loading state (bug fix verification)', () => {
 
   it('botão NÃO está desabilitado após erro de registro', async () => {
     const onSubmit = vi.fn().mockRejectedValue(new Error('Email já cadastrado'));
-    const { getByTestId, getByText } = render(<RegisterForm onSubmit={onSubmit} />);
+    const utils = render(<RegisterForm onSubmit={onSubmit} />);
 
-    fireEvent.change(getByTestId('email-input'), { target: { value: 'existente@email.com' } });
-    fireEvent.change(getByTestId('password-input'), { target: { value: 'senha123' } });
-    fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'senha123' } });
-    fireEvent.click(getByText('Quero gerenciar meu restaurante'));
-    fireEvent.click(getByTestId('register-button'));
+    fireEvent.change(utils.getByTestId('name-input'), { target: { value: 'João Silva' } });
+    fireEvent.change(utils.getByTestId('email-input'), {
+      target: { value: 'existente@email.com' },
+    });
+    fireEvent.change(utils.getByTestId('password-input'), { target: { value: 'senha123' } });
+    fireEvent.change(utils.getByTestId('confirm-password-input'), {
+      target: { value: 'senha123' },
+    });
+    fireEvent.click(utils.getByText('Quero gerenciar meu restaurante'));
+    fireEvent.click(utils.getByTestId('register-button'));
 
     // Aguarda erro aparecer
     await waitFor(() => {
@@ -54,20 +59,23 @@ describe('RegisterForm — loading state (bug fix verification)', () => {
     });
 
     // Bug fix: botão deve ser reabilitado após erro
-    const button = getByTestId('register-button');
+    const button = utils.getByTestId('register-button');
     expect(button).not.toBeDisabled();
     expect(button).toHaveTextContent('Criar Conta');
   });
 
   it('botão NÃO está desabilitado após erro genérico (catch)', async () => {
     const onSubmit = vi.fn().mockRejectedValue(new Error('Erro interno'));
-    const { getByTestId, getByText } = render(<RegisterForm onSubmit={onSubmit} />);
+    const utils = render(<RegisterForm onSubmit={onSubmit} />);
 
-    fireEvent.change(getByTestId('email-input'), { target: { value: 'teste@email.com' } });
-    fireEvent.change(getByTestId('password-input'), { target: { value: 'senha123' } });
-    fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'senha123' } });
-    fireEvent.click(getByText('Quero gerenciar meu restaurante'));
-    fireEvent.click(getByTestId('register-button'));
+    fireEvent.change(utils.getByTestId('name-input'), { target: { value: 'João Silva' } });
+    fireEvent.change(utils.getByTestId('email-input'), { target: { value: 'teste@email.com' } });
+    fireEvent.change(utils.getByTestId('password-input'), { target: { value: 'senha123' } });
+    fireEvent.change(utils.getByTestId('confirm-password-input'), {
+      target: { value: 'senha123' },
+    });
+    fireEvent.click(utils.getByText('Quero gerenciar meu restaurante'));
+    fireEvent.click(utils.getByTestId('register-button'));
 
     await waitFor(() => {
       const errorMsg = document.querySelector('[data-testid="error-message"]');
@@ -76,49 +84,57 @@ describe('RegisterForm — loading state (bug fix verification)', () => {
     });
 
     // Bug fix: botão deve ser reabilitado após qualquer erro
-    const button = getByTestId('register-button');
+    const button = utils.getByTestId('register-button');
     expect(button).not.toBeDisabled();
     expect(button).toHaveTextContent('Criar Conta');
   });
 
   it('botão NÃO está desabilitado após sucesso (finally executa mesmo com redirect)', async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
-    const { getByTestId, getByText } = render(<RegisterForm onSubmit={onSubmit} />);
+    const utils = render(<RegisterForm onSubmit={onSubmit} />);
 
-    fireEvent.change(getByTestId('email-input'), { target: { value: 'novo@email.com' } });
-    fireEvent.change(getByTestId('password-input'), { target: { value: 'senha123' } });
-    fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'senha123' } });
-    fireEvent.click(getByText('Quero gerenciar meu restaurante'));
-    fireEvent.click(getByTestId('register-button'));
+    fireEvent.change(utils.getByTestId('name-input'), { target: { value: 'João Silva' } });
+    fireEvent.change(utils.getByTestId('email-input'), { target: { value: 'novo@email.com' } });
+    fireEvent.change(utils.getByTestId('password-input'), { target: { value: 'senha123' } });
+    fireEvent.change(utils.getByTestId('confirm-password-input'), {
+      target: { value: 'senha123' },
+    });
+    fireEvent.click(utils.getByText('Quero gerenciar meu restaurante'));
+    fireEvent.click(utils.getByTestId('register-button'));
 
     // Aguarda chamada de onSubmit
     await waitFor(() => {
-      expect(onSubmit).toHaveBeenCalledWith('novo@email.com', 'senha123', 'gerenciar_restaurante');
+      expect(onSubmit).toHaveBeenCalledWith(
+        'João Silva',
+        'novo@email.com',
+        'senha123',
+        'gerenciar_restaurante'
+      );
     });
 
     // Bug fix: botão deve ser reabilitado após sucesso (finally executa)
-    const button = getByTestId('register-button');
+    const button = utils.getByTestId('register-button');
     expect(button).not.toBeDisabled();
   });
 
   it('botão ESTÁ desabilitado durante loading (estado transitório)', async () => {
     const onSubmit = vi.fn(
-      () =>
-        new Promise((resolve) =>
-          setTimeout(() => resolve(undefined), 100)
-        )
+      () => new Promise((resolve) => setTimeout(() => resolve(undefined), 100))
     );
-    const { getByTestId, getByText } = render(<RegisterForm onSubmit={onSubmit} />);
+    const utils = render(<RegisterForm onSubmit={onSubmit} />);
 
-    fireEvent.change(getByTestId('email-input'), { target: { value: 'teste@email.com' } });
-    fireEvent.change(getByTestId('password-input'), { target: { value: 'senha123' } });
-    fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'senha123' } });
-    fireEvent.click(getByText('Quero gerenciar meu restaurante'));
-    fireEvent.click(getByTestId('register-button'));
+    fireEvent.change(utils.getByTestId('name-input'), { target: { value: 'João Silva' } });
+    fireEvent.change(utils.getByTestId('email-input'), { target: { value: 'teste@email.com' } });
+    fireEvent.change(utils.getByTestId('password-input'), { target: { value: 'senha123' } });
+    fireEvent.change(utils.getByTestId('confirm-password-input'), {
+      target: { value: 'senha123' },
+    });
+    fireEvent.click(utils.getByText('Quero gerenciar meu restaurante'));
+    fireEvent.click(utils.getByTestId('register-button'));
 
     // Imediatamente após click, o botão deve estar desabilitado
     await waitFor(() => {
-      const button = getByTestId('register-button');
+      const button = utils.getByTestId('register-button');
       expect(button).toBeDisabled();
       expect(button).toHaveTextContent('Criando conta');
     });
@@ -126,13 +142,18 @@ describe('RegisterForm — loading state (bug fix verification)', () => {
 
   it('mensagem de erro é exibida quando registro falha', async () => {
     const onSubmit = vi.fn().mockRejectedValue(new Error('Email já cadastrado'));
-    const { getByTestId, getByText } = render(<RegisterForm onSubmit={onSubmit} />);
+    const utils = render(<RegisterForm onSubmit={onSubmit} />);
 
-    fireEvent.change(getByTestId('email-input'), { target: { value: 'existente@email.com' } });
-    fireEvent.change(getByTestId('password-input'), { target: { value: 'senha123' } });
-    fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'senha123' } });
-    fireEvent.click(getByText('Quero gerenciar meu restaurante'));
-    fireEvent.click(getByTestId('register-button'));
+    fireEvent.change(utils.getByTestId('name-input'), { target: { value: 'João Silva' } });
+    fireEvent.change(utils.getByTestId('email-input'), {
+      target: { value: 'existente@email.com' },
+    });
+    fireEvent.change(utils.getByTestId('password-input'), { target: { value: 'senha123' } });
+    fireEvent.change(utils.getByTestId('confirm-password-input'), {
+      target: { value: 'senha123' },
+    });
+    fireEvent.click(utils.getByText('Quero gerenciar meu restaurante'));
+    fireEvent.click(utils.getByTestId('register-button'));
 
     await waitFor(() => {
       const errorMsg = document.querySelector('[data-testid="error-message"]');
@@ -151,15 +172,18 @@ describe('RegisterForm — loading state (bug fix verification)', () => {
       return Promise.resolve(undefined);
     });
 
-    const { getByTestId, getByText } = render(<RegisterForm onSubmit={onSubmit} />);
+    const utils = render(<RegisterForm onSubmit={onSubmit} />);
 
-    fireEvent.change(getByTestId('email-input'), { target: { value: 'teste@email.com' } });
-    fireEvent.change(getByTestId('password-input'), { target: { value: 'senha123' } });
-    fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'senha123' } });
-    fireEvent.click(getByText('Quero gerenciar meu restaurante'));
+    fireEvent.change(utils.getByTestId('name-input'), { target: { value: 'João Silva' } });
+    fireEvent.change(utils.getByTestId('email-input'), { target: { value: 'teste@email.com' } });
+    fireEvent.change(utils.getByTestId('password-input'), { target: { value: 'senha123' } });
+    fireEvent.change(utils.getByTestId('confirm-password-input'), {
+      target: { value: 'senha123' },
+    });
+    fireEvent.click(utils.getByText('Quero gerenciar meu restaurante'));
 
     // Primeiro submit - falha
-    fireEvent.click(getByTestId('register-button'));
+    fireEvent.click(utils.getByTestId('register-button'));
 
     await waitFor(() => {
       const errorMsg = document.querySelector('[data-testid="error-message"]');
@@ -168,11 +192,11 @@ describe('RegisterForm — loading state (bug fix verification)', () => {
     });
 
     // Bug fix: botão deve estar habilitado para permitir retry
-    const button = getByTestId('register-button');
+    const button = utils.getByTestId('register-button');
     expect(button).not.toBeDisabled();
 
     // Segundo submit - sucesso (ou ao menos não dá erro de re-submit)
-    fireEvent.click(getByTestId('register-button'));
+    fireEvent.click(utils.getByTestId('register-button'));
 
     await waitFor(() => {
       expect(onSubmit).toHaveBeenCalledTimes(2);

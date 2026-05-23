@@ -1,6 +1,7 @@
-import { PediDatabase } from '../database';
-import { ICategoriaRepository } from '@/domain/cardapio/repositories/ICategoriaRepository';
 import { Categoria } from '@/domain/cardapio/entities/Categoria';
+import { ICategoriaRepository } from '@/domain/cardapio/repositories/ICategoriaRepository';
+
+import { PediDatabase } from '../database';
 import type { CategoriaDbModel } from '../types';
 
 export class CategoriaRepository implements ICategoriaRepository {

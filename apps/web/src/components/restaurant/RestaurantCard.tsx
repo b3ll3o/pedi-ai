@@ -1,7 +1,8 @@
 'use client';
 
-import Image from 'next/image';
 import { MapPin, Clock } from 'lucide-react';
+import Image from 'next/image';
+
 import styles from './RestaurantCard.module.css';
 
 export interface Restaurant {

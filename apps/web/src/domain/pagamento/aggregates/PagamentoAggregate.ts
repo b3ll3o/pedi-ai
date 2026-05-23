@@ -1,11 +1,12 @@
 import { AggregateRootClass } from '@/domain/shared';
 import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
+
 import { Pagamento, type PagamentoProps } from '../entities/Pagamento';
 import { Transacao } from '../entities/Transacao';
 import { PagamentoConfirmadoEvent } from '../events/PagamentoConfirmadoEvent';
 import { PagamentoFalhouEvent } from '../events/PagamentoFalhouEvent';
-import { ReembolsoIniciadoEvent } from '../events/ReembolsoIniciadoEvent';
 import { ReembolsoConfirmadoEvent } from '../events/ReembolsoConfirmadoEvent';
+import { ReembolsoIniciadoEvent } from '../events/ReembolsoIniciadoEvent';
 
 export interface PagamentoAggregateProps {
   pagamento: Pagamento;

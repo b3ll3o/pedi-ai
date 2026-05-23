@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+
 import { createMockPixPaymentAdapter, PixChargeMock } from './PixPaymentAdapter.mock';
 
 describe('Payment Adapter Mocks', () => {
@@ -18,7 +19,7 @@ describe('Payment Adapter Mocks', () => {
           pedidoId: 'pedido-123',
           respostaParcial: {
             id: 'pix_custom_123',
-            valor: 75.50,
+            valor: 75.5,
           },
         },
       });
@@ -26,7 +27,7 @@ describe('Payment Adapter Mocks', () => {
       const result = await mockPix.criarCobranca(5000, 'pedido-123');
 
       expect(result.id).toBe('pix_custom_123');
-      expect(result.valor).toBe(75.50);
+      expect(result.valor).toBe(75.5);
     });
 
     it('deve suportar vi.fn() para spying', async () => {
@@ -42,7 +43,7 @@ describe('Payment Adapter Mocks', () => {
       const pendente = PixChargeMock.pendente('pedido-1');
 
       expect(pendente.id).toContain('pix_pedido-1');
-      expect(pendente.valor).toBe(100.00);
+      expect(pendente.valor).toBe(100.0);
       expect(pendente.codigoPix).toContain('pedido-1');
     });
 

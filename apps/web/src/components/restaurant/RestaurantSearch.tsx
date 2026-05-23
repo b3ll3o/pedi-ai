@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+
 import styles from './RestaurantSearch.module.css';
 
 interface RestaurantSearchProps {

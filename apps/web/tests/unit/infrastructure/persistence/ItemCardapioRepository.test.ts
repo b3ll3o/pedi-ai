@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { ItemCardapioRepository } from '@/infrastructure/persistence/cardapio/ItemCardapioRepository';
+
 import { ItemCardapio } from '@/domain/cardapio/entities/ItemCardapio';
 import { TipoItemCardapio } from '@/domain/cardapio/value-objects/TipoItemCardapio';
 import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
+import { ItemCardapioRepository } from '@/infrastructure/persistence/cardapio/ItemCardapioRepository';
+
 import { createTestDatabase } from '../_test-helpers';
 
 describe('ItemCardapioRepository', () => {
@@ -15,7 +17,9 @@ describe('ItemCardapioRepository', () => {
     repository = new ItemCardapioRepository(db);
   });
 
-  function criarItemValido(overrides?: Partial<{ id: string; categoriaId: string; nome: string; ativo: boolean }>): ItemCardapio {
+  function criarItemValido(
+    overrides?: Partial<{ id: string; categoriaId: string; nome: string; ativo: boolean }>
+  ): ItemCardapio {
     return ItemCardapio.criar({
       categoriaId: overrides?.categoriaId ?? 'cat-123',
       restauranteId: 'rest-123',
@@ -99,7 +103,7 @@ describe('ItemCardapioRepository', () => {
       const i2 = criarItemValido({ id: 'item-2' });
       // ItemCardapio.criar() ignora id passado e gera UUID, então buscamos pelos ids retornados
       const salvos = await repository.salvarMany([i1, i2]);
-      const idsReais = salvos.map(item => item.id);
+      const idsReais = salvos.map((item) => item.id);
 
       const resultado = await repository.buscarPorIds(idsReais);
 

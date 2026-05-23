@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { CategoriaRepository } from '@/infrastructure/persistence/cardapio/CategoriaRepository';
+
 import { Categoria } from '@/domain/cardapio/entities/Categoria';
+import { CategoriaRepository } from '@/infrastructure/persistence/cardapio/CategoriaRepository';
+
 import { createTestDatabase } from '../_test-helpers';
 
 describe('CategoriaRepository', () => {
@@ -13,7 +15,9 @@ describe('CategoriaRepository', () => {
     repository = new CategoriaRepository(db);
   });
 
-  function criarCategoriaValida(overrides?: Partial<{ id: string; restauranteId: string; nome: string; ativo: boolean }>): Categoria {
+  function criarCategoriaValida(
+    overrides?: Partial<{ id: string; restauranteId: string; nome: string; ativo: boolean }>
+  ): Categoria {
     return Categoria.criar({
       restauranteId: overrides?.restauranteId ?? 'rest-123',
       nome: overrides?.nome ?? 'Bebidas',
@@ -66,7 +70,11 @@ describe('CategoriaRepository', () => {
     it('deve retornar todas as categorias do restaurante', async () => {
       const c1 = criarCategoriaValida({ id: 'cat-1', nome: 'Bebidas' });
       const c2 = criarCategoriaValida({ id: 'cat-2', nome: 'Pratos' });
-      const c3 = criarCategoriaValida({ id: 'cat-3', nome: 'Sobremesas', restauranteId: 'outro-rest' });
+      const c3 = criarCategoriaValida({
+        id: 'cat-3',
+        nome: 'Sobremesas',
+        restauranteId: 'outro-rest',
+      });
       await repository.salvarMany([c1, c2, c3]);
 
       const resultado = await repository.buscarPorRestaurante('rest-123');

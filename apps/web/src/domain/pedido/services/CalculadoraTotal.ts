@@ -1,5 +1,6 @@
-import { ItemPedido } from '../entities/ItemPedido';
 import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
+
+import { ItemPedido } from '../entities/ItemPedido';
 
 export interface ResultadoCalculo {
   subtotal: Dinheiro;

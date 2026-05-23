@@ -1,6 +1,7 @@
-import { sql } from '@/infrastructure/database/pg-client';
-import { IAuthAdapter } from '@/application/autenticacao/services/RegistrarUsuarioUseCase';
 import { createHmac, randomBytes } from 'crypto';
+
+import { IAuthAdapter } from '@/application/autenticacao/services/RegistrarUsuarioUseCase';
+import { sql } from '@/infrastructure/database/pg-client';
 
 /**
  * Traduz mensagens de erro para pt-BR
@@ -55,7 +56,9 @@ export class PostgresAuthAdapter implements IAuthAdapter {
       if (error instanceof Error && error.message.includes('duplicate')) {
         throw new Error('Este email já está cadastrado');
       }
-      throw new Error(`Erro ao criar usuário: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Erro ao criar usuário: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 

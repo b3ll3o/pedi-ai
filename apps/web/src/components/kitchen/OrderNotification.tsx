@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+
 import type { KitchenOrder } from '@/hooks/useKitchenOrders';
+
 import styles from './OrderNotification.module.css';
 
 interface OrderNotificationProps {
@@ -56,12 +58,14 @@ export function OrderNotification({
         </div>
 
         <div className={styles.items}>
-          {order.items?.slice(0, 5).map((item: { id: string; product_id: string; quantity: number }) => (
-            <div key={item.id} className={styles.item}>
-              <span className={styles.itemQty}>{item.quantity}x</span>
-              <span className={styles.itemName}>#{item.product_id.slice(-6)} - Item</span>
-            </div>
-          ))}
+          {order.items
+            ?.slice(0, 5)
+            .map((item: { id: string; product_id: string; quantity: number }) => (
+              <div key={item.id} className={styles.item}>
+                <span className={styles.itemQty}>{item.quantity}x</span>
+                <span className={styles.itemName}>#{item.product_id.slice(-6)} - Item</span>
+              </div>
+            ))}
           {order.items && order.items.length > 5 && (
             <span className={styles.moreItems}>+{order.items.length - 5} mais</span>
           )}

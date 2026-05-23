@@ -1,13 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { OrderStatus, PaymentMethod, PaymentStatus } from '@prisma/client';
+
 import { PrismaService } from '../common/prisma.service';
 import { RealtimeService } from '../realtime/realtime.service';
-import { OrderStatus, PaymentMethod, PaymentStatus } from '@prisma/client';
 
 @Injectable()
 export class OrdersService {
   constructor(
     private prisma: PrismaService,
-    private readonly realtimeService: RealtimeService,
+    private readonly realtimeService: RealtimeService
   ) {}
 
   async findByRestaurant(restaurantId: string) {
@@ -35,6 +36,7 @@ export class OrdersService {
     customerId?: string;
     customerPhone?: string;
     customerName?: string;
+    customerEmail?: string;
     subtotal: number;
     tax: number;
     total: number;
@@ -56,6 +58,7 @@ export class OrdersService {
         customerId: data.customerId,
         customerPhone: data.customerPhone,
         customerName: data.customerName,
+        customerEmail: data.customerEmail,
         subtotal: data.subtotal,
         tax: data.tax,
         total: data.total,

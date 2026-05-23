@@ -1,8 +1,8 @@
 import { UseCase } from '@/application/shared';
 import { Restaurante } from '@/domain/admin/entities/Restaurante';
+import { RestauranteDesativadoEvent } from '@/domain/admin/events/RestauranteDesativadoEvent';
 import { IRestauranteRepository } from '@/domain/admin/repositories/IRestauranteRepository';
 import { IUsuarioRestauranteRepository } from '@/domain/admin/repositories/IUsuarioRestauranteRepository';
-import { RestauranteDesativadoEvent } from '@/domain/admin/events/RestauranteDesativadoEvent';
 import { isMultiRestaurantEnabled } from '@/lib/feature-flags';
 
 /**

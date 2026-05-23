@@ -1,8 +1,9 @@
 import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
-import { PrismaService } from '../common/prisma.service';
 import { UserRole } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
+
+import { PrismaService } from '../common/prisma.service';
 
 export interface JwtPayload {
   sub: string;
@@ -25,7 +26,7 @@ export interface AuthResponse {
 export class AuthService {
   constructor(
     private prisma: PrismaService,
-    private jwtService: JwtService,
+    private jwtService: JwtService
   ) {}
 
   async register(data: { email: string; password: string; name: string }) {
@@ -121,7 +122,12 @@ export class AuthService {
     };
   }
 
-  private generateTokens(payload: { id: string; email: string; role: string; name: string }): AuthResponse {
+  private generateTokens(payload: {
+    id: string;
+    email: string;
+    role: string;
+    name: string;
+  }): AuthResponse {
     const accessToken = this.jwtService.sign({
       sub: payload.id,
       email: payload.email,
@@ -133,7 +139,7 @@ export class AuthService {
       {
         secret: process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
         expiresIn: '7d',
-      },
+      }
     );
 
     return {

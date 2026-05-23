@@ -1,75 +1,81 @@
-import { test, expect, clearClientState } from '../shared/fixtures'
-import { WaiterDashboardPage } from '../../pages/WaiterDashboardPage'
+import { WaiterDashboardPage } from '../../pages/WaiterDashboardPage';
+import { test, expect, clearClientState } from '../shared/fixtures';
 
 test.describe('Kitchen / Waiter Dashboard', () => {
-  let kitchenPage: WaiterDashboardPage
+  let kitchenPage: WaiterDashboardPage;
 
   test.beforeEach(async ({ waiter }) => {
-    kitchenPage = new WaiterDashboardPage(waiter)
-    await kitchenPage.navigateToKitchen()
-  })
+    kitchenPage = new WaiterDashboardPage(waiter);
+    await kitchenPage.navigateToKitchen();
+  });
 
   test.afterEach(async ({ page }) => {
-    await clearClientState(page)
-  })
+    await clearClientState(page);
+  });
 
   test('should display kitchen orders', async ({ waiter: _waiter }) => {
-    await expect(waiter.locator('[data-testid="page-title"]')).toContainText('Cozinha')
-    await expect(kitchenPage.kitchenOrders.first()).toBeVisible()
-  })
+    await expect(waiter.locator('[data-testid="page-title"]')).toContainText('Cozinha');
+    await expect(kitchenPage.kitchenOrders.first()).toBeVisible();
+  });
 
   test('should show order items on ticket', async ({ waiter: _waiter }) => {
-    const count = await kitchenPage.getKitchenOrdersCount()
+    const count = await kitchenPage.getKitchenOrdersCount();
     if (count > 0) {
-      const items = await kitchenPage.getOrderItems('1')
-      expect(items.length).toBeGreaterThan(0)
+      const items = await kitchenPage.getOrderItems('1');
+      expect(items.length).toBeGreaterThan(0);
     }
-  })
+  });
 
   test('should start preparing order', async ({ waiter }) => {
-    const count = await kitchenPage.getKitchenOrdersCount()
+    const count = await kitchenPage.getKitchenOrdersCount();
     if (count > 0) {
-      const orderId = await kitchenPage.kitchenOrders.first().locator('[data-testid="order-id"]').textContent()
+      const orderId = await kitchenPage.kitchenOrders
+        .first()
+        .locator('[data-testid="order-id"]')
+        .textContent();
       if (orderId) {
-        await kitchenPage.startPreparing(orderId)
-        await expect(waiter.locator('[data-testid="success-message"]')).toBeVisible()
+        await kitchenPage.startPreparing(orderId);
+        await expect(waiter.locator('[data-testid="success-message"]')).toBeVisible();
       }
     }
-  })
+  });
 
   test('should mark order as ready', async ({ waiter }) => {
-    const count = await kitchenPage.getKitchenOrdersCount()
+    const count = await kitchenPage.getKitchenOrdersCount();
     if (count > 0) {
-      const orderId = await kitchenPage.kitchenOrders.first().locator('[data-testid="order-id"]').textContent()
+      const orderId = await kitchenPage.kitchenOrders
+        .first()
+        .locator('[data-testid="order-id"]')
+        .textContent();
       if (orderId) {
-        await kitchenPage.markReady(orderId)
-        await expect(waiter.locator('[data-testid="success-message"]')).toBeVisible()
+        await kitchenPage.markReady(orderId);
+        await expect(waiter.locator('[data-testid="success-message"]')).toBeVisible();
       }
     }
-  })
+  });
 
   test('should display active orders count', async ({ waiter: _waiter }) => {
-    const count = await kitchenPage.getActiveOrdersCount()
-    expect(typeof count).toBe('number')
-  })
+    const count = await kitchenPage.getActiveOrdersCount();
+    expect(typeof count).toBe('number');
+  });
 
   test('should display completed orders count', async ({ waiter: _waiter }) => {
-    const count = await kitchenPage.getCompletedOrdersCount()
-    expect(typeof count).toBe('number')
-  })
+    const count = await kitchenPage.getCompletedOrdersCount();
+    expect(typeof count).toBe('number');
+  });
 
   test('should refresh orders list', async ({ waiter }) => {
-    await kitchenPage.refreshOrders()
-    await expect(waiter.locator('[data-testid="kitchen-order"]').first()).toBeVisible()
-  })
+    await kitchenPage.refreshOrders();
+    await expect(waiter.locator('[data-testid="kitchen-order"]').first()).toBeVisible();
+  });
 
   test('should toggle audio notifications', async ({ waiter: _waiter }) => {
-    await kitchenPage.audioToggle.click()
+    await kitchenPage.audioToggle.click();
     // Audio should toggle
-  })
+  });
 
   test('should wait for new order notification', { tag: '@slow' }, async ({ waiter: _waiter }) => {
     // This is a long-waiting test
-    await expect(kitchenPage.kitchenOrders.first()).toBeVisible({ timeout: 5000 })
-  })
-})
+    await expect(kitchenPage.kitchenOrders.first()).toBeVisible({ timeout: 5000 });
+  });
+});

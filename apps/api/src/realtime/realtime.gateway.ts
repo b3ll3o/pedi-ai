@@ -1,5 +1,4 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { Server } from 'socket.io';
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -7,6 +6,7 @@ import {
   MessageBody,
   ConnectedSocket,
 } from '@nestjs/websockets';
+import { Server } from 'socket.io';
 import { Socket } from 'socket.io';
 
 @WebSocketGateway({
@@ -24,19 +24,13 @@ export class RealtimeGateway implements OnModuleInit {
   }
 
   @SubscribeMessage('joinRestaurant')
-  handleJoinRestaurant(
-    @MessageBody() restaurantId: string,
-    @ConnectedSocket() client: Socket,
-  ) {
+  handleJoinRestaurant(@MessageBody() restaurantId: string, @ConnectedSocket() client: Socket) {
     client.join(`restaurant:${restaurantId}`);
     return { event: 'joined', data: `restaurant:${restaurantId}` };
   }
 
   @SubscribeMessage('leaveRestaurant')
-  handleLeaveRestaurant(
-    @MessageBody() restaurantId: string,
-    @ConnectedSocket() client: Socket,
-  ) {
+  handleLeaveRestaurant(@MessageBody() restaurantId: string, @ConnectedSocket() client: Socket) {
     client.leave(`restaurant:${restaurantId}`);
     return { event: 'left', data: `restaurant:${restaurantId}` };
   }

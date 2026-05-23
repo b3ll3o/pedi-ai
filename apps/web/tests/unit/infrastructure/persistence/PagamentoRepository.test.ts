@@ -1,9 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { PagamentoRepository } from '@/infrastructure/persistence/pagamento/PagamentoRepository';
+
 import { Pagamento } from '@/domain/pagamento/entities/Pagamento';
 import { MetodoPagamento } from '@/domain/pagamento/value-objects/MetodoPagamento';
 import { StatusPagamento } from '@/domain/pagamento/value-objects/StatusPagamento';
 import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
+import { PagamentoRepository } from '@/infrastructure/persistence/pagamento/PagamentoRepository';
+
 import { createTestDatabase } from '../_test-helpers';
 
 describe('PagamentoRepository', () => {
@@ -16,7 +18,9 @@ describe('PagamentoRepository', () => {
     repository = new PagamentoRepository(db);
   });
 
-  function criarPagamentoValido(overrides?: Partial<{ id: string; pedidoId: string; status: StatusPagamento }>): Pagamento {
+  function criarPagamentoValido(
+    overrides?: Partial<{ id: string; pedidoId: string; status: StatusPagamento }>
+  ): Pagamento {
     const pagamento = Pagamento.criar({
       pedidoId: overrides?.pedidoId ?? 'pedido-123',
       metodo: MetodoPagamento.PIX,

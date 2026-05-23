@@ -1,13 +1,18 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
-import styles from './RegisterForm.module.css';
 
+import styles from './RegisterForm.module.css';
 
 type Intent = 'gerenciar_restaurante' | 'fazer_pedidos';
 
 interface RegisterFormProps {
-  onSubmit?: (email: string, password: string, intent: Intent) => Promise<void> | void;
+  onSubmit?: (
+    name: string,
+    email: string,
+    password: string,
+    intent: Intent
+  ) => Promise<void> | void;
 }
 
 export function RegisterForm({ onSubmit }: RegisterFormProps) {
@@ -36,6 +41,11 @@ export function RegisterForm({ onSubmit }: RegisterFormProps) {
     setEmailError('');
     setPasswordError('');
     setConfirmPasswordError('');
+
+    if (!name.trim()) {
+      setNameError('Nome é obrigatório');
+      return;
+    }
 
     if (!email) {
       setEmailError('Email é obrigatório');
@@ -76,7 +86,7 @@ export function RegisterForm({ onSubmit }: RegisterFormProps) {
 
     try {
       if (onSubmit) {
-        await onSubmit(email, password, intent!);
+        await onSubmit(name.trim(), email, password, intent!);
       } else {
         throw new Error('onSubmit handler not provided');
       }
@@ -92,7 +102,7 @@ export function RegisterForm({ onSubmit }: RegisterFormProps) {
     <form className={styles.form} onSubmit={handleSubmit} noValidate data-testid="register-form">
       <div className={styles.field}>
         <label htmlFor="name" className={styles.label}>
-          Nome (opcional)
+          Nome
         </label>
         <input
           id="name"

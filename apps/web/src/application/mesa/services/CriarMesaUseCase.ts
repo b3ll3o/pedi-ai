@@ -1,4 +1,3 @@
-import { UseCase } from '../../shared/types/UseCase';
 import {
   Mesa,
   IMesaRepository,
@@ -7,6 +6,8 @@ import {
   IQRCodeValidationService,
 } from '@/domain/mesa';
 import { EventDispatcher } from '@/domain/shared';
+
+import { UseCase } from '../../shared/types/UseCase';
 
 export interface CriarMesaInput {
   restauranteId: string;

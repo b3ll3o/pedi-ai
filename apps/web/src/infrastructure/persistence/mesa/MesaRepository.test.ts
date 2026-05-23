@@ -1,7 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { MesaRepository } from './MesaRepository';
+
 import { Mesa } from '@/domain/mesa/entities/Mesa';
 import { QRCodePayload } from '@/domain/mesa/value-objects/QRCodePayload';
+
+import { MesaRepository } from './MesaRepository';
 
 const mockMesas: Map<string, Record<string, unknown>> = new Map();
 

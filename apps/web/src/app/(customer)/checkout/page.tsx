@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+
 import CheckoutClient from './CheckoutClient';
 
 export async function generateMetadata(): Promise<Metadata> {

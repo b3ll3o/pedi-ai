@@ -1,7 +1,9 @@
 import { Controller, Get, Post, Patch, Param, Body, UseGuards, Query } from '@nestjs/common';
-import { OrdersService } from './orders.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OrderStatus } from '@prisma/client';
+
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+
+import { OrdersService } from './orders.service';
 
 @Controller('orders')
 export class OrdersController {
@@ -21,34 +23,35 @@ export class OrdersController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  async create(@Body() data: {
-    restaurantId: string;
-    tableId?: string;
-    customerId?: string;
-    customerPhone?: string;
-    customerName?: string;
-    subtotal: number;
-    tax: number;
-    total: number;
-    paymentMethod?: 'cash' | 'credit_card' | 'debit_card' | 'pix' | 'other';
-    idempotencyKey?: string;
-    items: Array<{
-      productId: string;
-      quantity: number;
-      unitPrice: number;
-      totalPrice: number;
-      notes?: string;
-    }>;
-  }) {
+  async create(
+    @Body()
+    data: {
+      restaurantId: string;
+      tableId?: string;
+      customerId?: string;
+      customerPhone?: string;
+      customerName?: string;
+      customerEmail?: string;
+      subtotal: number;
+      tax: number;
+      total: number;
+      paymentMethod?: 'cash' | 'credit_card' | 'debit_card' | 'pix' | 'other';
+      idempotencyKey?: string;
+      items: Array<{
+        productId: string;
+        quantity: number;
+        unitPrice: number;
+        totalPrice: number;
+        notes?: string;
+      }>;
+    }
+  ) {
     return this.ordersService.create(data);
   }
 
   @Patch(':id/status')
   @UseGuards(JwtAuthGuard)
-  async updateStatus(
-    @Param('id') id: string,
-    @Body() body: { status: string; notes?: string },
-  ) {
+  async updateStatus(@Param('id') id: string, @Body() body: { status: string; notes?: string }) {
     return this.ordersService.updateStatus(id, body.status as OrderStatus, body.notes);
   }
 }

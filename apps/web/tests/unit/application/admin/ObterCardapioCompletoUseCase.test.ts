@@ -1,12 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { ObterCardapioCompletoUseCase } from '@/application/admin/services/ObterCardapioCompletoUseCase';
 import { ObterCardapioCompletoInput } from '@/application/admin/services/ObterCardapioCompletoUseCase';
 import { UsuarioRestaurante } from '@/domain/admin/entities/UsuarioRestaurante';
+import { IUsuarioRestauranteRepository } from '@/domain/admin/repositories/IUsuarioRestauranteRepository';
 import { CategoriaProps } from '@/domain/cardapio/entities/Categoria';
+import { ComboProps } from '@/domain/cardapio/entities/Combo';
 import { ItemCardapioProps } from '@/domain/cardapio/entities/ItemCardapio';
 import { ModificadorGrupoProps } from '@/domain/cardapio/entities/ModificadorGrupo';
-import { IUsuarioRestauranteRepository } from '@/domain/admin/repositories/IUsuarioRestauranteRepository';
 import { ICategoriaRepository } from '@/domain/cardapio/repositories/ICategoriaRepository';
+import { IComboRepository } from '@/domain/cardapio/repositories/IComboRepository';
 import { IItemCardapioRepository } from '@/domain/cardapio/repositories/IItemCardapioRepository';
 import { IModificadorGrupoRepository } from '@/domain/cardapio/repositories/IModificadorGrupoRepository';
 
@@ -24,6 +27,7 @@ describe('ObterCardapioCompletoUseCase', () => {
   let mockCategoriaRepo: ICategoriaRepository;
   let mockProdutoRepo: IItemCardapioRepository;
   let mockModificadorRepo: IModificadorGrupoRepository;
+  let mockComboRepo: IComboRepository;
   let mockUsuarioRestauranteRepo: IUsuarioRestauranteRepository;
 
   beforeEach(() => {
@@ -38,6 +42,9 @@ describe('ObterCardapioCompletoUseCase', () => {
     mockModificadorRepo = {
       buscarPorRestaurante: vi.fn(),
     } as unknown as IModificadorGrupoRepository;
+    mockComboRepo = {
+      buscarAtivos: vi.fn().mockResolvedValue([]),
+    } as unknown as IComboRepository;
     mockUsuarioRestauranteRepo = {
       findByUsuarioId: vi.fn(),
       findByRestauranteId: vi.fn(),
@@ -49,6 +56,7 @@ describe('ObterCardapioCompletoUseCase', () => {
       mockCategoriaRepo,
       mockProdutoRepo,
       mockModificadorRepo,
+      mockComboRepo,
       mockUsuarioRestauranteRepo
     );
   });
@@ -56,16 +64,62 @@ describe('ObterCardapioCompletoUseCase', () => {
   describe('execute', () => {
     it('deve obter cardápio completo quando usuário tem acesso', async () => {
       mockUsuarioRestauranteRepo.findByUsuarioIdAndRestauranteId.mockResolvedValueOnce(
-        UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'restaurante-id', papel: 'dono' })
+        UsuarioRestaurante.criar({
+          usuarioId: 'owner-id',
+          restauranteId: 'restaurante-id',
+          papel: 'dono',
+        })
       );
       mockCategoriaRepo.buscarAtivas.mockResolvedValueOnce([
-        { id: 'cat-1', nome: 'Bebidas', descricao: '', ordem: 1, ativa: true, restauranteId: 'restaurante-id', criadoEm: new Date(), atualizadoEm: new Date() } as unknown as CategoriaProps,
+        {
+          id: 'cat-1',
+          nome: 'Bebidas',
+          descricao: '',
+          ordem: 1,
+          ativa: true,
+          restauranteId: 'restaurante-id',
+          criadoEm: new Date(),
+          atualizadoEm: new Date(),
+        } as unknown as CategoriaProps,
       ]);
       mockProdutoRepo.buscarPorRestaurante.mockResolvedValueOnce([
-        { id: 'prod-1', nome: 'Coca-Cola', descricao: '', preco: 5.9, imagemUrl: null, ativo: true, categoriaId: 'cat-1', restauranteId: 'restaurante-id', criadoEm: new Date(), atualizadoEm: new Date() } as unknown as ItemCardapioProps,
+        {
+          id: 'prod-1',
+          nome: 'Coca-Cola',
+          descricao: '',
+          preco: 5.9,
+          imagemUrl: null,
+          ativo: true,
+          categoriaId: 'cat-1',
+          restauranteId: 'restaurante-id',
+          criadoEm: new Date(),
+          atualizadoEm: new Date(),
+        } as unknown as ItemCardapioProps,
       ]);
       mockModificadorRepo.buscarPorRestaurante.mockResolvedValueOnce([
-        { id: 'mod-1', nome: 'Tamanho', restauranteId: 'restaurante-id', min: 0, max: 1, obrigatorio: false, valores: [], criadoEm: new Date(), atualizadoEm: new Date() } as unknown as ModificadorGrupoProps,
+        {
+          id: 'mod-1',
+          nome: 'Tamanho',
+          restauranteId: 'restaurante-id',
+          min: 0,
+          max: 1,
+          obrigatorio: false,
+          valores: [],
+          criadoEm: new Date(),
+          atualizadoEm: new Date(),
+        } as unknown as ModificadorGrupoProps,
+      ]);
+      mockComboRepo.buscarAtivos.mockResolvedValueOnce([
+        {
+          id: 'combo-1',
+          restauranteId: 'restaurante-id',
+          nome: 'Combo execute',
+          descricao: null,
+          precoBundle: { valor: 25, moeda: 'BRL' },
+          imagemUrl: null,
+          itens: [{ produtoId: 'prod-1', quantidade: 1 }],
+          ativo: true,
+        } as unknown as ComboProps,
       ]);
 
       const input: ObterCardapioCompletoInput = {
@@ -114,7 +168,11 @@ describe('ObterCardapioCompletoUseCase', () => {
 
     it('deve buscar todos os dados do cardápio', async () => {
       mockUsuarioRestauranteRepo.findByUsuarioIdAndRestauranteId.mockResolvedValueOnce(
-        UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'restaurante-id', papel: 'dono' })
+        UsuarioRestaurante.criar({
+          usuarioId: 'owner-id',
+          restauranteId: 'restaurante-id',
+          papel: 'dono',
+        })
       );
       mockCategoriaRepo.buscarAtivas.mockResolvedValueOnce([]);
       mockProdutoRepo.buscarPorRestaurante.mockResolvedValueOnce([]);
@@ -130,6 +188,7 @@ describe('ObterCardapioCompletoUseCase', () => {
       expect(mockCategoriaRepo.buscarAtivas).toHaveBeenCalledWith('restaurante-id');
       expect(mockProdutoRepo.buscarPorRestaurante).toHaveBeenCalledWith('restaurante-id');
       expect(mockModificadorRepo.buscarPorRestaurante).toHaveBeenCalledWith('restaurante-id');
+      expect(mockComboRepo.buscarAtivos).toHaveBeenCalledWith('restaurante-id');
     });
   });
 });

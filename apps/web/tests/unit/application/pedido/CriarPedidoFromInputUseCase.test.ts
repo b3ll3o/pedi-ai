@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { CriarPedidoFromInputUseCase } from '@/application/pedido/services/CriarPedidoFromInputUseCase';
 import type { CriarPedidoFromInputInput } from '@/application/pedido/services/CriarPedidoFromInputUseCase';
 import { Pedido } from '@/domain/pedido/entities/Pedido';

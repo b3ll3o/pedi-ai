@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { sql } from '@/infrastructure/database/pg-client';
 
 type ModifierGroupWithValues = {
@@ -72,13 +73,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const category = categoryResult[0];
 
     // Fetch modifier groups for this product via junction table
-    const productModifierGroupsResult = await sql<{ product_id: string; modifier_group_id: string }>`
+    const productModifierGroupsResult = await sql<{
+      product_id: string;
+      modifier_group_id: string;
+    }>`
       SELECT product_id, modifier_group_id
       FROM product_modifier_groups
       WHERE product_id = ${id}
     `;
 
-    const modifierGroupIds = productModifierGroupsResult.map((pmg: { product_id: string; modifier_group_id: string }) => pmg.modifier_group_id);
+    const modifierGroupIds = productModifierGroupsResult.map(
+      (pmg: { product_id: string; modifier_group_id: string }) => pmg.modifier_group_id
+    );
 
     // Fetch modifier groups
     const modifierGroupsData =
@@ -121,20 +127,42 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       dietary_labels: product.dietary_labels,
       available: product.available,
       category: { id: category.id, name: category.name },
-      modifier_groups: modifierGroupsData.map((mg: { id: string; name: string; required: boolean; min_selections: number; max_selections: number }) => ({
-        id: mg.id,
-        name: mg.name,
-        required: mg.required,
-        min_selections: mg.min_selections,
-        max_selections: mg.max_selections,
-        values: modifierValuesData
-          .filter((mv: { id: string; modifier_group_id: string; name: string; price_adjustment: number }) => mv.modifier_group_id === mg.id)
-          .map((mv: { id: string; modifier_group_id: string; name: string; price_adjustment: number }) => ({
-            id: mv.id,
-            name: mv.name,
-            price_adjustment: mv.price_adjustment,
-          })),
-      })),
+      modifier_groups: modifierGroupsData.map(
+        (mg: {
+          id: string;
+          name: string;
+          required: boolean;
+          min_selections: number;
+          max_selections: number;
+        }) => ({
+          id: mg.id,
+          name: mg.name,
+          required: mg.required,
+          min_selections: mg.min_selections,
+          max_selections: mg.max_selections,
+          values: modifierValuesData
+            .filter(
+              (mv: {
+                id: string;
+                modifier_group_id: string;
+                name: string;
+                price_adjustment: number;
+              }) => mv.modifier_group_id === mg.id
+            )
+            .map(
+              (mv: {
+                id: string;
+                modifier_group_id: string;
+                name: string;
+                price_adjustment: number;
+              }) => ({
+                id: mv.id,
+                name: mv.name,
+                price_adjustment: mv.price_adjustment,
+              })
+            ),
+        })
+      ),
     };
 
     return NextResponse.json(response);

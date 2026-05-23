@@ -1,10 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { AdminLayout } from '@/components/admin/AdminLayout';
-import { UserManagement } from '@/components/admin/UserManagement';
-import { UserForm } from '@/components/admin/UserForm';
+import { useState, useEffect, useCallback } from 'react';
+
 import {
   getUsers,
   inviteUser,
@@ -12,6 +10,9 @@ import {
   updateUser,
   type UserRole,
 } from '@/application/services/userService';
+import { AdminLayout } from '@/components/admin/AdminLayout';
+import { UserForm } from '@/components/admin/UserForm';
+import { UserManagement } from '@/components/admin/UserManagement';
 import { getSession } from '@/lib/auth/client';
 
 export default function UsersPage() {
@@ -23,7 +24,12 @@ export default function UsersPage() {
   const [editingUser, setEditingUser] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
-  const [authUser, setAuthUser] = useState<{ id: string; email: string; role: string; restaurant_id: string } | null>(null);
+  const [authUser, setAuthUser] = useState<{
+    id: string;
+    email: string;
+    role: string;
+    restaurant_id: string;
+  } | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {

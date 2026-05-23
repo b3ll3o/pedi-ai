@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { act } from 'react-dom/test-utils';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 // ── Mock BroadcastChannel module BEFORE importing cartStore ────────────────────
 
@@ -41,7 +41,10 @@ vi.mock('@/lib/offline/db', () => {
   return {
     db: {
       cart: {
-        clear: vi.fn(async () => { cartData.clear(); idCounter = 0; }),
+        clear: vi.fn(async () => {
+          cartData.clear();
+          idCounter = 0;
+        }),
         add: vi.fn(async (item: any) => {
           const id = ++idCounter;
           cartData.set(id, { ...item, id });
@@ -70,7 +73,9 @@ vi.mock('@/lib/offline/db', () => {
           cartData.set(id, { ...item, id });
           return id;
         }),
-        delete: vi.fn(async (id: number) => { cartData.delete(id); }),
+        delete: vi.fn(async (id: number) => {
+          cartData.delete(id);
+        }),
         toArray: vi.fn(async () => Array.from(cartData.values())),
         where: vi.fn(() => ({
           id: vi.fn(() => ({
@@ -82,7 +87,14 @@ vi.mock('@/lib/offline/db', () => {
   };
 });
 
-import { useCartStore, CartItem, SelectedModifier, getTotalItems, getTotalPrice, getSubtotal } from '@/infrastructure/persistence/cartStore';
+import {
+  useCartStore,
+  CartItem,
+  SelectedModifier,
+  getTotalItems,
+  getTotalPrice,
+  getSubtotal,
+} from '@/infrastructure/persistence/cartStore';
 import { db } from '@/lib/offline/db';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -622,7 +634,13 @@ describe('cartStore (real store)', () => {
 
     it('getSubtotal is alias of getTotalPrice', () => {
       const state = {
-        items: [{ ...makeCartItem({ unitPrice: 7, quantity: 3 }), id: '1', createdAt: new Date() } as CartItem],
+        items: [
+          {
+            ...makeCartItem({ unitPrice: 7, quantity: 3 }),
+            id: '1',
+            createdAt: new Date(),
+          } as CartItem,
+        ],
         isOpen: false,
       };
       expect(getSubtotal(state)).toBe(21);
@@ -799,7 +817,10 @@ describe('cartStore (real store)', () => {
       await db.cart.add({
         productId: 'prod-hydrated',
         quantity: 3,
-        modifiers: { 'mod-1': { name: 'Extra cheese', price_adjustment: 2 } } as Record<string, unknown>,
+        modifiers: { 'mod-1': { name: 'Extra cheese', price_adjustment: 2 } } as Record<
+          string,
+          unknown
+        >,
         price: 30,
         createdAt: new Date(),
       });
@@ -825,8 +846,9 @@ describe('cartStore (real store)', () => {
 
       // Set some items in store first
       await act(async () => {
-         
-        useCartStore.setState({ items: [{ ...makeCartItem(), id: 'existing', createdAt: new Date() } as any] });
+        useCartStore.setState({
+          items: [{ ...makeCartItem(), id: 'existing', createdAt: new Date() } as any],
+        });
       });
 
       await act(async () => {

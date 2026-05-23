@@ -3,12 +3,9 @@
 # Build context: repo root (.)
 # ============================================================
 
-FROM node:20-slim AS base
+FROM node:20-alpine AS base
 
-RUN corepack enable && corepack prepare pnpm@9 --activate
-
-# Build tools for native modules (bcrypt, prisma) and curl for healthcheck
-RUN apt-get update && apt-get install -y python3 make g++ wget curl && rm -rf /var/lib/apt/lists/*
+RUN npm install -g pnpm@9
 
 WORKDIR /app
 
@@ -21,9 +18,9 @@ COPY apps/api ./apps/api
 RUN pnpm install --no-frozen-lockfile
 
 # Generate Prisma client
-RUN cd /app/apps/api && npx prisma@5.22.0 generate
+RUN cd /app/apps/api && pnpm exec prisma@5.22.0 generate
 
 EXPOSE 3001
 
 # Development command with hot reload
-CMD ["sh", "-c", "cd /app/apps/api && npx prisma@5.22.0 migrate deploy || npx prisma@5.22.0 db push --accept-data-loss && pnpm start:dev"]
+CMD ["sh", "-c", "cd /app/apps/api && pnpm exec prisma@5.22.0 migrate deploy || pnpm exec prisma@5.22.0 db push --accept-data-loss && pnpm start:dev"]

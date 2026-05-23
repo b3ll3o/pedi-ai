@@ -1,10 +1,11 @@
 import { UseCase } from '@/application/shared';
 import { Categoria } from '@/domain/cardapio/entities/Categoria';
+import { Combo } from '@/domain/cardapio/entities/Combo';
 import { ItemCardapio } from '@/domain/cardapio/entities/ItemCardapio';
 import { ModificadorGrupo } from '@/domain/cardapio/entities/ModificadorGrupo';
 import { ModificadorValor } from '@/domain/cardapio/entities/ModificadorValor';
-import { Combo } from '@/domain/cardapio/entities/Combo';
 import { ICategoriaRepository } from '@/domain/cardapio/repositories/ICategoriaRepository';
+import { IComboRepository } from '@/domain/cardapio/repositories/IComboRepository';
 import { IItemCardapioRepository } from '@/domain/cardapio/repositories/IItemCardapioRepository';
 import { IModificadorGrupoRepository } from '@/domain/cardapio/repositories/IModificadorGrupoRepository';
 import { isMultiRestaurantEnabled } from '@/lib/feature-flags';
@@ -58,6 +59,7 @@ export class ObterCardapioCompletoUseCase implements UseCase<
     private categoriaRepo: ICategoriaRepository,
     private produtoRepo: IItemCardapioRepository,
     private modificadorRepo: IModificadorGrupoRepository,
+    private comboRepo: IComboRepository,
     private usuarioRestauranteRepo?: IUsuarioRestauranteRepository
   ) {}
 
@@ -112,9 +114,8 @@ export class ObterCardapioCompletoUseCase implements UseCase<
     }
     const valores = Array.from(valoresMap.values());
 
-    // TODO: Buscar combos quando IComboRepository estiver implementado
-    // Por enquanto, retorna array vazio
-    const combos: Combo[] = [];
+    // Buscar combos ativos do restaurante
+    const combos = await this.comboRepo.buscarAtivos(restauranteId);
 
     return {
       cardapio: {

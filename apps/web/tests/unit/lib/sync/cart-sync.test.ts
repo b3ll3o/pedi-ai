@@ -1,10 +1,11 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { createBroadcastChannelManager, CartBroadcast } from '@/lib/broadcast-channel'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-const mockPostMessage = vi.fn()
-const mockAddEventListener = vi.fn()
-const mockRemoveEventListener = vi.fn()
-const mockClose = vi.fn()
+import { createBroadcastChannelManager, CartBroadcast } from '@/lib/broadcast-channel';
+
+const mockPostMessage = vi.fn();
+const mockAddEventListener = vi.fn();
+const mockRemoveEventListener = vi.fn();
+const mockClose = vi.fn();
 
 const mockBroadcastChannelInstance = {
   postMessage: mockPostMessage,
@@ -12,18 +13,18 @@ const mockBroadcastChannelInstance = {
   removeEventListener: mockRemoveEventListener,
   close: mockClose,
   onmessageerror: null,
-}
+};
 
 class MockBroadcastChannel {
   constructor() {
-    return mockBroadcastChannelInstance
+    return mockBroadcastChannelInstance;
   }
 }
 
-vi.stubGlobal('BroadcastChannel', MockBroadcastChannel)
+vi.stubGlobal('BroadcastChannel', MockBroadcastChannel);
 
 describe('Cart Sync', () => {
-  let manager: ReturnType<typeof createBroadcastChannelManager>
+  let manager: ReturnType<typeof createBroadcastChannelManager>;
 
   const mockCartItems: CartBroadcast['items'] = [
     {
@@ -35,40 +36,40 @@ describe('Cart Sync', () => {
       modifiers: [],
       createdAt: new Date(),
     },
-  ]
+  ];
 
   beforeEach(() => {
-    vi.clearAllMocks()
-    manager = createBroadcastChannelManager()
-  })
+    vi.clearAllMocks();
+    manager = createBroadcastChannelManager();
+  });
 
   afterEach(() => {
-    manager.close()
-    manager.reset()
-  })
+    manager.close();
+    manager.reset();
+  });
 
   it('deve transmitir atualização do carrinho', () => {
-    manager.broadcastCartUpdate(mockCartItems)
+    manager.broadcastCartUpdate(mockCartItems);
 
-    expect(mockPostMessage).toHaveBeenCalledTimes(1)
-    const sentMessage = mockPostMessage.mock.calls[0][0]
-    expect(sentMessage.type).toBe('CART_UPDATE')
-    expect(sentMessage.items).toEqual(mockCartItems)
-    expect(sentMessage.timestamp).toBeDefined()
-    expect(typeof sentMessage.timestamp).toBe('number')
-  })
+    expect(mockPostMessage).toHaveBeenCalledTimes(1);
+    const sentMessage = mockPostMessage.mock.calls[0][0];
+    expect(sentMessage.type).toBe('CART_UPDATE');
+    expect(sentMessage.items).toEqual(mockCartItems);
+    expect(sentMessage.timestamp).toBeDefined();
+    expect(typeof sentMessage.timestamp).toBe('number');
+  });
 
   it('deve receber e aplicar atualização do carrinho de outra aba', () => {
-    let receivedItems: CartBroadcast['items'] | null = null
+    let receivedItems: CartBroadcast['items'] | null = null;
     manager.listenForCartUpdates((items) => {
-      receivedItems = items
-    })
+      receivedItems = items;
+    });
 
-    const handler = mockAddEventListener.mock.calls.find(
-      (call) => call[0] === 'message'
-    )?.[1] as (event: MessageEvent<CartBroadcast>) => void
+    const handler = mockAddEventListener.mock.calls.find((call) => call[0] === 'message')?.[1] as (
+      event: MessageEvent<CartBroadcast>
+    ) => void;
 
-    expect(handler).toBeDefined()
+    expect(handler).toBeDefined();
 
     const externalMessage: MessageEvent<CartBroadcast> = {
       data: {
@@ -76,29 +77,29 @@ describe('Cart Sync', () => {
         items: mockCartItems,
         timestamp: Date.now() + 1000,
       },
-    } as unknown as MessageEvent<CartBroadcast>
+    } as unknown as MessageEvent<CartBroadcast>;
 
-    handler(externalMessage)
+    handler(externalMessage);
 
-    expect(receivedItems).toEqual(mockCartItems)
-  })
+    expect(receivedItems).toEqual(mockCartItems);
+  });
 
   it('não deve ecoar própria transmissão', () => {
-    let callbackCalled = false
+    let callbackCalled = false;
     manager.listenForCartUpdates(() => {
-      callbackCalled = true
-    })
+      callbackCalled = true;
+    });
 
-    let broadcastTimestamp = 0
+    let broadcastTimestamp = 0;
     mockPostMessage.mockImplementation((msg: CartBroadcast) => {
-      broadcastTimestamp = msg.timestamp
-    })
+      broadcastTimestamp = msg.timestamp;
+    });
 
-    manager.broadcastCartUpdate(mockCartItems)
+    manager.broadcastCartUpdate(mockCartItems);
 
-    const handler = mockAddEventListener.mock.calls.find(
-      (call) => call[0] === 'message'
-    )?.[1] as (event: MessageEvent<CartBroadcast>) => void
+    const handler = mockAddEventListener.mock.calls.find((call) => call[0] === 'message')?.[1] as (
+      event: MessageEvent<CartBroadcast>
+    ) => void;
 
     const ownMessage: MessageEvent<CartBroadcast> = {
       data: {
@@ -106,10 +107,10 @@ describe('Cart Sync', () => {
         items: mockCartItems,
         timestamp: broadcastTimestamp,
       },
-    } as unknown as MessageEvent<CartBroadcast>
+    } as unknown as MessageEvent<CartBroadcast>;
 
-    handler(ownMessage)
+    handler(ownMessage);
 
-    expect(callbackCalled).toBe(false)
-  })
-})
+    expect(callbackCalled).toBe(false);
+  });
+});

@@ -1,9 +1,10 @@
-import { ITransacaoRepository } from '@/domain/pagamento/repositories/ITransacaoRepository';
 import {
   Transacao,
   TransacaoProps,
   TipoTransacaoValue,
 } from '@/domain/pagamento/entities/Transacao';
+import { ITransacaoRepository } from '@/domain/pagamento/repositories/ITransacaoRepository';
+
 import { PediDatabase, TransacaoRecord } from '../database';
 
 export class TransacaoRepository implements ITransacaoRepository {

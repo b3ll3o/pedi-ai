@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
-import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+import { useRouter, useParams } from 'next/navigation';
+import { useEffect, useState, useRef } from 'react';
+
+import Logo from '@/app/components/Logo';
 import { useValidarQRCode } from '@/hooks/useMesa';
 import { useTableStore } from '@/infrastructure/persistence/tableStore';
-import Logo from '@/app/components/Logo';
+
 import styles from './page.module.css';
 
 interface TableInfo {

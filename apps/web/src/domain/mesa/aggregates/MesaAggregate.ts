@@ -1,10 +1,11 @@
+import { EventDispatcher } from '@/domain/shared';
+
 import { Mesa, MesaProps } from '../entities/Mesa';
-import { QRCodePayload } from '../value-objects/QRCodePayload';
-import { IQRCodeValidationService } from '../services/QRCodeValidationService';
 import { MesaCriadaEvent } from '../events/MesaCriadaEvent';
 import { MesaDesativadaEvent } from '../events/MesaDesativadaEvent';
 import { IMesaRepository } from '../repositories/IMesaRepository';
-import { EventDispatcher } from '@/domain/shared';
+import { IQRCodeValidationService } from '../services/QRCodeValidationService';
+import { QRCodePayload } from '../value-objects/QRCodePayload';
 
 export class MesaAggregate {
   private mesa: Mesa;

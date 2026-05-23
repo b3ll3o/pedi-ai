@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { DesativarRestauranteUseCase } from '@/application/admin/services/DesativarRestauranteUseCase';
 import { DesativarRestauranteInput } from '@/application/admin/services/DesativarRestauranteUseCase';
 import { Restaurante } from '@/domain/admin/entities/Restaurante';
@@ -60,7 +61,11 @@ describe('DesativarRestauranteUseCase', () => {
       mockRestauranteRepo.findById.mockResolvedValueOnce(restauranteAtivo);
       mockRestauranteRepo.update.mockImplementation(async (r) => r);
       mockUsuarioRestauranteRepo.findByUsuarioIdAndRestauranteId.mockResolvedValueOnce(
-        UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'restaurante-id', papel: 'dono' })
+        UsuarioRestaurante.criar({
+          usuarioId: 'owner-id',
+          restauranteId: 'restaurante-id',
+          papel: 'dono',
+        })
       );
 
       const input: DesativarRestauranteInput = {
@@ -114,7 +119,11 @@ describe('DesativarRestauranteUseCase', () => {
 
       mockRestauranteRepo.findById.mockResolvedValueOnce(restauranteAtivo);
       mockUsuarioRestauranteRepo.findByUsuarioIdAndRestauranteId.mockResolvedValueOnce(
-        UsuarioRestaurante.criar({ usuarioId: 'staff-id', restauranteId: 'restaurante-id', papel: 'atendente' })
+        UsuarioRestaurante.criar({
+          usuarioId: 'staff-id',
+          restauranteId: 'restaurante-id',
+          papel: 'atendente',
+        })
       );
 
       const input: DesativarRestauranteInput = {
@@ -137,7 +146,11 @@ describe('DesativarRestauranteUseCase', () => {
 
       mockRestauranteRepo.findById.mockResolvedValueOnce(restauranteAtivo);
       mockUsuarioRestauranteRepo.findByUsuarioIdAndRestauranteId.mockResolvedValueOnce(
-        UsuarioRestaurante.criar({ usuarioId: 'manager-id', restauranteId: 'restaurante-id', papel: 'gerente' })
+        UsuarioRestaurante.criar({
+          usuarioId: 'manager-id',
+          restauranteId: 'restaurante-id',
+          papel: 'gerente',
+        })
       );
 
       const input: DesativarRestauranteInput = {

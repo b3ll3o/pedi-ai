@@ -1,17 +1,19 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSession } from '@/lib/auth/client';
-import { useRestaurantStore } from '@/infrastructure/persistence/restaurantStore';
+import { useEffect, useState, useCallback } from 'react';
+
 import {
   getOrders,
   updateOrderStatus,
   type OrderWithItems,
   type OrderStatus,
 } from '@/application/services/adminOrderService';
-import { OrderList } from '@/components/admin/OrderList';
 import { OrderDetailAdmin } from '@/components/admin/OrderDetailAdmin';
+import { OrderList } from '@/components/admin/OrderList';
+import { useRestaurantStore } from '@/infrastructure/persistence/restaurantStore';
+import { getSession } from '@/lib/auth/client';
+
 import styles from './page.module.css';
 
 export default function OrdersPage() {

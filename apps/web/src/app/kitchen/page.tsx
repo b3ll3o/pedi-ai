@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { usePedidosKDS } from '@/hooks/usePedidosKDS';
+
+import type { OrderStatus } from '@/application/services/adminOrderService';
 import { OrderList } from '@/components/kds/OrderList';
 import { StatusFilter } from '@/components/kds/StatusFilter';
 import { ConnectionStatus } from '@/components/kitchen/ConnectionStatus';
-import type { OrderStatus } from '@/application/services/adminOrderService';
+import { usePedidosKDS } from '@/hooks/usePedidosKDS';
+
 import styles from './page.module.css';
 
 type FilterStatus = OrderStatus | 'all';

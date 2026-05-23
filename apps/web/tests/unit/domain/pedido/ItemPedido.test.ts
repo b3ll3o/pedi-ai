@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
+
 import { ItemPedido, ItemPedidoProps } from '@/domain/pedido/entities/ItemPedido';
-import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 import { ModificadorSelecionado } from '@/domain/pedido/value-objects/ModificadorSelecionado';
+import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 
 describe('ItemPedido', () => {
   const criarItemPedido = (overrides?: Partial<ItemPedidoProps>): ItemPedido => {

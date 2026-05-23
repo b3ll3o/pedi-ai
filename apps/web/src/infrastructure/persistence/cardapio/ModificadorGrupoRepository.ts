@@ -1,8 +1,9 @@
-import { PediDatabase } from '../database';
-import { IModificadorGrupoRepository } from '@/domain/cardapio/repositories/IModificadorGrupoRepository';
 import { ModificadorGrupo } from '@/domain/cardapio/entities/ModificadorGrupo';
 import { ModificadorValor } from '@/domain/cardapio/entities/ModificadorValor';
+import { IModificadorGrupoRepository } from '@/domain/cardapio/repositories/IModificadorGrupoRepository';
 import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
+
+import { PediDatabase } from '../database';
 import type { ModificadorGrupoDbModel, ModificadorValorDbModel } from '../types';
 
 interface StoredModificadorValor {

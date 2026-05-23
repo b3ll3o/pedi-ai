@@ -4,6 +4,7 @@
  */
 
 import { useQuery, useMutation } from '@tanstack/react-query';
+
 import {
   ListarMesasUseCase,
   type ListarMesasInput,
@@ -13,9 +14,9 @@ import {
   type ValidarQRCodeInput,
   type MesaValidada,
 } from '@/application/mesa/services/ValidarQRCodeUseCase';
+import { db } from '@/infrastructure/persistence/database';
 import { MesaRepository } from '@/infrastructure/persistence/mesa';
 import { QRCodeCryptoService } from '@/infrastructure/services/QRCodeCryptoService';
-import { db } from '@/infrastructure/persistence/database';
 
 // Transformação de domain Mesa para formato Supabase (compatibilidade com a interface existente)
 function _transformarMesa(mesa: {

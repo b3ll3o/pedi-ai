@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+
 import styles from './Timer.module.css';
 
 interface TimerProps {

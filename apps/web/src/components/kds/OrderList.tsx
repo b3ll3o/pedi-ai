@@ -1,6 +1,7 @@
 'use client';
 
 import type { PedidoKDS } from '@/hooks/usePedidosKDS';
+
 import { OrderCard } from './OrderCard';
 import styles from './OrderList.module.css';
 

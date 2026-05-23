@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSession } from '@/lib/auth/client';
-import { useRestaurantStore } from '@/infrastructure/persistence/restaurantStore';
+import { useEffect, useState, useCallback } from 'react';
+
 import { TableManagement } from '@/components/admin/TableManagement';
 import { TableQRCode } from '@/components/admin/TableQRCode';
+import { useRestaurantStore } from '@/infrastructure/persistence/restaurantStore';
+import { getSession } from '@/lib/auth/client';
+
 import styles from './page.module.css';
 
 interface TableFormData {
@@ -23,7 +25,31 @@ interface Table {
   active: boolean;
 }
 
-export default function TablesPage() {
+async function reactivateTable(tableId: string): Promise<{ table: Table }> {
+  const response = await fetch(`/api/admin/tables/${tableId}/reactivate`, {
+    method: 'PATCH',
+  });
+  if (!response.ok) {
+    const data = await response.json();
+    throw new Error(data.error || 'Falha ao reativar mesa');
+  }
+  return response.json();
+}
+
+async function deactivateTable(tableId: string): Promise<{ table: Table }> {
+  const response = await fetch(`/api/admin/tables/${tableId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ active: false }),
+  });
+  if (!response.ok) {
+    const data = await response.json();
+    throw new Error(data.error || 'Falha ao desativar mesa');
+  }
+  return response.json();
+}
+
+function useTablesPage() {
   const router = useRouter();
   const { restauranteSelecionado } = useRestaurantStore();
   const selectedRestaurantId = restauranteSelecionado?.id ?? null;
@@ -225,46 +251,22 @@ export default function TablesPage() {
 
   const handleToggleActive = useCallback(
     async (table: Table) => {
-      if (!table.active) {
-        // Reactivate
-        try {
-          const response = await fetch(`/api/admin/tables/${table.id}/reactivate`, {
-            method: 'PATCH',
-          });
+      try {
+        const data = table.active
+          ? await deactivateTable(table.id)
+          : await reactivateTable(table.id);
 
-          if (!response.ok) {
-            const data = await response.json();
-            throw new Error(data.error || 'Falha ao reativar mesa');
-          }
-
-          const data = await response.json();
-          setTables((prev) => prev.map((t) => (t.id === table.id ? data.table : t)));
-          showSuccess(`Mesa ${table.number} reativada com sucesso!`);
-        } catch (err) {
-          console.error('Erro ao reativar mesa:', err);
-          showError(err instanceof Error ? err.message : 'Erro ao reativar mesa');
-        }
-      } else {
-        // Soft delete - set active to false
-        try {
-          const response = await fetch(`/api/admin/tables/${table.id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ active: false }),
-          });
-
-          if (!response.ok) {
-            const data = await response.json();
-            throw new Error(data.error || 'Falha ao desativar mesa');
-          }
-
-          const data = await response.json();
-          setTables((prev) => prev.map((t) => (t.id === table.id ? data.table : t)));
-          showSuccess(`Mesa ${table.number} desativada com sucesso!`);
-        } catch (err) {
-          console.error('Erro ao desativar mesa:', err);
-          showError(err instanceof Error ? err.message : 'Erro ao desativar mesa');
-        }
+        setTables((prev) => prev.map((t) => (t.id === table.id ? data.table : t)));
+        showSuccess(
+          `Mesa ${table.number} ${table.active ? 'desativada' : 'reativada'} com sucesso!`
+        );
+      } catch (err) {
+        console.error(`Erro ao ${table.active ? 'desativar' : 'reativar'} mesa:`, err);
+        showError(
+          err instanceof Error
+            ? err.message
+            : `Erro ao ${table.active ? 'desativar' : 'reativar'} mesa`
+        );
       }
     },
     [showSuccess, showError]
@@ -290,6 +292,63 @@ export default function TablesPage() {
     setIsModalOpen(false);
     resetForm();
   }, [resetForm]);
+
+  return {
+    loading,
+    selectedRestaurantId,
+    tables,
+    isModalOpen,
+    editingTable,
+    selectedTable,
+    qrData,
+    isQrModalOpen,
+    error,
+    success,
+    formData,
+    setFormData,
+    setSelectedTable,
+    setQrData,
+    setIsQrModalOpen,
+    setIsModalOpen,
+    handleGenerateQR,
+    handleCreate,
+    handleUpdate,
+    handleDelete,
+    handleToggleActive,
+    handleEdit,
+    openCreateModal,
+    closeModal,
+    restauranteSelecionado,
+  };
+}
+
+export default function TablesPage() {
+  const {
+    loading,
+    selectedRestaurantId,
+    tables,
+    isModalOpen,
+    editingTable,
+    selectedTable,
+    qrData,
+    isQrModalOpen,
+    error,
+    success,
+    formData,
+    setFormData,
+    setSelectedTable,
+    setQrData,
+    setIsQrModalOpen,
+    handleGenerateQR,
+    handleCreate,
+    handleUpdate,
+    handleDelete,
+    handleToggleActive,
+    handleEdit,
+    openCreateModal,
+    closeModal,
+    restauranteSelecionado,
+  } = useTablesPage();
 
   if (loading) {
     return (
@@ -456,7 +515,7 @@ export default function TablesPage() {
             setQrData(null);
           }}
           onDownload={() => {
-            showSuccess('QR Code baixado com sucesso!');
+            // QR download handled internally
           }}
         />
       )}

@@ -1,22 +1,30 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { useRestaurantStore, selectTemRestauranteSelecionado, selectRestauranteSelecionado, selectRestaurantesAcessiveis, selectIsLoading, selectError } from '@/infrastructure/persistence/restaurantStore'
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+import {
+  useRestaurantStore,
+  selectTemRestauranteSelecionado,
+  selectRestauranteSelecionado,
+  selectRestaurantesAcessiveis,
+  selectIsLoading,
+  selectError,
+} from '@/infrastructure/persistence/restaurantStore';
 
 // Mock da database
 vi.mock('@/infrastructure/persistence/database', () => ({
   db: {},
-}))
+}));
 
 vi.mock('@/infrastructure/persistence/admin/RestauranteRepository', () => ({
   RestauranteRepository: vi.fn(),
-}))
+}));
 
 vi.mock('@/infrastructure/persistence/admin/UsuarioRestauranteRepository', () => ({
   UsuarioRestauranteRepository: vi.fn(),
-}))
+}));
 
 vi.mock('@/application/admin/services/ListarRestaurantesDoOwnerUseCase', () => ({
   ListarRestaurantesDoOwnerUseCase: vi.fn(),
-}))
+}));
 
 describe('restaurantStore', () => {
   beforeEach(() => {
@@ -25,30 +33,30 @@ describe('restaurantStore', () => {
       restaurantesAcessiveis: [],
       isLoading: false,
       error: null,
-    })
-    vi.clearAllMocks()
-  })
+    });
+    vi.clearAllMocks();
+  });
 
   describe('initial state', () => {
     it('deve ter estado inicial correto', () => {
-      const state = useRestaurantStore.getState()
+      const state = useRestaurantStore.getState();
 
-      expect(state.restauranteSelecionado).toBeNull()
-      expect(state.restaurantesAcessiveis).toEqual([])
-      expect(state.isLoading).toBe(false)
-      expect(state.error).toBeNull()
-    })
+      expect(state.restauranteSelecionado).toBeNull();
+      expect(state.restaurantesAcessiveis).toEqual([]);
+      expect(state.isLoading).toBe(false);
+      expect(state.error).toBeNull();
+    });
 
     it('deve iniciar com restaurantesAcessiveis vazio', () => {
-      const state = useRestaurantStore.getState()
-      expect(state.restaurantesAcessiveis).toHaveLength(0)
-    })
+      const state = useRestaurantStore.getState();
+      expect(state.restaurantesAcessiveis).toHaveLength(0);
+    });
 
     it('deve iniciar com isLoading false', () => {
-      const state = useRestaurantStore.getState()
-      expect(state.isLoading).toBe(false)
-    })
-  })
+      const state = useRestaurantStore.getState();
+      expect(state.isLoading).toBe(false);
+    });
+  });
 
   describe('setRestaurante', () => {
     it('deve definir restaurante selecionado', () => {
@@ -64,11 +72,11 @@ describe('restaurantStore', () => {
         atualizadoEm: new Date(),
         deletedAt: null,
         version: 1,
-      }
+      };
 
-      useRestaurantStore.getState().setRestaurante(mockRestaurante as any)
+      useRestaurantStore.getState().setRestaurante(mockRestaurante as any);
 
-      const state = useRestaurantStore.getState()
+      const state = useRestaurantStore.getState();
       expect(state.restauranteSelecionado).toEqual({
         id: 'rest-1',
         nome: 'Restaurante Teste',
@@ -81,12 +89,12 @@ describe('restaurantStore', () => {
         atualizadoEm: mockRestaurante.atualizadoEm,
         deletedAt: null,
         version: 1,
-      })
-      expect(state.error).toBeNull()
-    })
+      });
+      expect(state.error).toBeNull();
+    });
 
     it('deve limpar erro ao definir restaurante', () => {
-      useRestaurantStore.setState({ error: 'Erro anterior' })
+      useRestaurantStore.setState({ error: 'Erro anterior' });
 
       const mockRestaurante = {
         id: 'rest-1',
@@ -100,12 +108,12 @@ describe('restaurantStore', () => {
         atualizadoEm: new Date(),
         deletedAt: null,
         version: 1,
-      }
+      };
 
-      useRestaurantStore.getState().setRestaurante(mockRestaurante as any)
+      useRestaurantStore.getState().setRestaurante(mockRestaurante as any);
 
-      expect(useRestaurantStore.getState().error).toBeNull()
-    })
+      expect(useRestaurantStore.getState().error).toBeNull();
+    });
 
     it('deve sobrescrever restaurante previamente selecionado', () => {
       useRestaurantStore.setState({
@@ -122,7 +130,7 @@ describe('restaurantStore', () => {
           deletedAt: null,
           version: 1,
         },
-      })
+      });
 
       const novoRestaurante = {
         id: 'rest-novo',
@@ -136,14 +144,14 @@ describe('restaurantStore', () => {
         atualizadoEm: new Date(),
         deletedAt: null,
         version: 1,
-      }
+      };
 
-      useRestaurantStore.getState().setRestaurante(novoRestaurante as any)
+      useRestaurantStore.getState().setRestaurante(novoRestaurante as any);
 
-      const state = useRestaurantStore.getState()
-      expect(state.restauranteSelecionado?.id).toBe('rest-novo')
-      expect(state.restauranteSelecionado?.nome).toBe('Novo Restaurante')
-    })
+      const state = useRestaurantStore.getState();
+      expect(state.restauranteSelecionado?.id).toBe('rest-novo');
+      expect(state.restauranteSelecionado?.nome).toBe('Novo Restaurante');
+    });
 
     it('deve preservar propriedades do restaurante em RestauranteProps', () => {
       const mockRestaurante = {
@@ -158,15 +166,15 @@ describe('restaurantStore', () => {
         atualizadoEm: new Date('2024-01-02'),
         deletedAt: null,
         version: 5,
-      }
+      };
 
-      useRestaurantStore.getState().setRestaurante(mockRestaurante as any)
+      useRestaurantStore.getState().setRestaurante(mockRestaurante as any);
 
-      const state = useRestaurantStore.getState()
-      expect(state.restauranteSelecionado?.logoUrl).toBe('https://example.com/logo.png')
-      expect(state.restauranteSelecionado?.version).toBe(5)
-      expect(state.restauranteSelecionado?.criadoEm).toEqual(new Date('2024-01-01'))
-    })
+      const state = useRestaurantStore.getState();
+      expect(state.restauranteSelecionado?.logoUrl).toBe('https://example.com/logo.png');
+      expect(state.restauranteSelecionado?.version).toBe(5);
+      expect(state.restauranteSelecionado?.criadoEm).toEqual(new Date('2024-01-01'));
+    });
 
     it('deve preservar deletedAt quando restaurante tem soft delete', () => {
       const mockRestaurante = {
@@ -181,15 +189,15 @@ describe('restaurantStore', () => {
         atualizadoEm: new Date('2024-01-02'),
         deletedAt: new Date('2024-01-03'),
         version: 1,
-      }
+      };
 
-      useRestaurantStore.getState().setRestaurante(mockRestaurante as any)
+      useRestaurantStore.getState().setRestaurante(mockRestaurante as any);
 
-      const state = useRestaurantStore.getState()
-      expect(state.restauranteSelecionado?.deletedAt).toEqual(new Date('2024-01-03'))
-      expect(state.restauranteSelecionado?.ativo).toBe(false)
-    })
-  })
+      const state = useRestaurantStore.getState();
+      expect(state.restauranteSelecionado?.deletedAt).toEqual(new Date('2024-01-03'));
+      expect(state.restauranteSelecionado?.ativo).toBe(false);
+    });
+  });
 
   describe('limparSelecao', () => {
     it('deve limpar restaurante selecionado', () => {
@@ -207,12 +215,12 @@ describe('restaurantStore', () => {
           deletedAt: null,
           version: 1,
         },
-      })
+      });
 
-      useRestaurantStore.getState().limparSelecao()
+      useRestaurantStore.getState().limparSelecao();
 
-      expect(useRestaurantStore.getState().restauranteSelecionado).toBeNull()
-    })
+      expect(useRestaurantStore.getState().restauranteSelecionado).toBeNull();
+    });
 
     it('deve limpar sem afetar outros estados', () => {
       useRestaurantStore.setState({
@@ -246,22 +254,22 @@ describe('restaurantStore', () => {
           deletedAt: null,
           version: 1,
         },
-      })
+      });
 
-      useRestaurantStore.getState().limparSelecao()
+      useRestaurantStore.getState().limparSelecao();
 
-      const state = useRestaurantStore.getState()
-      expect(state.restauranteSelecionado).toBeNull()
-      expect(state.restaurantesAcessiveis).toHaveLength(1)
-      expect(state.isLoading).toBe(true)
-      expect(state.error).toBe('algum erro')
-    })
+      const state = useRestaurantStore.getState();
+      expect(state.restauranteSelecionado).toBeNull();
+      expect(state.restaurantesAcessiveis).toHaveLength(1);
+      expect(state.isLoading).toBe(true);
+      expect(state.error).toBe('algum erro');
+    });
 
     it('deve funcionar quando não há restaurante selecionado', () => {
-      expect(() => useRestaurantStore.getState().limparSelecao()).not.toThrow()
-      expect(useRestaurantStore.getState().restauranteSelecionado).toBeNull()
-    })
-  })
+      expect(() => useRestaurantStore.getState().limparSelecao()).not.toThrow();
+      expect(useRestaurantStore.getState().restauranteSelecionado).toBeNull();
+    });
+  });
 
   describe('selectors', () => {
     it('selectTemRestauranteSelecionado deve retornar true quando há restaurante', () => {
@@ -279,18 +287,18 @@ describe('restaurantStore', () => {
           deletedAt: null,
           version: 1,
         },
-      })
+      });
 
-      const state = useRestaurantStore.getState()
-      expect(selectTemRestauranteSelecionado(state)).toBe(true)
-    })
+      const state = useRestaurantStore.getState();
+      expect(selectTemRestauranteSelecionado(state)).toBe(true);
+    });
 
     it('selectTemRestauranteSelecionado deve retornar false quando não há restaurante', () => {
-      useRestaurantStore.setState({ restauranteSelecionado: null })
+      useRestaurantStore.setState({ restauranteSelecionado: null });
 
-      const state = useRestaurantStore.getState()
-      expect(selectTemRestauranteSelecionado(state)).toBe(false)
-    })
+      const state = useRestaurantStore.getState();
+      expect(selectTemRestauranteSelecionado(state)).toBe(false);
+    });
 
     it('selectRestauranteSelecionado deve retornar restaurante selecionado', () => {
       const mockRestaurante = {
@@ -305,19 +313,19 @@ describe('restaurantStore', () => {
         atualizadoEm: new Date(),
         deletedAt: null,
         version: 1,
-      }
-      useRestaurantStore.setState({ restauranteSelecionado: mockRestaurante })
+      };
+      useRestaurantStore.setState({ restauranteSelecionado: mockRestaurante });
 
-      const state = useRestaurantStore.getState()
-      expect(selectRestauranteSelecionado(state)).toEqual(mockRestaurante)
-    })
+      const state = useRestaurantStore.getState();
+      expect(selectRestauranteSelecionado(state)).toEqual(mockRestaurante);
+    });
 
     it('selectRestauranteSelecionado deve retornar null quando nada selecionado', () => {
-      useRestaurantStore.setState({ restauranteSelecionado: null })
+      useRestaurantStore.setState({ restauranteSelecionado: null });
 
-      const state = useRestaurantStore.getState()
-      expect(selectRestauranteSelecionado(state)).toBeNull()
-    })
+      const state = useRestaurantStore.getState();
+      expect(selectRestauranteSelecionado(state)).toBeNull();
+    });
 
     it('selectRestaurantesAcessiveis deve retornar lista de restaurantes', () => {
       const mockRestaurantes = [
@@ -347,47 +355,47 @@ describe('restaurantStore', () => {
           deletedAt: null,
           version: 1,
         },
-      ]
-      useRestaurantStore.setState({ restaurantesAcessiveis: mockRestaurantes })
+      ];
+      useRestaurantStore.setState({ restaurantesAcessiveis: mockRestaurantes });
 
-      const state = useRestaurantStore.getState()
-      expect(selectRestaurantesAcessiveis(state)).toEqual(mockRestaurantes)
-      expect(selectRestaurantesAcessiveis(state)).toHaveLength(2)
-    })
+      const state = useRestaurantStore.getState();
+      expect(selectRestaurantesAcessiveis(state)).toEqual(mockRestaurantes);
+      expect(selectRestaurantesAcessiveis(state)).toHaveLength(2);
+    });
 
     it('selectRestaurantesAcessiveis deve retornar array vazio quando nenhum restaurante', () => {
-      useRestaurantStore.setState({ restaurantesAcessiveis: [] })
+      useRestaurantStore.setState({ restaurantesAcessiveis: [] });
 
-      const state = useRestaurantStore.getState()
-      expect(selectRestaurantesAcessiveis(state)).toEqual([])
-    })
+      const state = useRestaurantStore.getState();
+      expect(selectRestaurantesAcessiveis(state)).toEqual([]);
+    });
 
     it('selectIsLoading deve retornar estado de loading', () => {
-      useRestaurantStore.setState({ isLoading: true })
+      useRestaurantStore.setState({ isLoading: true });
 
-      const state = useRestaurantStore.getState()
-      expect(selectIsLoading(state)).toBe(true)
-    })
+      const state = useRestaurantStore.getState();
+      expect(selectIsLoading(state)).toBe(true);
+    });
 
     it('selectIsLoading deve retornar false quando não está carregando', () => {
-      useRestaurantStore.setState({ isLoading: false })
+      useRestaurantStore.setState({ isLoading: false });
 
-      const state = useRestaurantStore.getState()
-      expect(selectIsLoading(state)).toBe(false)
-    })
+      const state = useRestaurantStore.getState();
+      expect(selectIsLoading(state)).toBe(false);
+    });
 
     it('selectError deve retornar mensagem de erro', () => {
-      useRestaurantStore.setState({ error: 'Erro teste' })
+      useRestaurantStore.setState({ error: 'Erro teste' });
 
-      const state = useRestaurantStore.getState()
-      expect(selectError(state)).toBe('Erro teste')
-    })
+      const state = useRestaurantStore.getState();
+      expect(selectError(state)).toBe('Erro teste');
+    });
 
     it('selectError deve retornar null quando não há erro', () => {
-      useRestaurantStore.setState({ error: null })
+      useRestaurantStore.setState({ error: null });
 
-      const state = useRestaurantStore.getState()
-      expect(selectError(state)).toBeNull()
-    })
-  })
-})
+      const state = useRestaurantStore.getState();
+      expect(selectError(state)).toBeNull();
+    });
+  });
+});

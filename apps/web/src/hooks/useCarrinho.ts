@@ -4,10 +4,11 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { CarrinhoRepository } from '@/infrastructure/persistence/repositories';
-import { db } from '@/infrastructure/persistence/database';
+
 import { CarrinhoAggregate } from '@/domain/pedido/aggregates/CarrinhoAggregate';
 import type { ICarrinhoRepository } from '@/domain/pedido/repositories/ICarrinhoRepository';
+import { db } from '@/infrastructure/persistence/database';
+import { CarrinhoRepository } from '@/infrastructure/persistence/repositories';
 
 // Tipos para o hook (interface pública)
 export interface CartItemDTO {

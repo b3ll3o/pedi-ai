@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+
 import styles from './ProductList.module.css';
 
 export interface ProductListProduct {

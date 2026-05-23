@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { sql } from '@/infrastructure/database/pg-client';
 import { getSession } from '@/lib/auth/session';
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSession();
     if (!session) {

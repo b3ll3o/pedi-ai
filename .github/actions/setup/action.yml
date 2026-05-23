@@ -1,0 +1,57 @@
+name: Setup Node + pnpm
+description: Checkout, setup Node 20, pnpm 9, node-gyp e dependências com cache
+
+inputs:
+  node_version:
+    description: Versão do Node.js
+    default: "20"
+  pnpm_version:
+    description: Versão do pnpm
+    default: "9"
+  install_dependencies:
+    description: Executar pnpm install
+    default: "true"
+  cache_key:
+    description: Override da cache key (opcional)
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v6
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: ${{ inputs.node_version }}
+        cache: pnpm
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v6
+      with:
+        version: ${{ inputs.pnpm_version }}
+
+    - name: Install node-gyp
+      shell: bash
+      run: npm install -g node-gyp
+
+    - name: Get pnpm store directory
+      id: pnpm-cache
+      shell: bash
+      run: echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+    - name: Setup pnpm cache
+      uses: actions/cache@v4
+      with:
+        path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+        key: ${{ inputs.cache_key || format('{0}-node{1}-pnpm{2}', runner.os, inputs.node_version, inputs.pnpm_version) }}
+        restore-keys: |
+          ${{ runner.os }}-node${{ inputs.node_version }}-pnpm${{ inputs.pnpm_version }}-
+          ${{ runner.os }}-node${{ inputs.node_version }}-
+          ${{ runner.os }}-
+
+    - name: Install dependencies
+      if: inputs.install_dependencies == 'true'
+      shell: bash
+      run: pnpm install --frozen-lockfile

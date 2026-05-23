@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PostgresAuthAdapter } from '@/infrastructure/external/PostgresAuthAdapter';
-import { logger } from '@/lib/logger';
+
 import { sql } from '@/infrastructure/database/pg-client';
+import { PostgresAuthAdapter } from '@/infrastructure/external/PostgresAuthAdapter';
 import { createSession, createSessionCookie } from '@/lib/auth/session';
+import { logger } from '@/lib/logger';
 
 type Intent = 'gerenciar_restaurante' | 'fazer_pedidos';
 type Role = 'dono' | 'cliente';
@@ -14,10 +15,17 @@ function intentToRole(intent: Intent): Role {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, senha, intent } = body;
+    const { email, senha, intent, nome } = body;
 
     if (!email || !senha || !intent) {
-      return NextResponse.json({ error: 'email, senha e intent são obrigatórios' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'email, senha e intent são obrigatórios' },
+        { status: 400 }
+      );
+    }
+
+    if (!nome || nome.trim().length === 0) {
+      return NextResponse.json({ error: 'nome é obrigatório' }, { status: 400 });
     }
 
     if (intent !== 'gerenciar_restaurante' && intent !== 'fazer_pedidos') {
@@ -31,10 +39,7 @@ export async function POST(request: NextRequest) {
     const resultado = await new PostgresAuthAdapter().criarUsuario(email, senha);
 
     if (!resultado || !resultado.id) {
-      return NextResponse.json(
-        { error: 'Erro ao criar usuário' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Erro ao criar usuário' }, { status: 400 });
     }
 
     const { id: usuarioId } = resultado;
@@ -66,7 +71,7 @@ export async function POST(request: NextRequest) {
         ${usuarioId},
         ${email.toLowerCase()},
         ${role},
-        ${''},
+        ${nome.trim()},
         NULL,
         ${now}
       )

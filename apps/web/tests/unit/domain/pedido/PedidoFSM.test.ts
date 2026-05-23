@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+
 import { Pedido, PedidoProps } from '@/domain/pedido/entities/Pedido';
 import { StatusPedido } from '@/domain/pedido/value-objects/StatusPedido';
 import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';

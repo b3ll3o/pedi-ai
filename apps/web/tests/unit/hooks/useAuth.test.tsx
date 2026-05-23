@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import { useAuth } from '@/hooks/useAuth';
 import { getSession } from '@/lib/auth/client';
@@ -38,7 +38,11 @@ vi.mock('next/navigation', () => ({
 vi.mock('@/lib/auth/client', () => ({
   login: vi.fn<() => Promise<{ error?: string }>>(),
   logout: vi.fn<() => Promise<void>>(),
-  getSession: vi.fn<() => Promise<{ user?: { id: string; email: string; role: string; restaurantId?: string } } | null>>(),
+  getSession: vi.fn<
+    () => Promise<{
+      user?: { id: string; email: string; role: string; restaurantId?: string };
+    } | null>
+  >(),
   requestPasswordReset: vi.fn<() => Promise<{ error?: string }>>(),
 }));
 

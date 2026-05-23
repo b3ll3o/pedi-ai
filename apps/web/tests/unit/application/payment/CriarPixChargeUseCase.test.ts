@@ -1,20 +1,21 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { CriarPixChargeUseCase } from '@/application/pagamento/services/CriarPixChargeUseCase'
-import type { IPagamentoRepository } from '@/domain/pagamento/repositories/IPagamentoRepository'
-import type { IPedidoRepository } from '@/domain/pedido/repositories/IPedidoRepository'
-import type { EventDispatcher } from '@/domain/shared'
-import type { IPixAdapter, PixCharge } from '@/application/pagamento/services/adapters/IPixAdapter'
-import type { Pedido } from '@/domain/pedido/entities/Pedido'
-import type { Pagamento } from '@/domain/pagamento/entities/Pagamento'
-import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro'
-import { StatusPagamento } from '@/domain/pagamento/value-objects/StatusPagamento'
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+import type { IPixAdapter, PixCharge } from '@/application/pagamento/services/adapters/IPixAdapter';
+import { CriarPixChargeUseCase } from '@/application/pagamento/services/CriarPixChargeUseCase';
+import type { Pagamento } from '@/domain/pagamento/entities/Pagamento';
+import type { IPagamentoRepository } from '@/domain/pagamento/repositories/IPagamentoRepository';
+import { StatusPagamento } from '@/domain/pagamento/value-objects/StatusPagamento';
+import type { Pedido } from '@/domain/pedido/entities/Pedido';
+import type { IPedidoRepository } from '@/domain/pedido/repositories/IPedidoRepository';
+import type { EventDispatcher } from '@/domain/shared';
+import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 
 describe('CriarPixChargeUseCase', () => {
-  let useCase: CriarPixChargeUseCase
-  let mockPixAdapter: IPixAdapter
-  let mockPagamentoRepo: IPagamentoRepository
-  let mockPedidoRepo: IPedidoRepository
-  let mockEventDispatcher: EventDispatcher
+  let useCase: CriarPixChargeUseCase;
+  let mockPixAdapter: IPixAdapter;
+  let mockPagamentoRepo: IPagamentoRepository;
+  let mockPedidoRepo: IPedidoRepository;
+  let mockEventDispatcher: EventDispatcher;
 
   const mockPixCharge: PixCharge = {
     id: 'charge-123',
@@ -23,7 +24,7 @@ describe('CriarPixChargeUseCase', () => {
     expiracao: new Date(Date.now() + 30 * 60 * 1000),
     valor: 5000,
     status: 'pending',
-  }
+  };
 
   const criarMockPedido = (overrides?: { id?: string; total?: Dinheiro }) => {
     return {
@@ -40,88 +41,90 @@ describe('CriarPixChargeUseCase', () => {
         updatedAt: new Date(),
       },
       total: overrides?.total ?? Dinheiro.criar(5000),
-    } as unknown as Pedido
-  }
+    } as unknown as Pedido;
+  };
 
   beforeEach(() => {
     mockPixAdapter = {
       criarCobranca: vi.fn().mockResolvedValue(mockPixCharge),
-    }
+    };
 
     mockPagamentoRepo = {
       buscarPorPedidoId: vi.fn().mockResolvedValue(null),
       salvar: vi.fn().mockResolvedValue({} as Pagamento),
       buscarPorId: vi.fn(),
       buscarPorTransacaoId: vi.fn(),
-    }
+    };
 
     mockPedidoRepo = {
       findById: vi.fn().mockResolvedValue(criarMockPedido()),
-    }
+    };
 
     mockEventDispatcher = {
       dispatch: vi.fn(),
       registerHandler: vi.fn(),
       unregisterHandler: vi.fn(),
-    }
+    };
 
     useCase = new CriarPixChargeUseCase(
       mockPixAdapter,
       mockPagamentoRepo,
       mockPedidoRepo,
       mockEventDispatcher
-    )
-  })
+    );
+  });
 
   describe('execute', () => {
     it('deve criar cobrança PIX para pedido válido', async () => {
-      const result = await useCase.execute({ pedidoId: 'pedido-123' })
+      const result = await useCase.execute({ pedidoId: 'pedido-123' });
 
-      expect(result).toEqual(mockPixCharge)
-      expect(mockPedidoRepo.findById).toHaveBeenCalledWith('pedido-123')
-    })
+      expect(result).toEqual(mockPixCharge);
+      expect(mockPedidoRepo.findById).toHaveBeenCalledWith('pedido-123');
+    });
 
     it('deve chamar pixAdapter.criarCobranca com valor correto', async () => {
-      const pedido = criarMockPedido({ total: Dinheiro.criar(7500) })
-      mockPedidoRepo.findById.mockResolvedValue(pedido)
+      const pedido = criarMockPedido({ total: Dinheiro.criar(7500) });
+      mockPedidoRepo.findById.mockResolvedValue(pedido);
 
-      await useCase.execute({ pedidoId: 'pedido-123' })
+      await useCase.execute({ pedidoId: 'pedido-123' });
 
-      expect(mockPixAdapter.criarCobranca).toHaveBeenCalledWith(7500, 'pedido-123')
-    })
+      expect(mockPixAdapter.criarCobranca).toHaveBeenCalledWith(7500, 'pedido-123');
+    });
 
     it('deve lançar erro quando pedido não existe', async () => {
-      mockPedidoRepo.findById.mockResolvedValue(null)
+      mockPedidoRepo.findById.mockResolvedValue(null);
 
-      await expect(useCase.execute({ pedidoId: 'nao-existe' }))
-        .rejects.toThrow('Pedido nao-existe não encontrado')
-    })
+      await expect(useCase.execute({ pedidoId: 'nao-existe' })).rejects.toThrow(
+        'Pedido nao-existe não encontrado'
+      );
+    });
 
     it('deve verificar pagamento existente', async () => {
-      await useCase.execute({ pedidoId: 'pedido-123' })
+      await useCase.execute({ pedidoId: 'pedido-123' });
 
-      expect(mockPagamentoRepo.buscarPorPedidoId).toHaveBeenCalledWith('pedido-123')
-    })
+      expect(mockPagamentoRepo.buscarPorPedidoId).toHaveBeenCalledWith('pedido-123');
+    });
 
     it('deve lançar erro quando já existe pagamento confirmado', async () => {
       const pagamentoConfirmado = {
         id: 'pag-123',
         status: StatusPagamento.CONFIRMED,
         isPendente: () => false,
-      } as unknown as Pagamento
+      } as unknown as Pagamento;
 
-      mockPagamentoRepo.buscarPorPedidoId.mockResolvedValue(pagamentoConfirmado)
+      mockPagamentoRepo.buscarPorPedidoId.mockResolvedValue(pagamentoConfirmado);
 
-      await expect(useCase.execute({ pedidoId: 'pedido-123' }))
-        .rejects.toThrow('Já existe um pagamento confirmado ou cancelado para este pedido')
-    })
+      await expect(useCase.execute({ pedidoId: 'pedido-123' })).rejects.toThrow(
+        'Já existe um pagamento confirmado ou cancelado para este pedido'
+      );
+    });
 
     it('deve criar novo pagamento quando não existe pendente', async () => {
-      mockPagamentoRepo.buscarPorPedidoId.mockResolvedValue(null)
+      mockPagamentoRepo.buscarPorPedidoId.mockResolvedValue(null);
 
-      await useCase.execute({ pedidoId: 'pedido-123' })
+      await useCase.execute({ pedidoId: 'pedido-123' });
 
-      expect(mockPagamentoRepo.salvar).toHaveBeenCalled()
-    })
-  })
-})
+      expect(mockPagamentoRepo.salvar).toHaveBeenCalled();
+    });
+  });
+});

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { ExcluirGrupoModificadorUseCase } from '@/application/admin/services/ExcluirGrupoModificadorUseCase';
 import { ExcluirGrupoModificadorInput } from '@/application/admin/services/ExcluirGrupoModificadorUseCase';
 import { ModificadorGrupo } from '@/domain/cardapio/entities/ModificadorGrupo';
@@ -93,9 +94,7 @@ describe('ExcluirGrupoModificadorUseCase', () => {
         id: 'grupo-inexistente-id',
       };
 
-      await expect(useCase.execute(input)).rejects.toThrow(
-        'Grupo de modificador não encontrado'
-      );
+      await expect(useCase.execute(input)).rejects.toThrow('Grupo de modificador não encontrado');
       expect(mockGrupoRepo.salvar).not.toHaveBeenCalled();
       expect(mockGrupoRepo.excluir).not.toHaveBeenCalled();
     });

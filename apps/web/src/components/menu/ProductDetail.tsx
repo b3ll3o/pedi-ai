@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-import Image from 'next/image';
 import { useQuery } from '@tanstack/react-query';
+import Image from 'next/image';
+import { useState } from 'react';
+
 import { ModifierSelector } from './ModifierSelector';
-import type { CartItem, SelectedModifier } from './types';
 import styles from './ProductDetail.module.css';
+import type { CartItem, SelectedModifier } from './types';
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -238,16 +239,24 @@ export function ProductDetail({ productId, restaurantId, onAddToCart }: ProductD
         {product.modifier_groups && product.modifier_groups.length > 0 && (
           <div className={styles.modifiersSection}>
             <h3 className={styles.modifiersTitle}>Personalize seu pedido</h3>
-            {product.modifier_groups.map((group: { id: string; name: string; required: boolean; min_selections: number; max_selections: number; values: Array<{ id: string; name: string; price_adjustment: number }> }) => (
-              <ModifierSelector
-                key={group.id}
-                 
-                modifierGroup={group as any}
-                selectedValues={selectedModifiers.filter((m) => m.group_id === group.id)}
-                onChange={(values) => handleModifierChange(group.id, values)}
-                data-testid={`product-detail-modifier-group-${group.id}`}
-              />
-            ))}
+            {product.modifier_groups.map(
+              (group: {
+                id: string;
+                name: string;
+                required: boolean;
+                min_selections: number;
+                max_selections: number;
+                values: Array<{ id: string; name: string; price_adjustment: number }>;
+              }) => (
+                <ModifierSelector
+                  key={group.id}
+                  modifierGroup={group as any}
+                  selectedValues={selectedModifiers.filter((m) => m.group_id === group.id)}
+                  onChange={(values) => handleModifierChange(group.id, values)}
+                  data-testid={`product-detail-modifier-group-${group.id}`}
+                />
+              )
+            )}
           </div>
         )}
 

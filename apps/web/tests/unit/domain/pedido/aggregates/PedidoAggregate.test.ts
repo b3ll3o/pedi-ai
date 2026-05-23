@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { PedidoAggregate } from '@/domain/pedido/aggregates/PedidoAggregate';
-import { Pedido } from '@/domain/pedido/entities/Pedido';
 import { ItemPedido } from '@/domain/pedido/entities/ItemPedido';
+import { Pedido } from '@/domain/pedido/entities/Pedido';
 import { StatusPedido } from '@/domain/pedido/value-objects/StatusPedido';
-import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 import { EventDispatcher } from '@/domain/shared/events/EventDispatcher';
+import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 
 vi.mock('@/domain/shared/events/EventDispatcher', () => {
   const mockDispatch = vi.fn();

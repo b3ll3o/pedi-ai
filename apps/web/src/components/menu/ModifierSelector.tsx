@@ -1,7 +1,7 @@
 'use client';
 
-import type { ModifierGroup, SelectedModifier } from './types';
 import styles from './ModifierSelector.module.css';
+import type { ModifierGroup, SelectedModifier } from './types';
 
 // ── Props ────────────────────────────────────────────────────
 

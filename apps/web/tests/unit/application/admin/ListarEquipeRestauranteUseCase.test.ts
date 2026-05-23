@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { ListarEquipeRestauranteUseCase } from '@/application/admin/services/ListarEquipeRestauranteUseCase';
 import { ListarEquipeRestauranteInput } from '@/application/admin/services/ListarEquipeRestauranteUseCase';
 import { UsuarioRestaurante } from '@/domain/admin/entities/UsuarioRestaurante';
@@ -33,12 +34,28 @@ describe('ListarEquipeRestauranteUseCase', () => {
   describe('execute', () => {
     it('deve listar equipe com owner e managers quando solicitante é owner', async () => {
       mockUsuarioRestauranteRepo.findByUsuarioIdAndRestauranteId.mockResolvedValueOnce(
-        UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'restaurante-id', papel: 'dono' })
+        UsuarioRestaurante.criar({
+          usuarioId: 'owner-id',
+          restauranteId: 'restaurante-id',
+          papel: 'dono',
+        })
       );
       mockUsuarioRestauranteRepo.findByRestauranteId.mockResolvedValueOnce([
-        UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'restaurante-id', papel: 'dono' }),
-        UsuarioRestaurante.criar({ usuarioId: 'manager-1', restauranteId: 'restaurante-id', papel: 'gerente' }),
-        UsuarioRestaurante.criar({ usuarioId: 'staff-1', restauranteId: 'restaurante-id', papel: 'atendente' }),
+        UsuarioRestaurante.criar({
+          usuarioId: 'owner-id',
+          restauranteId: 'restaurante-id',
+          papel: 'dono',
+        }),
+        UsuarioRestaurante.criar({
+          usuarioId: 'manager-1',
+          restauranteId: 'restaurante-id',
+          papel: 'gerente',
+        }),
+        UsuarioRestaurante.criar({
+          usuarioId: 'staff-1',
+          restauranteId: 'restaurante-id',
+          papel: 'atendente',
+        }),
       ]);
 
       const input: ListarEquipeRestauranteInput = {
@@ -50,18 +67,30 @@ describe('ListarEquipeRestauranteUseCase', () => {
 
       expect(resultado.sucesso).toBe(true);
       expect(resultado.membros).toHaveLength(3);
-      expect(resultado.membros.some(m => m.papel === 'dono')).toBe(true);
-      expect(resultado.membros.some(m => m.papel === 'gerente')).toBe(true);
-      expect(resultado.membros.some(m => m.papel === 'atendente')).toBe(true);
+      expect(resultado.membros.some((m) => m.papel === 'dono')).toBe(true);
+      expect(resultado.membros.some((m) => m.papel === 'gerente')).toBe(true);
+      expect(resultado.membros.some((m) => m.papel === 'atendente')).toBe(true);
     });
 
     it('deve listar equipe quando solicitante é manager', async () => {
       mockUsuarioRestauranteRepo.findByUsuarioIdAndRestauranteId.mockResolvedValueOnce(
-        UsuarioRestaurante.criar({ usuarioId: 'manager-id', restauranteId: 'restaurante-id', papel: 'gerente' })
+        UsuarioRestaurante.criar({
+          usuarioId: 'manager-id',
+          restauranteId: 'restaurante-id',
+          papel: 'gerente',
+        })
       );
       mockUsuarioRestauranteRepo.findByRestauranteId.mockResolvedValueOnce([
-        UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'restaurante-id', papel: 'dono' }),
-        UsuarioRestaurante.criar({ usuarioId: 'manager-id', restauranteId: 'restaurante-id', papel: 'gerente' }),
+        UsuarioRestaurante.criar({
+          usuarioId: 'owner-id',
+          restauranteId: 'restaurante-id',
+          papel: 'dono',
+        }),
+        UsuarioRestaurante.criar({
+          usuarioId: 'manager-id',
+          restauranteId: 'restaurante-id',
+          papel: 'gerente',
+        }),
       ]);
 
       const input: ListarEquipeRestauranteInput = {
@@ -103,7 +132,11 @@ describe('ListarEquipeRestauranteUseCase', () => {
 
     it('deve lançar erro quando staff tenta listar equipe', async () => {
       mockUsuarioRestauranteRepo.findByUsuarioIdAndRestauranteId.mockResolvedValueOnce(
-        UsuarioRestaurante.criar({ usuarioId: 'staff-id', restauranteId: 'restaurante-id', papel: 'atendente' })
+        UsuarioRestaurante.criar({
+          usuarioId: 'staff-id',
+          restauranteId: 'restaurante-id',
+          papel: 'atendente',
+        })
       );
 
       const input: ListarEquipeRestauranteInput = {

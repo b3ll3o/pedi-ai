@@ -1,6 +1,7 @@
 'use client';
 
 import { getRoleLabel, getRoleColor } from '@/application/services/userService';
+
 import styles from './UserManagement.module.css';
 
 type UserRole = 'dono' | 'gerente' | 'atendente' | 'cliente';

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { sql } from '@/infrastructure/database/pg-client';
 
 type OrderStatus = 'pending_payment' | 'paid' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
@@ -95,12 +96,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         total_price: item.total_price,
         notes: item.notes,
       })),
-      status_history: historyResult.map((entry: { id: string; status: string; notes: string | null; created_at: string }) => ({
-        id: entry.id,
-        status: entry.status as OrderStatus,
-        notes: entry.notes,
-        created_at: entry.created_at,
-      })),
+      status_history: historyResult.map(
+        (entry: { id: string; status: string; notes: string | null; created_at: string }) => ({
+          id: entry.id,
+          status: entry.status as OrderStatus,
+          notes: entry.notes,
+          created_at: entry.created_at,
+        })
+      ),
       created_at: order.created_at,
     };
 

@@ -1,9 +1,10 @@
-import { Pedido, PedidoProps } from '../entities/Pedido';
+import { EventDispatcher } from '@/domain/shared';
+
 import { ItemPedido } from '../entities/ItemPedido';
-import { StatusPedido } from '../value-objects/StatusPedido';
+import { Pedido, PedidoProps } from '../entities/Pedido';
 import { PedidoCriadoEvent } from '../events/PedidoCriadoEvent';
 import { PedidoStatusAlteradoEvent } from '../events/PedidoStatusAlteradoEvent';
-import { EventDispatcher } from '@/domain/shared';
+import { StatusPedido } from '../value-objects/StatusPedido';
 
 export class PedidoAggregate {
   private pedido: Pedido;

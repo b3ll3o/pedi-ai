@@ -1,7 +1,7 @@
 import { UseCase } from '@/application/shared';
 import { ItemCardapio } from '@/domain/cardapio/entities/ItemCardapio';
-import { TipoItemCardapio } from '@/domain/cardapio/value-objects/TipoItemCardapio';
 import { LabelDietetico } from '@/domain/cardapio/value-objects/LabelDietetico';
+import { TipoItemCardapio } from '@/domain/cardapio/value-objects/TipoItemCardapio';
 import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 import { isMultiRestaurantEnabled } from '@/lib/feature-flags';
 

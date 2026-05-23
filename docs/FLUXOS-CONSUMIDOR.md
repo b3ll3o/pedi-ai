@@ -37,11 +37,13 @@ Cliente escaneia QR code da mesa
 ```
 
 **Cenarios:**
+
 - **Sucesso**: QR code válido → acesso ao cardápio
 - **QR Inválido**: Exibe erro "QR Code inválido"
 - **Mesa Inativa**: Exibe mensagem "Mesa indisponível"
 
 **Arquivos:**
+
 - `src/lib/qr.ts` — Validação de QR code
 - `src/app/restaurantes/[restaurantId]/cardapio/page.tsx` — Página do cardápio
 
@@ -55,10 +57,12 @@ Cliente acessa /restaurantes
 ```
 
 **Cenarios:**
+
 - Restaurante com banner, horário de funcionamento, taxa de entrega
 - Filtro por categoria ou busca por nome
 
 **Arquivos:**
+
 - `src/app/restaurantes/page.tsx` — Lista pública
 - `src/components/restaurant/` — Componentes de listagem
 
@@ -80,12 +84,13 @@ Cliente acessa /login
 ```
 
 **Cenarios:**
+
 - **Sucesso**: Credenciais válidas → redirecionamento
 - **Credenciais Inválidas**: Exibe erro "Email ou senha incorretos"
 - **Campos Vazios**: Validação client-side
 - **Usuário Já Autenticado**: Redireciona direto para área correspondente
 
-**Fluxos E2E:** `apps/web/apps/web/tests/customer/auth.spec.ts`
+**Fluxos E2E:** `apps/web/tests/customer/auth.spec.ts`
 
 ### 2.2 Logout
 
@@ -110,7 +115,7 @@ Cliente acessa /register
   → Redireciona para /login?registered=true&intent=fazer_pedidos
 ```
 
-**Fluxos E2E:** `apps/web/apps/web/tests/customer/register.spec.ts`
+**Fluxos E2E:** `apps/web/tests/customer/register.spec.ts`
 
 ### 3.2 Registro com Intenção de Gerenciar Restaurante
 
@@ -137,15 +142,17 @@ Cliente acessa cardápio
 ```
 
 **Funcionalidades:**
+
 - Filtro por labels dietéticos (vegetariano, vegano, gluten-free)
 - Busca por nome de produto
 - Exibição de thumbnail, nome, preço
 
 **Arquivos:**
+
 - `src/domain/cardapio/entities/Categoria.ts`
 - `src/domain/cardapio/entities/ItemCardapio.ts`
 
-**Fluxos E2E:** `apps/web/apps/web/tests/customer/menu.spec.ts`
+**Fluxos E2E:** `apps/web/tests/customer/menu.spec.ts`
 
 ### 4.2 Visualização de Detalhes do Produto
 
@@ -159,6 +166,7 @@ Cliente seleciona produto
 ```
 
 **Cenarios:**
+
 - Modificador Obrigatório: Exibe erro se não selecionar
 - Modificador Opcional: Pode pular ou selecionar
 
@@ -176,7 +184,7 @@ Cliente visualiza produto
   → Badge do carrinho é atualizado
 ```
 
-**Fluxos E2E:** `apps/web/apps/web/tests/customer/cart.spec.ts`
+**Fluxos E2E:** `apps/web/tests/customer/cart.spec.ts`
 
 ### 5.2 Adicionar Produto com Modificadores
 
@@ -202,7 +210,7 @@ Cliente visualiza combo
   → Sistema adiciona combo como item único com bundle price
 ```
 
-**Fluxos E2E:** `apps/web/apps/web/tests/customer/combos.spec.ts`
+**Fluxos E2E:** `apps/web/tests/customer/combos.spec.ts`
 
 ---
 
@@ -225,6 +233,7 @@ Cliente acessa /carrinho ou clica no badge
 ```
 
 **Arquivos:**
+
 - `src/infrastructure/persistence/cartStore.ts`
 - `src/infrastructure/persistence/pedido/CarrinhoRepository.ts`
 
@@ -260,7 +269,7 @@ Cliente clica em "Limpar Carrinho"
 
 ## 7. Fluxo de Checkout
 
-### 7.1 Revisão do Pedido
+### 7.1 Revisão do Pedido e Dados do Cliente
 
 ```
 Cliente acessa /checkout
@@ -270,20 +279,27 @@ Cliente acessa /checkout
     - Preços
     - Total
     - Método de pagamento
+  → Cliente preenche dados de contato:
+    - Nome (obrigatório)
+    - Telefone (obrigatório)
+    - Email (obrigatório — usado para o pagador PIX)
   → Cliente seleciona método de pagamento (Pix)
   → Cliente clica em "Confirmar Pedido"
 ```
 
 **Validações:**
+
 - Carrinho não vazio
 - Preços consistentes com cardápio atual
 - Produtos ainda disponíveis
+- Nome, telefone e email preenchidos
 
 **Arquivos:**
-- `src/app/(customer)/checkout/page.tsx`
-- `src/components/checkout/`
 
-**Fluxos E2E:** `apps/web/apps/web/tests/customer/checkout.spec.ts`
+- `src/app/(customer)/checkout/page.tsx`
+- `src/components/checkout/CheckoutForm.tsx` — coleta `customerName`, `customerPhone`, `customerEmail`
+
+**Fluxos E2E:** `apps/web/tests/customer/checkout.spec.ts`
 
 ### 7.2 Criação do Pedido
 
@@ -291,10 +307,13 @@ Cliente acessa /checkout
 Cliente confirma pedido
   → Sistema cria pedido com status `pending_payment`
   → Sistema associa mesa_id e restaurante_id
+  → Sistema registra customer_name, customer_phone e customer_email no pedido
   → Sistema registra todos os itens do carrinho
   → Sistema limpa carrinho no IndexedDB
   → Redireciona para página de pagamento
 ```
+
+> **Nota:** O `customer_email` é armazenado no pedido e usado como `payer.email` na criação do PIX via Mercado Pago.
 
 ---
 
@@ -304,7 +323,7 @@ Cliente confirma pedido
 
 ```
 Cliente acessa página de pagamento
-  → Sistema cria Pix charge via backend (API /api/pix/charge)
+  → Sistema cria Pix charge via backend (API /api/payments/pix/create)
   → Sistema exibe QR Code Pix
   → Sistema inicia polling para confirmação (a cada 3s)
 ```
@@ -312,10 +331,11 @@ Cliente acessa página de pagamento
 **Timeout:** 60 segundos para pagamento
 
 **Arquivos:**
+
 - `src/application/pagamento/services/CriarPixChargeUseCase.ts`
 - `src/infrastructure/external/PixAdapter.ts`
 
-**Fluxos E2E:** `apps/web/apps/web/tests/customer/payment.spec.ts`, `apps/web/apps/web/tests/payment/pix.spec.ts`
+**Fluxos E2E:** `apps/web/tests/customer/payment.spec.ts`, `apps/web/tests/payment/pix.spec.ts`
 
 ### 8.2 Confirmação de Pagamento
 
@@ -367,16 +387,18 @@ Status do pedido (FSM):
 ```
 
 **Fluxo de Status:**
+
 ```
 pending_payment → paid → received → preparing → ready → delivered
                                     ↘ rejected
 ```
 
 **Arquivos:**
+
 - `src/domain/pedido/entities/Pedido.ts`
 - `src/hooks/useRealtimeOrders.ts`
 
-**Fluxos E2E:** `apps/web/apps/web/tests/customer/order.spec.ts`
+**Fluxos E2E:** `apps/web/tests/customer/order.spec.ts`
 
 ### 9.2 Notificações de Status
 
@@ -407,6 +429,7 @@ Cliente solicita cancelamento
 ```
 
 **Arquivos:**
+
 - `src/application/pedido/services/AlterarStatusPedidoUseCase.ts`
 - `src/application/pagamento/services/IniciarReembolsoUseCase.ts`
 
@@ -433,10 +456,11 @@ Cliente acessa cardápio online
 ```
 
 **Arquivos:**
+
 - `src/infrastructure/persistence/cardapio/CardapioSyncService.ts`
 - `src/lib/offline/`
 
-**Fluxos E2E:** `apps/web/apps/web/tests/customer/offline.spec.ts`
+**Fluxos E2E:** `apps/web/tests/customer/offline.spec.ts`
 
 ### 11.2 Navegação Offline
 
@@ -460,11 +484,13 @@ Cliente tenta finalizar pedido offline
 ```
 
 **Retry com Exponential Backoff:**
+
 - Delay: 1s, 2s, 4s (máximo 30s)
 - Máximo de tentativas: 3
 - Após falhas: Exibe erro ao cliente
 
 **Arquivos:**
+
 - `src/lib/offline/BackgroundSync.ts`
 - `src/lib/sw/`
 
@@ -503,11 +529,12 @@ Cliente seleciona restaurante
 ```
 
 **Arquivos:**
+
 - `src/app/restaurantes/page.tsx`
 - `src/components/restaurant/RestaurantCard.tsx`
 - `src/components/restaurant/RestaurantSearch.tsx`
 
-**Fluxos E2E:** `apps/web/apps/web/tests/customer/restaurants.spec.ts`
+**Fluxos E2E:** `apps/web/tests/customer/restaurants.spec.ts`
 
 ---
 
@@ -522,7 +549,7 @@ Cliente acessa /login
   → Sistema envia email de redefinição via API NestJS
 ```
 
-**Fluxos E2E:** `apps/web/apps/web/tests/auth/password-recovery.spec.ts`
+**Fluxos E2E:** `apps/web/tests/auth/password-recovery.spec.ts`
 
 ### 13.2 Redefinir Senha
 
@@ -550,9 +577,11 @@ Cliente acessa histórico de pedidos
 ```
 
 **Arquivos:**
+
 - `src/application/pedido/services/ObterHistoricoPedidosUseCase.ts`
 
 **Validações:**
+
 - Verifica se produtos ainda estão disponíveis
 - Verifica se preços ainda são válidos
 
@@ -586,36 +615,36 @@ Cliente seleciona pedido
 
 ## Resumo — Status do Pedido
 
-| Status | Descrição |
-|--------|-----------|
-| `pending_payment` | Aguardando pagamento |
-| `paid` | Pagamento confirmado |
-| `received` | Recebido pela cozinha |
-| `preparing` | Em preparo |
-| `ready` | Pronto para entrega |
-| `delivered` | Entregue |
-| `rejected` | Rejeitado pelo restaurante |
-| `cancelled` | Cancelado |
-| `refunded` | Reembolsado |
+| Status            | Descrição                  |
+| ----------------- | -------------------------- |
+| `pending_payment` | Aguardando pagamento       |
+| `paid`            | Pagamento confirmado       |
+| `received`        | Recebido pela cozinha      |
+| `preparing`       | Em preparo                 |
+| `ready`           | Pronto para entrega        |
+| `delivered`       | Entregue                   |
+| `rejected`        | Rejeitado pelo restaurante |
+| `cancelled`       | Cancelado                  |
+| `refunded`        | Reembolsado                |
 
 ---
 
 ## Matriz de Fluxos x Tags E2E
 
-| Fluxo | Spec File | Tags |
-|-------|-----------|------|
-| auth (cliente) | `apps/web/apps/web/tests/customer/auth.spec.ts` | @smoke, @critical |
-| register | `apps/web/apps/web/tests/customer/register.spec.ts` | @smoke |
-| menu | `apps/web/apps/web/tests/customer/menu.spec.ts` | — |
-| cart | `apps/web/apps/web/tests/customer/cart.spec.ts` | — |
-| checkout | `apps/web/apps/web/tests/customer/checkout.spec.ts` | @smoke, @slow |
-| order | `apps/web/apps/web/tests/customer/order.spec.ts` | @slow |
-| payment (Pix) | `apps/web/apps/web/tests/customer/payment.spec.ts`, `apps/web/apps/web/tests/payment/pix.spec.ts` | @slow |
-| offline | `apps/web/apps/web/tests/customer/offline.spec.ts` | — |
-| combos (cliente) | `apps/web/apps/web/tests/customer/combos.spec.ts` | — |
-| modifier-groups | `apps/web/apps/web/tests/customer/modifier-groups.spec.ts` | — |
-| password-recovery | `apps/web/apps/web/tests/auth/password-recovery.spec.ts` | — |
-| restaurants (delivery) | `apps/web/apps/web/tests/customer/restaurants.spec.ts` | — |
+| Fluxo                  | Spec File                                                                       | Tags              |
+| ---------------------- | ------------------------------------------------------------------------------- | ----------------- |
+| auth (cliente)         | `apps/web/tests/customer/auth.spec.ts`                                          | @smoke, @critical |
+| register               | `apps/web/tests/customer/register.spec.ts`                                      | @smoke            |
+| menu                   | `apps/web/tests/customer/menu.spec.ts`                                          | —                 |
+| cart                   | `apps/web/tests/customer/cart.spec.ts`                                          | —                 |
+| checkout               | `apps/web/tests/customer/checkout.spec.ts`                                      | @smoke, @slow     |
+| order                  | `apps/web/tests/customer/order.spec.ts`                                         | @slow             |
+| payment (Pix)          | `apps/web/tests/customer/payment.spec.ts`, `apps/web/tests/payment/pix.spec.ts` | @slow             |
+| offline                | `apps/web/tests/customer/offline.spec.ts`                                       | —                 |
+| combos (cliente)       | `apps/web/tests/customer/combos.spec.ts`                                        | —                 |
+| modifier-groups        | `apps/web/tests/customer/modifier-groups.spec.ts`                               | —                 |
+| password-recovery      | `apps/web/tests/auth/password-recovery.spec.ts`                                 | —                 |
+| restaurants (delivery) | `apps/web/tests/customer/restaurants.spec.ts`                                   | —                 |
 
 ---
 

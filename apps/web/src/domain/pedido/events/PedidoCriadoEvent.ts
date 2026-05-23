@@ -1,4 +1,5 @@
 import { DomainEvent } from '@/domain/shared';
+
 import { Pedido } from '../entities/Pedido';
 
 export class PedidoCriadoEvent implements DomainEvent {

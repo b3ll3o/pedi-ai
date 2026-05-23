@@ -1,14 +1,16 @@
 'use client';
 
-import { useMemo, useEffect } from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useMenuStore } from '@/infrastructure/persistence/menuStore';
+import { useMemo, useEffect } from 'react';
+
 import { DietaryFilter } from '@/components/menu/DietaryFilter';
+import type { DietaryLabel } from '@/components/menu/DietaryFilter';
 import { ProductList } from '@/components/menu/ProductList';
 import { SearchBar } from '@/components/menu/SearchBar';
-import type { DietaryLabel } from '@/components/menu/DietaryFilter';
+import { useMenuStore } from '@/infrastructure/persistence/menuStore';
+
 import styles from './page.module.css';
 
 interface CategoryPageClientProps {

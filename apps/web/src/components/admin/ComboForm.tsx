@@ -1,18 +1,12 @@
 'use client';
 
-import { useState, useRef } from 'react';
 import Image from 'next/image';
-import styles from './ComboForm.module.css';
+import { useState } from 'react';
 
-// TODO: Implement file upload via API route (Supabase Storage removed)
-async function uploadProductImage(_file: File, _onProgress?: { onProgress: (info: { fraction: number }) => void }): Promise<{ url: string }> {
-  console.warn('uploadProductImage: Storage não disponível - implementação via API pendente');
-  _onProgress?.onProgress({ fraction: 1 });
-  return { url: '' };
-}
-async function deleteProductImage(_url: string): Promise<void> {
-  console.warn('deleteProductImage: Storage não disponível');
-}
+import { useImageUpload } from '../../hooks/useImageUpload';
+
+import styles from './ComboForm.module.css';
+import { validateComboForm, type ComboFormErrors } from './comboFormValidation';
 
 export interface ComboInput {
   name: string;
@@ -30,14 +24,26 @@ interface ComboFormProps {
   onCancel: () => void;
 }
 
-export function ComboForm({ combo, products, onSubmit, onCancel }: ComboFormProps) {
+function calculateTotalValue(
+  productEntries: [string, number][],
+  products: { id: string; name: string; price: number }[]
+): number {
+  return productEntries.reduce((sum, [productId, qty]) => {
+    const product = products.find((p) => p.id === productId);
+    return sum + (product ? product.price * qty : 0);
+  }, 0);
+}
+
+function useComboForm(
+  combo: any,
+  products: { id: string; name: string; price: number }[],
+  onSubmitProp: (data: ComboInput) => void
+) {
   const isEditMode = Boolean(combo);
 
   const [name, setName] = useState(combo?.name ?? '');
   const [description, setDescription] = useState(combo?.description ?? '');
   const [bundlePrice, setBundlePrice] = useState(combo?.bundle_price?.toString() ?? '');
-  const [imageUrl, setImageUrl] = useState(combo?.image_url ?? '');
-  const [imagePreview, setImagePreview] = useState<string | null>(combo?.image_url ?? null);
   const [available, setAvailable] = useState(combo?.available ?? true);
 
   // Map existing combo_items to product selections
@@ -50,84 +56,17 @@ export function ComboForm({ combo, products, onSubmit, onCancel }: ComboFormProp
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
-  const [errors, setErrors] = useState<{ name?: string; bundle_price?: string; items?: string }>(
-    {}
-  );
-  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<ComboFormErrors>({});
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const validateForm = (): boolean => {
-    const newErrors: { name?: string; bundle_price?: string; items?: string } = {};
-
-    if (!name.trim()) {
-      newErrors.name = 'Nome é obrigatório';
-    }
-
-    const priceNum = parseFloat(bundlePrice);
-    if (!bundlePrice || isNaN(priceNum) || priceNum < 0) {
-      newErrors.bundle_price = 'Preço inválido';
-    }
-
-    const productEntries = Object.entries(selectedProducts).filter(([, qty]) => qty > 0);
-    if (productEntries.length === 0) {
-      newErrors.items = 'Adicione pelo menos um produto ao combo';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      setUploadError('Por favor, selecione um arquivo de imagem');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImagePreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-
-    setUploadError(null);
-    setUploadProgress(0);
-
-    try {
-      const result = await uploadProductImage(file, {
-        onProgress: ({ fraction }) => {
-          setUploadProgress(fraction);
-        },
-      });
-      setImageUrl(result.url);
-      setUploadProgress(null);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Upload falhou';
-      setUploadError(message);
-      setImagePreview(null);
-      setImageUrl('');
-    }
-  };
-
-  const handleRemoveImage = async () => {
-    if (imageUrl) {
-      try {
-        await deleteProductImage(imageUrl);
-      } catch {
-        // ignore delete errors
-      }
-    }
-    setImagePreview(null);
-    setImageUrl('');
-    setUploadError(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
+  const {
+    imageUrl,
+    imagePreview,
+    uploadProgress,
+    uploadError,
+    fileInputRef,
+    handleImageChange,
+    handleRemoveImage,
+  } = useImageUpload(combo?.image_url);
 
   const handleQuantityChange = (productId: string, quantity: number) => {
     setSelectedProducts((prev) => {
@@ -144,7 +83,9 @@ export function ComboForm({ combo, products, onSubmit, onCancel }: ComboFormProp
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validateForm()) return;
+    const validationErrors = validateComboForm(name, bundlePrice, selectedProducts);
+    setErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) return;
 
     setIsSubmitting(true);
     try {
@@ -152,7 +93,7 @@ export function ComboForm({ combo, products, onSubmit, onCancel }: ComboFormProp
         .filter(([, qty]) => qty > 0)
         .map(([product_id]) => product_id);
 
-      await onSubmit({
+      await onSubmitProp({
         name: name.trim(),
         description: description.trim() || undefined,
         bundle_price: parseFloat(bundlePrice),
@@ -166,10 +107,167 @@ export function ComboForm({ combo, products, onSubmit, onCancel }: ComboFormProp
   };
 
   const productEntries = Object.entries(selectedProducts).filter(([, qty]) => qty > 0);
-  const totalValue = productEntries.reduce((sum, [productId, qty]) => {
-    const product = products.find((p) => p.id === productId);
-    return sum + (product ? product.price * qty : 0);
-  }, 0);
+  const totalValue = calculateTotalValue(productEntries, products);
+
+  return {
+    name,
+    setName,
+    description,
+    setDescription,
+    bundlePrice,
+    setBundlePrice,
+    available,
+    setAvailable,
+    selectedProducts,
+    isSubmitting,
+    errors,
+    imageUrl,
+    imagePreview,
+    uploadProgress,
+    uploadError,
+    fileInputRef,
+    handleImageChange,
+    handleRemoveImage,
+    handleQuantityChange,
+    handleSubmit,
+    productEntries,
+    totalValue,
+    isEditMode,
+  };
+}
+
+function ImageUploadSection({
+  imagePreview,
+  fileInputRef,
+  handleImageChange,
+  handleRemoveImage,
+  uploadProgress,
+  uploadError,
+  isSubmitting,
+}: {
+  imagePreview: string | null;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
+  handleImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleRemoveImage: () => void;
+  uploadProgress: number | null;
+  uploadError: string | null;
+  isSubmitting: boolean;
+}) {
+  return (
+    <div className={styles.field}>
+      <label className={styles.label}>Imagem</label>
+      <div className={styles.imageUpload}>
+        {imagePreview ? (
+          <div className={styles.imagePreview}>
+            <Image
+              src={imagePreview}
+              alt="Preview"
+              fill
+              className={styles.previewImg}
+              sizes="200px"
+            />
+            <button
+              type="button"
+              className={styles.removeImageBtn}
+              onClick={handleRemoveImage}
+              disabled={isSubmitting}
+              aria-label="Remover imagem"
+            >
+              ×
+            </button>
+          </div>
+        ) : (
+          <div className={styles.uploadPlaceholder}>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className={styles.fileInput}
+              disabled={isSubmitting}
+            />
+            <div className={styles.uploadIcon}>📷</div>
+            <span className={styles.uploadText}>Clique para adicionar imagem</span>
+          </div>
+        )}
+      </div>
+
+      {uploadProgress !== null && (
+        <div className={styles.progressBar}>
+          <div className={styles.progressFill} style={{ width: `${uploadProgress * 100}%` }} />
+          <span className={styles.progressText}>{Math.round(uploadProgress * 100)}%</span>
+        </div>
+      )}
+
+      {uploadError && <span className={styles.error}>{uploadError}</span>}
+      <span className={styles.hint}>Formatos aceitos: JPG, PNG, WebP. Tamanho máximo: 5MB</span>
+    </div>
+  );
+}
+
+function ProductRow({
+  product,
+  quantity,
+  onQuantityChange,
+  isSubmitting,
+}: {
+  product: { id: string; name: string; price: number };
+  quantity: number;
+  onQuantityChange: (productId: string, quantity: number) => void;
+  isSubmitting: boolean;
+}) {
+  return (
+    <div key={product.id} className={styles.productRow}>
+      <span className={styles.productName}>{product.name}</span>
+      <span className={styles.productPrice}>R$ {product.price.toFixed(2)}</span>
+      <div className={styles.quantityControls}>
+        <button
+          type="button"
+          className={styles.qtyButton}
+          onClick={() => onQuantityChange(product.id, quantity - 1)}
+          disabled={isSubmitting || quantity <= 0}
+        >
+          −
+        </button>
+        <span className={styles.qtyValue}>{quantity}</span>
+        <button
+          type="button"
+          className={styles.qtyButton}
+          onClick={() => onQuantityChange(product.id, quantity + 1)}
+          disabled={isSubmitting}
+        >
+          +
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function ComboForm({ combo, products, onSubmit, onCancel }: ComboFormProps) {
+  const {
+    name,
+    setName,
+    description,
+    setDescription,
+    bundlePrice,
+    setBundlePrice,
+    available,
+    setAvailable,
+    selectedProducts,
+    isSubmitting,
+    errors,
+    imagePreview,
+    uploadProgress,
+    uploadError,
+    fileInputRef,
+    handleImageChange,
+    handleRemoveImage,
+    handleQuantityChange,
+    handleSubmit,
+    productEntries,
+    totalValue,
+    isEditMode,
+  } = useComboForm(combo, products, onSubmit);
 
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
@@ -226,54 +324,15 @@ export function ComboForm({ combo, products, onSubmit, onCancel }: ComboFormProp
         {errors.bundle_price && <span className={styles.error}>{errors.bundle_price}</span>}
       </div>
 
-      <div className={styles.field}>
-        <label className={styles.label}>Imagem</label>
-        <div className={styles.imageUpload}>
-          {imagePreview ? (
-            <div className={styles.imagePreview}>
-              <Image
-                src={imagePreview}
-                alt="Preview"
-                fill
-                className={styles.previewImg}
-                sizes="200px"
-              />
-              <button
-                type="button"
-                className={styles.removeImageBtn}
-                onClick={handleRemoveImage}
-                disabled={isSubmitting}
-                aria-label="Remover imagem"
-              >
-                ×
-              </button>
-            </div>
-          ) : (
-            <div className={styles.uploadPlaceholder}>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className={styles.fileInput}
-                disabled={isSubmitting}
-              />
-              <div className={styles.uploadIcon}>📷</div>
-              <span className={styles.uploadText}>Clique para adicionar imagem</span>
-            </div>
-          )}
-        </div>
-
-        {uploadProgress !== null && (
-          <div className={styles.progressBar}>
-            <div className={styles.progressFill} style={{ width: `${uploadProgress * 100}%` }} />
-            <span className={styles.progressText}>{Math.round(uploadProgress * 100)}%</span>
-          </div>
-        )}
-
-        {uploadError && <span className={styles.error}>{uploadError}</span>}
-        <span className={styles.hint}>Formatos aceitos: JPG, PNG, WebP. Tamanho máximo: 5MB</span>
-      </div>
+      <ImageUploadSection
+        imagePreview={imagePreview}
+        fileInputRef={fileInputRef}
+        handleImageChange={handleImageChange}
+        handleRemoveImage={handleRemoveImage}
+        uploadProgress={uploadProgress}
+        uploadError={uploadError}
+        isSubmitting={isSubmitting}
+      />
 
       <div className={styles.field}>
         <label className={styles.checkboxLabel}>
@@ -297,29 +356,13 @@ export function ComboForm({ combo, products, onSubmit, onCancel }: ComboFormProp
           {products.map((product) => {
             const quantity = selectedProducts[product.id] ?? 0;
             return (
-              <div key={product.id} className={styles.productRow}>
-                <span className={styles.productName}>{product.name}</span>
-                <span className={styles.productPrice}>R$ {product.price.toFixed(2)}</span>
-                <div className={styles.quantityControls}>
-                  <button
-                    type="button"
-                    className={styles.qtyButton}
-                    onClick={() => handleQuantityChange(product.id, quantity - 1)}
-                    disabled={isSubmitting || quantity <= 0}
-                  >
-                    −
-                  </button>
-                  <span className={styles.qtyValue}>{quantity}</span>
-                  <button
-                    type="button"
-                    className={styles.qtyButton}
-                    onClick={() => handleQuantityChange(product.id, quantity + 1)}
-                    disabled={isSubmitting}
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
+              <ProductRow
+                key={product.id}
+                product={product}
+                quantity={quantity}
+                onQuantityChange={handleQuantityChange}
+                isSubmitting={isSubmitting}
+              />
             );
           })}
         </div>

@@ -1,6 +1,7 @@
-import { PediDatabase, SessaoRecord } from '../database';
-import { ISessaoRepository } from '@/domain/autenticacao/repositories/ISessaoRepository';
 import { Sessao } from '@/domain/autenticacao/entities/Sessao';
+import { ISessaoRepository } from '@/domain/autenticacao/repositories/ISessaoRepository';
+
+import { PediDatabase, SessaoRecord } from '../database';
 
 /**
  * Implementação do repositório de sessões usando Dexie (IndexedDB)

@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { GerenciarProdutoUseCase } from '@/application/admin/services/GerenciarProdutoUseCase';
 import type { ProdutoInput } from '@/application/admin/services/GerenciarProdutoUseCase';
 import { ItemCardapio } from '@/domain/cardapio/entities/ItemCardapio';
-import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 import { TipoItemCardapio } from '@/domain/cardapio/value-objects/TipoItemCardapio';
+import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 
 // Mock da feature flag
 vi.mock('@/lib/feature-flags', () => ({
@@ -47,7 +48,11 @@ describe('GerenciarProdutoUseCase', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockIsMultiRestaurantEnabled.mockReturnValue(false);
-    useCase = new GerenciarProdutoUseCase(mockProdutoRepo, mockCategoriaRepo, mockUsuarioRestauranteRepo);
+    useCase = new GerenciarProdutoUseCase(
+      mockProdutoRepo,
+      mockCategoriaRepo,
+      mockUsuarioRestauranteRepo
+    );
   });
 
   describe('execute', () => {
@@ -63,7 +68,10 @@ describe('GerenciarProdutoUseCase', () => {
           restauranteId: 'restaurante-123',
         };
 
-        mockCategoriaRepoBuscarPorId.mockResolvedValue({ id: 'categoria-123', restauranteId: 'restaurante-123' });
+        mockCategoriaRepoBuscarPorId.mockResolvedValue({
+          id: 'categoria-123',
+          restauranteId: 'restaurante-123',
+        });
         mockProdutoRepoSalvar.mockImplementation(async (produto: ItemCardapio) => produto);
 
         // Act
@@ -86,7 +94,9 @@ describe('GerenciarProdutoUseCase', () => {
         };
 
         // Act & Assert
-        await expect(useCase.execute(input)).rejects.toThrow('Nome é obrigatório para criar produto');
+        await expect(useCase.execute(input)).rejects.toThrow(
+          'Nome é obrigatório para criar produto'
+        );
       });
 
       it('deve lançar erro quando preço não é fornecido', async () => {
@@ -98,7 +108,9 @@ describe('GerenciarProdutoUseCase', () => {
         };
 
         // Act & Assert
-        await expect(useCase.execute(input)).rejects.toThrow('Preço é obrigatório e deve ser positivo');
+        await expect(useCase.execute(input)).rejects.toThrow(
+          'Preço é obrigatório e deve ser positivo'
+        );
       });
 
       it('deve lançar erro quando preço é negativo', async () => {
@@ -111,7 +123,9 @@ describe('GerenciarProdutoUseCase', () => {
         };
 
         // Act & Assert
-        await expect(useCase.execute(input)).rejects.toThrow('Preço é obrigatório e deve ser positivo');
+        await expect(useCase.execute(input)).rejects.toThrow(
+          'Preço é obrigatório e deve ser positivo'
+        );
       });
 
       it('deve lançar erro quando categoria não existe', async () => {
@@ -209,7 +223,9 @@ describe('GerenciarProdutoUseCase', () => {
         };
 
         // Act & Assert
-        await expect(useCase.execute(input)).rejects.toThrow('ID é obrigatório para atualizar produto');
+        await expect(useCase.execute(input)).rejects.toThrow(
+          'ID é obrigatório para atualizar produto'
+        );
       });
 
       it('deve lançar erro quando produto não existe', async () => {
@@ -281,7 +297,9 @@ describe('GerenciarProdutoUseCase', () => {
         };
 
         // Act & Assert
-        await expect(useCase.execute(input)).rejects.toThrow('ID é obrigatório para excluir produto');
+        await expect(useCase.execute(input)).rejects.toThrow(
+          'ID é obrigatório para excluir produto'
+        );
       });
     });
 
@@ -356,7 +374,9 @@ describe('GerenciarProdutoUseCase', () => {
         };
 
         // Act & Assert
-        await expect(useCase.execute(input)).rejects.toThrow('Ação desconhecida: acao-desconhecida');
+        await expect(useCase.execute(input)).rejects.toThrow(
+          'Ação desconhecida: acao-desconhecida'
+        );
       });
     });
 
@@ -364,7 +384,11 @@ describe('GerenciarProdutoUseCase', () => {
       it('deve validar acesso quando multi-restaurant está ativo', async () => {
         // Arrange
         mockIsMultiRestaurantEnabled.mockReturnValue(true);
-        useCase = new GerenciarProdutoUseCase(mockProdutoRepo, mockCategoriaRepo, mockUsuarioRestauranteRepo);
+        useCase = new GerenciarProdutoUseCase(
+          mockProdutoRepo,
+          mockCategoriaRepo,
+          mockUsuarioRestauranteRepo
+        );
 
         const input: ProdutoInput = {
           acao: 'criar',
@@ -392,7 +416,11 @@ describe('GerenciarProdutoUseCase', () => {
       it('deve lançar erro quando usuário não tem vínculo com restaurante', async () => {
         // Arrange
         mockIsMultiRestaurantEnabled.mockReturnValue(true);
-        useCase = new GerenciarProdutoUseCase(mockProdutoRepo, mockCategoriaRepo, mockUsuarioRestauranteRepo);
+        useCase = new GerenciarProdutoUseCase(
+          mockProdutoRepo,
+          mockCategoriaRepo,
+          mockUsuarioRestauranteRepo
+        );
 
         const input: ProdutoInput = {
           acao: 'criar',
@@ -406,13 +434,19 @@ describe('GerenciarProdutoUseCase', () => {
         mockUsuarioRestauranteRepoFindByUsuarioIdAndRestauranteId.mockResolvedValue(null);
 
         // Act & Assert
-        await expect(useCase.execute(input)).rejects.toThrow('Usuário não tem vínculo com este restaurante');
+        await expect(useCase.execute(input)).rejects.toThrow(
+          'Usuário não tem vínculo com este restaurante'
+        );
       });
 
       it('deve lançar erro quando usuarioId e restauranteId não fornecidos em multi-restaurant', async () => {
         // Arrange
         mockIsMultiRestaurantEnabled.mockReturnValue(true);
-        useCase = new GerenciarProdutoUseCase(mockProdutoRepo, mockCategoriaRepo, mockUsuarioRestauranteRepo);
+        useCase = new GerenciarProdutoUseCase(
+          mockProdutoRepo,
+          mockCategoriaRepo,
+          mockUsuarioRestauranteRepo
+        );
 
         const input: ProdutoInput = {
           acao: 'criar',

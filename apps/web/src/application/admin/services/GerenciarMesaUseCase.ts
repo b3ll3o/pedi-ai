@@ -1,6 +1,6 @@
 import { UseCase } from '@/application/shared';
-import { Mesa } from '@/domain/mesa/entities/Mesa';
 import { QRCodePayload, IQRCodeValidationService } from '@/domain/mesa';
+import { Mesa } from '@/domain/mesa/entities/Mesa';
 
 /**
  * Input para gerenciar mesa

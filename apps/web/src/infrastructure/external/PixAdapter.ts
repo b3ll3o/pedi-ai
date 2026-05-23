@@ -1,4 +1,5 @@
 import { MercadoPagoConfig, Payment } from 'mercadopago';
+
 import { IPixAdapter, PixCharge } from '@/application/pagamento/services/adapters/IPixAdapter';
 
 const isDemoMode = () => process.env.NEXT_PUBLIC_DEMO_PAYMENT_MODE === 'true';

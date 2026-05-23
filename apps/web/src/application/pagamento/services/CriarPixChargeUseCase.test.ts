@@ -1,14 +1,16 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { CriarPixChargeUseCase } from './CriarPixChargeUseCase';
-import { IPagamentoRepository } from '@/domain/pagamento/repositories/IPagamentoRepository';
-import { IPedidoRepository } from '@/domain/pedido';
-import { IPixAdapter, PixCharge } from './adapters/IPixAdapter';
-import { EventDispatcher } from '@/domain/shared';
+
 import { Pagamento } from '@/domain/pagamento/entities/Pagamento';
+import { IPagamentoRepository } from '@/domain/pagamento/repositories/IPagamentoRepository';
 import { MetodoPagamento } from '@/domain/pagamento/value-objects/MetodoPagamento';
 import { StatusPagamento } from '@/domain/pagamento/value-objects/StatusPagamento';
-import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
+import { IPedidoRepository } from '@/domain/pedido';
 import { Pedido } from '@/domain/pedido/entities/Pedido';
+import { EventDispatcher } from '@/domain/shared';
+import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
+
+import { IPixAdapter, PixCharge } from './adapters/IPixAdapter';
+import { CriarPixChargeUseCase } from './CriarPixChargeUseCase';
 
 // Mock do EventDispatcher
 const mockDispatch = vi.fn();

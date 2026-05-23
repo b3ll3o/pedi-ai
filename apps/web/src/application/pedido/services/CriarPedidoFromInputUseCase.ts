@@ -6,12 +6,13 @@
  */
 
 import { randomUUID } from 'crypto';
-import type { IPedidoRepository } from '@/domain/pedido/repositories/IPedidoRepository';
-import { Pedido } from '@/domain/pedido/entities/Pedido';
+
 import { ItemPedido } from '@/domain/pedido/entities/ItemPedido';
+import { Pedido } from '@/domain/pedido/entities/Pedido';
+import type { IPedidoRepository } from '@/domain/pedido/repositories/IPedidoRepository';
+import { ModificadorSelecionado } from '@/domain/pedido/value-objects/ModificadorSelecionado';
 import { StatusPedido } from '@/domain/pedido/value-objects/StatusPedido';
 import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
-import { ModificadorSelecionado } from '@/domain/pedido/value-objects/ModificadorSelecionado';
 
 export interface ItemInput {
   produtoId: string;

@@ -1,6 +1,8 @@
 import { AggregateRootClass } from '@/domain/shared';
-import { StatusPedido } from '../value-objects/StatusPedido';
 import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
+
+import { StatusPedido } from '../value-objects/StatusPedido';
+
 import { ItemPedido } from './ItemPedido';
 
 type StatusValue =

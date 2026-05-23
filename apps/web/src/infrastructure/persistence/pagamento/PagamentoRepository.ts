@@ -1,8 +1,9 @@
-import { IPagamentoRepository } from '@/domain/pagamento/repositories/IPagamentoRepository';
 import { Pagamento, PagamentoProps } from '@/domain/pagamento/entities/Pagamento';
+import { IPagamentoRepository } from '@/domain/pagamento/repositories/IPagamentoRepository';
 import { MetodoPagamento } from '@/domain/pagamento/value-objects/MetodoPagamento';
 import { StatusPagamento } from '@/domain/pagamento/value-objects/StatusPagamento';
 import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
+
 import { PediDatabase, PagamentoRecord } from '../database';
 
 export class PagamentoRepository implements IPagamentoRepository {

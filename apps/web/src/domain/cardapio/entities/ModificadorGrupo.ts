@@ -1,4 +1,5 @@
 import { EntityClass } from '@/domain/shared';
+
 import { ModificadorValor } from './ModificadorValor';
 
 export interface ModificadorGrupoProps {

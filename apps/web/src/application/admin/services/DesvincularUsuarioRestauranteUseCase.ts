@@ -1,7 +1,7 @@
 import { UseCase } from '@/application/shared';
-import { isMultiRestaurantEnabled } from '@/lib/feature-flags';
-import { IUsuarioRestauranteRepository } from '@/domain/admin/repositories/IUsuarioRestauranteRepository';
 import { UsuarioDesvinculadoRestauranteEvent } from '@/domain/admin/events/UsuarioDesvinculadoRestauranteEvent';
+import { IUsuarioRestauranteRepository } from '@/domain/admin/repositories/IUsuarioRestauranteRepository';
+import { isMultiRestaurantEnabled } from '@/lib/feature-flags';
 
 /**
  * Input para desvincular usuário de restaurante

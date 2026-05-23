@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
 import { DoorOpen, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+
 import Logo from '@/app/components/Logo';
+import { useAuth } from '@/hooks/useAuth';
+
 import styles from './CustomerHeader.module.css';
 
 export function CustomerHeader() {

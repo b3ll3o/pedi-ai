@@ -43,7 +43,9 @@ export async function logout(): Promise<void> {
 /**
  * Get current session from API
  */
-export async function getSession(): Promise<{ user: { id: string; email: string; role: string; restaurantId?: string } } | null> {
+export async function getSession(): Promise<{
+  user: { id: string; email: string; role: string; restaurantId?: string };
+} | null> {
   try {
     const response = await fetch('/api/auth/session');
     if (!response.ok) {
@@ -75,6 +77,8 @@ export async function requestPasswordReset(email: string): Promise<{ error?: str
 
     return {};
   } catch (error) {
-    return { error: error instanceof Error ? error.message : 'Erro ao solicitar recuperação de senha' };
+    return {
+      error: error instanceof Error ? error.message : 'Erro ao solicitar recuperação de senha',
+    };
   }
 }

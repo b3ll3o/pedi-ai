@@ -1,6 +1,8 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards } from '@nestjs/common';
-import { RestaurantsService } from './restaurants.service';
+
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+
+import { RestaurantsService } from './restaurants.service';
 
 @Controller('restaurants')
 export class RestaurantsController {
@@ -23,13 +25,16 @@ export class RestaurantsController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  async create(@Body() data: {
-    name: string;
-    slug?: string;
-    description?: string;
-    address?: string;
-    phone?: string;
-  }) {
+  async create(
+    @Body()
+    data: {
+      name: string;
+      slug?: string;
+      description?: string;
+      address?: string;
+      phone?: string;
+    }
+  ) {
     return this.restaurantsService.create(data);
   }
 
@@ -37,12 +42,13 @@ export class RestaurantsController {
   @UseGuards(JwtAuthGuard)
   async update(
     @Param('id') id: string,
-    @Body() data: {
+    @Body()
+    data: {
       name?: string;
       slug?: string;
       description?: string;
       active?: boolean;
-    },
+    }
   ) {
     return this.restaurantsService.update(id, data);
   }

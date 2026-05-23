@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+
 import OrderConfirmationClient from './OrderConfirmationClient';
 
 interface PageProps {

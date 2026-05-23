@@ -4,20 +4,21 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  CriarPedidoUseCase,
-  type CriarPedidoInput,
-  type CriarPedidoOutput,
-} from '@/application/pedido/services/CriarPedidoUseCase';
+
 import {
   AlterarStatusPedidoUseCase,
   type AlterarStatusPedidoInput,
   type AlterarStatusPedidoOutput,
 } from '@/application/pedido/services/AlterarStatusPedidoUseCase';
-import { PedidoRepository, CarrinhoRepository } from '@/infrastructure/persistence/repositories';
-import { db } from '@/infrastructure/persistence/database';
-import { EventDispatcher } from '@/domain/shared';
+import {
+  CriarPedidoUseCase,
+  type CriarPedidoInput,
+  type CriarPedidoOutput,
+} from '@/application/pedido/services/CriarPedidoUseCase';
 import type { Pedido } from '@/domain/pedido';
+import { EventDispatcher } from '@/domain/shared';
+import { db } from '@/infrastructure/persistence/database';
+import { PedidoRepository, CarrinhoRepository } from '@/infrastructure/persistence/repositories';
 
 // Tipos para o hook
 export interface PedidoResponse {

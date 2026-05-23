@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { Restaurante } from '@/domain/admin/entities/Restaurante';
 import { UsuarioRestaurante } from '@/domain/admin/entities/UsuarioRestaurante';
 import { IUsuarioRestauranteRepository } from '@/domain/admin/repositories/IUsuarioRestauranteRepository';

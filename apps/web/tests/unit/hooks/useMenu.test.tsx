@@ -1,12 +1,12 @@
 // @ts-nocheck
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import React from 'react';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import { useMenu } from '@/hooks/useMenu';
-import { useMenuStore } from '@/infrastructure/persistence/menuStore';
 import type { MenuResponse } from '@/hooks/useMenu';
+import { useMenuStore } from '@/infrastructure/persistence/menuStore';
 
 // ── Mocks ───────────────────────────────────────────────────
 
@@ -29,9 +29,7 @@ function createTestQueryClient() {
 
 function wrapper({ children }: { children: React.ReactNode }) {
   const queryClient = createTestQueryClient();
-  return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  );
+  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }
 
 // ── Fixtures ───────────────────────────────────────────────────
@@ -60,7 +58,19 @@ const mockCategories = [
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
     products: [
-      { id: 'prod-1', name: 'Coca-Cola', price: 5.5, category_id: 'cat-1', description: null, image_url: null, dietary_labels: null, available: true, sort_order: 0, created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' },
+      {
+        id: 'prod-1',
+        name: 'Coca-Cola',
+        price: 5.5,
+        category_id: 'cat-1',
+        description: null,
+        image_url: null,
+        dietary_labels: null,
+        available: true,
+        sort_order: 0,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+      },
     ],
   },
 ];
@@ -72,10 +82,32 @@ const mockMenuResponse: MenuResponse = {
 
 const cachedData = {
   categories: [
-    { id: 'cat-1', restaurant_id: 'rest-123', name: 'Bebidas', description: null, image_url: null, sort_order: 0, active: true, created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' },
+    {
+      id: 'cat-1',
+      restaurant_id: 'rest-123',
+      name: 'Bebidas',
+      description: null,
+      image_url: null,
+      sort_order: 0,
+      active: true,
+      created_at: '2024-01-01T00:00:00Z',
+      updated_at: '2024-01-01T00:00:00Z',
+    },
   ],
   products: [
-    { id: 'prod-1', name: 'Coca-Cola', price: 5.5, category_id: 'cat-1', description: null, image_url: null, dietary_labels: null, available: true, sort_order: 0, created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' },
+    {
+      id: 'prod-1',
+      name: 'Coca-Cola',
+      price: 5.5,
+      category_id: 'cat-1',
+      description: null,
+      image_url: null,
+      dietary_labels: null,
+      available: true,
+      sort_order: 0,
+      created_at: '2024-01-01T00:00:00Z',
+      updated_at: '2024-01-01T00:00:00Z',
+    },
   ],
   modifiers: [],
   timestamp: Date.now(),
@@ -240,7 +272,9 @@ describe('useMenu hook', () => {
         ok: false,
         status: 500,
         statusText: 'Internal Server Error',
-        json: async () => { throw new Error('Invalid JSON'); },
+        json: async () => {
+          throw new Error('Invalid JSON');
+        },
       } as Response);
       mockGetCachedMenu.mockResolvedValueOnce(cachedData);
 
@@ -256,16 +290,17 @@ describe('useMenu hook', () => {
 
   describe('4. API fails and no cache → error', () => {
     it('throws error when API fails and no cache available', async () => {
-      (global.fetch as ReturnType<typeof vi.spyOn>).mockRejectedValue(
-        new Error('Network error')
-      );
+      (global.fetch as ReturnType<typeof vi.spyOn>).mockRejectedValue(new Error('Network error'));
       mockGetCachedMenu.mockResolvedValue(null);
 
       const { result } = renderHook(() => useMenu(restaurantId), { wrapper });
 
-      await waitFor(() => {
-        expect(result.current.isError).toBe(true);
-      }, { timeout: 5000 });
+      await waitFor(
+        () => {
+          expect(result.current.isError).toBe(true);
+        },
+        { timeout: 5000 }
+      );
 
       expect(result.current.error?.message).toBe('Sem conexão e cardápio não disponível em cache');
     });
@@ -284,9 +319,12 @@ describe('useMenu hook', () => {
 
       const { result } = renderHook(() => useMenu(restaurantId), { wrapper });
 
-      await waitFor(() => {
-        expect(result.current.isError).toBe(true);
-      }, { timeout: 5000 });
+      await waitFor(
+        () => {
+          expect(result.current.isError).toBe(true);
+        },
+        { timeout: 5000 }
+      );
 
       // When cache is null, catch throws "Sem conexão..." instead of "Falha ao buscar"
       expect(result.current.error?.message).toBe('Sem conexão e cardápio não disponível em cache');
@@ -300,15 +338,20 @@ describe('useMenu hook', () => {
         ok: false,
         status: 500,
         statusText: 'Internal Server Error',
-        json: async () => { throw new Error('Invalid JSON'); },
+        json: async () => {
+          throw new Error('Invalid JSON');
+        },
       } as Response);
       mockGetCachedMenu.mockResolvedValue(null);
 
       const { result } = renderHook(() => useMenu(restaurantId), { wrapper });
 
-      await waitFor(() => {
-        expect(result.current.isError).toBe(true);
-      }, { timeout: 5000 });
+      await waitFor(
+        () => {
+          expect(result.current.isError).toBe(true);
+        },
+        { timeout: 5000 }
+      );
 
       // When cache is null, catch throws "Sem conexão..." instead of using statusText
       expect(result.current.error?.message).toBe('Sem conexão e cardápio não disponível em cache');
@@ -377,9 +420,7 @@ describe('useMenu hook', () => {
       const queryClient = createTestQueryClient();
 
       function staleTimeWrapper({ children }: { children: React.ReactNode }) {
-        return (
-          <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-        );
+        return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
       }
 
       const { result } = renderHook(() => useMenu(restaurantId), {
@@ -388,9 +429,15 @@ describe('useMenu hook', () => {
 
       await waitFor(() => expect(result.current.isSuccess));
 
-      const queries = (queryClient as unknown as { getQueryCache: () => { getAll: () => unknown[] } }).getQueryCache().getAll();
+      const queries = (
+        queryClient as unknown as { getQueryCache: () => { getAll: () => unknown[] } }
+      )
+        .getQueryCache()
+        .getAll();
       const menuQuery = queries.find(
-        (q: unknown) => JSON.stringify((q as { queryKey: unknown[] }).queryKey) === JSON.stringify(['menu', restaurantId])
+        (q: unknown) =>
+          JSON.stringify((q as { queryKey: unknown[] }).queryKey) ===
+          JSON.stringify(['menu', restaurantId])
       );
 
       expect(menuQuery?.options?.staleTime).toBe(5 * 60 * 1000);
@@ -402,11 +449,17 @@ describe('useMenu hook', () => {
       (global.fetch as ReturnType<typeof vi.spyOn>)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => ({ ...mockMenuResponse, restaurant: { ...mockRestaurant, id: 'rest-1' } }),
+          json: async () => ({
+            ...mockMenuResponse,
+            restaurant: { ...mockRestaurant, id: 'rest-1' },
+          }),
         } as Response)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => ({ ...mockMenuResponse, restaurant: { ...mockRestaurant, id: 'rest-2' } }),
+          json: async () => ({
+            ...mockMenuResponse,
+            restaurant: { ...mockRestaurant, id: 'rest-2' },
+          }),
         } as Response);
 
       const { result: r1 } = renderHook(() => useMenu('rest-1'), { wrapper });

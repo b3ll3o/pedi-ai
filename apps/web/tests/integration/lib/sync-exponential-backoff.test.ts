@@ -13,7 +13,10 @@ const { _pendingSyncData, mockDb } = vi.hoisted(() => {
   let idCounter = 0;
 
   const mockPendingSync = {
-    clear: vi.fn(async () => { pendingSyncData.clear(); idCounter = 0; }),
+    clear: vi.fn(async () => {
+      pendingSyncData.clear();
+      idCounter = 0;
+    }),
     add: vi.fn(async (item: any) => {
       const id = ++idCounter;
       pendingSyncData.set(id, { ...item, id });
@@ -28,7 +31,9 @@ const { _pendingSyncData, mockDb } = vi.hoisted(() => {
       pendingSyncData.set(id, { ...item, id });
       return id;
     }),
-    delete: vi.fn(async (id: number) => { pendingSyncData.delete(id); }),
+    delete: vi.fn(async (id: number) => {
+      pendingSyncData.delete(id);
+    }),
     update: vi.fn(async (id: number, changes: any) => {
       const existing = pendingSyncData.get(id);
       if (existing) {
@@ -39,16 +44,12 @@ const { _pendingSyncData, mockDb } = vi.hoisted(() => {
     where: vi.fn(() => ({
       anyOf: vi.fn((values: string[]) => ({
         toArray: vi.fn(async () =>
-          Array.from(pendingSyncData.values()).filter((item) =>
-            values.includes(item.status)
-          )
+          Array.from(pendingSyncData.values()).filter((item) => values.includes(item.status))
         ),
       })),
       equals: vi.fn((value: string) => ({
         toArray: vi.fn(async () =>
-          Array.from(pendingSyncData.values()).filter((item) =>
-            item.status === value
-          )
+          Array.from(pendingSyncData.values()).filter((item) => item.status === value)
         ),
         modify: vi.fn(async (changes: any) => {
           Array.from(pendingSyncData.values())
@@ -58,8 +59,9 @@ const { _pendingSyncData, mockDb } = vi.hoisted(() => {
             });
         }),
         delete: vi.fn(async () => {
-          const toDelete = Array.from(pendingSyncData.values())
-            .filter((item) => item.status === value);
+          const toDelete = Array.from(pendingSyncData.values()).filter(
+            (item) => item.status === value
+          );
           toDelete.forEach((item) => pendingSyncData.delete(item.id));
         }),
       })),
@@ -78,12 +80,7 @@ vi.mock('@/lib/offline/db', () => ({
 }));
 
 import { db } from '@/lib/offline/db';
-import {
-  queueOrderForSync,
-  processQueue,
-  getSyncStatus,
-  getFailedItems,
-} from '@/lib/offline/sync';
+import { queueOrderForSync, processQueue, getSyncStatus, getFailedItems } from '@/lib/offline/sync';
 
 // Constants matching the implementation
 const INITIAL_BACKOFF_MS = 1000;
@@ -140,32 +137,38 @@ describe('Exponential Backoff', () => {
   });
 
   describe('Retry Count and Max Retries', () => {
-    it('should retry up to 3 times before marking as failed', async () => {
-      global.fetch = vi.fn().mockRejectedValue(new Error('network error')) as unknown as typeof fetch;
+    it(
+      'should retry up to 3 times before marking as failed',
+      async () => {
+        global.fetch = vi
+          .fn()
+          .mockRejectedValue(new Error('network error')) as unknown as typeof fetch;
 
-      await queueOrderForSync({ orderId: 'test-1' }, 'restaurant-1');
+        await queueOrderForSync({ orderId: 'test-1' }, 'restaurant-1');
 
-      // First attempt - fails, retryCount becomes 1
-      let result = await processQueue();
-      expect(result.failed).toBe(1);
-      let items = await db.pending_sync.toArray();
-      expect(items[0].retryCount).toBe(1);
-      expect(items[0].status).toBe('pending');
+        // First attempt - fails, retryCount becomes 1
+        let result = await processQueue();
+        expect(result.failed).toBe(1);
+        let items = await db.pending_sync.toArray();
+        expect(items[0].retryCount).toBe(1);
+        expect(items[0].status).toBe('pending');
 
-      // Second attempt - fails, retryCount becomes 2
-      result = await processQueue();
-      expect(result.failed).toBe(1);
-      items = await db.pending_sync.toArray();
-      expect(items[0].retryCount).toBe(2);
-      expect(items[0].status).toBe('pending');
+        // Second attempt - fails, retryCount becomes 2
+        result = await processQueue();
+        expect(result.failed).toBe(1);
+        items = await db.pending_sync.toArray();
+        expect(items[0].retryCount).toBe(2);
+        expect(items[0].status).toBe('pending');
 
-      // Third attempt - fails, retryCount becomes 3 and status becomes 'failed'
-      result = await processQueue();
-      expect(result.failed).toBe(1);
-      items = await db.pending_sync.toArray();
-      expect(items[0].retryCount).toBe(3);
-      expect(items[0].status).toBe('failed');
-    }, RETRY_TEST_TIMEOUT);
+        // Third attempt - fails, retryCount becomes 3 and status becomes 'failed'
+        result = await processQueue();
+        expect(result.failed).toBe(1);
+        items = await db.pending_sync.toArray();
+        expect(items[0].retryCount).toBe(3);
+        expect(items[0].status).toBe('failed');
+      },
+      RETRY_TEST_TIMEOUT
+    );
 
     it('should skip items that already exceeded max retries', async () => {
       global.fetch = vi.fn() as unknown as typeof fetch;
@@ -186,78 +189,102 @@ describe('Exponential Backoff', () => {
       expect(global.fetch).not.toHaveBeenCalled();
     });
 
-    it('should correctly track retry count progression', async () => {
-      global.fetch = vi.fn().mockRejectedValue(new Error('network error')) as unknown as typeof fetch;
+    it(
+      'should correctly track retry count progression',
+      async () => {
+        global.fetch = vi
+          .fn()
+          .mockRejectedValue(new Error('network error')) as unknown as typeof fetch;
 
-      await queueOrderForSync({ orderId: 'retry-track' }, 'restaurant-1');
+        await queueOrderForSync({ orderId: 'retry-track' }, 'restaurant-1');
 
-      for (let expectedRetryCount = 1; expectedRetryCount <= 3; expectedRetryCount++) {
-        await processQueue();
-        const items = await db.pending_sync.toArray();
-        expect(items[0].retryCount).toBe(expectedRetryCount);
-      }
+        for (let expectedRetryCount = 1; expectedRetryCount <= 3; expectedRetryCount++) {
+          await processQueue();
+          const items = await db.pending_sync.toArray();
+          expect(items[0].retryCount).toBe(expectedRetryCount);
+        }
 
-      // After 3 retries, status should be failed
-      const failedItems = await getFailedItems();
-      expect(failedItems).toHaveLength(1);
-      expect(failedItems[0].lastError).toBe('network error');
-    }, RETRY_TEST_TIMEOUT);
+        // After 3 retries, status should be failed
+        const failedItems = await getFailedItems();
+        expect(failedItems).toHaveLength(1);
+        expect(failedItems[0].lastError).toBe('network error');
+      },
+      RETRY_TEST_TIMEOUT
+    );
   });
 
   describe('Error Display After Failures', () => {
-    it('should store error message after failures for customer display', async () => {
-      global.fetch = vi.fn().mockRejectedValue(new Error('Erro de conexão')) as unknown as typeof fetch;
+    it(
+      'should store error message after failures for customer display',
+      async () => {
+        global.fetch = vi
+          .fn()
+          .mockRejectedValue(new Error('Erro de conexão')) as unknown as typeof fetch;
 
-      await queueOrderForSync({ orderId: 'display-error' }, 'restaurant-1');
+        await queueOrderForSync({ orderId: 'display-error' }, 'restaurant-1');
 
-      // Process until failure
-      for (let i = 0; i < 3; i++) {
-        await processQueue();
-      }
+        // Process until failure
+        for (let i = 0; i < 3; i++) {
+          await processQueue();
+        }
 
-      const failedItems = await getFailedItems();
-      expect(failedItems).toHaveLength(1);
-      expect(failedItems[0].lastError).toBe('Erro de conexão');
-      expect(failedItems[0].retryCount).toBe(3);
-    }, RETRY_TEST_TIMEOUT);
+        const failedItems = await getFailedItems();
+        expect(failedItems).toHaveLength(1);
+        expect(failedItems[0].lastError).toBe('Erro de conexão');
+        expect(failedItems[0].retryCount).toBe(3);
+      },
+      RETRY_TEST_TIMEOUT
+    );
 
-    it('should provide failed items for UI error display', async () => {
-      global.fetch = vi.fn().mockRejectedValue(new Error('Servidor indisponível')) as unknown as typeof fetch;
+    it(
+      'should provide failed items for UI error display',
+      async () => {
+        global.fetch = vi
+          .fn()
+          .mockRejectedValue(new Error('Servidor indisponível')) as unknown as typeof fetch;
 
-      await queueOrderForSync({ orderId: 'ui-error-1' }, 'restaurant-1');
-      await queueOrderForSync({ orderId: 'ui-error-2' }, 'restaurant-1');
+        await queueOrderForSync({ orderId: 'ui-error-1' }, 'restaurant-1');
+        await queueOrderForSync({ orderId: 'ui-error-2' }, 'restaurant-1');
 
-      // Process all until failed
-      for (let i = 0; i < 3; i++) {
-        await processQueue();
-      }
+        // Process all until failed
+        for (let i = 0; i < 3; i++) {
+          await processQueue();
+        }
 
-      const status = await getSyncStatus();
-      expect(status.failed).toBe(2);
+        const status = await getSyncStatus();
+        expect(status.failed).toBe(2);
 
-      const failedItems = await getFailedItems();
-      expect(failedItems).toHaveLength(2);
-      expect(failedItems.every((item) => item.lastError != null)).toBe(true);
-    }, RETRY_TEST_TIMEOUT);
+        const failedItems = await getFailedItems();
+        expect(failedItems).toHaveLength(2);
+        expect(failedItems.every((item) => item.lastError != null)).toBe(true);
+      },
+      RETRY_TEST_TIMEOUT
+    );
   });
 
   describe('processQueue with Exponential Backoff', () => {
-    it('should apply correct delay based on retry count', async () => {
-      global.fetch = vi.fn().mockRejectedValue(new Error('network error')) as unknown as typeof fetch;
+    it(
+      'should apply correct delay based on retry count',
+      async () => {
+        global.fetch = vi
+          .fn()
+          .mockRejectedValue(new Error('network error')) as unknown as typeof fetch;
 
-      await queueOrderForSync({ orderId: 'delay-test' }, 'restaurant-1');
+        await queueOrderForSync({ orderId: 'delay-test' }, 'restaurant-1');
 
-      // Three failed attempts
-      await processQueue(); // 1st fail - retryCount becomes 1
-      await processQueue(); // 2nd fail - retryCount becomes 2
-      await processQueue(); // 3rd fail - retryCount becomes 3, marked as failed
+        // Three failed attempts
+        await processQueue(); // 1st fail - retryCount becomes 1
+        await processQueue(); // 2nd fail - retryCount becomes 2
+        await processQueue(); // 3rd fail - retryCount becomes 3, marked as failed
 
-      // Verify the item is now failed
-      const failedItems = await getFailedItems();
-      expect(failedItems).toHaveLength(1);
-      expect(failedItems[0].retryCount).toBe(3);
-      expect(failedItems[0].status).toBe('failed');
-    }, RETRY_TEST_TIMEOUT);
+        // Verify the item is now failed
+        const failedItems = await getFailedItems();
+        expect(failedItems).toHaveLength(1);
+        expect(failedItems[0].retryCount).toBe(3);
+        expect(failedItems[0].status).toBe('failed');
+      },
+      RETRY_TEST_TIMEOUT
+    );
   });
 
   describe('processQueue HTTP Error Handling', () => {

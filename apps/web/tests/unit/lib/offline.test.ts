@@ -66,13 +66,13 @@ vi.mock('@/lib/offline/db', () => {
 });
 
 // Import types
-import type { CartItem, MenuCache, PendingSync, TableInfo } from '@/lib/offline/types';
 import { db } from '@/lib/offline/db';
+import type { CartItem, MenuCache, PendingSync, TableInfo } from '@/lib/offline/types';
 
 describe('IndexedDB Operations', () => {
   beforeEach(() => {
     // Reset all tables before each test
-     
+
     (db as any)._reset();
   });
 
@@ -223,8 +223,22 @@ describe('IndexedDB Operations', () => {
     it('should get all pending orders', async () => {
       const testRestaurantId = '00000000-0000-0000-0000-000000000001';
       const orders: PendingSync[] = [
-        { restaurantId: testRestaurantId, orderData: { id: 1 }, retryCount: 0, maxRetries: 3, status: 'pending', createdAt: new Date() },
-        { restaurantId: testRestaurantId, orderData: { id: 2 }, retryCount: 1, maxRetries: 3, status: 'pending', createdAt: new Date() },
+        {
+          restaurantId: testRestaurantId,
+          orderData: { id: 1 },
+          retryCount: 0,
+          maxRetries: 3,
+          status: 'pending',
+          createdAt: new Date(),
+        },
+        {
+          restaurantId: testRestaurantId,
+          orderData: { id: 2 },
+          retryCount: 1,
+          maxRetries: 3,
+          status: 'pending',
+          createdAt: new Date(),
+        },
       ];
 
       await db.pending_sync.add(orders[0]);

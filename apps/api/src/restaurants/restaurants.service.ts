@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+
 import { PrismaService } from '../common/prisma.service';
 
 @Injectable()
@@ -34,16 +35,19 @@ export class RestaurantsService {
     return this.prisma.restaurant.create({ data });
   }
 
-  async update(id: string, data: Partial<{
-    name: string;
-    slug: string;
-    description: string;
-    address: string;
-    phone: string;
-    logoUrl: string;
-    active: boolean;
-    settings: string;
-  }>) {
+  async update(
+    id: string,
+    data: Partial<{
+      name: string;
+      slug: string;
+      description: string;
+      address: string;
+      phone: string;
+      logoUrl: string;
+      active: boolean;
+      settings: string;
+    }>
+  ) {
     const updated = await this.prisma.restaurant.update({
       where: { id },
       data,

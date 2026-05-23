@@ -51,6 +51,74 @@ function timingSafeCompare(a: string, b: string): boolean {
   return timingSafeEqual(bufA, bufB);
 }
 
+function validateRequiredFields(payload: QRPayload): { valid: boolean; error?: string } {
+  if (
+    !payload.restaurant_id ||
+    !payload.table_id ||
+    payload.timestamp === undefined ||
+    !payload.signature
+  ) {
+    return { valid: false, error: 'Missing required fields' };
+  }
+  return { valid: true };
+}
+
+function validateUUIDs(payload: QRPayload): { valid: boolean; error?: string } {
+  if (!isValidUUID(payload.restaurant_id)) {
+    return { valid: false, error: 'Invalid restaurant_id format' };
+  }
+  if (!isValidUUID(payload.table_id)) {
+    return { valid: false, error: 'Invalid table_id format' };
+  }
+  return { valid: true };
+}
+
+function validateNonceFormat(payload: QRPayload): {
+  valid: boolean;
+  error?: string;
+  hasNonce?: boolean;
+} {
+  const hasNonce = isValidNonce(payload.nonce);
+  if (!hasNonce && payload.nonce !== undefined) {
+    return { valid: false, error: 'Invalid nonce format' };
+  }
+  return { valid: true, hasNonce };
+}
+
+function validateTimestamp(
+  payload: QRPayload,
+  hasNonce: boolean
+): { valid: boolean; error?: string } {
+  if (!isTimestampValid(payload.timestamp, hasNonce)) {
+    return { valid: false, error: 'QR code expired or invalid' };
+  }
+  return { valid: true };
+}
+
+function validateExpiry(payload: QRPayload, hasNonce: boolean): { valid: boolean; error?: string } {
+  if (hasNonce && payload.expiry !== undefined && Date.now() > payload.expiry) {
+    return { valid: false, error: 'QR code expired' };
+  }
+  return { valid: true };
+}
+
+function validateSignature(
+  payload: QRPayload,
+  secretKey: string
+): { valid: boolean; error?: string } {
+  const computedSignature = computeSignature(
+    payload.restaurant_id,
+    payload.table_id,
+    payload.timestamp,
+    payload.nonce,
+    secretKey
+  );
+  if (!timingSafeCompare(computedSignature, payload.signature)) {
+    return { valid: false, error: 'Signature mismatch' };
+  }
+  return { valid: true };
+}
+
 /**
  * Validates a QR payload signature, nonce, and timestamp.
  *
@@ -62,63 +130,24 @@ export function validateQRPayload(
   payload: QRPayload,
   secretKey: string
 ): { valid: boolean; error?: string } {
-  // Check for missing fields
-  if (
-    !payload.restaurant_id ||
-    !payload.table_id ||
-    payload.timestamp === undefined ||
-    !payload.signature
-  ) {
-    return { valid: false, error: 'Missing required fields' };
-  }
+  const requiredCheck = validateRequiredFields(payload);
+  if (!requiredCheck.valid) return requiredCheck;
 
-  // Validate UUID formats
-  if (!isValidUUID(payload.restaurant_id)) {
-    return { valid: false, error: 'Invalid restaurant_id format' };
-  }
+  const uuidCheck = validateUUIDs(payload);
+  if (!uuidCheck.valid) return uuidCheck;
 
-  if (!isValidUUID(payload.table_id)) {
-    return { valid: false, error: 'Invalid table_id format' };
-  }
+  const nonceCheck = validateNonceFormat(payload);
+  if (!nonceCheck.valid) return nonceCheck;
+  const hasNonce = nonceCheck.hasNonce ?? false;
 
-  // Check if this is a new QR code with nonce
-  const hasNonce = isValidNonce(payload.nonce);
+  const timestampCheck = validateTimestamp(payload, hasNonce);
+  if (!timestampCheck.valid) return timestampCheck;
 
-  // New QR codes must have nonce
-  if (!hasNonce && payload.nonce !== undefined) {
-    return { valid: false, error: 'Invalid nonce format' };
-  }
+  const expiryCheck = validateExpiry(payload, hasNonce);
+  if (!expiryCheck.valid) return expiryCheck;
 
-  // Validate nonce presence for new QR codes
-  if (!hasNonce && payload.nonce === undefined) {
-    // This is a legacy QR code (no nonce) - accept it during grace period
-    // But we should still validate timestamp against grace period
-  }
-
-  // Validate timestamp (uses 4h for new QR, 24h for legacy)
-  if (!isTimestampValid(payload.timestamp, hasNonce)) {
-    return { valid: false, error: 'QR code expired or invalid' };
-  }
-
-  // Validate expiry if present (new QR codes)
-  if (hasNonce && payload.expiry !== undefined) {
-    if (Date.now() > payload.expiry) {
-      return { valid: false, error: 'QR code expired' };
-    }
-  }
-
-  // Recompute signature and compare
-  const computedSignature = computeSignature(
-    payload.restaurant_id,
-    payload.table_id,
-    payload.timestamp,
-    payload.nonce,
-    secretKey
-  );
-
-  if (!timingSafeCompare(computedSignature, payload.signature)) {
-    return { valid: false, error: 'Signature mismatch' };
-  }
+  const signatureCheck = validateSignature(payload, secretKey);
+  if (!signatureCheck.valid) return signatureCheck;
 
   return { valid: true };
 }

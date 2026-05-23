@@ -1,10 +1,5 @@
 import Dexie, { type Table } from 'dexie';
-import type {
-  CartItem,
-  MenuCache,
-  PendingSync,
-  TableInfo,
-} from '@/lib/offline/types';
+
 import type {
   UsuarioRecord,
   SessaoRecord,
@@ -22,6 +17,7 @@ import type {
   UsuarioRestauranteRecord,
   ConfiguracoesRestauranteRecord,
 } from '@/infrastructure/persistence/database';
+import type { CartItem, MenuCache, PendingSync, TableInfo } from '@/lib/offline/types';
 
 /**
  * In-memory Dexie database for unit testing.

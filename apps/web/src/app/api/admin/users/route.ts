@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { sql } from '@/infrastructure/database/pg-client';
 import { getSession } from '@/lib/auth/session';
 
@@ -73,7 +74,10 @@ export async function POST(request: NextRequest) {
       LIMIT 1
     `;
 
-    if (!profileResult[0] || (profileResult[0].role !== 'dono' && profileResult[0].role !== 'gerente')) {
+    if (
+      !profileResult[0] ||
+      (profileResult[0].role !== 'dono' && profileResult[0].role !== 'gerente')
+    ) {
       return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 });
     }
 

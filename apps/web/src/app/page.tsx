@@ -1,8 +1,3 @@
-import type { Metadata } from 'next';
-import styles from './page.module.css';
-import Navbar from './components/Navbar';
-import Logo from './components/Logo';
-import FAQItem from './components/FAQItem';
 import {
   Smartphone,
   WifiOff,
@@ -28,6 +23,12 @@ import {
   Utensils,
   AlertCircle,
 } from 'lucide-react';
+import type { Metadata } from 'next';
+
+import FAQItem from './components/FAQItem';
+import Logo from './components/Logo';
+import Navbar from './components/Navbar';
+import styles from './page.module.css';
 
 const faqData = [
   {

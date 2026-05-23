@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
+
 import MenuPageClient from '@/app/(customer)/menu/MenuPageClient';
 
 interface CardapioPageProps {

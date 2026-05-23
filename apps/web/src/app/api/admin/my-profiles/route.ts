@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+
 import { sql } from '@/infrastructure/database/pg-client';
 import { getSession } from '@/lib/auth/session';
 

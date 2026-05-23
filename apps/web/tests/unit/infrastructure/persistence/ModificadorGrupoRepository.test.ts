@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { ModificadorGrupoRepository } from '@/infrastructure/persistence/cardapio/ModificadorGrupoRepository';
+
 import { ModificadorGrupo } from '@/domain/cardapio/entities/ModificadorGrupo';
 import { ModificadorValor } from '@/domain/cardapio/entities/ModificadorValor';
 import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
+import { ModificadorGrupoRepository } from '@/infrastructure/persistence/cardapio/ModificadorGrupoRepository';
+
 import { createTestDatabase } from '../_test-helpers';
 
 describe('ModificadorGrupoRepository', () => {
@@ -15,7 +17,9 @@ describe('ModificadorGrupoRepository', () => {
     repository = new ModificadorGrupoRepository(db);
   });
 
-  function criarModificadorValido(overrides?: Partial<{ id: string; nome: string; ativo: boolean; restauranteId: string }>): ModificadorGrupo {
+  function criarModificadorValido(
+    overrides?: Partial<{ id: string; nome: string; ativo: boolean; restauranteId: string }>
+  ): ModificadorGrupo {
     const valor = ModificadorValor.criar({
       nome: 'Borda Recheada',
       ajustePreco: Dinheiro.criar(500, 'BRL'),

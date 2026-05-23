@@ -1,7 +1,8 @@
-import { PediDatabase } from '../database';
-import { IUsuarioRepository } from '@/domain/autenticacao/repositories/IUsuarioRepository';
 import { Usuario } from '@/domain/autenticacao/entities/Usuario';
+import { IUsuarioRepository } from '@/domain/autenticacao/repositories/IUsuarioRepository';
 import { Papel } from '@/domain/autenticacao/value-objects/Papel';
+
+import { PediDatabase } from '../database';
 
 /**
  * Registro de usuário para persistência (papel armazenado como string)

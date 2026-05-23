@@ -10,13 +10,13 @@ Pedi-AI é uma plataforma de cardápio digital que permite restaurantes gerencia
 
 ### Tech Stack
 
-| Camada   | Tecnologia                                       |
-| -------- | ------------------------------------------------ |
-| Frontend | Next.js 16 + TypeScript + React 19               |
-| Backend  | NestJS + Fastify + Prisma ORM + PostgreSQL       |
-| Offline  | Service Worker (Workbox) + IndexedDB (Dexie)     |
-| Estado   | Zustand + React Query                            |
-| Testes   | Vitest (1523 testes) + Playwright (19 specs E2E) |
+| Camada   | Tecnologia                                                       |
+| -------- | ---------------------------------------------------------------- |
+| Frontend | Next.js 16 + TypeScript + React 19                               |
+| Backend  | NestJS + Fastify + Prisma ORM + PostgreSQL                       |
+| Offline  | Service Worker (Workbox) + IndexedDB (Dexie)                     |
+| Estado   | Zustand + React Query                                            |
+| Testes   | Vitest (115 test files, 1436 testes) + Playwright (43 specs E2E) |
 
 ---
 
@@ -68,20 +68,20 @@ pedi-ai/
 
 ## Directory Map
 
-| Directory                                  | Responsabilidade                                                                   | Status          | Mapa Detalhado                                                         |
-| ------------------------------------------ | ---------------------------------------------------------------------------------- | --------------- | ---------------------------------------------------------------------- |
-| `apps/web/src/app/`                        | Next.js App Router — todas as rotas, layouts, API routes                           | ✅ Atual        | [Ver Map](apps/web/src/app/codemap.md)                                 |
-| `apps/web/src/domain/`                     | REGRAS DE NEGÓCIO - pure TypeScript, sem deps de framework                         | ✅ Implementado | Ver codemaps por domínio abaixo                                        |
-| `apps/web/src/application/`                | CASOS DE USO - orquestração                                                        | ✅ Implementado | Application services que coordinam domain + infrastructure             |
-| `apps/web/src/infrastructure/`             | IMPLEMENTAÇÕES - adapters, repos                                                   | ✅ Implementado | Repository implementations, API client, QR code crypto                 |
-| `apps/web/src/components/`                 | Componentes React organizados por domínio                                          | ✅ Atual        | UI components (admin, cart, menu, order, payment, kitchen, restaurant) |
-| `apps/web/src/components/restaurant/`      | Componentes de listagem pública (RestaurantSearch, RestaurantCard, RestaurantList) | ✅ Novo         | Listagem de restaurantes para delivery                                 |
-| `apps/web/src/hooks/`                     | Custom React hooks (useAuth, useRealtimeOrders, etc)                              | ✅ Atual        | Reutilizáveis em toda a aplicação                                      |
-| `apps/web/src/lib/`                       | Utilitários (auth, offline, QR, feature-flags)                                    | ✅ Atual        | Módulos reutilizáveis                                                  |
-| `apps/api/src/domain/`                      | REGRAS DE NEGÓCIO - pure TypeScript, sem deps de framework                         | 🔲 Pendente    | Aguardando migração DDD                                                |
-| `apps/api/src/application/`                 | CASOS DE USO - orquestração                                                        | 🔲 Pendente    | Aguardando migração DDD                                                |
-| `apps/api/src/infrastructure/`              | IMPLEMENTAÇÕES - adapters, repos Prisma                                           | ✅ Atual        | Repositories Prisma                                                     |
-| `apps/api/src/presentation/`                | NestJS controllers e gateways                                                       | ✅ Atual        | Controllers REST e WebSocket gateways                                   |
+| Directory                             | Responsabilidade                                                                   | Status          | Mapa Detalhado                                                         |
+| ------------------------------------- | ---------------------------------------------------------------------------------- | --------------- | ---------------------------------------------------------------------- |
+| `apps/web/src/app/`                   | Next.js App Router — todas as rotas, layouts, API routes                           | ✅ Atual        | [Ver Map](apps/web/src/app/codemap.md)                                 |
+| `apps/web/src/domain/`                | REGRAS DE NEGÓCIO - pure TypeScript, sem deps de framework                         | ✅ Implementado | Ver codemaps por domínio abaixo                                        |
+| `apps/web/src/application/`           | CASOS DE USO - orquestração                                                        | ✅ Implementado | Application services que coordinam domain + infrastructure             |
+| `apps/web/src/infrastructure/`        | IMPLEMENTAÇÕES - adapters, repos                                                   | ✅ Implementado | Repository implementations, API client, QR code crypto                 |
+| `apps/web/src/components/`            | Componentes React organizados por domínio                                          | ✅ Atual        | UI components (admin, cart, menu, order, payment, kitchen, restaurant) |
+| `apps/web/src/components/restaurant/` | Componentes de listagem pública (RestaurantSearch, RestaurantCard, RestaurantList) | ✅ Novo         | Listagem de restaurantes para delivery                                 |
+| `apps/web/src/hooks/`                 | Custom React hooks (useAuth, useRealtimeOrders, etc)                               | ✅ Atual        | Reutilizáveis em toda a aplicação                                      |
+| `apps/web/src/lib/`                   | Utilitários (auth, offline, QR, feature-flags)                                     | ✅ Atual        | Módulos reutilizáveis                                                  |
+| `apps/api/src/domain/`                | REGRAS DE NEGÓCIO - pure TypeScript, sem deps de framework                         | 🚧 Em Andamento | Estrutura base criada; old modules coexistem (auth/, orders/, etc.)    |
+| `apps/api/src/application/`           | CASOS DE USO - orquestração                                                        | 🔲 Pendente     | Aguardando migração DDD                                                |
+| `apps/api/src/infrastructure/`        | IMPLEMENTAÇÕES - adapters, repos Prisma                                            | ✅ Atual        | Repositories Prisma                                                    |
+| `apps/api/src/presentation/`          | NestJS controllers e gateways                                                      | ✅ Atual        | Controllers REST e WebSocket gateways                                  |
 
 ### Domain Codemaps
 
@@ -108,7 +108,7 @@ Cliente escaneia QR code
   → Validação de mesa (apps/web/src/lib/qr.ts)
   → Navega cardápio (apps/web/src/app/restaurantes/[id]/cardapio/)
   → Adiciona itens ao carrinho (apps/web/src/infrastructure/persistence/cartStore.ts)
-  → Checkout via Pix ou Stripe (apps/web/src/components/payment/)
+  → Checkout via PIX (apps/web/src/application/pagamento/services/CriarPixChargeUseCase.ts)
   → Pedido criado (apps/web/src/application/pedido/services/CriarPedidoUseCase.ts)
   → Sincronização offline se sem conexão (apps/web/src/lib/offline/)
 ```
@@ -119,7 +119,7 @@ Cliente escaneia QR code
 Admin faz login (apps/web/src/lib/auth/)
   → Dashboard admin (apps/web/src/app/admin/dashboard/)
   → Gerencia categorias, produtos, combos, modificadores (apps/web/src/application/admin/services/)
-  → Acompanha pedidos em tempo real (Supabase Realtime)
+  → Acompanha pedidos em tempo real (Socket.io via useRealtimeOrders)
   → Atualiza status de pedidos
 ```
 
@@ -133,7 +133,6 @@ Cozinha recebe pedido via realtime (apps/web/src/hooks/useRealtimeOrders.ts)
 ```
 
 ---
-
 
 ## Arquitetura de Dados Offline
 

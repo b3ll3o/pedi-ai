@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { sql } from '@/infrastructure/database/pg-client';
 import { getSession } from '@/lib/auth/session';
 
@@ -49,17 +50,29 @@ export async function GET(request: NextRequest) {
 
     // Group values by modifier_id
     const valuesByModifierId = modifierValues.reduce<
-      Record<string, { modifier_id: string; name: string; price_adjustment: number; available: boolean; }[]>
-    >((acc, curr) => {
+      Record<
+        string,
+        { modifier_id: string; name: string; price_adjustment: number; available: boolean }[]
+      >
+    >(
+      (acc, curr) => {
         const modifierId = curr.modifier_id as string;
-        const item = curr as { modifier_id: string; name: string; price_adjustment: number; available: boolean };
+        const item = curr as {
+          modifier_id: string;
+          name: string;
+          price_adjustment: number;
+          available: boolean;
+        };
         if (!acc[modifierId]) {
           acc[modifierId] = [];
         }
         acc[modifierId].push(item);
         return acc;
       },
-      {} as Record<string, { modifier_id: string; name: string; price_adjustment: number; available: boolean; }[]>
+      {} as Record<
+        string,
+        { modifier_id: string; name: string; price_adjustment: number; available: boolean }[]
+      >
     );
 
     // Attach values to modifiers
@@ -88,10 +101,7 @@ export async function POST(request: NextRequest) {
     const { restaurant_id, name, description, min_selections, max_selections, required } = body;
 
     if (!restaurant_id || !name) {
-      return NextResponse.json(
-        { error: 'restaurant_id e name são obrigatórios' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'restaurant_id e name são obrigatórios' }, { status: 400 });
     }
 
     // Verify user has access and is owner/manager
@@ -101,7 +111,10 @@ export async function POST(request: NextRequest) {
       LIMIT 1
     `;
 
-    if (!profileResult[0] || (profileResult[0].role !== 'dono' && profileResult[0].role !== 'gerente')) {
+    if (
+      !profileResult[0] ||
+      (profileResult[0].role !== 'dono' && profileResult[0].role !== 'gerente')
+    ) {
       return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 });
     }
 

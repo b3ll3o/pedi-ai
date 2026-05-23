@@ -1,8 +1,13 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import Image from 'next/image';
+/* eslint-disable react-hooks/set-state-in-effect -- padrão válido para sincronizar form com props (controlled inputs) */
+
+import { useState, useRef, useEffect, useCallback } from 'react';
+
+import { FormTitle, SubmitButton } from './FormFieldComponents';
+import { LogoUploadField } from './LogoUploadField';
 import styles from './RestaurantForm.module.css';
+import { formatCNPJ, formatPhone, validateCNPJ, validatePhone } from './restaurantFormHelpers';
 
 export type RestaurantFormMode = 'create' | 'edit';
 
@@ -21,37 +26,138 @@ interface RestaurantFormProps {
   onCancel: () => void;
 }
 
-const CNPJ_MASK = /^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/;
-
-function formatCNPJ(value: string): string {
-  const digits = value.replace(/\D/g, '');
-  if (digits.length <= 2) return digits;
-  if (digits.length <= 5) return `${digits.slice(0, 2)}.${digits.slice(2)}`;
-  if (digits.length <= 8) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`;
-  if (digits.length <= 12)
-    return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8)}`;
-  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12, 14)}`;
+interface FormErrors {
+  nome?: string;
+  cnpj?: string;
+  telefone?: string;
 }
 
-function formatPhone(value: string): string {
-  const digits = value.replace(/\D/g, '');
-  if (digits.length <= 2) return digits.length ? `(${digits}` : '';
-  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
-  if (digits.length <= 10)
-    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
-  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+function validateNome(nome: string): string | undefined {
+  if (!nome.trim()) return 'Nome é obrigatório';
+  if (nome.trim().length < 2) return 'Nome deve ter pelo menos 2 caracteres';
+  return undefined;
 }
 
-function validateCNPJ(cnpj: string): boolean {
-  return CNPJ_MASK.test(cnpj);
+function validateNomeField(nome: string, mode: RestaurantFormMode): string | undefined {
+  if (mode === 'create' || nome.trim()) {
+    return validateNome(nome);
+  }
+  return undefined;
 }
 
-function validatePhone(phone: string): boolean {
-  const digits = phone.replace(/\D/g, '');
-  return digits.length >= 10 && digits.length <= 11;
+function validateCnpjField(cnpj: string, mode: RestaurantFormMode): string | undefined {
+  if (mode !== 'create') return undefined;
+  if (!cnpj.trim()) return 'CNPJ é obrigatório';
+  if (!validateCNPJ(cnpj)) return 'CNPJ inválido (formato: XX.XXX.XXX/XXXX-XX)';
+  return undefined;
 }
 
-export function RestaurantForm({ mode, initialData, onSubmit, onCancel }: RestaurantFormProps) {
+function validateTelefoneField(telefone: string): string | undefined {
+  if (telefone.trim() && !validatePhone(telefone)) return 'Telefone inválido';
+  return undefined;
+}
+
+function validateFormData(
+  formData: { nome: string; cnpj: string; telefone: string },
+  mode: RestaurantFormMode
+): FormErrors {
+  const errors: FormErrors = {};
+  const nomeError = validateNomeField(formData.nome, mode);
+  if (nomeError) errors.nome = nomeError;
+
+  const cnpjError = validateCnpjField(formData.cnpj, mode);
+  if (cnpjError) errors.cnpj = cnpjError;
+
+  const telefoneError = validateTelefoneField(formData.telefone);
+  if (telefoneError) errors.telefone = telefoneError;
+
+  return errors;
+}
+
+function NomeField({
+  value,
+  onChange,
+  errors,
+  isSubmitting,
+}: {
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  errors: FormErrors;
+  isSubmitting: boolean;
+}) {
+  return (
+    <div className={styles.field}>
+      <label htmlFor="nome" className={styles.label}>
+        Nome <span className={styles.required}>*</span>
+      </label>
+      <input
+        id="nome"
+        type="text"
+        data-testid="restaurant-name-input"
+        className={`${styles.input} ${errors.nome ? styles.inputError : ''}`}
+        value={value}
+        onChange={onChange}
+        placeholder="Ex: Restaurante Central"
+        disabled={isSubmitting}
+        aria-invalid={!!errors.nome}
+        aria-describedby={errors.nome ? 'nome-error' : undefined}
+        autoComplete="organization"
+      />
+      {errors.nome && (
+        <span id="nome-error" className={styles.error} role="alert">
+          {errors.nome}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function TelefoneField({
+  value,
+  onChange,
+  errors,
+  isSubmitting,
+}: {
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  errors: FormErrors;
+  isSubmitting: boolean;
+}) {
+  return (
+    <div className={styles.field}>
+      <label htmlFor="telefone" className={styles.label}>
+        Telefone
+      </label>
+      <input
+        id="telefone"
+        type="tel"
+        inputMode="tel"
+        data-testid="restaurant-phone-input"
+        className={`${styles.input} ${errors.telefone ? styles.inputError : ''}`}
+        value={value}
+        onChange={onChange}
+        placeholder="(XX) XXXXX-XXXX"
+        disabled={isSubmitting}
+        aria-invalid={!!errors.telefone}
+        aria-describedby={errors.telefone ? 'telefone-error' : undefined}
+        autoComplete="tel"
+        maxLength={15}
+      />
+      {errors.telefone && (
+        <span id="telefone-error" className={styles.error} role="alert">
+          {errors.telefone}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function useRestaurantForm(
+  mode: RestaurantFormMode,
+  initialData?: RestaurantFormData,
+  onSubmitProp?: (data: RestaurantFormData) => Promise<void>,
+  _onCancelProp?: () => void
+) {
   const [formData, setFormData] = useState({
     nome: initialData?.nome ?? '',
     cnpj: initialData?.cnpj ?? '',
@@ -61,156 +167,149 @@ export function RestaurantForm({ mode, initialData, onSubmit, onCancel }: Restau
   });
   const [imagePreview, setImagePreview] = useState<string | null>(initialData?.logoUrl ?? null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<{
-    nome?: string;
-    cnpj?: string;
-    telefone?: string;
-  }>({});
+  const [errors, setErrors] = useState<FormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const initialDataRef = useRef(initialData);
 
   // Sync form when initialData changes (for edit mode)
   useEffect(() => {
-    if (initialData && initialData !== initialDataRef.current) {
-      initialDataRef.current = initialData;
-      setFormData({
-        nome: initialData.nome ?? '',
-        cnpj: initialData.cnpj ?? '',
-        endereco: initialData.endereco ?? '',
-        telefone: initialData.telefone ?? '',
-        logoUrl: initialData.logoUrl ?? '',
-      });
-      setImagePreview(initialData.logoUrl ?? null);
-    }
+    if (!initialData) return;
+    setFormData({
+      nome: initialData.nome ?? '',
+      cnpj: initialData.cnpj ?? '',
+      endereco: initialData.endereco ?? '',
+      telefone: initialData.telefone ?? '',
+      logoUrl: initialData.logoUrl ?? '',
+    });
+    setImagePreview(initialData.logoUrl ?? null);
   }, [initialData]);
 
-  const validateForm = (): boolean => {
-    const newErrors: typeof errors = {};
+  const clearError = useCallback((field: keyof FormErrors) => {
+    setErrors((prev) => ({ ...prev, [field]: undefined }));
+  }, []);
 
-    if (!formData.nome.trim()) {
-      newErrors.nome = 'Nome é obrigatório';
-    } else if (formData.nome.trim().length < 2) {
-      newErrors.nome = 'Nome deve ter pelo menos 2 caracteres';
-    }
+  const handleNomeChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData((prev) => ({ ...prev, nome: e.target.value }));
+      clearError('nome');
+    },
+    [clearError]
+  );
 
-    if (mode === 'create') {
-      if (!formData.cnpj.trim()) {
-        newErrors.cnpj = 'CNPJ é obrigatório';
-      } else if (!validateCNPJ(formData.cnpj)) {
-        newErrors.cnpj = 'CNPJ inválido (formato: XX.XXX.XXX/XXXX-XX)';
-      }
-    }
+  const handleCnpjChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData((prev) => ({ ...prev, cnpj: formatCNPJ(e.target.value) }));
+      clearError('cnpj');
+    },
+    [clearError]
+  );
 
-    if (formData.telefone.trim() && !validatePhone(formData.telefone)) {
-      newErrors.telefone = 'Telefone inválido';
-    }
+  const handlePhoneChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData((prev) => ({ ...prev, telefone: formatPhone(e.target.value) }));
+      clearError('telefone');
+    },
+    [clearError]
+  );
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleCNPJChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatCNPJ(e.target.value);
-    setFormData((prev) => ({ ...prev, cnpj: formatted }));
-    if (errors.cnpj) {
-      setErrors((prev) => ({ ...prev, cnpj: undefined }));
-    }
-  };
-
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatPhone(e.target.value);
-    setFormData((prev) => ({ ...prev, telefone: formatted }));
-    if (errors.telefone) {
-      setErrors((prev) => ({ ...prev, telefone: undefined }));
-    }
-  };
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     if (!file.type.startsWith('image/')) {
       setSubmitError('Por favor, selecione um arquivo de imagem');
       return;
     }
-
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setImagePreview(reader.result as string);
-    };
+    reader.onloadend = () => setImagePreview(reader.result as string);
     reader.readAsDataURL(file);
-
     setSubmitError(null);
     setFormData((prev) => ({ ...prev, logoUrl: '' }));
-  };
+  }, []);
 
-  const handleRemoveImage = () => {
+  const handleEnderecoChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData((prev) => ({ ...prev, endereco: e.target.value }));
+  }, []);
+
+  const handleRemoveImage = useCallback(() => {
     setImagePreview(null);
     setFormData((prev) => ({ ...prev, logoUrl: '' }));
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }, []);
+
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      const validationErrors = validateFormData(formData, mode);
+      if (Object.keys(validationErrors).length > 0) {
+        setErrors(validationErrors);
+        return;
+      }
+      setIsSubmitting(true);
+      setSubmitError(null);
+      try {
+        await onSubmitProp?.({
+          nome: formData.nome.trim(),
+          cnpj: formData.cnpj.trim(),
+          endereco: formData.endereco.trim() || undefined,
+          telefone: formData.telefone.trim() || undefined,
+          logoUrl: formData.logoUrl || undefined,
+        });
+      } catch (err) {
+        setSubmitError(err instanceof Error ? err.message : 'Erro ao salvar restaurante');
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [formData, mode, onSubmitProp]
+  );
+
+  return {
+    formData,
+    imagePreview,
+    isSubmitting,
+    errors,
+    submitError,
+    fileInputRef,
+    handleNomeChange,
+    handleCnpjChange,
+    handlePhoneChange,
+    handleImageChange,
+    handleEnderecoChange,
+    handleRemoveImage,
+    handleSubmit,
   };
+}
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm()) return;
-
-    setIsSubmitting(true);
-    setSubmitError(null);
-    try {
-      await onSubmit({
-        nome: formData.nome.trim(),
-        cnpj: formData.cnpj.trim(),
-        endereco: formData.endereco.trim() || undefined,
-        telefone: formData.telefone.trim() || undefined,
-        logoUrl: formData.logoUrl || undefined,
-      });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao salvar restaurante';
-      setSubmitError(message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+export function RestaurantForm({ mode, initialData, onSubmit, onCancel }: RestaurantFormProps) {
+  const {
+    formData,
+    imagePreview,
+    isSubmitting,
+    errors,
+    submitError,
+    fileInputRef,
+    handleNomeChange,
+    handleCnpjChange,
+    handlePhoneChange,
+    handleImageChange,
+    handleEnderecoChange,
+    handleRemoveImage,
+    handleSubmit,
+  } = useRestaurantForm(mode, initialData, onSubmit, onCancel);
 
   return (
     <form className={styles.form} onSubmit={handleSubmit} noValidate>
       <div className={styles.header}>
-        <h2 className={styles.title}>
-          {mode === 'edit' ? 'Editar Restaurante' : 'Novo Restaurante'}
-        </h2>
+        <FormTitle mode={mode} />
       </div>
 
-      <div className={styles.field}>
-        <label htmlFor="nome" className={styles.label}>
-          Nome <span className={styles.required}>*</span>
-        </label>
-        <input
-          id="nome"
-          type="text"
-          data-testid="restaurant-name-input"
-          className={`${styles.input} ${errors.nome ? styles.inputError : ''}`}
-          value={formData.nome}
-          onChange={(e) => {
-            setFormData((prev) => ({ ...prev, nome: e.target.value }));
-            if (errors.nome) setErrors((prev) => ({ ...prev, nome: undefined }));
-          }}
-          placeholder="Ex: Restaurante Central"
-          disabled={isSubmitting}
-          aria-invalid={!!errors.nome}
-          aria-describedby={errors.nome ? 'nome-error' : undefined}
-          autoComplete="organization"
-        />
-        {errors.nome && (
-          <span id="nome-error" className={styles.error} role="alert">
-            {errors.nome}
-          </span>
-        )}
-      </div>
+      <NomeField
+        value={formData.nome}
+        onChange={handleNomeChange}
+        errors={errors}
+        isSubmitting={isSubmitting}
+      />
 
       {mode === 'create' && (
         <div className={styles.field}>
@@ -224,7 +323,7 @@ export function RestaurantForm({ mode, initialData, onSubmit, onCancel }: Restau
             data-testid="restaurant-cnpj-input"
             className={`${styles.input} ${errors.cnpj ? styles.inputError : ''}`}
             value={formData.cnpj}
-            onChange={handleCNPJChange}
+            onChange={handleCnpjChange}
             placeholder="XX.XXX.XXX/XXXX-XX"
             disabled={isSubmitting}
             aria-invalid={!!errors.cnpj}
@@ -250,82 +349,27 @@ export function RestaurantForm({ mode, initialData, onSubmit, onCancel }: Restau
           data-testid="restaurant-address-input"
           className={styles.input}
           value={formData.endereco}
-          onChange={(e) => setFormData((prev) => ({ ...prev, endereco: e.target.value }))}
+          onChange={handleEnderecoChange}
           placeholder="Endereço completo do restaurante"
           disabled={isSubmitting}
           autoComplete="street-address"
         />
       </div>
 
-      <div className={styles.field}>
-        <label htmlFor="telefone" className={styles.label}>
-          Telefone
-        </label>
-        <input
-          id="telefone"
-          type="tel"
-          inputMode="tel"
-          data-testid="restaurant-phone-input"
-          className={`${styles.input} ${errors.telefone ? styles.inputError : ''}`}
-          value={formData.telefone}
-          onChange={handlePhoneChange}
-          placeholder="(XX) XXXXX-XXXX"
-          disabled={isSubmitting}
-          aria-invalid={!!errors.telefone}
-          aria-describedby={errors.telefone ? 'telefone-error' : undefined}
-          autoComplete="tel"
-          maxLength={15}
-        />
-        {errors.telefone && (
-          <span id="telefone-error" className={styles.error} role="alert">
-            {errors.telefone}
-          </span>
-        )}
-      </div>
+      <TelefoneField
+        value={formData.telefone}
+        onChange={handlePhoneChange}
+        errors={errors}
+        isSubmitting={isSubmitting}
+      />
 
-      <div className={styles.field}>
-        <label className={styles.label}>Logo</label>
-        <div className={styles.imageUpload}>
-          {imagePreview ? (
-            <div className={styles.imagePreview}>
-              <Image
-                src={imagePreview}
-                alt="Logo preview"
-                fill
-                className={styles.previewImg}
-                sizes="120px"
-              />
-              <button
-                type="button"
-                className={styles.removeImageBtn}
-                onClick={handleRemoveImage}
-                disabled={isSubmitting}
-                aria-label="Remover logo"
-              >
-                ×
-              </button>
-            </div>
-          ) : (
-            <div className={styles.uploadPlaceholder}>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                data-testid="restaurant-logo-input"
-                onChange={handleImageChange}
-                className={styles.fileInput}
-                disabled={isSubmitting}
-                aria-describedby="logo-hint"
-              />
-              <div className={styles.uploadIcon}>📷</div>
-              <span className={styles.uploadText}>Clique para adicionar logo</span>
-            </div>
-          )}
-        </div>
-        <span id="logo-hint" className={styles.hint}>
-          Opcional. Formatos aceitos: JPG, PNG, WebP
-        </span>
-      </div>
+      <LogoUploadField
+        imagePreview={imagePreview}
+        fileInputRef={fileInputRef}
+        onImageChange={handleImageChange}
+        onRemoveImage={handleRemoveImage}
+        isSubmitting={isSubmitting}
+      />
 
       {submitError && (
         <span className={styles.error} role="alert">
@@ -348,7 +392,7 @@ export function RestaurantForm({ mode, initialData, onSubmit, onCancel }: Restau
           className={styles.submitButton}
           disabled={isSubmitting}
         >
-          {isSubmitting ? 'Salvando...' : mode === 'edit' ? 'Salvar' : 'Criar'}
+          <SubmitButton isSubmitting={isSubmitting} mode={mode} />
         </button>
       </div>
     </form>

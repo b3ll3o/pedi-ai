@@ -1,7 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { MesaRepository } from '@/infrastructure/persistence/mesa/MesaRepository';
+
 import { Mesa } from '@/domain/mesa/entities/Mesa';
 import { QRCodePayload } from '@/domain/mesa/value-objects/QRCodePayload';
+import { MesaRepository } from '@/infrastructure/persistence/mesa/MesaRepository';
+
 import { createTestDatabase } from '../_test-helpers';
 
 describe('MesaRepository', () => {
@@ -14,7 +16,9 @@ describe('MesaRepository', () => {
     repository = new MesaRepository(db);
   });
 
-  function criarMesaValida(overrides?: Partial<{ id: string; restauranteId: string; label: string; ativo: boolean }>): Mesa {
+  function criarMesaValida(
+    overrides?: Partial<{ id: string; restauranteId: string; label: string; ativo: boolean }>
+  ): Mesa {
     const qrPayload = QRCodePayload.reconstruir({
       restauranteId: overrides?.restauranteId ?? 'rest-123',
       mesaId: overrides?.id ?? 'mesa-001',

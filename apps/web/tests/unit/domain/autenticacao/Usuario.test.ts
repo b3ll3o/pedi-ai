@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+
 import { Usuario, UsuarioProps } from '@/domain/autenticacao/entities/Usuario';
 import { Papel } from '@/domain/autenticacao/value-objects/Papel';
 

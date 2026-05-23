@@ -1,8 +1,9 @@
-import { UseCase } from '../../shared/types/UseCase';
+import { PagamentoAggregate } from '@/domain/pagamento';
 import { IPagamentoRepository } from '@/domain/pagamento/repositories';
 import { ITransacaoRepository } from '@/domain/pagamento/repositories';
-import { PagamentoAggregate } from '@/domain/pagamento';
 import { EventDispatcher } from '@/domain/shared';
+
+import { UseCase } from '../../shared/types/UseCase';
 
 export interface WebhookInput {
   provider: 'pix';

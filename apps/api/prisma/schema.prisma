@@ -201,6 +201,7 @@ model Order {
   customerId      String?
   customerPhone   String?
   customerName    String?
+  customerEmail  String?
   status          OrderStatus    @default(pending_payment)
   subtotal        Float
   tax             Float

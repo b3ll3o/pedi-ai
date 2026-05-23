@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
 import { Menu, X } from 'lucide-react';
-import styles from './Navbar.module.css';
+import { useState, useEffect, useRef } from 'react';
+
 import Logo from './Logo';
+import styles from './Navbar.module.css';
 
 const navLinks = [
   { href: '#features', label: 'Funcionalidades' },

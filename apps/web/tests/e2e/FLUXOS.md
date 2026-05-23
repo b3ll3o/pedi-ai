@@ -7,6 +7,7 @@ Documentação detalhada de todos os fluxos de teste end-to-end.
 ## Cliente
 
 ### 1. auth (Autenticação)
+
 - **Spec**: `tests/customer/auth.spec.ts`
 - **Tags**: `@smoke`, `@critical`
 - **Tempo estimado**: ~15s
@@ -14,6 +15,7 @@ Documentação detalhada de todos os fluxos de teste end-to-end.
 - **Page Object**: `CustomerLoginPage`
 
 ### 2. menu (Cardápio Digital)
+
 - **Spec**: `tests/customer/menu.spec.ts`
 - **Tags**: —
 - **Tempo estimado**: ~20s
@@ -21,6 +23,7 @@ Documentação detalhada de todos os fluxos de teste end-to-end.
 - **Page Object**: `MenuPage`
 
 ### 3. cart (Carrinho)
+
 - **Spec**: `tests/customer/cart.spec.ts`
 - **Tags**: —
 - **Tempo estimado**: ~25s
@@ -28,6 +31,7 @@ Documentação detalhada de todos os fluxos de teste end-to-end.
 - **Page Object**: `CartPage`
 
 ### 4. checkout (Finalização)
+
 - **Spec**: `tests/customer/checkout.spec.ts`
 - **Tags**: `@smoke`, `@slow`
 - **Tempo estimado**: ~45s
@@ -35,6 +39,7 @@ Documentação detalhada de todos os fluxos de teste end-to-end.
 - **Page Object**: `CheckoutPage`
 
 ### 5. order (Acompanhamento)
+
 - **Spec**: `tests/customer/order.spec.ts`
 - **Tags**: `@slow`
 - **Tempo estimado**: ~60s
@@ -42,6 +47,7 @@ Documentação detalhada de todos os fluxos de teste end-to-end.
 - **Page Object**: `OrderPage`
 
 ### 6. payment (Pagamento)
+
 - **Spec**: `tests/customer/payment.spec.ts`
 - **Tags**: `@slow`
 - **Tempo estimado**: ~90s
@@ -49,6 +55,7 @@ Documentação detalhada de todos os fluxos de teste end-to-end.
 - **Page Object**: `CheckoutPage`
 
 ### 7. offline (Funcionamento Offline)
+
 - **Spec**: `tests/customer/offline.spec.ts`
 - **Tags**: —
 - **Tempo estimado**: ~30s
@@ -56,6 +63,7 @@ Documentação detalhada de todos os fluxos de teste end-to-end.
 - **Page Object**: `MenuPage`, `CartPage`
 
 ### 8. combos (Combos — Cliente)
+
 - **Spec**: `tests/customer/combos.spec.ts`
 - **Tags**: —
 - **Tempo estimado**: ~25s
@@ -63,6 +71,7 @@ Documentação detalhada de todos os fluxos de teste end-to-end.
 - **Page Object**: `MenuPage`, `CartPage`
 
 ### 9. modifier-groups (Grupos de Modificadores)
+
 - **Spec**: `tests/customer/modifier-groups.spec.ts`
 - **Tags**: —
 - **Tempo estimado**: ~30s
@@ -74,6 +83,7 @@ Documentação detalhada de todos os fluxos de teste end-to-end.
 ## Administrador
 
 ### 10. auth (Autenticação Admin)
+
 - **Spec**: `tests/admin/auth.spec.ts`
 - **Tags**: `@smoke`, `@critical`
 - **Tempo estimado**: ~15s
@@ -81,6 +91,7 @@ Documentação detalhada de todos os fluxos de teste end-to-end.
 - **Page Object**: `AdminLoginPage`
 
 ### 11. categories (Categorias)
+
 - **Spec**: `tests/admin/categories.spec.ts`
 - **Tags**: —
 - **Tempo estimado**: ~35s
@@ -88,6 +99,7 @@ Documentação detalhada de todos os fluxos de teste end-to-end.
 - **Page Object**: `AdminCategoriesPage`
 
 ### 12. products (Produtos)
+
 - **Spec**: `tests/admin/products.spec.ts`
 - **Tags**: —
 - **Tempo estimado**: ~40s
@@ -95,6 +107,7 @@ Documentação detalhada de todos os fluxos de teste end-to-end.
 - **Page Object**: `AdminProductsPage`
 
 ### 13. orders (Pedidos Admin)
+
 - **Spec**: `tests/admin/orders.spec.ts`
 - **Tags**: —
 - **Tempo estimado**: ~45s
@@ -102,6 +115,7 @@ Documentação detalhada de todos os fluxos de teste end-to-end.
 - **Page Object**: `AdminOrdersPage`
 
 ### 14. table-qr (Mesas e QR Codes)
+
 - **Spec**: `tests/admin/table-qr.spec.ts`
 - **Tags**: —
 - **Tempo estimado**: ~30s
@@ -109,6 +123,7 @@ Documentação detalhada de todos os fluxos de teste end-to-end.
 - **Page Object**: `TableQRPage`
 
 ### 15. combos-admin (Combos — Admin)
+
 - **Spec**: `tests/admin/combos-admin.spec.ts`
 - **Tags**: —
 - **Tempo estimado**: ~35s
@@ -120,13 +135,15 @@ Documentação detalhada de todos os fluxos de teste end-to-end.
 ## Realtime
 
 ### 16. realtime-updates (Atualizações em Tempo Real)
+
 - **Spec**: `tests/admin/realtime-updates.spec.ts`
 - **Tags**: —
 - **Tempo estimado**: ~50s
-- **Fluxo**: Admin atualiza status, cliente recebe atualização via Supabase realtime
+- **Fluxo**: Admin atualiza status, cliente recebe atualização via Socket.io
 - **Page Objects**: `OrderPage`, `AdminOrdersPage`
 
 ### 17. kitchen (Painel da Cozinha)
+
 - **Spec**: `tests/waiter/kitchen.spec.ts`
 - **Tags**: `@slow`
 - **Tempo estimado**: ~70s
@@ -137,35 +154,35 @@ Documentação detalhada de todos os fluxos de teste end-to-end.
 
 ## Matriz de Cobertura
 
-| Fluxo | Spec File | Tags | Tempo Est. |
-|-------|-----------|------|------------|
-| auth (cliente) | `tests/customer/auth.spec.ts` | @smoke, @critical | ~15s |
-| menu | `tests/customer/menu.spec.ts` | — | ~20s |
-| cart | `tests/customer/cart.spec.ts` | — | ~25s |
-| checkout | `tests/customer/checkout.spec.ts` | @smoke, @slow | ~45s |
-| order | `tests/customer/order.spec.ts` | @slow | ~60s |
-| payment | `tests/customer/payment.spec.ts` | @slow | ~90s |
-| offline | `tests/customer/offline.spec.ts` | — | ~30s |
-| combos (cliente) | `tests/customer/combos.spec.ts` | — | ~25s |
-| modifier-groups | `tests/customer/modifier-groups.spec.ts` | — | ~30s |
-| product-detail | `tests/customer/product-detail.spec.ts` | — | ~25s |
-| auth (admin) | `tests/admin/auth.spec.ts` | @smoke, @critical | ~15s |
-| dashboard | `tests/admin/dashboard.spec.ts` | — | ~20s |
-| categories | `tests/admin/categories.spec.ts` | — | ~35s |
-| products | `tests/admin/products.spec.ts` | — | ~40s |
-| orders | `tests/admin/orders.spec.ts` | — | ~45s |
-| order-detail | `tests/admin/order-detail.spec.ts` | — | ~30s |
-| tables | `tests/admin/tables.spec.ts` | — | ~35s |
-| table-qr | `tests/admin/table-qr.spec.ts` | — | ~30s |
-| settings | `tests/admin/settings.spec.ts` | — | ~25s |
-| users | `tests/admin/users.spec.ts` | — | ~30s |
-| modifier-groups (admin) | `tests/admin/modifier-groups.spec.ts` | — | ~35s |
-| restaurants | `tests/admin/restaurants.spec.ts` | — | ~40s |
-| combos-admin | `tests/admin/combos-admin.spec.ts` | — | ~35s |
-| realtime-updates | `tests/admin/realtime-updates.spec.ts` | — | ~50s |
-| analytics | `tests/admin/analytics.spec.ts` | — | ~40s |
-| kitchen | `tests/waiter/kitchen.spec.ts` | @slow | ~70s |
-| waiter-dashboard | `tests/waiter/waiter-dashboard.spec.ts` | — | ~25s |
+| Fluxo                   | Spec File                                | Tags              | Tempo Est. |
+| ----------------------- | ---------------------------------------- | ----------------- | ---------- |
+| auth (cliente)          | `tests/customer/auth.spec.ts`            | @smoke, @critical | ~15s       |
+| menu                    | `tests/customer/menu.spec.ts`            | —                 | ~20s       |
+| cart                    | `tests/customer/cart.spec.ts`            | —                 | ~25s       |
+| checkout                | `tests/customer/checkout.spec.ts`        | @smoke, @slow     | ~45s       |
+| order                   | `tests/customer/order.spec.ts`           | @slow             | ~60s       |
+| payment                 | `tests/customer/payment.spec.ts`         | @slow             | ~90s       |
+| offline                 | `tests/customer/offline.spec.ts`         | —                 | ~30s       |
+| combos (cliente)        | `tests/customer/combos.spec.ts`          | —                 | ~25s       |
+| modifier-groups         | `tests/customer/modifier-groups.spec.ts` | —                 | ~30s       |
+| product-detail          | `tests/customer/product-detail.spec.ts`  | —                 | ~25s       |
+| auth (admin)            | `tests/admin/auth.spec.ts`               | @smoke, @critical | ~15s       |
+| dashboard               | `tests/admin/dashboard.spec.ts`          | —                 | ~20s       |
+| categories              | `tests/admin/categories.spec.ts`         | —                 | ~35s       |
+| products                | `tests/admin/products.spec.ts`           | —                 | ~40s       |
+| orders                  | `tests/admin/orders.spec.ts`             | —                 | ~45s       |
+| order-detail            | `tests/admin/order-detail.spec.ts`       | —                 | ~30s       |
+| tables                  | `tests/admin/tables.spec.ts`             | —                 | ~35s       |
+| table-qr                | `tests/admin/table-qr.spec.ts`           | —                 | ~30s       |
+| settings                | `tests/admin/settings.spec.ts`           | —                 | ~25s       |
+| users                   | `tests/admin/users.spec.ts`              | —                 | ~30s       |
+| modifier-groups (admin) | `tests/admin/modifier-groups.spec.ts`    | —                 | ~35s       |
+| restaurants             | `tests/admin/restaurants.spec.ts`        | —                 | ~40s       |
+| combos-admin            | `tests/admin/combos-admin.spec.ts`       | —                 | ~35s       |
+| realtime-updates        | `tests/admin/realtime-updates.spec.ts`   | —                 | ~50s       |
+| analytics               | `tests/admin/analytics.spec.ts`          | —                 | ~40s       |
+| kitchen                 | `tests/waiter/kitchen.spec.ts`           | @slow             | ~70s       |
+| waiter-dashboard        | `tests/waiter/waiter-dashboard.spec.ts`  | —                 | ~25s       |
 
 **Total: 28 fluxos | ~1030s (~17 min)**
 
@@ -173,11 +190,11 @@ Documentação detalhada de todos os fluxos de teste end-to-end.
 
 ## Tags de Teste
 
-| Tag | Descrição | Uso |
-|-----|-----------|-----|
-| `@smoke` | Testes essenciais de sanidade | Rodar em CI rápido |
-| `@critical` | Fluxos críticos para negócio | Blockers de merge |
-| `@slow` | Testes que levam >30s | `pnpm test:e2e:slow` |
+| Tag         | Descrição                     | Uso                  |
+| ----------- | ----------------------------- | -------------------- |
+| `@smoke`    | Testes essenciais de sanidade | Rodar em CI rápido   |
+| `@critical` | Fluxos críticos para negócio  | Blockers de merge    |
+| `@slow`     | Testes que levam >30s         | `pnpm test:e2e:slow` |
 
 ## Comandos por Tag
 

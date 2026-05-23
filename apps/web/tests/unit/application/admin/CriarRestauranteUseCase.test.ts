@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { CriarRestauranteUseCase } from '@/application/admin/services/CriarRestauranteUseCase';
 import { CriarRestauranteInput } from '@/application/admin/services/CriarRestauranteUseCase';
 import { Restaurante } from '@/domain/admin/entities/Restaurante';
@@ -127,7 +128,13 @@ describe('CriarRestauranteUseCase', () => {
     it('deve lançar erro quando owner já tem restaurante e multi-restaurant desativado', async () => {
       mockIsMultiRestaurantEnabled.mockReturnValue(false);
       mockUsuarioRestauranteRepo.findByUsuarioId.mockResolvedValue([
-        { id: 'vinculo-legacy', usuarioId: 'owner-id', restauranteId: 'rest-legacy', papel: 'dono', criadoEm: new Date() } as unknown as UsuarioRestauranteProps,
+        {
+          id: 'vinculo-legacy',
+          usuarioId: 'owner-id',
+          restauranteId: 'rest-legacy',
+          papel: 'dono',
+          criadoEm: new Date(),
+        } as unknown as UsuarioRestauranteProps,
       ]);
 
       const input: CriarRestauranteInput = {

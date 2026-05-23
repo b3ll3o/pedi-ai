@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { VincularUsuarioRestauranteUseCase } from '@/application/admin/services/VincularUsuarioRestauranteUseCase';
 import { VincularUsuarioRestauranteInput } from '@/application/admin/services/VincularUsuarioRestauranteUseCase';
 import { UsuarioRestaurante } from '@/domain/admin/entities/UsuarioRestaurante';
@@ -30,17 +31,18 @@ describe('VincularUsuarioRestauranteUseCase', () => {
       save: vi.fn(),
       delete: vi.fn(),
     };
-    useCase = new VincularUsuarioRestauranteUseCase(
-      mockUsuarioRestauranteRepo,
-      mockEventEmitter
-    );
+    useCase = new VincularUsuarioRestauranteUseCase(mockUsuarioRestauranteRepo, mockEventEmitter);
   });
 
   describe('execute', () => {
     it('deve vincular usuário manager quando solicitante é owner', async () => {
       mockUsuarioRestauranteRepo.findByUsuarioIdAndRestauranteId
         .mockResolvedValueOnce(
-          UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'restaurante-id', papel: 'dono' })
+          UsuarioRestaurante.criar({
+            usuarioId: 'owner-id',
+            restauranteId: 'restaurante-id',
+            papel: 'dono',
+          })
         )
         .mockResolvedValueOnce(null);
 
@@ -62,7 +64,11 @@ describe('VincularUsuarioRestauranteUseCase', () => {
     it('deve vincular usuário staff quando solicitante é manager', async () => {
       mockUsuarioRestauranteRepo.findByUsuarioIdAndRestauranteId
         .mockResolvedValueOnce(
-          UsuarioRestaurante.criar({ usuarioId: 'manager-id', restauranteId: 'restaurante-id', papel: 'gerente' })
+          UsuarioRestaurante.criar({
+            usuarioId: 'manager-id',
+            restauranteId: 'restaurante-id',
+            papel: 'gerente',
+          })
         )
         .mockResolvedValueOnce(null);
 
@@ -111,7 +117,11 @@ describe('VincularUsuarioRestauranteUseCase', () => {
 
     it('deve lançar erro quando solicitante é staff', async () => {
       mockUsuarioRestauranteRepo.findByUsuarioIdAndRestauranteId.mockResolvedValueOnce(
-        UsuarioRestaurante.criar({ usuarioId: 'staff-id', restauranteId: 'restaurante-id', papel: 'atendente' })
+        UsuarioRestaurante.criar({
+          usuarioId: 'staff-id',
+          restauranteId: 'restaurante-id',
+          papel: 'atendente',
+        })
       );
 
       const input: VincularUsuarioRestauranteInput = {
@@ -129,10 +139,18 @@ describe('VincularUsuarioRestauranteUseCase', () => {
     it('deve lançar erro quando usuário já está vinculado', async () => {
       mockUsuarioRestauranteRepo.findByUsuarioIdAndRestauranteId
         .mockResolvedValueOnce(
-          UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'restaurante-id', papel: 'dono' })
+          UsuarioRestaurante.criar({
+            usuarioId: 'owner-id',
+            restauranteId: 'restaurante-id',
+            papel: 'dono',
+          })
         )
         .mockResolvedValueOnce(
-          UsuarioRestaurante.criar({ usuarioId: 'ja-vinculado-id', restauranteId: 'restaurante-id', papel: 'atendente' })
+          UsuarioRestaurante.criar({
+            usuarioId: 'ja-vinculado-id',
+            restauranteId: 'restaurante-id',
+            papel: 'atendente',
+          })
         );
 
       const input: VincularUsuarioRestauranteInput = {

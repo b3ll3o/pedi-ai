@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { sql } from '@/infrastructure/database/pg-client';
 import { getSession } from '@/lib/auth/session';
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSession();
     if (!session) {
@@ -68,7 +66,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       LIMIT 1
     `;
 
-    if (!profileResult[0] || (profileResult[0].role !== 'dono' && profileResult[0].role !== 'gerente')) {
+    if (
+      !profileResult[0] ||
+      (profileResult[0].role !== 'dono' && profileResult[0].role !== 'gerente')
+    ) {
       return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 });
     }
 
@@ -124,7 +125,10 @@ export async function DELETE(
       LIMIT 1
     `;
 
-    if (!profileResult[0] || (profileResult[0].role !== 'dono' && profileResult[0].role !== 'gerente')) {
+    if (
+      !profileResult[0] ||
+      (profileResult[0].role !== 'dono' && profileResult[0].role !== 'gerente')
+    ) {
       return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 });
     }
 

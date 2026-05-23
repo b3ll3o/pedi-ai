@@ -12,42 +12,42 @@ Este documento estabelece padrões e melhores práticas para testes E2E usando P
 
 ```typescript
 // ❌ LENTO - Espera 'networkidle' que aguarda fonts, analytics, etc.
-await page.goto('/menu')
-await page.waitForLoadState('networkidle')
+await page.goto('/menu');
+await page.waitForLoadState('networkidle');
 
 // ✅ RÁPIDO - Usa 'load' que é 2-5x mais rápido
-await page.goto('/menu', { waitUntil: 'load' })
+await page.goto('/menu', { waitUntil: 'load' });
 
 // ✅ MAIS RÁPIDO - Usa 'domcontentloaded' quando possível
-await page.goto('/menu', { waitUntil: 'domcontentloaded' })
+await page.goto('/menu', { waitUntil: 'domcontentloaded' });
 ```
 
 ### 1.2 Wait Strategies
 
 ```typescript
 // ❌ LENTO - hardcoded timeout
-await page.waitForTimeout(5000)
+await page.waitForTimeout(5000);
 
 // ❌ LENTO - networkidle desnecessário
-await page.waitForLoadState('networkidle')
+await page.waitForLoadState('networkidle');
 
 // ✅ RÁPIDO - Espera condicional explícita
-await page.waitForURL(/\/menu/, { timeout: 15000 })
+await page.waitForURL(/\/menu/, { timeout: 15000 });
 
 // ✅ RÁPIDO - Espera por elemento visível
-await page.waitForSelector('[data-testid="my-button"]', { state: 'visible', timeout: 10000 })
+await page.waitForSelector('[data-testid="my-button"]', { state: 'visible', timeout: 10000 });
 ```
 
 ### 1.3 Fixtures e Cache
 
 ```typescript
 // ✅ Use storage state cache (TTL: 10 minutos)
-await performLogin(page, email, password, '/login', /\/menu/)
+await performLogin(page, email, password, '/login', /\/menu/);
 
 // ✅ Cache em memória para seed data
-const seedDataCache = new Map<number, SeedData>()
+const seedDataCache = new Map<number, SeedData>();
 if (seedDataCache.has(workerIndex)) {
-  return seedDataCache.get(workerIndex)!
+  return seedDataCache.get(workerIndex)!;
 }
 ```
 
@@ -75,21 +75,37 @@ SHARD=4/4 pnpm test:e2e:all
 
 ### 2.1 Seed Data
 
-Seed é executado uma vez por worker e cacheado em `.seed-result.json`:
+Seed é executado automaticamente via `global-setup.ts` e cacheado em arquivo próprio por shard:
 
 ```bash
-# Executar seed manualmente
+# Seed é executado automaticamente antes dos testes
+# Arquivos de resultado (cache por shard):
+#   scripts/.seed-result.json          — local / sem shard
+#   scripts/.seed-result-shard-1.json — shard 1
+#   scripts/.seed-result-shard-2.json — shard 2
+#   scripts/.seed-result-shard-3.json — shard 3
+#   scripts/.seed-result-shard-4.json — shard 4
+
+# Executar seed manualmente (usa SHARD do env se definido)
 pnpm test:e2e:seed
 
-# Seed é executado automaticamente se .seed-result.json não existir
+# Forçar re-seed (remove cache e recria)
+rm tests/e2e/scripts/.seed-result*.json
+pnpm test:e2e:seed
 ```
+
+Cada shard tem dados isolados:
+
+- Emails únicos: `e2e+customer+sh1@pedi-ai.test` (shard 1), `e2e+customer+sh2@pedi-ai.test` (shard 2), etc.
+- Restaurant ID único por shard
+- Sem conflito entre shards rodando em paralelo
 
 ### 2.2 Factories para Dados Específicos
 
 Para testes que requerem dados específicos (ex: pedido com status "preparing"), use factories:
 
 ```typescript
-import { createOrder } from '../shared/factories'
+import { createOrder } from '../shared/factories';
 
 test('should update preparing order', async ({ api, seedData }) => {
   // Criar pedido via API (mais rápido que UI)
@@ -98,25 +114,27 @@ test('should update preparing order', async ({ api, seedData }) => {
     tableId: seedData.table.id,
     status: 'preparing',
     paymentStatus: 'paid',
-    items: [{
-      productId: seedData.products[0].id,
-      quantity: 1,
-      unitPrice: seedData.products[0].price
-    }]
-  })
+    items: [
+      {
+        productId: seedData.products[0].id,
+        quantity: 1,
+        unitPrice: seedData.products[0].price,
+      },
+    ],
+  });
 
   // Testar UI com dados específicos
-  const ordersPage = new AdminOrdersPage(admin)
-  await ordersPage.goto()
+  const ordersPage = new AdminOrdersPage(admin);
+  await ordersPage.goto();
   // ...
-})
+});
 ```
 
 ### 2.3 Cleanup Automático
 
 ```typescript
 // Sempre que possível, use IDs únicos para evitar conflitos
-const idempotencyKey = generateUUID()
+const idempotencyKey = generateUUID();
 
 // Para orders de teste, use prefixo 'E2E-TEST-' ou similar
 ```
@@ -130,26 +148,26 @@ const idempotencyKey = generateUUID()
 ```typescript
 // pages/MenuPage.ts
 export class MenuPage {
-  readonly page: Page
+  readonly page: Page;
 
   // Locators como propriedades (nunca em métodos)
-  readonly categoryTabs = this.page.locator('[data-testid^="menu-category-card-"]')
-  readonly productCards = this.page.locator('[data-testid^="menu-product-card-"]')
+  readonly categoryTabs = this.page.locator('[data-testid^="menu-category-card-"]');
+  readonly productCards = this.page.locator('[data-testid^="menu-product-card-"]');
 
   constructor(page: Page) {
-    this.page = page
+    this.page = page;
   }
 
   // Navegação com wait otimizado
   async goto(categoryId?: string): Promise<void> {
-    const url = categoryId ? `/menu/${categoryId}` : '/menu'
-    await this.page.goto(url, { waitUntil: 'load' })
+    const url = categoryId ? `/menu/${categoryId}` : '/menu';
+    await this.page.goto(url, { waitUntil: 'load' });
   }
 
   // Ações de alto nível
   async addProductToCart(productName: string): Promise<void> {
-    const productCard = this.productCards.filter({ hasText: productName })
-    await productCard.locator('[data-testid^="menu-add-to-cart-"]').click()
+    const productCard = this.productCards.filter({ hasText: productName });
+    await productCard.locator('[data-testid^="menu-add-to-cart-"]').click();
   }
 }
 ```
@@ -158,20 +176,20 @@ export class MenuPage {
 
 ```typescript
 // ✅ MELHOR: data-testid com prefixo para dinamismo
-'[data-testid^="menu-product-card-"]'
+'[data-testid^="menu-product-card-"]';
 
 // ✅ BOM: data-testid exato
-'[data-testid="checkout-name"]'
+'[data-testid="checkout-name"]';
 
 // ⚠️ ACEITÁVEL: Role semântico
-page.getByRole('button', { name: 'Enviar' })
+page.getByRole('button', { name: 'Enviar' });
 
 // ❌ EVITAR: CSS selectors frágeis
-'.checkout-form > div.name-input'
-page.locator('button').nth(3)
+('.checkout-form > div.name-input');
+page.locator('button').nth(3);
 
 // ❌ NUNCA: XPath
-'//div[@id="checkout"]/form/input'
+('//div[@id="checkout"]/form/input');
 ```
 
 ### 3.3 Métodos de Alto Nível
@@ -180,23 +198,23 @@ page.locator('button').nth(3)
 // pages/CheckoutPage.ts
 export class CheckoutPage {
   async fillCustomerInfo(info: {
-    name?: string
-    email?: string
-    phone?: string
-    tableCode?: string
+    name?: string;
+    email?: string;
+    phone?: string;
+    tableCode?: string;
   }): Promise<void> {
-    if (info.name) await this.nameInput.fill(info.name)
-    if (info.email) await this.emailInput.fill(info.email)
-    if (info.phone) await this.phoneInput.fill(info.phone)
-    if (info.tableCode) await this.tableCodeInput.fill(info.tableCode)
+    if (info.name) await this.nameInput.fill(info.name);
+    if (info.email) await this.emailInput.fill(info.email);
+    if (info.phone) await this.phoneInput.fill(info.phone);
+    if (info.tableCode) await this.tableCodeInput.fill(info.tableCode);
   }
 
   async submitAndWaitForOrder(): Promise<string> {
     const [response] = await Promise.all([
       this.page.waitForResponse('**/api/orders'),
-      this.submitButton.click()
-    ])
-    return response.url()
+      this.submitButton.click(),
+    ]);
+    return response.url();
   }
 }
 ```
@@ -210,24 +228,24 @@ export class CheckoutPage {
 ```typescript
 test('should complete checkout', async ({ authenticated, seedData }) => {
   // Arrange
-  const menuPage = new MenuPage(authenticated)
-  const checkoutPage = new CheckoutPage(authenticated)
-  await menuPage.goto()
-  await menuPage.addProductToCart('Coca-Cola')
+  const menuPage = new MenuPage(authenticated);
+  const checkoutPage = new CheckoutPage(authenticated);
+  await menuPage.goto();
+  await menuPage.addProductToCart('Coca-Cola');
 
   // Act
-  await checkoutPage.goto()
+  await checkoutPage.goto();
   await checkoutPage.fillCustomerInfo({
     name: 'João Silva',
     email: 'joao@example.com',
-    tableCode: seedData.table.code
-  })
-  await checkoutPage.selectPaymentMethod('pix')
-  await checkoutPage.submitOrder()
+    tableCode: seedData.table.code,
+  });
+  await checkoutPage.selectPaymentMethod('pix');
+  await checkoutPage.submitOrder();
 
   // Assert
-  await expect(authenticated).toHaveURL(/\/order\//)
-})
+  await expect(authenticated).toHaveURL(/\/order\//);
+});
 ```
 
 ### 4.2 Tags para Classificação
@@ -236,11 +254,11 @@ test('should complete checkout', async ({ authenticated, seedData }) => {
 // @smoke - Testes essenciais (< 1 min)
 // @critical - Fluxos críticos que bloqueiam merge
 // @slow - Testes > 30s
-// @realtime - Testes que dependem de Supabase realtime
+// @e2e - Marca todos os testes E2E (para filtro em runs combinados)
 
 test('deve fazer login', { tag: ['@smoke', '@critical'] }, async ({ page, seedData }) => {
   // ...
-})
+});
 ```
 
 ### 4.3 Test Isolation
@@ -268,47 +286,47 @@ test('atualiza status do pedido', async ({ api, seedData }) => {
 
 ```typescript
 // ❌ WAIT EXPLÍCITO SEMPRE
-await page.waitForTimeout(5000)
+await page.waitForTimeout(5000);
 
 // ✅ USE WAIT IMPLÍCITO
-await page.click('button')  // Playwright espera até estar clicável
+await page.click('button'); // Playwright espera até estar clicável
 
 // ✅ OU WAIT EXPLÍCITO QUANDO NECESSÁRIO
-await page.waitForURL(/\/order\//, { timeout: 30000 })
+await page.waitForURL(/\/order\//, { timeout: 30000 });
 ```
 
 ### 5.2 Selectors
 
 ```typescript
 // ❌ SELECTOR FRÁGIL
-await page.locator('.modal-content > div:nth-child(2) > button')
+await page.locator('.modal-content > div:nth-child(2) > button');
 
 // ✅ SELECTOR ESTÁVEL
-await page.locator('[data-testid="confirm-button"]')
+await page.locator('[data-testid="confirm-button"]');
 
 // ✅ SELECTOR SEMÂNTICO
-await page.getByRole('button', { name: 'Confirmar' })
+await page.getByRole('button', { name: 'Confirmar' });
 ```
 
 ### 5.3 Estado Compartilhado
 
 ```typescript
 // ❌ RUIM - Variável global
-let currentUser: User
+let currentUser: User;
 
 test('cria usuário', async () => {
-  currentUser = await createUser()
-})
+  currentUser = await createUser();
+});
 
 test('usa usuário', async () => {
   // pode ver estado do teste anterior
-})
+});
 
 // ✅ BOM - Estado isolado
 test('cria e usa usuário', async () => {
-  const user = await createUser()
+  const user = await createUser();
   // use user local
-})
+});
 ```
 
 ### 5.4 Storage State
@@ -316,15 +334,15 @@ test('cria e usa usuário', async () => {
 ```typescript
 // ❌ LENTO - Limpa cookies sempre
 test.beforeEach(async ({ page }) => {
-  await page.context().clearCookies()
-})
+  await page.context().clearCookies();
+});
 
 // ✅ RÁPIDO - Usa storage state com cache
 test.describe({ scope: 'session' }, () => {
   test.beforeAll(async ({ page }) => {
-    await performLogin(page, email, password) // Cache TTL: 10min
-  })
-})
+    await performLogin(page, email, password); // Cache TTL: 10min
+  });
+});
 ```
 
 ---
@@ -372,12 +390,19 @@ pnpm test:e2e:debug
 ### 7.1 Environment Variables
 
 ```bash
-# .env.e2e
-NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=xxx
+# .env.e2e — variáveis para testes E2E local e CI
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/pedi_ai
+JWT_SECRET=your-jwt-secret
+JWT_REFRESH_SECRET=your-jwt-refresh-secret
 BASE_URL=http://localhost:3000
+# API: NestJS roda na porta 3001 (NÃO 3000 que é o Next.js)
+NEXT_PUBLIC_API_URL=http://localhost:3001
 CI=true
+# SHARD: para isolar dados entre workers paralelos
+SHARD=1/4
 ```
+
+> **Nota**: O `.env.e2e` é carregado explicitamente no `playwright.config.ts` via `dotenv.config()` antes da avaliação de `process.env.BASE_URL`. O Playwright carrega `envFile` após o config, o que causaria `BASE_URL` vazio.
 
 ### 7.2 Scripts
 
@@ -400,35 +425,42 @@ SHARD=1/4 pnpm test:e2e:all
 
 ### 7.3 Pipeline
 
-```yaml
-# .github/workflows/e2e.yml
-jobs:
-  seed:
-    runs-on: ubuntu-latest
-    steps:
-      - run: pnpm test:e2e:seed
+E2E é executado como parte do `ci.yml` (que bloqueia PR merge). Não há workflow separado para PR — o `e2e-tests` é um job do `ci.yml` junto com lint, type-check, unit-tests, etc.
 
-  e2e:
-    needs: seed
+```yaml
+# .github/workflows/ci.yml (simplificado)
+jobs:
+  e2e-tests:
     strategy:
       matrix:
         shard: [1, 2, 3, 4]
     steps:
-      - run: SHARD=${{ matrix.shard }}/4 pnpm test:e2e:all
+      - run: pnpm test:e2e --shard=${{ matrix.shard }}/4
+
+  e2e-report: # merge de relatórios de todos os shards
+    needs: [e2e-tests]
+    # download artifacts + playwright merge-reports
+
+  ci-pass:
+    needs:
+      [lint, type-check, unit-tests, integration-tests, coverage, complexity, e2e-tests, e2e-report]
+    # só passa se TODOS os jobs acima passarem
 ```
+
+> **Blocking**: o job `ci-pass` só passa se `e2e-tests` (todos os 4 shards) e `e2e-report` completarem com sucesso. PR não pode ser mergeado se qualquer um falhar.
 
 ---
 
 ## 8. Quick Reference
 
-| Situação | Solução |
-|----------|---------|
-| Navegação lenta | Use `waitUntil: 'load'` em vez de `networkidle` |
-| Teste flake | Adicione retry: `test('...', { retry: 2 })` |
-| Dados específicos | Use factories: `createOrder(api, {...})` |
-| Espera por API | `page.waitForResponse('**/api/orders')` |
-| Espera por URL | `page.waitForURL(/\/order\//)` |
-| Espera por elemento | `page.waitForSelector('[data-testid="x"]')` |
-| Debug visual | `pnpm test:e2e:ui` |
-| Seletor lento | Use `data-testid` em vez de CSS |
-| Setup repetitivo | Use `test.beforeAll` com storage state cache |
+| Situação            | Solução                                         |
+| ------------------- | ----------------------------------------------- |
+| Navegação lenta     | Use `waitUntil: 'load'` em vez de `networkidle` |
+| Teste flake         | Adicione retry: `test('...', { retry: 2 })`     |
+| Dados específicos   | Use factories: `createOrder(api, {...})`        |
+| Espera por API      | `page.waitForResponse('**/api/orders')`         |
+| Espera por URL      | `page.waitForURL(/\/order\//)`                  |
+| Espera por elemento | `page.waitForSelector('[data-testid="x"]')`     |
+| Debug visual        | `pnpm test:e2e:ui`                              |
+| Seletor lento       | Use `data-testid` em vez de CSS                 |
+| Setup repetitivo    | Use `test.beforeAll` com storage state cache    |

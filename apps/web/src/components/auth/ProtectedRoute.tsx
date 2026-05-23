@@ -1,7 +1,8 @@
 'use client';
 
-import { type ReactNode, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { type ReactNode, useEffect, useState } from 'react';
+
 import { getSession } from '@/lib/auth/client';
 
 interface ProtectedRouteProps {

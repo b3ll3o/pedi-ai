@@ -1,9 +1,10 @@
-import { UseCase } from '../../shared/types/UseCase';
+import { PagamentoAggregate, ReembolsoIniciadoEvent } from '@/domain/pagamento';
+import { Transacao } from '@/domain/pagamento';
 import { IPagamentoRepository } from '@/domain/pagamento/repositories';
 import { ITransacaoRepository } from '@/domain/pagamento/repositories';
-import { PagamentoAggregate, ReembolsoIniciadoEvent } from '@/domain/pagamento';
 import { EventDispatcher } from '@/domain/shared';
-import { Transacao } from '@/domain/pagamento';
+
+import { UseCase } from '../../shared/types/UseCase';
 
 /**
  * Interface para o adapter de reembolso.

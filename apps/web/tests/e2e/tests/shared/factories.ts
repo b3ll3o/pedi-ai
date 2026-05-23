@@ -17,35 +17,36 @@
  * ```
  */
 
-import type { APIRequestContext } from '@playwright/test'
-import { generateUUID } from './helpers/orderUtils'
+import type { APIRequestContext } from '@playwright/test';
+
+import { generateUUID } from './helpers/orderUtils';
 
 // ============================================
 // Types
 // ============================================
 
 export interface OrderStatus {
-  status: 'pending_payment' | 'paid' | 'preparing' | 'ready' | 'delivered' | 'cancelled'
-  paymentStatus: 'pending' | 'paid' | 'failed'
+  status: 'pending_payment' | 'paid' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
+  paymentStatus: 'pending' | 'paid' | 'failed';
 }
 
 export interface CreateOrderOptions {
-  restaurantId: string
-  tableId: string
-  customerId?: string
-  status?: OrderStatus['status']
-  paymentStatus?: OrderStatus['paymentStatus']
+  restaurantId: string;
+  tableId: string;
+  customerId?: string;
+  status?: OrderStatus['status'];
+  paymentStatus?: OrderStatus['paymentStatus'];
   items: Array<{
-    productId: string
-    quantity: number
-    unitPrice: number
-  }>
+    productId: string;
+    quantity: number;
+    unitPrice: number;
+  }>;
 }
 
 export interface CreatedOrder {
-  id: string
-  status: string
-  total: number
+  id: string;
+  status: string;
+  total: number;
 }
 
 // ============================================
@@ -60,7 +61,7 @@ export async function createOrder(
   api: APIRequestContext,
   options: CreateOrderOptions
 ): Promise<CreatedOrder> {
-  const idempotencyKey = generateUUID()
+  const idempotencyKey = generateUUID();
 
   const payload = {
     customer_id: options.customerId,
@@ -74,23 +75,23 @@ export async function createOrder(
       quantity: item.quantity,
       unit_price: item.unitPrice,
     })),
-  }
+  };
 
-  const response = await api.post('/api/orders', { data: payload })
+  const response = await api.post('/api/orders', { data: payload });
 
   if (!response.ok()) {
-    const errorText = await response.text()
+    const errorText = await response.text();
     throw new Error(
       `Failed to create order: ${response.status()} ${response.statusText()} - ${errorText}`
-    )
+    );
   }
 
-  const result = await response.json()
+  const result = await response.json();
   return {
     id: result.id,
     status: result.status,
     total: result.total ?? result.totalAmount ?? 0,
-  }
+  };
 }
 
 /**
@@ -100,7 +101,7 @@ export async function createOrdersBatch(
   api: APIRequestContext,
   options: CreateOrderOptions[]
 ): Promise<CreatedOrder[]> {
-  return Promise.all(options.map((opt) => createOrder(api, opt)))
+  return Promise.all(options.map((opt) => createOrder(api, opt)));
 }
 
 // ============================================
@@ -108,12 +109,12 @@ export async function createOrdersBatch(
 // ============================================
 
 export interface CreateProductOptions {
-  name: string
-  price: number
-  categoryId: string
-  restaurantId: string
-  available?: boolean
-  description?: string
+  name: string;
+  price: number;
+  categoryId: string;
+  restaurantId: string;
+  available?: boolean;
+  description?: string;
 }
 
 /**
@@ -129,8 +130,8 @@ export async function createProduct(
   const response = await adminApi.post(`${supabaseUrl}/rest/v1/products`, {
     headers: {
       'Content-Type': 'application/json',
-      'apikey': serviceRoleKey,
-      'Authorization': `Bearer ${serviceRoleKey}`,
+      apikey: serviceRoleKey,
+      Authorization: `Bearer ${serviceRoleKey}`,
     },
     data: {
       name: options.name,
@@ -142,17 +143,15 @@ export async function createProduct(
       sort_order: 0,
       dietary_labels: [],
     },
-  })
+  });
 
   if (!response.ok()) {
-    const errorText = await response.text()
-    throw new Error(
-      `Failed to create product: ${response.status()} - ${errorText}`
-    )
+    const errorText = await response.text();
+    throw new Error(`Failed to create product: ${response.status()} - ${errorText}`);
   }
 
-  const result = await response.json()
-  return { id: result.id }
+  const result = await response.json();
+  return { id: result.id };
 }
 
 // ============================================
@@ -160,10 +159,10 @@ export async function createProduct(
 // ============================================
 
 export interface CreateCategoryOptions {
-  name: string
-  restaurantId: string
-  active?: boolean
-  sortOrder?: number
+  name: string;
+  restaurantId: string;
+  active?: boolean;
+  sortOrder?: number;
 }
 
 /**
@@ -178,8 +177,8 @@ export async function createCategory(
   const response = await adminApi.post(`${supabaseUrl}/rest/v1/categories`, {
     headers: {
       'Content-Type': 'application/json',
-      'apikey': serviceRoleKey,
-      'Authorization': `Bearer ${serviceRoleKey}`,
+      apikey: serviceRoleKey,
+      Authorization: `Bearer ${serviceRoleKey}`,
     },
     data: {
       name: options.name,
@@ -187,17 +186,15 @@ export async function createCategory(
       active: options.active ?? true,
       sort_order: options.sortOrder ?? 0,
     },
-  })
+  });
 
   if (!response.ok()) {
-    const errorText = await response.text()
-    throw new Error(
-      `Failed to create category: ${response.status()} - ${errorText}`
-    )
+    const errorText = await response.text();
+    throw new Error(`Failed to create category: ${response.status()} - ${errorText}`);
   }
 
-  const result = await response.json()
-  return { id: result.id }
+  const result = await response.json();
+  return { id: result.id };
 }
 
 // ============================================
@@ -205,10 +202,10 @@ export async function createCategory(
 // ============================================
 
 export interface CreateTableOptions {
-  number: number
-  restaurantId: string
-  capacity?: number
-  qrCode?: string
+  number: number;
+  restaurantId: string;
+  capacity?: number;
+  qrCode?: string;
 }
 
 /**
@@ -220,13 +217,13 @@ export async function createTable(
   serviceRoleKey: string,
   options: CreateTableOptions
 ): Promise<{ id: string; qrCode: string }> {
-  const qrCode = options.qrCode ?? `E2E-TABLE-${options.number.toString().padStart(3, '0')}`
+  const qrCode = options.qrCode ?? `E2E-TABLE-${options.number.toString().padStart(3, '0')}`;
 
   const response = await adminApi.post(`${supabaseUrl}/rest/v1/tables`, {
     headers: {
       'Content-Type': 'application/json',
-      'apikey': serviceRoleKey,
-      'Authorization': `Bearer ${serviceRoleKey}`,
+      apikey: serviceRoleKey,
+      Authorization: `Bearer ${serviceRoleKey}`,
     },
     data: {
       number: options.number,
@@ -236,17 +233,15 @@ export async function createTable(
       restaurant_id: options.restaurantId,
       active: true,
     },
-  })
+  });
 
   if (!response.ok()) {
-    const errorText = await response.text()
-    throw new Error(
-      `Failed to create table: ${response.status()} - ${errorText}`
-    )
+    const errorText = await response.text();
+    throw new Error(`Failed to create table: ${response.status()} - ${errorText}`);
   }
 
-  const result = await response.json()
-  return { id: result.id, qrCode: result.qr_code }
+  const result = await response.json();
+  return { id: result.id, qrCode: result.qr_code };
 }
 
 // ============================================
@@ -254,9 +249,9 @@ export async function createTable(
 // ============================================
 
 export interface CreateUserOptions {
-  email: string
-  password?: string
-  role?: 'customer' | 'admin' | 'waiter'
+  email: string;
+  password?: string;
+  role?: 'customer' | 'admin' | 'waiter';
 }
 
 /**
@@ -271,25 +266,23 @@ export async function createUser(
   const response = await adminApi.post(`${supabaseUrl}/auth/v1/admin/users`, {
     headers: {
       'Content-Type': 'application/json',
-      'apikey': serviceRoleKey,
-      'Authorization': `Bearer ${serviceRoleKey}`,
+      apikey: serviceRoleKey,
+      Authorization: `Bearer ${serviceRoleKey}`,
     },
     data: {
       email: options.email,
       password: options.password ?? 'E2ETestPassword123!',
       email_confirm: true,
     },
-  })
+  });
 
   if (!response.ok()) {
-    const errorText = await response.text()
-    throw new Error(
-      `Failed to create user: ${response.status()} - ${errorText}`
-    )
+    const errorText = await response.text();
+    throw new Error(`Failed to create user: ${response.status()} - ${errorText}`);
   }
 
-  const result = await response.json()
-  return { id: result.id }
+  const result = await response.json();
+  return { id: result.id };
 }
 
 // ============================================
@@ -306,36 +299,30 @@ export async function deleteUserByEmail(
   email: string
 ): Promise<void> {
   // First, get the user list to find the user ID
-  const listResponse = await adminApi.get(
-    `${supabaseUrl}/auth/v1/admin/users`,
-    {
-      headers: {
-        'apikey': serviceRoleKey,
-        'Authorization': `Bearer ${serviceRoleKey}`,
-      },
-    }
-  )
+  const listResponse = await adminApi.get(`${supabaseUrl}/auth/v1/admin/users`, {
+    headers: {
+      apikey: serviceRoleKey,
+      Authorization: `Bearer ${serviceRoleKey}`,
+    },
+  });
 
   if (!listResponse.ok()) {
-    return
+    return;
   }
 
-  const { users } = await listResponse.json()
-  const user = users?.find((u: { email: string }) => u.email === email)
+  const { users } = await listResponse.json();
+  const user = users?.find((u: { email: string }) => u.email === email);
 
   if (!user) {
-    return
+    return;
   }
 
-  await adminApi.delete(
-    `${supabaseUrl}/auth/v1/admin/users/${user.id}`,
-    {
-      headers: {
-        'apikey': serviceRoleKey,
-        'Authorization': `Bearer ${serviceRoleKey}`,
-      },
-    }
-  )
+  await adminApi.delete(`${supabaseUrl}/auth/v1/admin/users/${user.id}`, {
+    headers: {
+      apikey: serviceRoleKey,
+      Authorization: `Bearer ${serviceRoleKey}`,
+    },
+  });
 }
 
 /**
@@ -349,10 +336,10 @@ export async function deleteOrder(
 ): Promise<void> {
   await adminApi.delete(`${supabaseUrl}/rest/v1/orders?id=eq.${orderId}`, {
     headers: {
-      'apikey': serviceRoleKey,
-      'Authorization': `Bearer ${serviceRoleKey}`,
+      apikey: serviceRoleKey,
+      Authorization: `Bearer ${serviceRoleKey}`,
     },
-  })
+  });
 }
 
 /**
@@ -365,16 +352,13 @@ export async function updateOrderStatus(
   orderId: string,
   status: OrderStatus['status']
 ): Promise<void> {
-  await adminApi.patch(
-    `${supabaseUrl}/rest/v1/orders?id=eq.${orderId}`,
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': serviceRoleKey,
-        'Authorization': `Bearer ${serviceRoleKey}`,
-        'Prefer': 'return=minimal'
-      },
-      data: { status },
-    }
-  )
+  await adminApi.patch(`${supabaseUrl}/rest/v1/orders?id=eq.${orderId}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: serviceRoleKey,
+      Authorization: `Bearer ${serviceRoleKey}`,
+      Prefer: 'return=minimal',
+    },
+    data: { status },
+  });
 }

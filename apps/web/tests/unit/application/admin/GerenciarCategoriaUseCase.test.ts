@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { GerenciarCategoriaUseCase } from '@/application/admin/services/GerenciarCategoriaUseCase';
 import type { CategoriaInput } from '@/application/admin/services/GerenciarCategoriaUseCase';
 import { Categoria } from '@/domain/cardapio/entities/Categoria';
@@ -73,7 +74,9 @@ describe('GerenciarCategoriaUseCase', () => {
         };
 
         // Act & Assert
-        await expect(useCase.execute(input)).rejects.toThrow('Nome é obrigatório para criar categoria');
+        await expect(useCase.execute(input)).rejects.toThrow(
+          'Nome é obrigatório para criar categoria'
+        );
       });
 
       it('deve usar próxima ordem de exibição quando não fornecida', async () => {
@@ -85,8 +88,22 @@ describe('GerenciarCategoriaUseCase', () => {
         };
 
         mockCategoriaRepoBuscarPorRestaurante.mockResolvedValue([
-          Categoria.criar({ restauranteId: 'restaurante-123', nome: 'Pratos', descricao: null, imagemUrl: null, ordemExibicao: 0, ativo: true }),
-          Categoria.criar({ restauranteId: 'restaurante-123', nome: 'Bebidas', descricao: null, imagemUrl: null, ordemExibicao: 1, ativo: true }),
+          Categoria.criar({
+            restauranteId: 'restaurante-123',
+            nome: 'Pratos',
+            descricao: null,
+            imagemUrl: null,
+            ordemExibicao: 0,
+            ativo: true,
+          }),
+          Categoria.criar({
+            restauranteId: 'restaurante-123',
+            nome: 'Bebidas',
+            descricao: null,
+            imagemUrl: null,
+            ordemExibicao: 1,
+            ativo: true,
+          }),
         ]);
         mockCategoriaRepoSalvar.mockImplementation(async (categoria: Categoria) => categoria);
 
@@ -154,7 +171,9 @@ describe('GerenciarCategoriaUseCase', () => {
         };
 
         // Act & Assert
-        await expect(useCase.execute(input)).rejects.toThrow('ID é obrigatório para atualizar categoria');
+        await expect(useCase.execute(input)).rejects.toThrow(
+          'ID é obrigatório para atualizar categoria'
+        );
       });
 
       it('deve lançar erro quando categoria não existe', async () => {
@@ -225,7 +244,9 @@ describe('GerenciarCategoriaUseCase', () => {
         };
 
         // Act & Assert
-        await expect(useCase.execute(input)).rejects.toThrow('ID é obrigatório para excluir categoria');
+        await expect(useCase.execute(input)).rejects.toThrow(
+          'ID é obrigatório para excluir categoria'
+        );
       });
     });
 
@@ -309,7 +330,9 @@ describe('GerenciarCategoriaUseCase', () => {
         };
 
         // Act & Assert
-        await expect(useCase.execute(input)).rejects.toThrow('Ação desconhecida: acao-desconhecida');
+        await expect(useCase.execute(input)).rejects.toThrow(
+          'Ação desconhecida: acao-desconhecida'
+        );
       });
     });
 
@@ -338,7 +361,10 @@ describe('GerenciarCategoriaUseCase', () => {
 
         // Assert
         expect(resultado.sucesso).toBe(true);
-        expect(mockUsuarioRestauranteRepoFindByUsuarioIdAndRestauranteId).toHaveBeenCalledWith('user-123', 'restaurante-123');
+        expect(mockUsuarioRestauranteRepoFindByUsuarioIdAndRestauranteId).toHaveBeenCalledWith(
+          'user-123',
+          'restaurante-123'
+        );
       });
 
       it('deve lançar erro quando usuário não tem vínculo com restaurante', async () => {
@@ -356,7 +382,9 @@ describe('GerenciarCategoriaUseCase', () => {
         mockUsuarioRestauranteRepoFindByUsuarioIdAndRestauranteId.mockResolvedValue(null);
 
         // Act & Assert
-        await expect(useCase.execute(input)).rejects.toThrow('Usuário não tem vínculo com este restaurante');
+        await expect(useCase.execute(input)).rejects.toThrow(
+          'Usuário não tem vínculo com este restaurante'
+        );
       });
 
       it('deve lançar erro quando usuário não tem permissão (papel atendente)', async () => {

@@ -1,9 +1,9 @@
 import { UseCase } from '@/application/shared';
 import { Restaurante } from '@/domain/admin/entities/Restaurante';
 import { UsuarioRestaurante } from '@/domain/admin/entities/UsuarioRestaurante';
+import { RestauranteCriadoEvent } from '@/domain/admin/events/RestauranteCriadoEvent';
 import { IRestauranteRepository } from '@/domain/admin/repositories/IRestauranteRepository';
 import { IUsuarioRestauranteRepository } from '@/domain/admin/repositories/IUsuarioRestauranteRepository';
-import { RestauranteCriadoEvent } from '@/domain/admin/events/RestauranteCriadoEvent';
 import { ConfiguracoesRestaurante } from '@/domain/admin/value-objects/ConfiguracoesRestaurante';
 import { isMultiRestaurantEnabled } from '@/lib/feature-flags';
 

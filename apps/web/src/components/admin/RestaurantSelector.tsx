@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
 import { ChevronDown, Store, Loader2 } from 'lucide-react';
-import { useRestaurantStore } from '@/infrastructure/persistence/restaurantStore';
+import { useState, useRef, useEffect, useCallback } from 'react';
+
 import { Restaurante, type RestauranteProps } from '@/domain/admin/entities/Restaurante';
+import { useRestaurantStore } from '@/infrastructure/persistence/restaurantStore';
+
 import styles from './RestaurantSelector.module.css';
 
 interface RestaurantSelectorProps {

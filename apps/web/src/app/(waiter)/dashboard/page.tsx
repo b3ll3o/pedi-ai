@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
+import { useState } from 'react';
+
 import Logo from '@/app/components/Logo';
-import { WaiterDashboard } from '@/components/kitchen/WaiterDashboard';
 import { ConnectionStatus } from '@/components/kitchen/ConnectionStatus';
+import { WaiterDashboard } from '@/components/kitchen/WaiterDashboard';
 import { useRealtimeConnection } from '@/hooks/useRealtimeOrders';
 
 export default function WaiterDashboardPage() {

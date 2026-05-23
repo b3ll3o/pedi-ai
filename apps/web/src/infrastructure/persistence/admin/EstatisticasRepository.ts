@@ -1,6 +1,7 @@
-import { PediDatabase } from '../database';
-import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 import { StatusPedido } from '@/domain/pedido/value-objects/StatusPedido';
+import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
+
+import { PediDatabase } from '../database';
 
 /**
  * Estatísticas de itens populares

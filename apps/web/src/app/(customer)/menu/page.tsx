@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
+
 import MenuPageClient from './MenuPageClient';
 
 interface MenuPageProps {

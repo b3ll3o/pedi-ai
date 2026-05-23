@@ -1,7 +1,9 @@
 'use client';
 
 import Image from 'next/image';
+
 import { useCartStore } from '@/infrastructure/persistence/cartStore';
+
 import styles from './ProductCard.module.css';
 
 interface ProductCardProps {

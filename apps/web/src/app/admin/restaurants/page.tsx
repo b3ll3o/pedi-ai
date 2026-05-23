@@ -1,16 +1,18 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { Plus, Store, AlertCircle } from 'lucide-react';
-import { getSession } from '@/lib/auth/client';
-import { RestaurantCard } from '@/components/admin/RestaurantCard';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState, useCallback } from 'react';
+
 import { ListarRestaurantesDoOwnerUseCase } from '@/application/admin/services/ListarRestaurantesDoOwnerUseCase';
+import { RestaurantCard } from '@/components/admin/RestaurantCard';
+import { Restaurante } from '@/domain/admin/entities/Restaurante';
 import { RestauranteRepository } from '@/infrastructure/persistence/admin/RestauranteRepository';
 import { UsuarioRestauranteRepository } from '@/infrastructure/persistence/admin/UsuarioRestauranteRepository';
 import { db } from '@/infrastructure/persistence/database';
-import { Restaurante } from '@/domain/admin/entities/Restaurante';
+import { getSession } from '@/lib/auth/client';
+
 import styles from './page.module.css';
 
 interface RestaurantWithTeam {

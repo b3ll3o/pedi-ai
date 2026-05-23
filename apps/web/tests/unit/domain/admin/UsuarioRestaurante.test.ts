@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { UsuarioRestaurante, UsuarioRestauranteProps } from '@/domain/admin/entities/UsuarioRestaurante';
+
+import {
+  UsuarioRestaurante,
+  UsuarioRestauranteProps,
+} from '@/domain/admin/entities/UsuarioRestaurante';
 
 describe('UsuarioRestaurante', () => {
   describe('eDono', () => {

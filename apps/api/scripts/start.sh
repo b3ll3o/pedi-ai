@@ -1,11 +1,8 @@
 #!/bin/sh
 set -e
 
-echo "Running database migrations..."
-cd /app && npx prisma migrate deploy --schema prisma/schema.prisma || {
-  echo "Migration failed, attempting db push..."
-  cd /app && npx prisma db push --accept-data-loss --schema prisma/schema.prisma
-}
+echo "Generating Prisma client..."
+cd /app && HOME=/tmp pnpm dlx prisma@5.22.0 generate --schema=./prisma/schema.prisma
 
 echo "Starting API server..."
 exec node dist/main.js

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { sql } from '@/infrastructure/database/pg-client';
 import { QRCodeCryptoService } from '@/infrastructure/services/QRCodeCryptoService';
 import { logger } from '@/lib/logger';

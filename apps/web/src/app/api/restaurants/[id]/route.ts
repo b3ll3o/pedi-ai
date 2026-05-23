@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { sql } from '@/infrastructure/database/pg-client';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

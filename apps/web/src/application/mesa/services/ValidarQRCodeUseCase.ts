@@ -1,7 +1,8 @@
-import { UseCase } from '../../shared/types/UseCase';
 import { QRCodePayload } from '@/domain/mesa';
 import { IQRCodeValidationService } from '@/domain/mesa';
 import type { IMesaRepository } from '@/domain/mesa/repositories/IMesaRepository';
+
+import { UseCase } from '../../shared/types/UseCase';
 
 export interface ValidarQRCodeInput {
   qrCode: string;
@@ -72,7 +73,9 @@ export class ValidarQRCodeUseCase implements UseCase<ValidarQRCodeInput, MesaVal
     const simpleMatch = input.qrCode.match(/E2E-TABLE-(\d+)/i);
     if (simpleMatch) {
       try {
-        const response = await fetch(`/api/tables/by-qrcode?qr_code=${encodeURIComponent(input.qrCode)}`);
+        const response = await fetch(
+          `/api/tables/by-qrcode?qr_code=${encodeURIComponent(input.qrCode)}`
+        );
         if (response.ok) {
           const data = await response.json();
           if (data.table) {

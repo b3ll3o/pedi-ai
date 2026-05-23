@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { sql } from '@/infrastructure/database/pg-client';
 import { getSession } from '@/lib/auth/session';
 
@@ -74,14 +75,37 @@ export async function GET(request: NextRequest) {
   }
 }
 
+async function insertComboItem(
+  comboId: string,
+  item: { product_id: string; quantity?: number },
+  now: string
+): Promise<void> {
+  const newItem = {
+    id: crypto.randomUUID(),
+    combo_id: comboId,
+    product_id: item.product_id,
+    quantity: item.quantity || 1,
+    created_at: now,
+  };
+
+  await sql`
+    INSERT INTO combo_items (id, combo_id, product_id, quantity, created_at)
+    VALUES (
+      ${newItem.id},
+      ${newItem.combo_id},
+      ${newItem.product_id},
+      ${newItem.quantity},
+      ${newItem.created_at}
+    )
+  `;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getSession();
     if (!session) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
-
-    const userId = session.user.id;
 
     const body = await request.json();
     const { restaurant_id, name, description, price_cents, active, items } = body;
@@ -96,11 +120,14 @@ export async function POST(request: NextRequest) {
     // Verify user has access and is owner/manager
     const profileResult = await sql`
       SELECT role FROM users_profiles
-      WHERE user_id = ${userId} AND restaurant_id = ${restaurant_id}
+      WHERE user_id = ${session.user.id} AND restaurant_id = ${restaurant_id}
       LIMIT 1
     `;
 
-    if (!profileResult[0] || (profileResult[0].role !== 'dono' && profileResult[0].role !== 'gerente')) {
+    if (
+      !profileResult[0] ||
+      (profileResult[0].role !== 'dono' && profileResult[0].role !== 'gerente')
+    ) {
       return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 });
     }
 
@@ -135,34 +162,11 @@ export async function POST(request: NextRequest) {
     // Add combo items if provided
     if (items && Array.isArray(items)) {
       for (const item of items) {
-        const newItem = {
-          id: crypto.randomUUID(),
-          combo_id: newCombo.id,
-          product_id: item.product_id,
-          quantity: item.quantity || 1,
-          created_at: now,
-        };
-
-        await sql`
-          INSERT INTO combo_items (id, combo_id, product_id, quantity, created_at)
-          VALUES (
-            ${newItem.id},
-            ${newItem.combo_id},
-            ${newItem.product_id},
-            ${newItem.quantity},
-            ${newItem.created_at}
-          )
-        `;
+        await insertComboItem(newCombo.id, item, now);
       }
     }
 
-    // Fetch combo with items
-    const comboWithItems = {
-      ...newCombo,
-      items: items || [],
-    };
-
-    return NextResponse.json({ combo: comboWithItems }, { status: 201 });
+    return NextResponse.json({ combo: { ...newCombo, items: items || [] } }, { status: 201 });
   } catch (error) {
     console.error('Error in POST /api/admin/combos:', error);
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });

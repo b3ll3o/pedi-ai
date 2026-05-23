@@ -1,8 +1,9 @@
 'use client';
 
 import type { PedidoKDS } from '@/hooks/usePedidosKDS';
-import { Timer } from './Timer';
+
 import styles from './OrderCard.module.css';
+import { Timer } from './Timer';
 
 interface OrderCardProps {
   order: PedidoKDS;
@@ -55,12 +56,14 @@ export function OrderCard({
       </header>
 
       <ul className={styles.items} aria-label="Itens do pedido">
-        {order.items?.slice(0, 3).map((item: { id: string; product_id: string; quantity: number }) => (
-          <li key={item.id} className={styles.item}>
-            <span className={styles.itemQty}>{item.quantity}x</span>
-            <span className={styles.itemName}>#{item.product_id.slice(-6)} - Item</span>
-          </li>
-        ))}
+        {order.items
+          ?.slice(0, 3)
+          .map((item: { id: string; product_id: string; quantity: number }) => (
+            <li key={item.id} className={styles.item}>
+              <span className={styles.itemQty}>{item.quantity}x</span>
+              <span className={styles.itemName}>#{item.product_id.slice(-6)} - Item</span>
+            </li>
+          ))}
         {order.items && order.items.length > 3 && (
           <li className={styles.moreItems}>+{order.items.length - 3} mais</li>
         )}

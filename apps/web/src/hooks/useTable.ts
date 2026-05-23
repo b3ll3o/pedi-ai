@@ -1,4 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
+
 import { useTableStore } from '@/infrastructure/persistence/tableStore';
 import type { QRPayload } from '@/lib/qr/validator';
 

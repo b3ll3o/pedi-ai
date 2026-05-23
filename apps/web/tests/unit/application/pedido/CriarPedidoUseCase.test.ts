@@ -1,13 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { CriarPedidoUseCase } from '@/application/pedido/services/CriarPedidoUseCase';
 import type { CriarPedidoInput } from '@/application/pedido/services/CriarPedidoUseCase';
 import { CarrinhoAggregate } from '@/domain/pedido/aggregates/CarrinhoAggregate';
 import { _PedidoAggregate } from '@/domain/pedido/aggregates/PedidoAggregate';
-import { Pedido } from '@/domain/pedido/entities/Pedido';
 import { ItemPedido } from '@/domain/pedido/entities/ItemPedido';
-import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
+import { Pedido } from '@/domain/pedido/entities/Pedido';
 import { _StatusPedido } from '@/domain/pedido/value-objects/StatusPedido';
 import { EventDispatcher } from '@/domain/shared/events/EventDispatcher';
+import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 
 // Mock do EventDispatcher
 vi.mock('@/domain/shared/events/EventDispatcher', () => {
@@ -207,7 +208,9 @@ describe('CriarPedidoUseCase', () => {
       const input: CriarPedidoInput = {};
 
       // Act & Assert
-      await expect(useCase.execute(input)).rejects.toThrow('Não é possível criar pedido com carrinho vazio');
+      await expect(useCase.execute(input)).rejects.toThrow(
+        'Não é possível criar pedido com carrinho vazio'
+      );
       expect(mockPedidoRepo.create).not.toHaveBeenCalled();
     });
 

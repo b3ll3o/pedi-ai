@@ -1,9 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { RestauranteRepository } from '@/infrastructure/persistence/admin/RestauranteRepository';
-import { UsuarioRestauranteRepository } from '@/infrastructure/persistence/admin/UsuarioRestauranteRepository';
+
 import { Restaurante } from '@/domain/admin/entities/Restaurante';
 import { UsuarioRestaurante } from '@/domain/admin/entities/UsuarioRestaurante';
 import { ConfiguracoesRestaurante } from '@/domain/admin/value-objects/ConfiguracoesRestaurante';
+import { RestauranteRepository } from '@/infrastructure/persistence/admin/RestauranteRepository';
+import { UsuarioRestauranteRepository } from '@/infrastructure/persistence/admin/UsuarioRestauranteRepository';
+
 import { createTestDatabase } from '../_test-helpers';
 
 describe('RestauranteRepository', () => {

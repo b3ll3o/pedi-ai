@@ -1,6 +1,7 @@
-import { IMesaRepository } from '@/domain/mesa/repositories/IMesaRepository';
 import { Mesa, MesaProps } from '@/domain/mesa/entities/Mesa';
+import { IMesaRepository } from '@/domain/mesa/repositories/IMesaRepository';
 import { QRCodePayload } from '@/domain/mesa/value-objects/QRCodePayload';
+
 import { PediDatabase, MesaRecord } from '../database';
 
 export class MesaRepository implements IMesaRepository {

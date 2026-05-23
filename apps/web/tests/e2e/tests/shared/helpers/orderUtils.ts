@@ -4,7 +4,7 @@
  * @module tests/shared/helpers/orderUtils
  */
 
-import type { APIRequestContext } from '@playwright/test'
+import type { APIRequestContext } from '@playwright/test';
 
 // ============================================
 // Tipos
@@ -14,42 +14,42 @@ import type { APIRequestContext } from '@playwright/test'
  * Item de pedido para criação.
  */
 export interface OrderItemInput {
-  productId: string
-  quantity: number
-  unitPrice?: number
-  modifiers?: Array<{ name: string; price?: number }>
+  productId: string;
+  quantity: number;
+  unitPrice?: number;
+  modifiers?: Array<{ name: string; price?: number }>;
 }
 
 /**
  * Item de pedido no resultado.
  */
 export interface OrderItem {
-  id: string
-  productId: string
-  quantity: number
-  modifiers?: Array<{ name: string; price: number }>
-  unitPrice: number
-  totalPrice: number
+  id: string;
+  productId: string;
+  quantity: number;
+  modifiers?: Array<{ name: string; price: number }>;
+  unitPrice: number;
+  totalPrice: number;
 }
 
 /**
  * Parâmetros para criação de pedido.
  */
 export interface CreateTestOrderParams {
-  restaurantId: string
-  tableId: string
-  customerId?: string
-  items: OrderItemInput[]
+  restaurantId: string;
+  tableId: string;
+  customerId?: string;
+  items: OrderItemInput[];
 }
 
 /**
  * Resultado da criação de pedido.
  */
 export interface OrderCreationResult {
-  id: string
-  status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled'
-  total: number
-  items: OrderItem[]
+  id: string;
+  status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
+  total: number;
+  items: OrderItem[];
 }
 
 // ============================================
@@ -62,10 +62,10 @@ export interface OrderCreationResult {
  */
 export function generateUUID(): string {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0
-    const v = c === 'x' ? r : (r & 0x3) | 0x8
-    return v.toString(16)
-  })
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
 }
 
 // ============================================
@@ -84,7 +84,7 @@ export async function createTestOrder(
   api: APIRequestContext,
   params: CreateTestOrderParams
 ): Promise<OrderCreationResult> {
-  const idempotencyKey = generateUUID()
+  const idempotencyKey = generateUUID();
 
   // API requires: customer_id, items (with product_id, quantity, unit_price), payment_method, idempotency_key
   const payload: Record<string, unknown> = {
@@ -98,25 +98,25 @@ export async function createTestOrder(
       unit_price: item.unitPrice ?? 0,
       ...(item.modifiers && { modifiers: item.modifiers }),
     })),
-  }
+  };
 
   const response = await api.post('/api/orders', {
     data: payload,
-  })
+  });
 
   if (!response.ok()) {
-    const errorText = await response.text()
+    const errorText = await response.text();
     throw new Error(
       `Erro ao criar pedido: ${response.status()} ${response.statusText()} - ${errorText}`
-    )
+    );
   }
 
-  const result = await response.json()
+  const result = await response.json();
 
   return {
     id: result.id,
     status: result.status,
     total: result.total ?? result.totalAmount ?? 0,
     items: result.items ?? [],
-  }
+  };
 }

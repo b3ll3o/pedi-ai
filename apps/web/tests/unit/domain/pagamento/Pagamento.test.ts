@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
+
 import { Pagamento, PagamentoProps } from '@/domain/pagamento/entities/Pagamento';
-import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 import { MetodoPagamento } from '@/domain/pagamento/value-objects/MetodoPagamento';
 import { StatusPagamento } from '@/domain/pagamento/value-objects/StatusPagamento';
+import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 
 describe('Pagamento', () => {
   // Criar Pagamento usando new já que Pagamento.criar tem bug (não gera id)
@@ -104,7 +105,9 @@ describe('Pagamento', () => {
     it('deve lançar erro se pagamento não está confirmado', () => {
       const pagamento = criarPagamento();
 
-      expect(() => pagamento.reembolsar()).toThrow('Apenas pagamentos confirmados podem ser reembolsados');
+      expect(() => pagamento.reembolsar()).toThrow(
+        'Apenas pagamentos confirmados podem ser reembolsados'
+      );
     });
   });
 
@@ -121,7 +124,9 @@ describe('Pagamento', () => {
       const pagamento = criarPagamento();
       pagamento.confirmar('transacao-1');
 
-      expect(() => pagamento.cancelar()).toThrow('Apenas pagamentos pendentes podem ser cancelados');
+      expect(() => pagamento.cancelar()).toThrow(
+        'Apenas pagamentos pendentes podem ser cancelados'
+      );
     });
   });
 

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { AtualizarRestauranteUseCase } from '@/application/admin/services/AtualizarRestauranteUseCase';
 import { AtualizarRestauranteInput } from '@/application/admin/services/AtualizarRestauranteUseCase';
 import { Restaurante } from '@/domain/admin/entities/Restaurante';
@@ -60,7 +61,11 @@ describe('AtualizarRestauranteUseCase', () => {
       mockRestauranteRepo.findById.mockResolvedValueOnce(restauranteExistente);
       mockRestauranteRepo.update.mockImplementation(async (r) => r);
       mockUsuarioRestauranteRepo.findByUsuarioIdAndRestauranteId.mockResolvedValueOnce(
-        UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'restaurante-id', papel: 'dono' })
+        UsuarioRestaurante.criar({
+          usuarioId: 'owner-id',
+          restauranteId: 'restaurante-id',
+          papel: 'dono',
+        })
       );
 
       const input: AtualizarRestauranteInput = {
@@ -93,7 +98,12 @@ describe('AtualizarRestauranteUseCase', () => {
 
     it('deve lançar erro quando usuário não tem permissão', async () => {
       mockRestauranteRepo.findById.mockResolvedValueOnce(
-        Restaurante.criar({ nome: 'Restaurante', cnpj: '12.345.678/0001-90', endereco: '', ativo: true })
+        Restaurante.criar({
+          nome: 'Restaurante',
+          cnpj: '12.345.678/0001-90',
+          endereco: '',
+          ativo: true,
+        })
       );
       mockUsuarioRestauranteRepo.findByUsuarioIdAndRestauranteId.mockResolvedValueOnce(null);
 
@@ -110,7 +120,12 @@ describe('AtualizarRestauranteUseCase', () => {
 
     it('deve lançar erro quando CNPJ tem formato inválido', async () => {
       mockRestauranteRepo.findById.mockResolvedValueOnce(
-        Restaurante.criar({ nome: 'Restaurante', cnpj: '12.345.678/0001-90', endereco: '', ativo: true })
+        Restaurante.criar({
+          nome: 'Restaurante',
+          cnpj: '12.345.678/0001-90',
+          endereco: '',
+          ativo: true,
+        })
       );
 
       const input: AtualizarRestauranteInput = {
@@ -126,10 +141,19 @@ describe('AtualizarRestauranteUseCase', () => {
 
     it('deve lançar erro quando tenta alterar CNPJ', async () => {
       mockRestauranteRepo.findById.mockResolvedValueOnce(
-        Restaurante.criar({ nome: 'Restaurante', cnpj: '12.345.678/0001-90', endereco: '', ativo: true })
+        Restaurante.criar({
+          nome: 'Restaurante',
+          cnpj: '12.345.678/0001-90',
+          endereco: '',
+          ativo: true,
+        })
       );
       mockUsuarioRestauranteRepo.findByUsuarioIdAndRestauranteId.mockResolvedValueOnce(
-        UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'restaurante-id', papel: 'dono' })
+        UsuarioRestaurante.criar({
+          usuarioId: 'owner-id',
+          restauranteId: 'restaurante-id',
+          papel: 'dono',
+        })
       );
 
       const input: AtualizarRestauranteInput = {
@@ -145,10 +169,19 @@ describe('AtualizarRestauranteUseCase', () => {
 
     it('deve lançar erro quando nome tem menos de 2 caracteres', async () => {
       mockRestauranteRepo.findById.mockResolvedValueOnce(
-        Restaurante.criar({ nome: 'Restaurante', cnpj: '12.345.678/0001-90', endereco: '', ativo: true })
+        Restaurante.criar({
+          nome: 'Restaurante',
+          cnpj: '12.345.678/0001-90',
+          endereco: '',
+          ativo: true,
+        })
       );
       mockUsuarioRestauranteRepo.findByUsuarioIdAndRestauranteId.mockResolvedValueOnce(
-        UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'restaurante-id', papel: 'dono' })
+        UsuarioRestaurante.criar({
+          usuarioId: 'owner-id',
+          restauranteId: 'restaurante-id',
+          papel: 'dono',
+        })
       );
 
       const input: AtualizarRestauranteInput = {

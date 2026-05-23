@@ -1,11 +1,13 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { useCartStore } from '@/infrastructure/persistence/cartStore';
+import { useCallback, useMemo } from 'react';
+
 import { CartItem } from '@/components/cart/CartItem';
 import { CartSummary } from '@/components/cart/CartSummary';
 import { CustomerHeader } from '@/components/customer/CustomerHeader';
+import { useCartStore } from '@/infrastructure/persistence/cartStore';
+
 import styles from './page.module.css';
 
 const TAX_RATE = 0.1; // 10% service tax

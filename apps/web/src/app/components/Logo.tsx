@@ -1,7 +1,8 @@
 'use client';
 
-import Link from 'next/link';
 import { UtensilsCrossed } from 'lucide-react';
+import Link from 'next/link';
+
 import styles from './Logo.module.css';
 
 interface LogoProps {

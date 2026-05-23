@@ -1,7 +1,9 @@
 'use client';
 
 import { MapPin, Users, Pencil, UserCog, Utensils } from 'lucide-react';
+
 import { Restaurante } from '@/domain/admin/entities/Restaurante';
+
 import styles from './RestaurantCard.module.css';
 
 interface RestaurantCardProps {

@@ -1,7 +1,9 @@
-import { PediDatabase, RestauranteRecord } from '../database';
-import { IRestauranteRepository } from '@/domain/admin/repositories/IRestauranteRepository';
 import { Restaurante } from '@/domain/admin/entities/Restaurante';
+import { IRestauranteRepository } from '@/domain/admin/repositories/IRestauranteRepository';
 import { ConfiguracoesRestaurante } from '@/domain/admin/value-objects/ConfiguracoesRestaurante';
+
+import { PediDatabase, RestauranteRecord } from '../database';
+
 import { UsuarioRestauranteRepository } from './UsuarioRestauranteRepository';
 
 /**

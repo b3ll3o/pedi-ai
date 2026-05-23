@@ -1,18 +1,13 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import Image from 'next/image';
-import styles from './ProductForm.module.css';
+import { useState } from 'react';
 
-// TODO: Implement file upload via API route (Supabase Storage removed)
-async function uploadProductImage(_file: File, _onProgress?: { onProgress: (info: { fraction: number }) => void }): Promise<{ url: string }> {
-  console.warn('uploadProductImage: Storage não disponível - implementação via API pendente');
-  _onProgress?.onProgress({ fraction: 1 });
-  return { url: '' };
-}
-async function deleteProductImage(_url: string): Promise<void> {
-  console.warn('deleteProductImage: Storage não disponível');
-}
+import { useImageUpload } from '../../hooks/useImageUpload';
+import { useProductFormState } from '../../hooks/useProductFormState';
+
+import { DietaryChips } from './DietaryChips';
+import { ImageUploadField } from './ImageUploadField';
+import styles from './ProductForm.module.css';
 
 export interface ProductInput {
   category_id: string;
@@ -35,110 +30,34 @@ interface ProductFormProps {
 export function ProductForm({ product, categories, onSubmit, onCancel }: ProductFormProps) {
   const isEditMode = Boolean(product);
 
-  const [name, setName] = useState(product?.name ?? '');
-  const [description, setDescription] = useState(product?.description ?? '');
-  const [categoryId, setCategoryId] = useState(product?.category_id ?? categories[0]?.id ?? '');
-  const [price, setPrice] = useState(product?.price?.toString() ?? '');
-  const [imageUrl, setImageUrl] = useState(product?.image_url ?? '');
-  const [imagePreview, setImagePreview] = useState<string | null>(product?.image_url ?? null);
-  const [dietaryLabels, setDietaryLabels] = useState<string[]>(product?.dietary_labels ?? []);
-  const [available, setAvailable] = useState(product?.available ?? true);
+  const {
+    name,
+    description,
+    categoryId,
+    price,
+    dietaryLabels,
+    available,
+    errors,
+    setName,
+    setDescription,
+    setCategoryId,
+    setPrice,
+    setAvailable,
+    toggleDietaryLabel,
+    validateForm,
+  } = useProductFormState(product, categories[0]?.id);
+
+  const {
+    imageUrl,
+    imagePreview,
+    uploadProgress,
+    uploadError,
+    fileInputRef,
+    handleImageChange,
+    handleRemoveImage,
+  } = useImageUpload(product?.image_url);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
-  const [errors, setErrors] = useState<{ name?: string; price?: string; category?: string }>({});
-  const [uploadError, setUploadError] = useState<string | null>(null);
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const DIETARY_OPTIONS = [
-    'vegetarian',
-    'vegan',
-    'gluten_free',
-    'dairy_free',
-    'spicy',
-    'sweet',
-    'sour',
-    'bitter',
-    'umami',
-  ];
-
-  const toggleDietaryLabel = (label: string) => {
-    setDietaryLabels((prev) =>
-      prev.includes(label) ? prev.filter((l) => l !== label) : [...prev, label]
-    );
-  };
-
-  const validateForm = (): boolean => {
-    const newErrors: { name?: string; price?: string; category?: string } = {};
-
-    if (!name.trim()) {
-      newErrors.name = 'Nome é obrigatório';
-    }
-
-    const priceNum = parseFloat(price);
-    if (!price || isNaN(priceNum) || priceNum < 0) {
-      newErrors.price = 'Preço inválido';
-    }
-
-    if (!categoryId) {
-      newErrors.category = 'Categoria é obrigatória';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      setUploadError('Por favor, selecione um arquivo de imagem');
-      return;
-    }
-
-    // Show local preview while uploading
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImagePreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-
-    setUploadError(null);
-    setUploadProgress(0);
-
-    try {
-      const result = await uploadProductImage(file, {
-        onProgress: ({ fraction }) => {
-          setUploadProgress(fraction);
-        },
-      });
-      setImageUrl(result.url);
-      setUploadProgress(null);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Upload falhou';
-      setUploadError(message);
-      setImagePreview(null);
-      setImageUrl('');
-    }
-  };
-
-  const handleRemoveImage = async () => {
-    if (imageUrl) {
-      try {
-        await deleteProductImage(imageUrl);
-      } catch {
-        // ignore delete errors
-      }
-    }
-    setImagePreview(null);
-    setImageUrl('');
-    setUploadError(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -241,72 +160,21 @@ export function ProductForm({ product, categories, onSubmit, onCancel }: Product
         {errors.price && <span className={styles.error}>{errors.price}</span>}
       </div>
 
-      <div className={styles.field}>
-        <label className={styles.label}>Imagem</label>
-        <div className={styles.imageUpload}>
-          {imagePreview ? (
-            <div className={styles.imagePreview}>
-              <Image
-                src={imagePreview}
-                alt="Preview"
-                fill
-                className={styles.previewImg}
-                sizes="200px"
-              />
-              <button
-                type="button"
-                className={styles.removeImageBtn}
-                onClick={handleRemoveImage}
-                disabled={isSubmitting}
-                aria-label="Remover imagem"
-              >
-                ×
-              </button>
-            </div>
-          ) : (
-            <div className={styles.uploadPlaceholder}>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                data-testid="product-image-input"
-                onChange={handleImageChange}
-                className={styles.fileInput}
-                disabled={isSubmitting}
-              />
-              <div className={styles.uploadIcon}>📷</div>
-              <span className={styles.uploadText}>Clique para adicionar imagem</span>
-            </div>
-          )}
-        </div>
+      <ImageUploadField
+        imagePreview={imagePreview}
+        uploadProgress={uploadProgress}
+        uploadError={uploadError}
+        fileInputRef={fileInputRef}
+        onImageChange={handleImageChange}
+        onRemoveImage={handleRemoveImage}
+        disabled={isSubmitting}
+      />
 
-        {uploadProgress !== null && (
-          <div className={styles.progressBar}>
-            <div className={styles.progressFill} style={{ width: `${uploadProgress * 100}%` }} />
-            <span className={styles.progressText}>{Math.round(uploadProgress * 100)}%</span>
-          </div>
-        )}
-
-        {uploadError && <span className={styles.error}>{uploadError}</span>}
-        <span className={styles.hint}>Formatos aceitos: JPG, PNG, WebP. Tamanho máximo: 5MB</span>
-      </div>
-
-      <div className={styles.field}>
-        <label className={styles.label}>Informações Nutricionais</label>
-        <div className={styles.dietaryGrid}>
-          {DIETARY_OPTIONS.map((label) => (
-            <button
-              key={label}
-              type="button"
-              className={`${styles.dietaryChip} ${dietaryLabels.includes(label) ? styles.dietaryChipActive : ''}`}
-              onClick={() => toggleDietaryLabel(label)}
-              disabled={isSubmitting}
-            >
-              {label.replace('_', ' ')}
-            </button>
-          ))}
-        </div>
-      </div>
+      <DietaryChips
+        selectedLabels={dietaryLabels}
+        onToggle={toggleDietaryLabel}
+        disabled={isSubmitting}
+      />
 
       <div className={styles.field}>
         <label className={styles.checkboxLabel}>

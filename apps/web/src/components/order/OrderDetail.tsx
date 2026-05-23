@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+
 import { useTableStore } from '@/infrastructure/persistence/tableStore';
 
 interface OrderDetailProps {

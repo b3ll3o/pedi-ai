@@ -1,5 +1,6 @@
 import { EntityClass } from '@/domain/shared';
 import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
+
 import { ModificadorSelecionado } from '../value-objects/ModificadorSelecionado';
 
 export interface ItemPedidoProps {

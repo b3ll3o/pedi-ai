@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+
 import { getRoleLabel, getRoleColor } from '@/application/services/userService';
+
 import styles from './TeamManagement.module.css';
 
 type UserRole = 'dono' | 'gerente' | 'atendente' | 'cliente';

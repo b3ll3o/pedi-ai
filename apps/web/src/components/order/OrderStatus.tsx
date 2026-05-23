@@ -1,9 +1,15 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
 import { CheckCircle, Clock, ChefHat, Bell, Truck, XCircle } from 'lucide-react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 
-type Enum_order_status = 'pending_payment' | 'paid' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
+type Enum_order_status =
+  | 'pending_payment'
+  | 'paid'
+  | 'preparing'
+  | 'ready'
+  | 'delivered'
+  | 'cancelled';
 
 interface OrderStatusProps {
   orderId: string;

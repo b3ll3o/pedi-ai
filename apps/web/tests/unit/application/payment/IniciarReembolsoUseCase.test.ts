@@ -1,13 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { IniciarReembolsoUseCase, IRefundAdapter } from '@/application/pagamento/services/IniciarReembolsoUseCase';
-import { IPagamentoRepository } from '@/domain/pagamento/repositories';
-import { ITransacaoRepository } from '@/domain/pagamento/repositories';
-import { EventDispatcher } from '@/domain/shared';
+
+import {
+  IniciarReembolsoUseCase,
+  IRefundAdapter,
+} from '@/application/pagamento/services/IniciarReembolsoUseCase';
 import { Pagamento } from '@/domain/pagamento/entities/Pagamento';
 import { Transacao } from '@/domain/pagamento/entities/Transacao';
-import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
+import { IPagamentoRepository } from '@/domain/pagamento/repositories';
+import { ITransacaoRepository } from '@/domain/pagamento/repositories';
 import { MetodoPagamento } from '@/domain/pagamento/value-objects/MetodoPagamento';
 import { StatusPagamento } from '@/domain/pagamento/value-objects/StatusPagamento';
+import { EventDispatcher } from '@/domain/shared';
+import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 
 // Mock do adapter de reembolso
 const mockRefundAdapter: IRefundAdapter = {
@@ -114,7 +118,10 @@ describe('IniciarReembolsoUseCase', () => {
         expect(result.id).toBe('re_test_123');
         expect(result.pagamentoId).toBe(pagamentoId);
         expect(result.status).toBe('pending');
-        expect(mockRefundAdapter.iniciarReembolso).toHaveBeenCalledWith('pi_test_charge_123', valorEmCentavos);
+        expect(mockRefundAdapter.iniciarReembolso).toHaveBeenCalledWith(
+          'pi_test_charge_123',
+          valorEmCentavos
+        );
         expect(mockPagamentoRepo.salvar).toHaveBeenCalled();
         expect(mockEventDispatcher.dispatch).toHaveBeenCalled();
       });
@@ -149,14 +156,17 @@ describe('IniciarReembolsoUseCase', () => {
 
         // Assert
         expect(mockRefundAdapter.iniciarReembolso).toHaveBeenCalledTimes(1);
-        expect(mockRefundAdapter.iniciarReembolso).toHaveBeenCalledWith(providerId, valorEmCentavos);
+        expect(mockRefundAdapter.iniciarReembolso).toHaveBeenCalledWith(
+          providerId,
+          valorEmCentavos
+        );
       });
 
       it('deve reembolsar valor parcial quando valorReembolso é especificado', async () => {
         // Arrange
         const pagamentoId = 'pagamento-parcial-123';
         const valorTotalEmCentavos = 10000;
-        const valorReembolsoEmReais = 50.00; // 5000 centavos
+        const valorReembolsoEmReais = 50.0; // 5000 centavos
         const pagamento = criarPagamentoConfirmado(pagamentoId, valorTotalEmCentavos);
         const transacaoCharge = criarTransacaoChargeSucesso(pagamentoId, 'pi_test_parcial');
 
@@ -211,7 +221,9 @@ describe('IniciarReembolsoUseCase', () => {
         const input = { pagamentoId };
 
         // Act & Assert
-        await expect(useCase.execute(input)).rejects.toThrow('Apenas pagamentos confirmados podem ser reembolsados');
+        await expect(useCase.execute(input)).rejects.toThrow(
+          'Apenas pagamentos confirmados podem ser reembolsados'
+        );
       });
 
       it('deve lançar erro quando pagamento não é encontrado', async () => {
@@ -230,7 +242,9 @@ describe('IniciarReembolsoUseCase', () => {
         const input = { pagamentoId };
 
         // Act & Assert
-        await expect(useCase.execute(input)).rejects.toThrow(`Pagamento ${pagamentoId} não encontrado`);
+        await expect(useCase.execute(input)).rejects.toThrow(
+          `Pagamento ${pagamentoId} não encontrado`
+        );
       });
 
       it('deve lançar erro quando transação de charge não é encontrada', async () => {
@@ -251,7 +265,9 @@ describe('IniciarReembolsoUseCase', () => {
         const input = { pagamentoId };
 
         // Act & Assert
-        await expect(useCase.execute(input)).rejects.toThrow('Transação de charge não encontrada para este pagamento');
+        await expect(useCase.execute(input)).rejects.toThrow(
+          'Transação de charge não encontrada para este pagamento'
+        );
       });
 
       it('deve lançar erro quando valor de reembolso é zero', async () => {
@@ -273,7 +289,9 @@ describe('IniciarReembolsoUseCase', () => {
         const input = { pagamentoId, valorReembolso: 0 };
 
         // Act & Assert
-        await expect(useCase.execute(input)).rejects.toThrow('Valor de reembolso deve ser maior que zero');
+        await expect(useCase.execute(input)).rejects.toThrow(
+          'Valor de reembolso deve ser maior que zero'
+        );
       });
 
       it('deve lançar erro quando valor de reembolso excede valor do pagamento', async () => {
@@ -292,10 +310,12 @@ describe('IniciarReembolsoUseCase', () => {
           mockRefundAdapter
         );
 
-        const input = { pagamentoId, valorReembolso: 100.00 }; // 100 reais = 10000 centavos > 5000 centavos
+        const input = { pagamentoId, valorReembolso: 100.0 }; // 100 reais = 10000 centavos > 5000 centavos
 
         // Act & Assert
-        await expect(useCase.execute(input)).rejects.toThrow('Valor de reembolso não pode exceder o valor do pagamento');
+        await expect(useCase.execute(input)).rejects.toThrow(
+          'Valor de reembolso não pode exceder o valor do pagamento'
+        );
       });
     });
 
@@ -308,7 +328,9 @@ describe('IniciarReembolsoUseCase', () => {
 
         mockPagamentoRepo.buscarPorId.mockResolvedValue(pagamento);
         mockTransacaoRepo.buscarPorPagamentoId.mockResolvedValue([transacaoCharge]);
-        mockRefundAdapter.iniciarReembolso.mockRejectedValue(new Error('Erro de comunicação com MercadoPago'));
+        mockRefundAdapter.iniciarReembolso.mockRejectedValue(
+          new Error('Erro de comunicação com MercadoPago')
+        );
 
         const useCase = new IniciarReembolsoUseCase(
           mockPagamentoRepo,

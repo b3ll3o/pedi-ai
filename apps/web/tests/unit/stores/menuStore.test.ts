@@ -1,5 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { useMenuStore, getFilteredProducts, getProductsByCategory, hydrateFromCache, useHydratedMenu } from '@/infrastructure/persistence/menuStore';
+
+import {
+  useMenuStore,
+  getFilteredProducts,
+  getProductsByCategory,
+  hydrateFromCache,
+  useHydratedMenu,
+} from '@/infrastructure/persistence/menuStore';
+
 import type { categories, products, modifier_groups } from '@/lib/supabase/types';
 
 // ── Mock getCachedMenu ───────────────────────────────────────────────────────
@@ -57,7 +65,9 @@ function makeModifierGroup(overrides: Partial<modifier_groups> = {}): modifier_g
   };
 }
 
-function buildState(overrides: Partial<ReturnType<typeof useMenuStore.getState>> = {}): ReturnType<typeof useMenuStore.getState> {
+function buildState(
+  overrides: Partial<ReturnType<typeof useMenuStore.getState>> = {}
+): ReturnType<typeof useMenuStore.getState> {
   return {
     categories: [],
     products: [],
@@ -85,7 +95,12 @@ const CAT_MAIN = makeCategory({ id: 'cat-main', name: 'Pratos Principais' });
 const CAT_DESSERT = makeCategory({ id: 'cat-dessert', name: 'Sobremesas' });
 
 const PIZZA = makeProduct({ id: 'pizza1', name: 'Pizza Margherita', category_id: 'cat-main' });
-const SALAD = makeProduct({ id: 'salad1', name: 'Salada Verde', category_id: 'cat-main', dietary_labels: ['vegetarian'] });
+const SALAD = makeProduct({
+  id: 'salad1',
+  name: 'Salada Verde',
+  category_id: 'cat-main',
+  dietary_labels: ['vegetarian'],
+});
 const CAKE = makeProduct({ id: 'cake1', name: 'Bolo de Chocolate', category_id: 'cat-dessert' });
 const QUINOA = makeProduct({
   id: 'quinoa1',

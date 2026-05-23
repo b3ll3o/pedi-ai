@@ -9,58 +9,59 @@
  * Requer: DATABASE_URL no .env.e2e
  */
 
-import * as dotenv from 'dotenv'
-import * as path from 'path'
-import * as fs from 'fs'
+import * as fs from 'fs';
+import * as path from 'path';
+
+import * as dotenv from 'dotenv';
 
 // Carregar .env.e2e explicitamente
-dotenv.config({ path: path.join(process.cwd(), '.env.e2e') })
+dotenv.config({ path: path.join(process.cwd(), '.env.e2e') });
 
 // ============================================
 // Configuração
 // ============================================
 
-const DATABASE_URL = process.env.DATABASE_URL
+const DATABASE_URL = process.env.DATABASE_URL;
 
 if (!DATABASE_URL) {
-  console.error('❌ DATABASE_URL não está configurada no .env.e2e')
-  process.exit(1)
+  console.error('❌ DATABASE_URL não está configurada no .env.e2e');
+  process.exit(1);
 }
 
 // Deve ser o mesmo do seed.ts
-const SEED_PREFIX = 'e2e+'
-const RESTAURANT_NAME = 'Restaurant E2E Test'
+const SEED_PREFIX = 'e2e+';
+const RESTAURANT_NAME = 'Restaurant E2E Test';
 
 // Lock file (same as seed.ts)
-const LOCK_FILE = path.join(__dirname, '.cleanup.lock')
-const LOCK_TIMEOUT = 60_000 // 60 segundos
+const LOCK_FILE = path.join(__dirname, '.cleanup.lock');
+const LOCK_TIMEOUT = 60_000; // 60 segundos
 
 // Shard configuration (same as seed.ts)
-const SHARD = process.env.SHARD || ''
-const SHARD_MATCH = SHARD.match(/^(\d+)\/(\d+)$/)
-const SHARD_CURRENT = SHARD_MATCH ? Number(SHARD_MATCH[1]) : 0
-const IS_SHARD_MODE = SHARD_CURRENT > 0
+const SHARD = process.env.SHARD || '';
+const SHARD_MATCH = SHARD.match(/^(\d+)\/(\d+)$/);
+const SHARD_CURRENT = SHARD_MATCH ? Number(SHARD_MATCH[1]) : 0;
+const IS_SHARD_MODE = SHARD_CURRENT > 0;
 
 function getShardSuffix(): string {
-  return IS_SHARD_MODE ? `+sh${SHARD_CURRENT}` : ''
+  return IS_SHARD_MODE ? `+sh${SHARD_CURRENT}` : '';
 }
 
 function getShardPrefix(): string {
-  return IS_SHARD_MODE ? `[Shard${SHARD_CURRENT}] ` : ''
+  return IS_SHARD_MODE ? `[Shard${SHARD_CURRENT}] ` : '';
 }
 
 // ============================================
 // PostgreSQL connection
 // ============================================
 
-let _sql: ReturnType<typeof import('postgres').default> | null = null
+let _sql: ReturnType<typeof import('postgres').default> | null = null;
 
 async function getSql() {
   if (!_sql) {
-    const postgres = (await import('postgres')).default
-    _sql = postgres(DATABASE_URL!, { max: 10 })
+    const postgres = (await import('postgres')).default;
+    _sql = postgres(DATABASE_URL!, { max: 10 });
   }
-  return _sql
+  return _sql;
 }
 
 // ============================================
@@ -69,34 +70,37 @@ async function getSql() {
 
 async function acquireLock(): Promise<() => Promise<void>> {
   const waitForLock = async (): Promise<void> => {
-    const startTime = Date.now()
+    const startTime = Date.now();
     while (fs.existsSync(LOCK_FILE)) {
       if (Date.now() - startTime > LOCK_TIMEOUT) {
-        throw new Error(`Timeout ao aguardar lock de cleanup (${LOCK_TIMEOUT}ms)`)
+        throw new Error(`Timeout ao aguardar lock de cleanup (${LOCK_TIMEOUT}ms)`);
       }
-      await new Promise((resolve) => setTimeout(resolve, 100))
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
-  }
+  };
 
   const releaseLock = async (): Promise<void> => {
     try {
       if (fs.existsSync(LOCK_FILE)) {
-        fs.unlinkSync(LOCK_FILE)
+        fs.unlinkSync(LOCK_FILE);
       }
     } catch {
       // Ignorar erros ao remover lock
     }
-  }
+  };
 
-  await waitForLock()
+  await waitForLock();
 
-  fs.writeFileSync(LOCK_FILE, JSON.stringify({
-    pid: process.pid,
-    timestamp: Date.now(),
-    workerId: process.env.TEST_WORKER_ID || 'unknown',
-  }))
+  fs.writeFileSync(
+    LOCK_FILE,
+    JSON.stringify({
+      pid: process.pid,
+      timestamp: Date.now(),
+      workerId: process.env.TEST_WORKER_ID || 'unknown',
+    })
+  );
 
-  return releaseLock
+  return releaseLock;
 }
 
 // ============================================
@@ -104,28 +108,28 @@ async function acquireLock(): Promise<() => Promise<void>> {
 // ============================================
 
 export async function deleteTestUserByEmail(email: string): Promise<boolean> {
-  const sql = await getSql()
-  const result = await sql`DELETE FROM users WHERE email = ${email}`
-  return result.count > 0
+  const sql = await getSql();
+  const result = await sql`DELETE FROM users WHERE email = ${email}`;
+  return result.count > 0;
 }
 
 export async function deleteTestUserById(userId: string): Promise<boolean> {
-  const sql = await getSql()
-  const result = await sql`DELETE FROM users WHERE id = ${userId}`
-  return result.count > 0
+  const sql = await getSql();
+  const result = await sql`DELETE FROM users WHERE id = ${userId}`;
+  return result.count > 0;
 }
 
 export async function deleteTestRestaurantByName(
   restaurantName: string = RESTAURANT_NAME
 ): Promise<boolean> {
-  const sql = await getSql()
-  const shardPrefix = getShardPrefix()
-  const fullName = IS_SHARD_MODE ? `${shardPrefix}${restaurantName}` : restaurantName
+  const sql = await getSql();
+  const shardPrefix = getShardPrefix();
+  const fullName = IS_SHARD_MODE ? `${shardPrefix}${restaurantName}` : restaurantName;
 
   const result = await sql`
     DELETE FROM restaurants WHERE name = ${fullName}
-  `
-  return result.count > 0
+  `;
+  return result.count > 0;
 }
 
 // ============================================
@@ -133,72 +137,72 @@ export async function deleteTestRestaurantByName(
 // ============================================
 
 async function deleteTestUsers(): Promise<number> {
-  console.log('👥 Deletando usuários de teste...')
+  console.log('👥 Deletando usuários de teste...');
 
-  const sql = await getSql()
-  const shardSuffix = getShardSuffix()
+  const sql = await getSql();
+  const shardSuffix = getShardSuffix();
 
   const testEmails = [
     `${SEED_PREFIX}customer${shardSuffix}@pedi-ai.test`,
     `${SEED_PREFIX}admin${shardSuffix}@pedi-ai.test`,
     `${SEED_PREFIX}waiter${shardSuffix}@pedi-ai.test`,
-  ]
+  ];
 
-  let deletedCount = 0
+  let deletedCount = 0;
 
   for (const email of testEmails) {
-    const result = await sql`DELETE FROM users WHERE email = ${email}`
+    const result = await sql`DELETE FROM users WHERE email = ${email}`;
     if (result.count > 0) {
-      console.log(`   Deletado: ${email}`)
-      deletedCount += result.count
+      console.log(`   Deletado: ${email}`);
+      deletedCount += result.count;
     }
   }
 
-  console.log(`   ${deletedCount} usuário(s) deletado(s)\n`)
-  return deletedCount
+  console.log(`   ${deletedCount} usuário(s) deletado(s)\n`);
+  return deletedCount;
 }
 
 async function deleteTestRestaurant(): Promise<boolean> {
-  console.log('🏪 Deletando restaurant de teste...')
+  console.log('🏪 Deletando restaurant de teste...');
 
-  const sql = await getSql()
-  const shardPrefix = getShardPrefix()
-  const fullName = IS_SHARD_MODE ? `${shardPrefix}${RESTAURANT_NAME}` : RESTAURANT_NAME
+  const sql = await getSql();
+  const shardPrefix = getShardPrefix();
+  const fullName = IS_SHARD_MODE ? `${shardPrefix}${RESTAURANT_NAME}` : RESTAURANT_NAME;
 
   // Find restaurant first
   const restaurants = await sql`
     SELECT id FROM restaurants WHERE name = ${fullName}
-  `
+  `;
 
   if (restaurants.length === 0) {
-    console.log('   Nenhum restaurant de teste encontrado\n')
-    return false
+    console.log('   Nenhum restaurant de teste encontrado\n');
+    return false;
   }
 
-  const restaurantId = restaurants[0].id
+  const restaurantId = restaurants[0].id;
 
   // Delete orders first (manually since there might be FK constraints)
-  await sql`DELETE FROM orders WHERE restaurant_id = ${restaurantId}`
+  await sql`DELETE FROM orders WHERE restaurant_id = ${restaurantId}`;
 
   // Delete restaurant (cascade should handle related tables)
   const result = await sql`
     DELETE FROM restaurants WHERE id = ${restaurantId}
-  `
+  `;
 
   if (result.count > 0) {
-    console.log(`   Restaurant deletado: ${fullName} (${restaurantId})\n`)
-    return true
+    console.log(`   Restaurant deletado: ${fullName} (${restaurantId})\n`);
+    return true;
   }
 
-  return false
+  return false;
 }
 
 async function deleteSeedResultFile(): Promise<void> {
-  const resultPath = path.join(__dirname, '.seed-result.json')
+  const resultPath = path.join(__dirname, '.seed-result.json');
   try {
     if (fs.existsSync(resultPath)) {
-      fs.unlinkSync(resultPath)
-      console.log('📄 Arquivo .seed-result.json removido\n')
+      fs.unlinkSync(resultPath);
+      console.log('📄 Arquivo .seed-result.json removido\n');
     }
   } catch {
     // Ignorar erros ao remover arquivo
@@ -210,45 +214,45 @@ async function deleteSeedResultFile(): Promise<void> {
 // ============================================
 
 export async function cleanup(): Promise<void> {
-  const releaseLock = await acquireLock()
+  const releaseLock = await acquireLock();
 
   try {
-    console.log('========================================')
-    console.log('🧹 CLEANUP E2E - Iniciando...')
-    console.log('========================================\n')
+    console.log('========================================');
+    console.log('🧹 CLEANUP E2E - Iniciando...');
+    console.log('========================================\n');
 
     // 1. Deletar restaurant primeiro (cascade cuida dos dados relacionados)
-    const restaurantDeleted = await deleteTestRestaurant()
+    const restaurantDeleted = await deleteTestRestaurant();
 
     // 2. Deletar usuários (profiles são deletados em cascade pelo banco)
-    const usersDeleted = await deleteTestUsers()
+    const usersDeleted = await deleteTestUsers();
 
     // 3. Remover arquivo de resultado do seed
-    await deleteSeedResultFile()
+    await deleteSeedResultFile();
 
-    console.log('========================================')
-    console.log('✅ CLEANUP E2E - Concluído com sucesso!')
-    console.log('========================================')
-    console.log(`   Restaurant deletado: ${restaurantDeleted ? 'Sim' : 'Não encontrado'}`)
-    console.log(`   Usuários deletados: ${usersDeleted}`)
+    console.log('========================================');
+    console.log('✅ CLEANUP E2E - Concluído com sucesso!');
+    console.log('========================================');
+    console.log(`   Restaurant deletado: ${restaurantDeleted ? 'Sim' : 'Não encontrado'}`);
+    console.log(`   Usuários deletados: ${usersDeleted}`);
   } catch (error) {
-    console.error('❌ Erro no cleanup:', error)
-    process.exit(1)
+    console.error('❌ Erro no cleanup:', error);
+    process.exit(1);
   } finally {
-    await releaseLock()
+    await releaseLock();
   }
 }
 
 // Executar
-const isMainModule = require.main === module || process.argv[1]?.includes('cleanup.ts')
+const isMainModule = require.main === module || process.argv[1]?.includes('cleanup.ts');
 if (isMainModule) {
   cleanup()
     .then(() => {
-      console.log('\n✅ Cleanup finalizado')
-      process.exit(0)
+      console.log('\n✅ Cleanup finalizado');
+      process.exit(0);
     })
     .catch((error) => {
-      console.error('\n❌ Erro no cleanup:', error.message)
-      process.exit(1)
-    })
+      console.error('\n❌ Erro no cleanup:', error.message);
+      process.exit(1);
+    });
 }

@@ -6,65 +6,42 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./apps/web/tests/setup-vitest.ts'],
-    include: ['**/*.test.ts', '**/*.test.tsx'],
+    include: [
+      'apps/web/tests/unit/**/*.test.{ts,tsx}',
+      'apps/web/tests/integration/**/*.test.{ts,tsx}',
+      'apps/api/tests/**/*.test.{ts,tsx}',
+    ],
+    exclude: ['apps/web/tests/unit/**/*.loading.test.tsx'],
     testTimeout: 10_000,
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'html', 'json'],
+      reporter: ['text', 'json', 'html', 'lcov'],
       reportsDirectory: './coverage',
+      // Limiares de cobertura — AGENTS.md: mínimo 80%
       thresholds: {
-        // Target: 80% for statements, lines, functions; 65% for branches
-        // Branches are harder to cover due to complex conditions
-        statements: 77,
-        branches: 67,
-        functions: 79,
-        lines: 77,
+        statements: 80,
+        branches: 80,
+        functions: 80,
+        lines: 80,
         perFile: false,
       },
-      include: ['apps/web/src/**/*'],
+      // Incluir código fonte de ambas as apps
+      include: ['apps/web/src/**/*', 'apps/api/src/**/*'],
       exclude: [
-        // Type definitions and stories
-        'apps/web/src/**/*.d.ts',
-        'apps/web/src/**/*.stories.tsx',
-        // Node modules
-        'node_modules/**',
-        // Markdown files
-        '**/*.md',
-        // Next.js app router - E2E covered
-        'apps/web/src/app/**',
-        // UI Components - E2E covered
-        'apps/web/src/components/**',
-        // API routes - integration tested
-        'apps/web/src/app/api/**',
-        // Service worker - browser-only
-        'apps/web/src/lib/sw/**',
-        // Static exports
-        'apps/web/src/app/robots.ts',
-        'apps/web/src/app/sitemap.ts',
-        // Deprecated Supabase
-        'apps/web/src/lib/supabase/**',
-        // Browser-only auth
-        'apps/web/src/lib/auth/guest.ts',
-        'apps/web/src/lib/auth/client-admin.ts',
-        // Browser-only APIs
-        'apps/web/src/lib/broadcast-channel.ts',
-        'apps/web/src/lib/logger.ts',
-        // Offline IndexedDB - integration tested
-        'apps/web/src/lib/offline/db.ts',
-        'apps/web/src/lib/offline/types.ts',
-        // Browser-only hooks - E2E covered
-        'apps/web/src/hooks/**',
-        // Admin repositories - low level, integration tested
-        'apps/web/src/infrastructure/persistence/admin/**',
-        'apps/web/src/infrastructure/persistence/autenticacao/**',
-        // RestaurantStore - async IndexedDB, integration tested
-        'apps/web/src/infrastructure/persistence/restaurantStore.ts',
-        // CardapioSyncService - IndexedDB sync, integration tested
-        'apps/web/src/infrastructure/persistence/cardapio/CardapioSyncService.ts',
-        // AuthAdapter - deprecated Supabase auth
-        'apps/web/src/infrastructure/external/AuthAdapter.ts',
-        // E2E tests
-        'apps/web/tests/e2e/**',
+        '**/*.d.ts',
+        '**/*.stories.tsx',
+        '**/node_modules/**',
+        '**/tests/**',
+        '**/__tests__/**',
+        '**/*.test.ts',
+        '**/*.test.tsx',
+        'apps/web/src/app/**', // Next.js App Router
+        'apps/web/src/presentation/**', // Componentes React
+        'apps/web/src/infrastructure/**', // Implementações (frameworks)
+        'apps/web/src/hooks/**', // React hooks
+        'apps/web/public/**',
+        'apps/api/src/presentation/**', // Controllers NestJS
+        'apps/api/src/infrastructure/**', // Repositories Prisma
       ],
     },
   },

@@ -42,15 +42,15 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 #### Bounded Contexts Implementados (apps/web)
 
-| Bounded Context | Status | Entities | Value Objects | Events | Repos |
-| --------------- | ------ | -------- | ------------- | ------ | ----- |
-| `admin/` | ✅ | Restaurante, UsuarioRestaurante | ConfiguracoesRestaurante, PapelRestaurante | 7 events | ✅ |
-| `autenticacao/` | ✅ | Usuario, Sessao | Papel, Credenciais | 3 events | ✅ |
-| `cardapio/` | ✅ | Categoria, Produto, GrupoModificador | Preco, Alergeno, ValorModificador | - | ✅ |
-| `mesa/` | ✅ | Mesa | NumeroMesa | - | ✅ |
-| `pagamento/` | ✅ | Pagamento, Transacao | StatusPagamento, MetodoPagamento | 4 events | ✅ |
-| `pedido/` | ✅ | Pedido, ItemPedido | StatusPedido, Dinheiro, MetodoPagamento | 3 events | ✅ |
-| `shared/` | ✅ | AggregateRootClass | Excecoes, Types | - | - |
+| Bounded Context | Status | Entities                             | Value Objects                              | Events   | Repos |
+| --------------- | ------ | ------------------------------------ | ------------------------------------------ | -------- | ----- |
+| `admin/`        | ✅     | Restaurante, UsuarioRestaurante      | ConfiguracoesRestaurante, PapelRestaurante | 7 events | ✅    |
+| `autenticacao/` | ✅     | Usuario, Sessao                      | Papel, Credenciais                         | 3 events | ✅    |
+| `cardapio/`     | ✅     | Categoria, Produto, GrupoModificador | Preco, Alergeno, ValorModificador          | -        | ✅    |
+| `mesa/`         | ✅     | Mesa                                 | NumeroMesa                                 | -        | ✅    |
+| `pagamento/`    | ✅     | Pagamento, Transacao                 | StatusPagamento, MetodoPagamento           | 4 events | ✅    |
+| `pedido/`       | ✅     | Pedido, ItemPedido                   | StatusPedido, Dinheiro, MetodoPagamento    | 3 events | ✅    |
+| `shared/`       | ✅     | AggregateRootClass                   | Excecoes, Types                            | -        | -     |
 
 #### Estrutura de Diretórios DDD (apps/web)
 
@@ -107,12 +107,14 @@ apps/api/src/
 #### Regras de Dependência (DDD)
 
 **apps/web:**
+
 - **apps/web/src/domain/** não pode importar de **application/**, **infrastructure/**, ou **presentation/**
 - **apps/web/src/application/** só importa de **domain/** e interfaces (não implementations)
 - **apps/web/src/infrastructure/** implementa interfaces definidas em **domain/**
 - **apps/web/src/presentation/** depende de **application/** — nunca acessa **domain/** diretamente
 
 **apps/api:**
+
 - **apps/api/src/domain/** não pode importar de **application/**, **infrastructure/**, ou **presentation/**
 - **apps/api/src/application/** só importa de **domain/** e interfaces (não implementations)
 - **apps/api/src/infrastructure/** implementa interfaces definidas em **domain/**
@@ -294,12 +296,16 @@ pedi-ai/
 ## Progresso da Migração DDD
 
 ### apps/web
+
 > ✅ **COMPLETO**: `apps/web/src/services/` migrado para `apps/web/src/application/services/`
 > ✅ **COMPLETO**: `apps/web/src/stores/` migrado para `apps/web/src/infrastructure/persistence/`
 
 ### apps/api
-> 🔲 **PENDENTE**: `apps/api` ainda não segue estrutura DDD completa
-> Módulos atuais (`auth/`, `orders/`, `payments/`, `restaurants/`, `realtime/`) precisam ser reorganizados em `domain/`, `application/`, `infrastructure/`, `presentation/`
+
+> 🚧 **EM ANDAMENTO**: Estrutura de diretórios DDD criada (`domain/`, `application/`, `infrastructure/`, `presentation/`)
+> Módulos atuais (`auth/`, `orders/`, `payments/`, `restaurants/`, `realtime/`) ainda não foram migrados
+> Plano de migração disponível em `docs/guides/DDD_MIGRACAO_API.md`
+> Status: Estrutura base criada, migracao incremental em progresso
 
 <!-- END:pedi-ai-rules -->
 

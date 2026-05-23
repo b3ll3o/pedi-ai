@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { DesvincularUsuarioRestauranteUseCase } from '@/application/admin/services/DesvincularUsuarioRestauranteUseCase';
 import { DesvincularUsuarioRestauranteInput } from '@/application/admin/services/DesvincularUsuarioRestauranteUseCase';
 import { UsuarioRestaurante } from '@/domain/admin/entities/UsuarioRestaurante';

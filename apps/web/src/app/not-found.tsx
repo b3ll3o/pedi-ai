@@ -6,10 +6,12 @@
 
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+
 import { useAuth } from '@/hooks/useAuth';
+
 import styles from './not-found.module.css';
 
 export default function NotFound() {

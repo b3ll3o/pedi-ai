@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+
 import { PrismaService } from '../common/prisma.service';
 
 @Injectable()
@@ -30,13 +31,16 @@ export class CategoriesService {
     return this.prisma.category.create({ data });
   }
 
-  async update(id: string, data: Partial<{
-    name: string;
-    description: string;
-    imageUrl: string;
-    sortOrder: number;
-    active: boolean;
-  }>) {
+  async update(
+    id: string,
+    data: Partial<{
+      name: string;
+      description: string;
+      imageUrl: string;
+      sortOrder: number;
+      active: boolean;
+    }>
+  ) {
     const updated = await this.prisma.category.update({
       where: { id },
       data,
@@ -56,12 +60,12 @@ export class CategoriesService {
 
   async reorder(categories: Array<{ id: string; sortOrder: number }>) {
     await Promise.all(
-      categories.map(cat =>
+      categories.map((cat) =>
         this.prisma.category.update({
           where: { id: cat.id },
           data: { sortOrder: cat.sortOrder },
-        }),
-      ),
+        })
+      )
     );
   }
 }

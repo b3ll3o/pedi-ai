@@ -7,7 +7,10 @@ let idCounter = 0;
 vi.mock('@/lib/offline/db', () => ({
   db: {
     menu_cache: {
-      clear: vi.fn(async () => { menuCacheData.clear(); idCounter = 0; }),
+      clear: vi.fn(async () => {
+        menuCacheData.clear();
+        idCounter = 0;
+      }),
       add: vi.fn(async (item: any) => {
         const id = ++idCounter;
         menuCacheData.set(id, { ...item, id });
@@ -22,7 +25,9 @@ vi.mock('@/lib/offline/db', () => ({
         menuCacheData.set(id, { ...item, id });
         return id;
       }),
-      delete: vi.fn(async (id: number) => { menuCacheData.delete(id); }),
+      delete: vi.fn(async (id: number) => {
+        menuCacheData.delete(id);
+      }),
       toArray: vi.fn(async () => Array.from(menuCacheData.values())),
       where: vi.fn(() => ({
         equals: vi.fn((rid: string) => {

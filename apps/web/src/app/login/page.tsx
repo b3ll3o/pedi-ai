@@ -1,10 +1,12 @@
 'use client';
 
-import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect } from 'react';
+
+import { LoginForm } from '@/components/auth/LoginForm';
 import { useAuth } from '@/hooks/useAuth';
 import { useRedirectByRole } from '@/hooks/useRedirectByRole';
-import { LoginForm } from '@/components/auth/LoginForm';
+
 import styles from './page.module.css';
 
 function LoginContent() {

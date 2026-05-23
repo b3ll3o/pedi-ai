@@ -1,4 +1,4 @@
-import { test as base } from '@playwright/test'
+import { test as base } from '@playwright/test';
 
 /**
  * Helper de soft assertions para testes E2E com Playwright.
@@ -13,4 +13,4 @@ import { test as base } from '@playwright/test'
  * await softExpect(page.locator('.subtitulo')).toHaveText('Outro')
  * // Se ambos falharem, o relatório mostra ambos os erros
  */
-export const softExpect = base.expect.configure({ soft: true })
+export const softExpect = base.expect.configure({ soft: true });

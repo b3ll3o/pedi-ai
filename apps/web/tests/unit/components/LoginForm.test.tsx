@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
 import { LoginForm } from '@/components/auth/LoginForm';
 
 // Mocks
@@ -114,7 +115,9 @@ describe('LoginForm', () => {
     it('deve exibir erro "Senha é obrigatória" quando senha estiver vazia', async () => {
       render(<LoginForm />);
 
-      fireEvent.change(screen.getByTestId('email-input'), { target: { value: 'test@example.com' } });
+      fireEvent.change(screen.getByTestId('email-input'), {
+        target: { value: 'test@example.com' },
+      });
       fireEvent.change(screen.getByTestId('password-input'), { target: { value: '' } });
       fireEvent.click(screen.getByTestId('login-button'));
 
@@ -126,7 +129,9 @@ describe('LoginForm', () => {
     it('não deve chamar onSubmit quando senha estiver vazia', async () => {
       render(<LoginForm onSubmit={mockOnSubmit} />);
 
-      fireEvent.change(screen.getByTestId('email-input'), { target: { value: 'test@example.com' } });
+      fireEvent.change(screen.getByTestId('email-input'), {
+        target: { value: 'test@example.com' },
+      });
       fireEvent.change(screen.getByTestId('password-input'), { target: { value: '' } });
       fireEvent.click(screen.getByTestId('login-button'));
 
@@ -141,7 +146,9 @@ describe('LoginForm', () => {
     it('deve exibir erro "Senha deve ter pelo menos 6 caracteres"', async () => {
       render(<LoginForm />);
 
-      fireEvent.change(screen.getByTestId('email-input'), { target: { value: 'test@example.com' } });
+      fireEvent.change(screen.getByTestId('email-input'), {
+        target: { value: 'test@example.com' },
+      });
       fireEvent.change(screen.getByTestId('password-input'), { target: { value: '12345' } });
       fireEvent.click(screen.getByTestId('login-button'));
 
@@ -153,7 +160,9 @@ describe('LoginForm', () => {
     it('não deve chamar onSubmit quando senha tiver menos de 6 caracteres', async () => {
       render(<LoginForm onSubmit={mockOnSubmit} />);
 
-      fireEvent.change(screen.getByTestId('email-input'), { target: { value: 'test@example.com' } });
+      fireEvent.change(screen.getByTestId('email-input'), {
+        target: { value: 'test@example.com' },
+      });
       fireEvent.change(screen.getByTestId('password-input'), { target: { value: '12345' } });
       fireEvent.click(screen.getByTestId('login-button'));
 
@@ -168,7 +177,9 @@ describe('LoginForm', () => {
     it('deve chamar onSubmit com email e senha quando credenciais forem válidas', async () => {
       render(<LoginForm onSubmit={mockOnSubmit} />);
 
-      fireEvent.change(screen.getByTestId('email-input'), { target: { value: 'test@example.com' } });
+      fireEvent.change(screen.getByTestId('email-input'), {
+        target: { value: 'test@example.com' },
+      });
       fireEvent.change(screen.getByTestId('password-input'), { target: { value: 'password123' } });
       fireEvent.click(screen.getByTestId('login-button'));
 
@@ -180,7 +191,9 @@ describe('LoginForm', () => {
     it('deve chamar onSubmit uma única vez', async () => {
       render(<LoginForm onSubmit={mockOnSubmit} />);
 
-      fireEvent.change(screen.getByTestId('email-input'), { target: { value: 'test@example.com' } });
+      fireEvent.change(screen.getByTestId('email-input'), {
+        target: { value: 'test@example.com' },
+      });
       fireEvent.change(screen.getByTestId('password-input'), { target: { value: 'password123' } });
       fireEvent.click(screen.getByTestId('login-button'));
 
@@ -198,8 +211,12 @@ describe('LoginForm', () => {
 
       render(<LoginForm onSubmit={mockOnSubmit} />);
 
-      fireEvent.change(screen.getByTestId('email-input'), { target: { value: 'test@example.com' } });
-      fireEvent.change(screen.getByTestId('password-input'), { target: { value: 'wrongpassword' } });
+      fireEvent.change(screen.getByTestId('email-input'), {
+        target: { value: 'test@example.com' },
+      });
+      fireEvent.change(screen.getByTestId('password-input'), {
+        target: { value: 'wrongpassword' },
+      });
       fireEvent.click(screen.getByTestId('login-button'));
 
       await waitFor(() => {
@@ -213,7 +230,9 @@ describe('LoginForm', () => {
 
       render(<LoginForm onSubmit={mockOnSubmit} />);
 
-      fireEvent.change(screen.getByTestId('email-input'), { target: { value: 'test@example.com' } });
+      fireEvent.change(screen.getByTestId('email-input'), {
+        target: { value: 'test@example.com' },
+      });
       fireEvent.change(screen.getByTestId('password-input'), { target: { value: 'password' } });
       fireEvent.click(screen.getByTestId('login-button'));
 
@@ -230,7 +249,9 @@ describe('LoginForm', () => {
 
       render(<LoginForm onSubmit={mockOnSubmit} />);
 
-      fireEvent.change(screen.getByTestId('email-input'), { target: { value: 'test@example.com' } });
+      fireEvent.change(screen.getByTestId('email-input'), {
+        target: { value: 'test@example.com' },
+      });
       fireEvent.change(screen.getByTestId('password-input'), { target: { value: 'password123' } });
       fireEvent.click(screen.getByTestId('login-button'));
 
@@ -242,7 +263,9 @@ describe('LoginForm', () => {
 
       render(<LoginForm onSubmit={mockOnSubmit} />);
 
-      fireEvent.change(screen.getByTestId('email-input'), { target: { value: 'test@example.com' } });
+      fireEvent.change(screen.getByTestId('email-input'), {
+        target: { value: 'test@example.com' },
+      });
       fireEvent.change(screen.getByTestId('password-input'), { target: { value: 'password123' } });
       fireEvent.click(screen.getByTestId('login-button'));
 
@@ -254,7 +277,9 @@ describe('LoginForm', () => {
 
       render(<LoginForm onSubmit={mockOnSubmit} />);
 
-      fireEvent.change(screen.getByTestId('email-input'), { target: { value: 'test@example.com' } });
+      fireEvent.change(screen.getByTestId('email-input'), {
+        target: { value: 'test@example.com' },
+      });
       fireEvent.change(screen.getByTestId('password-input'), { target: { value: 'password123' } });
       fireEvent.click(screen.getByTestId('login-button'));
 
@@ -267,7 +292,9 @@ describe('LoginForm', () => {
 
       render(<LoginForm onSubmit={mockOnSubmit} />);
 
-      fireEvent.change(screen.getByTestId('email-input'), { target: { value: 'test@example.com' } });
+      fireEvent.change(screen.getByTestId('email-input'), {
+        target: { value: 'test@example.com' },
+      });
       fireEvent.change(screen.getByTestId('password-input'), { target: { value: 'password123' } });
       fireEvent.click(screen.getByTestId('login-button'));
 
@@ -366,7 +393,9 @@ describe('LoginForm', () => {
     it('deve exibir erro quando recurso não está disponível', async () => {
       render(<LoginForm registeredSuccess={true} />);
 
-      fireEvent.change(screen.getByTestId('email-input'), { target: { value: 'test@example.com' } });
+      fireEvent.change(screen.getByTestId('email-input'), {
+        target: { value: 'test@example.com' },
+      });
       fireEvent.change(screen.getByTestId('password-input'), { target: { value: 'password123' } });
 
       fireEvent.click(screen.getByText('Reenviar email de confirmação'));
@@ -383,7 +412,9 @@ describe('LoginForm', () => {
       fireEvent.click(screen.getByText('Reenviar email de confirmação'));
 
       await waitFor(() => {
-        expect(screen.getByText('Por favor, insira seu email para reenviar a confirmação')).toBeInTheDocument();
+        expect(
+          screen.getByText('Por favor, insira seu email para reenviar a confirmação')
+        ).toBeInTheDocument();
       });
     });
   });
@@ -460,7 +491,9 @@ describe('LoginForm', () => {
 
       await waitFor(() => {
         expect(screen.getByTestId('forgot-password-success')).toBeInTheDocument();
-        expect(screen.getByText('Link de recuperação enviado! Verifique seu email.')).toBeInTheDocument();
+        expect(
+          screen.getByText('Link de recuperação enviado! Verifique seu email.')
+        ).toBeInTheDocument();
       });
     });
   });
@@ -499,7 +532,10 @@ describe('LoginForm', () => {
     it('deve ter autoComplete configurado para senha', () => {
       render(<LoginForm />);
 
-      expect(screen.getByTestId('password-input')).toHaveAttribute('autoComplete', 'current-password');
+      expect(screen.getByTestId('password-input')).toHaveAttribute(
+        'autoComplete',
+        'current-password'
+      );
     });
   });
 });

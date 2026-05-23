@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { sql } from '@/infrastructure/database/pg-client';
 import { getSession } from '@/lib/auth/session';
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSession();
     if (!session) {
@@ -52,7 +50,15 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const { id: productId } = await params;
     const body = await request.json();
-    const { name, description, price_cents, image_url, category_id, preparation_time_minutes, active } = body;
+    const {
+      name,
+      description,
+      price_cents,
+      image_url,
+      category_id,
+      preparation_time_minutes,
+      active,
+    } = body;
 
     // Get product first
     const productResult = await sql`SELECT * FROM products WHERE id = ${productId} LIMIT 1`;
@@ -68,7 +74,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       LIMIT 1
     `;
 
-    if (!profileResult[0] || (profileResult[0].role !== 'dono' && profileResult[0].role !== 'gerente')) {
+    if (
+      !profileResult[0] ||
+      (profileResult[0].role !== 'dono' && profileResult[0].role !== 'gerente')
+    ) {
       return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 });
     }
 
@@ -79,7 +88,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       UPDATE products
       SET
         name = COALESCE(${name || null}, name),
-        description = COALESCE(${description !== undefined ? (description?.trim() || null) : null}, description),
+        description = COALESCE(${description !== undefined ? description?.trim() || null : null}, description),
         price_cents = COALESCE(${price_cents}, price_cents),
         image_url = COALESCE(${image_url || null}, image_url),
         category_id = COALESCE(${category_id || null}, category_id),
@@ -127,7 +136,10 @@ export async function DELETE(
       LIMIT 1
     `;
 
-    if (!profileResult[0] || (profileResult[0].role !== 'dono' && profileResult[0].role !== 'gerente')) {
+    if (
+      !profileResult[0] ||
+      (profileResult[0].role !== 'dono' && profileResult[0].role !== 'gerente')
+    ) {
       return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 });
     }
 

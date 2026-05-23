@@ -1,7 +1,8 @@
 import { DomainEvent } from '@/domain/shared';
+
 import { Categoria } from '../entities/Categoria';
-import { ItemCardapio } from '../entities/ItemCardapio';
 import { Combo } from '../entities/Combo';
+import { ItemCardapio } from '../entities/ItemCardapio';
 
 export type TipoAlteracao =
   | 'categoria_criada'

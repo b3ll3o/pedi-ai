@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+
 import { sql } from '@/infrastructure/database/pg-client';
 import { getSession } from '@/lib/auth/session';
 
@@ -37,9 +38,7 @@ export async function GET() {
     const restaurantsWithTrial = restaurantsResult.filter((r: Record<string, unknown>) => {
       const trialEndsAt = r.trial_ends_at as string | null;
       return (
-        r.subscription_status === 'trial' &&
-        trialEndsAt &&
-        new Date(trialEndsAt) > new Date(now)
+        r.subscription_status === 'trial' && trialEndsAt && new Date(trialEndsAt) > new Date(now)
       );
     });
 

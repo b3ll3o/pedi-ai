@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+
 import { Restaurante, RestauranteProps } from '@/domain/admin/entities/Restaurante';
 
 describe('Restaurante', () => {

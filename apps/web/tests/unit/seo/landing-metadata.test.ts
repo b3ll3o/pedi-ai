@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+
 import { metadata, ldJson } from '@/app/page';
 
 describe('SEO Metadata - Landing Page', () => {
@@ -85,9 +86,7 @@ describe('SEO Metadata - Landing Page', () => {
     });
 
     it('deve conter schema para Organization', () => {
-      const schemaItem = ldJson.find(
-        (s: any) => s.type === 'application/ld+json'
-      );
+      const schemaItem = ldJson.find((s: any) => s.type === 'application/ld+json');
       expect(schemaItem).toBeDefined();
       expect(schemaItem.children).toBeDefined();
 
@@ -99,9 +98,7 @@ describe('SEO Metadata - Landing Page', () => {
     });
 
     it('deve conter schema para WebSite com searchAction', () => {
-      const schemaItem = ldJson.find(
-        (s: any) => s.type === 'application/ld+json'
-      );
+      const schemaItem = ldJson.find((s: any) => s.type === 'application/ld+json');
       const schema = JSON.parse(schemaItem.children);
 
       const hasWebSite = Array.isArray(schema['@graph'])
@@ -112,9 +109,7 @@ describe('SEO Metadata - Landing Page', () => {
     });
 
     it('deve conter schema para FAQPage', () => {
-      const schemaItem = ldJson.find(
-        (s: any) => s.type === 'application/ld+json'
-      );
+      const schemaItem = ldJson.find((s: any) => s.type === 'application/ld+json');
       const schema = JSON.parse(schemaItem.children);
 
       const hasFAQPage = Array.isArray(schema['@graph'])
@@ -125,9 +120,7 @@ describe('SEO Metadata - Landing Page', () => {
     });
 
     it('JSON-LD deve ser JSON válido', () => {
-      const schemaItem = ldJson.find(
-        (s: any) => s.type === 'application/ld+json'
-      );
+      const schemaItem = ldJson.find((s: any) => s.type === 'application/ld+json');
       expect(() => {
         JSON.parse(schemaItem.children);
       }).not.toThrow();

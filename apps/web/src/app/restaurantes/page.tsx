@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+
 import RestaurantesPageClient from './RestaurantesPageClient';
 
 export async function generateMetadata(): Promise<Metadata> {

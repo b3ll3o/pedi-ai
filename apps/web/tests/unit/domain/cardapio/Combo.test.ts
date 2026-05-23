@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+
 import { Combo, ComboProps, ComboItemProps } from '@/domain/cardapio/entities/Combo';
 import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 

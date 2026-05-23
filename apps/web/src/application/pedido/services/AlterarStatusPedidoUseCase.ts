@@ -5,8 +5,8 @@ import {
   StatusPedido,
   PedidoStatusAlteradoEvent,
 } from '@/domain/pedido';
-import { EventDispatcher } from '@/domain/shared';
 import { StatusPedidoValue } from '@/domain/pedido';
+import { EventDispatcher } from '@/domain/shared';
 
 export interface AlterarStatusPedidoInput {
   pedidoId: string;

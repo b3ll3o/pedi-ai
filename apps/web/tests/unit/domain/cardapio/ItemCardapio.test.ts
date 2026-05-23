@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
+
 import { ItemCardapio, ItemCardapioProps } from '@/domain/cardapio/entities/ItemCardapio';
-import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
-import { TipoItemCardapio } from '@/domain/cardapio/value-objects/TipoItemCardapio';
 import { LabelDietetico } from '@/domain/cardapio/value-objects/LabelDietetico';
+import { TipoItemCardapio } from '@/domain/cardapio/value-objects/TipoItemCardapio';
+import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 
 describe('ItemCardapio', () => {
   // Criar ItemCardapio usando new para evitar problema com id não gerado

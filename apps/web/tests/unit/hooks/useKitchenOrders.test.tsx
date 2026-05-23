@@ -1,11 +1,11 @@
 // @ts-nocheck
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
-import React from 'react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { renderHook, waitFor } from '@testing-library/react';
+import React from 'react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { useKitchenOrders } from '@/hooks/useKitchenOrders'
-import type { OrderWithItems } from '@/application/services/adminOrderService'
+import type { OrderWithItems } from '@/application/services/adminOrderService';
+import { useKitchenOrders } from '@/hooks/useKitchenOrders';
 
 // ── Mock Data ─────────────────────────────────────────────────
 
@@ -43,22 +43,24 @@ const mockOrders: OrderWithItems[] = [
     updated_at: new Date().toISOString(),
     items: [],
   },
-]
+];
 
 // ── Mocks ─────────────────────────────────────────────────────
 
 // Mock useRealtimeOrders
 vi.mock('@/hooks/useRealtimeOrders', () => ({
-  useRealtimeOrders: vi.fn(({ restaurantId, enabled }: { restaurantId?: string; enabled?: boolean }) => ({
-    orders: restaurantId && enabled !== false ? mockOrders : [],
-    isLoading: false,
-    error: null,
-    isConnected: true,
-    refetch: vi.fn(),
-  })),
-}))
+  useRealtimeOrders: vi.fn(
+    ({ restaurantId, enabled }: { restaurantId?: string; enabled?: boolean }) => ({
+      orders: restaurantId && enabled !== false ? mockOrders : [],
+      isLoading: false,
+      error: null,
+      isConnected: true,
+      refetch: vi.fn(),
+    })
+  ),
+}));
 
-import { useRealtimeOrders } from '@/hooks/useRealtimeOrders'
+import { useRealtimeOrders } from '@/hooks/useRealtimeOrders';
 
 // ── Test Setup ────────────────────────────────────────────────
 
@@ -68,87 +70,91 @@ function createWrapper() {
       queries: { retry: false },
       mutations: { retry: false },
     },
-  })
+  });
 
   function Wrapper({ children }: { children: React.ReactNode }) {
-    return (
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    )
+    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
   }
-  Wrapper.displayName = 'createWrapper'
+  Wrapper.displayName = 'createWrapper';
 
-  return Wrapper
+  return Wrapper;
 }
 
 // ── Tests ─────────────────────────────────────────────────────
 
 describe('useKitchenOrders', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-  })
+    vi.clearAllMocks();
+  });
 
   describe('1. Basic functionality', () => {
     it('returns empty when restaurantId is not provided', async () => {
       const { result } = renderHook(() => useKitchenOrders({ restaurantId: undefined }), {
         wrapper: createWrapper(),
-      })
+      });
 
-      expect(result.current.orders).toEqual([])
-      expect(result.current.pendingOrders).toEqual([])
-    })
+      expect(result.current.orders).toEqual([]);
+      expect(result.current.pendingOrders).toEqual([]);
+    });
 
     it('returns empty when enabled is false', async () => {
-      const { result } = renderHook(() => useKitchenOrders({ restaurantId: 'rest-1', enabled: false }), {
-        wrapper: createWrapper(),
-      })
+      const { result } = renderHook(
+        () => useKitchenOrders({ restaurantId: 'rest-1', enabled: false }),
+        {
+          wrapper: createWrapper(),
+        }
+      );
 
-      expect(result.current.orders).toEqual([])
-    })
+      expect(result.current.orders).toEqual([]);
+    });
 
     it('returns orders from useRealtimeOrders', async () => {
       const { result } = renderHook(() => useKitchenOrders({ restaurantId: 'restaurant-123' }), {
         wrapper: createWrapper(),
-      })
+      });
 
       await waitFor(() => {
-        expect(result.current.orders.length).toBe(3)
-      })
-    })
-  })
+        expect(result.current.orders.length).toBe(3);
+      });
+    });
+  });
 
   describe('2. Order processing', () => {
     it('adds age_seconds to each order', async () => {
       const { result } = renderHook(() => useKitchenOrders({ restaurantId: 'restaurant-123' }), {
         wrapper: createWrapper(),
-      })
+      });
 
       await waitFor(() => {
-        expect(result.current.orders[0].age_seconds).toBeGreaterThan(0)
-      })
-    })
+        expect(result.current.orders[0].age_seconds).toBeGreaterThan(0);
+      });
+    });
 
     it('adds age_display to each order', async () => {
       const { result } = renderHook(() => useKitchenOrders({ restaurantId: 'restaurant-123' }), {
         wrapper: createWrapper(),
-      })
+      });
 
       await waitFor(() => {
-        expect(result.current.orders[0].age_display).toMatch(/\d+s|\d+m \d+s|\d+h \d+m/)
-      })
-    })
+        expect(result.current.orders[0].age_display).toMatch(/\d+s|\d+m \d+s|\d+h \d+m/);
+      });
+    });
 
     it('adds is_stale flag based on threshold', async () => {
-      const { result } = renderHook(() => useKitchenOrders({ restaurantId: 'restaurant-123', staleThresholdSeconds: 300 }), {
-        wrapper: createWrapper(),
-      })
+      const { result } = renderHook(
+        () => useKitchenOrders({ restaurantId: 'restaurant-123', staleThresholdSeconds: 300 }),
+        {
+          wrapper: createWrapper(),
+        }
+      );
 
       await waitFor(() => {
         // Orders from 1-3 minutes ago should not be stale with 300s threshold
         result.current.orders.forEach((order) => {
-          expect(order.is_stale).toBe(false)
-        })
-      })
-    })
+          expect(order.is_stale).toBe(false);
+        });
+      });
+    });
 
     it('marks old orders as stale', async () => {
       const oldOrder: OrderWithItems = {
@@ -161,7 +167,7 @@ describe('useKitchenOrders', () => {
         created_at: new Date(Date.now() - 600000).toISOString(), // 10 minutes ago
         updated_at: new Date().toISOString(),
         items: [],
-      }
+      };
 
       vi.mocked(useRealtimeOrders).mockReturnValue({
         orders: [oldOrder],
@@ -169,40 +175,43 @@ describe('useKitchenOrders', () => {
         error: null,
         isConnected: true,
         refetch: vi.fn(),
-      })
+      });
 
-      const { result } = renderHook(() => useKitchenOrders({ restaurantId: 'restaurant-123', staleThresholdSeconds: 300 }), {
-        wrapper: createWrapper(),
-      })
+      const { result } = renderHook(
+        () => useKitchenOrders({ restaurantId: 'restaurant-123', staleThresholdSeconds: 300 }),
+        {
+          wrapper: createWrapper(),
+        }
+      );
 
       await waitFor(() => {
-        expect(result.current.orders[0].is_stale).toBe(true)
-      })
-    })
-  })
+        expect(result.current.orders[0].is_stale).toBe(true);
+      });
+    });
+  });
 
   describe('3. Sorting', () => {
     it('sorts orders by age (oldest first)', () => {
       // Reset mock before this test
-      vi.mocked(useRealtimeOrders).mockReset()
+      vi.mocked(useRealtimeOrders).mockReset();
       vi.mocked(useRealtimeOrders).mockReturnValue({
         orders: mockOrders,
         isLoading: false,
         error: null,
         isConnected: true,
         refetch: vi.fn(),
-      })
+      });
 
       const { result } = renderHook(() => useKitchenOrders({ restaurantId: 'restaurant-123' }), {
         wrapper: createWrapper(),
-      })
+      });
 
       // order-3 was created 3 minutes ago, should be first (oldest)
-      expect(result.current.orders[0].id).toBe('order-3')
-      expect(result.current.orders[1].id).toBe('order-2')
-      expect(result.current.orders[2].id).toBe('order-1')
-    })
-  })
+      expect(result.current.orders[0].id).toBe('order-3');
+      expect(result.current.orders[1].id).toBe('order-2');
+      expect(result.current.orders[2].id).toBe('order-1');
+    });
+  });
 
   describe('4. Filtering', () => {
     it('returns empty arrays when no orders', () => {
@@ -213,30 +222,30 @@ describe('useKitchenOrders', () => {
         error: null,
         isConnected: true,
         refetch: vi.fn(),
-      })
+      });
 
       const { result } = renderHook(() => useKitchenOrders({ restaurantId: 'restaurant-123' }), {
         wrapper: createWrapper(),
-      })
+      });
 
-      expect(result.current.pendingOrders).toEqual([])
-      expect(result.current.preparingOrders).toEqual([])
-      expect(result.current.readyOrders).toEqual([])
-    })
+      expect(result.current.pendingOrders).toEqual([]);
+      expect(result.current.preparingOrders).toEqual([]);
+      expect(result.current.readyOrders).toEqual([]);
+    });
 
     it('filters by status when orders exist', () => {
       // Use default mock with mockOrders
       const { result } = renderHook(() => useKitchenOrders({ restaurantId: 'restaurant-123' }), {
         wrapper: createWrapper(),
-      })
+      });
 
       // Just verify orders are processed (age_seconds added)
-      result.current.orders.forEach(order => {
-        expect(order.age_seconds).toBeGreaterThanOrEqual(0)
-        expect(order.age_display).toBeDefined()
-      })
-    })
-  })
+      result.current.orders.forEach((order) => {
+        expect(order.age_seconds).toBeGreaterThanOrEqual(0);
+        expect(order.age_display).toBeDefined();
+      });
+    });
+  });
 
   describe('5. Pass-through properties', () => {
     it('passes isLoading from useRealtimeOrders', async () => {
@@ -246,31 +255,31 @@ describe('useKitchenOrders', () => {
         error: null,
         isConnected: false,
         refetch: vi.fn(),
-      })
+      });
 
       const { result } = renderHook(() => useKitchenOrders({ restaurantId: 'restaurant-123' }), {
         wrapper: createWrapper(),
-      })
+      });
 
-      expect(result.current.isLoading).toBe(true)
-    })
+      expect(result.current.isLoading).toBe(true);
+    });
 
     it('passes error from useRealtimeOrders', async () => {
-      const mockError = new Error('Failed to fetch')
+      const mockError = new Error('Failed to fetch');
       vi.mocked(useRealtimeOrders).mockReturnValue({
         orders: [],
         isLoading: false,
         error: mockError,
         isConnected: false,
         refetch: vi.fn(),
-      })
+      });
 
       const { result } = renderHook(() => useKitchenOrders({ restaurantId: 'restaurant-123' }), {
         wrapper: createWrapper(),
-      })
+      });
 
-      expect(result.current.error).toBe(mockError)
-    })
+      expect(result.current.error).toBe(mockError);
+    });
 
     it('passes isConnected from useRealtimeOrders', async () => {
       // Reset to default mock with isConnected: true
@@ -280,32 +289,32 @@ describe('useKitchenOrders', () => {
         error: null,
         isConnected: true,
         refetch: vi.fn(),
-      })
+      });
 
       const { result } = renderHook(() => useKitchenOrders({ restaurantId: 'restaurant-123' }), {
         wrapper: createWrapper(),
-      })
+      });
 
       await waitFor(() => {
-        expect(result.current.isConnected).toBe(true)
-      })
-    })
+        expect(result.current.isConnected).toBe(true);
+      });
+    });
 
     it('provides refetch function', async () => {
-      const mockRefetch = vi.fn()
+      const mockRefetch = vi.fn();
       vi.mocked(useRealtimeOrders).mockReturnValue({
         orders: [],
         isLoading: false,
         error: null,
         isConnected: true,
         refetch: mockRefetch,
-      })
+      });
 
       const { result } = renderHook(() => useKitchenOrders({ restaurantId: 'restaurant-123' }), {
         wrapper: createWrapper(),
-      })
+      });
 
-      expect(typeof result.current.refetch).toBe('function')
-    })
-  })
-})
+      expect(typeof result.current.refetch).toBe('function');
+    });
+  });
+});

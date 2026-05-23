@@ -50,10 +50,7 @@ describe('Restaurant Creation API - Role Enum Fix', () => {
     it('route.ts não usa valores em inglês para role', async () => {
       // Read the route file and verify the fix
       const routeContent = await import('fs').then((fs) =>
-        fs.readFileSync(
-          `${routeBasePath}/restaurants/route.ts`,
-          'utf-8'
-        )
+        fs.readFileSync(`${routeBasePath}/restaurants/route.ts`, 'utf-8')
       );
 
       // Should use 'dono' for owner role
@@ -68,10 +65,7 @@ describe('Restaurant Creation API - Role Enum Fix', () => {
     it('users/[id]/route.ts verifica role don', async () => {
       // Read the user route file and verify the fix
       const routeContent = await import('fs').then((fs) =>
-        fs.readFileSync(
-          `${routeBasePath}/users/[id]/route.ts`,
-          'utf-8'
-        )
+        fs.readFileSync(`${routeBasePath}/users/[id]/route.ts`, 'utf-8')
       );
 
       // Should NOT use 'owner' when filtering by role

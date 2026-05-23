@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
+import { NextRequest, NextResponse } from 'next/server';
+
 import { sql } from '@/infrastructure/database/pg-client';
 import { logger } from '@/lib/logger';
 
@@ -52,14 +53,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'order_id is required' }, { status: 400 });
     }
 
-    // Fetch order
+    // Fetch order with customer email
     const orderResult = await sql<{
       id: string;
       restaurant_id: string;
       total: number;
       payment_status: string;
+      customer_email: string | null;
     }>`
-      SELECT id, restaurant_id, total, payment_status
+      SELECT id, restaurant_id, total, payment_status, customer_email
       FROM orders
       WHERE id = ${body.order_id}
       LIMIT 1
@@ -76,6 +78,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Order is already paid' }, { status: 400 });
     }
 
+    // Validate we have an email for the payer
+    if (!order.customer_email) {
+      logger.error('payments/pix', 'Customer email not found for order', {
+        orderId: body.order_id,
+      });
+      return NextResponse.json(
+        { error: 'Customer email is required for PIX payment' },
+        { status: 400 }
+      );
+    }
+
     // Create Pix payment with Mercado Pago
     const payment = await paymentClient!.create({
       body: {
@@ -83,7 +96,7 @@ export async function POST(request: NextRequest) {
         description: `Pedido ${order.id}`,
         payment_method_id: 'pix',
         payer: {
-          email: 'customer@pedi.ai', // TODO: get from customer data
+          email: order.customer_email,
         },
         metadata: {
           order_id: order.id,

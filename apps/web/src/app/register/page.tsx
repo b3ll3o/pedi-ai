@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSession } from '@/lib/auth/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useEffect, useState } from 'react';
+
 import { RegisterForm } from '@/components/auth/RegisterForm';
+import { useAuth } from '@/hooks/useAuth';
+import { getSession } from '@/lib/auth/client';
+
 import styles from './page.module.css';
 
 // Timeout para detectar sessão lenta/falhou e exibir o formulário mesmo assim
@@ -13,7 +15,7 @@ const SESSION_CHECK_TIMEOUT_MS = 5000;
 export default function CustomerRegisterPage() {
   const router = useRouter();
   const [sessionChecked, setSessionChecked] = useState(false);
-  const { signUp, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     let cancelled = false;
@@ -52,15 +54,15 @@ export default function CustomerRegisterPage() {
   }, [isAuthenticated, router]);
 
   const handleRegister = async (
+    name: string,
     email: string,
     password: string,
     intent: 'gerenciar_restaurante' | 'fazer_pedidos'
   ) => {
-    await signUp(email, password);
     const response = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, intent }),
+      body: JSON.stringify({ email, nome: name, senha: password, intent }),
     });
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'Erro ao criar perfil' }));

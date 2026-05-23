@@ -1,8 +1,8 @@
 import { UseCase } from '@/application/shared';
-import { isMultiRestaurantEnabled } from '@/lib/feature-flags';
 import { UsuarioRestaurante } from '@/domain/admin/entities/UsuarioRestaurante';
-import { IUsuarioRestauranteRepository } from '@/domain/admin/repositories/IUsuarioRestauranteRepository';
 import { UsuarioVinculadoRestauranteEvent } from '@/domain/admin/events/UsuarioVinculadoRestauranteEvent';
+import { IUsuarioRestauranteRepository } from '@/domain/admin/repositories/IUsuarioRestauranteRepository';
+import { isMultiRestaurantEnabled } from '@/lib/feature-flags';
 
 /**
  * Input para vincular usuário a restaurante

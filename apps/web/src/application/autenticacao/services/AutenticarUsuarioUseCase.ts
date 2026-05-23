@@ -1,5 +1,6 @@
 import { UseCase } from '@/application/shared';
 import { Sessao } from '@/domain/autenticacao/entities/Sessao';
+
 import { IAuthAdapter } from './RegistrarUsuarioUseCase';
 
 /**

@@ -7,16 +7,16 @@
  * @module support/setup
  */
 
-import { seed } from '../scripts/seed'
+import { seed } from '../scripts/seed';
 
 /**
  * Hook executado antes de todos os testes.
  * Popula o banco com dados de teste.
  */
 export async function beforeAll(): Promise<void> {
-  console.log('🌱 Executando seed E2E...')
-  await seed()
-  console.log('✅ Seed concluído\n')
+  console.log('🌱 Executando seed E2E...');
+  await seed();
+  console.log('✅ Seed concluído\n');
 }
 
 /**

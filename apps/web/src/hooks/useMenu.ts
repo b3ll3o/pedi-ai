@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { getCachedMenu } from '@/lib/offline/cache';
+
 import { useMenuStore } from '@/infrastructure/persistence/menuStore';
+import { getCachedMenu } from '@/lib/offline/cache';
 
 export type MenuResponse = {
   restaurant: any;

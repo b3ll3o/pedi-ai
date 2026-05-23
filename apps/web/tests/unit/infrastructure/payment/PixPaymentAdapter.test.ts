@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
 import { PixAdapter } from '@/infrastructure/external/PixAdapter';
 
 const mockPaymentInstance = vi.hoisted(() => ({
@@ -108,8 +109,9 @@ describe('PixAdapter', () => {
       mockPaymentInstance.create.mockRejectedValue(new Error('Unauthorized'));
 
       // Act & Assert
-      await expect(pixAdapter.criarCobranca(1000, 'pedido-erro'))
-        .rejects.toThrow('Falha ao criar cobrança Pix: Unauthorized');
+      await expect(pixAdapter.criarCobranca(1000, 'pedido-erro')).rejects.toThrow(
+        'Falha ao criar cobrança Pix: Unauthorized'
+      );
     });
 
     it('deve usar NEXT_PUBLIC_DEMO_PAYMENT_MODE=true para retornar dados simulados', async () => {
@@ -135,8 +137,9 @@ describe('PixAdapter', () => {
       const adapterSemToken = new PixAdapter('');
 
       // Act & Assert
-      await expect(adapterSemToken.criarCobranca(1000, 'pedido-sem-token'))
-        .rejects.toThrow('Mercado Pago access token não configurado');
+      await expect(adapterSemToken.criarCobranca(1000, 'pedido-sem-token')).rejects.toThrow(
+        'Mercado Pago access token não configurado'
+      );
     });
   });
 
@@ -173,8 +176,9 @@ describe('PixAdapter', () => {
       mockPaymentInstance.get.mockRejectedValue(new Error('Not Found'));
 
       // Act & Assert
-      await expect(pixAdapter.verificarStatus('999999'))
-        .rejects.toThrow('Falha ao verificar status Pix: Not Found');
+      await expect(pixAdapter.verificarStatus('999999')).rejects.toThrow(
+        'Falha ao verificar status Pix: Not Found'
+      );
     });
 
     it('deve usar modo demo quando NEXT_PUBLIC_DEMO_PAYMENT_MODE=true', async () => {
@@ -240,7 +244,9 @@ describe('PixAdapter', () => {
       const diffMs = resultado.expiracao.getTime() - antes.getTime();
       const diffEsperado = 30 * 60 * 1000;
       expect(diffMs).toBeGreaterThanOrEqual(diffEsperado - 2000);
-      expect(diffMs).toBeLessThanOrEqual(diffEsperado + 2000 + (depois.getTime() - antes.getTime()));
+      expect(diffMs).toBeLessThanOrEqual(
+        diffEsperado + 2000 + (depois.getTime() - antes.getTime())
+      );
     });
   });
 });

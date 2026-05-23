@@ -3,8 +3,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
-import { Restaurante, RestauranteProps } from '@/domain/admin/entities/Restaurante';
+
 import { ListarRestaurantesDoOwnerUseCase } from '@/application/admin/services/ListarRestaurantesDoOwnerUseCase';
+import { Restaurante, RestauranteProps } from '@/domain/admin/entities/Restaurante';
 import { RestauranteRepository } from '@/infrastructure/persistence/admin/RestauranteRepository';
 import { UsuarioRestauranteRepository } from '@/infrastructure/persistence/admin/UsuarioRestauranteRepository';
 import { db } from '@/infrastructure/persistence/database';

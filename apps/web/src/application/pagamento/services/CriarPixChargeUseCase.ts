@@ -1,9 +1,11 @@
-import { UseCase } from '../../shared/types/UseCase';
+import { PagamentoAggregate, MetodoPagamento } from '@/domain/pagamento';
 import { IPagamentoRepository } from '@/domain/pagamento/repositories';
 import { IPedidoRepository } from '@/domain/pedido';
-import { PagamentoAggregate, MetodoPagamento } from '@/domain/pagamento';
 import { Dinheiro } from '@/domain/shared';
 import { EventDispatcher } from '@/domain/shared';
+
+import { UseCase } from '../../shared/types/UseCase';
+
 import { IPixAdapter, PixCharge } from './adapters/IPixAdapter';
 
 export interface CriarPixChargeInput {

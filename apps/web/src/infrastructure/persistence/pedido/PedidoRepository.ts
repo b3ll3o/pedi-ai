@@ -1,10 +1,12 @@
-import { PediDatabase } from '../database';
-import { IPedidoRepository } from '@/domain/pedido/repositories/IPedidoRepository';
-import { Pedido } from '@/domain/pedido/entities/Pedido';
 import { ItemPedido, type ItemPedidoProps } from '@/domain/pedido/entities/ItemPedido';
+import { Pedido } from '@/domain/pedido/entities/Pedido';
+import { IPedidoRepository } from '@/domain/pedido/repositories/IPedidoRepository';
+import { ModificadorSelecionado } from '@/domain/pedido/value-objects/ModificadorSelecionado';
 import { StatusPedido } from '@/domain/pedido/value-objects/StatusPedido';
 import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
-import { ModificadorSelecionado } from '@/domain/pedido/value-objects/ModificadorSelecionado';
+
+import { PediDatabase } from '../database';
+
 import type { PedidoDbModel, StoredItemPedido } from './types';
 
 export class PedidoRepository implements IPedidoRepository {

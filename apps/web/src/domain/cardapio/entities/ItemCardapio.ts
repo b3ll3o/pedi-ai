@@ -1,7 +1,8 @@
 import { EntityClass } from '@/domain/shared';
 import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
-import { TipoItemCardapio } from '../value-objects/TipoItemCardapio';
+
 import { LabelDietetico, LabelDieteticoValue } from '../value-objects/LabelDietetico';
+import { TipoItemCardapio } from '../value-objects/TipoItemCardapio';
 
 export interface ItemCardapioProps {
   id: string;

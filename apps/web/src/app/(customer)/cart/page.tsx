@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+
 import CartClient from './CartClient';
 
 export async function generateMetadata(): Promise<Metadata> {

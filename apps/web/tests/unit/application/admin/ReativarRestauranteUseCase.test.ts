@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { ReativarRestauranteUseCase } from '@/application/admin/services/ReativarRestauranteUseCase';
 import { ReativarRestauranteInput } from '@/application/admin/services/ReativarRestauranteUseCase';
 import { Restaurante } from '@/domain/admin/entities/Restaurante';
@@ -60,7 +61,11 @@ describe('ReativarRestauranteUseCase', () => {
       mockRestauranteRepo.findById.mockResolvedValueOnce(restauranteDesativado);
       mockRestauranteRepo.update.mockImplementation(async (r) => r);
       mockUsuarioRestauranteRepo.findByUsuarioIdAndRestauranteId.mockResolvedValueOnce(
-        UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'restaurante-id', papel: 'dono' })
+        UsuarioRestaurante.criar({
+          usuarioId: 'owner-id',
+          restauranteId: 'restaurante-id',
+          papel: 'dono',
+        })
       );
 
       const input: ReativarRestauranteInput = {
@@ -86,7 +91,11 @@ describe('ReativarRestauranteUseCase', () => {
       mockRestauranteRepo.findById.mockResolvedValueOnce(restauranteDesativado);
       mockRestauranteRepo.update.mockImplementation(async (r) => r);
       mockUsuarioRestauranteRepo.findByUsuarioIdAndRestauranteId.mockResolvedValueOnce(
-        UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'restaurante-id', papel: 'dono' })
+        UsuarioRestaurante.criar({
+          usuarioId: 'owner-id',
+          restauranteId: 'restaurante-id',
+          papel: 'dono',
+        })
       );
 
       const input: ReativarRestauranteInput = {
@@ -140,7 +149,11 @@ describe('ReativarRestauranteUseCase', () => {
 
       mockRestauranteRepo.findById.mockResolvedValueOnce(restauranteDesativado);
       mockUsuarioRestauranteRepo.findByUsuarioIdAndRestauranteId.mockResolvedValueOnce(
-        UsuarioRestaurante.criar({ usuarioId: 'staff-id', restauranteId: 'restaurante-id', papel: 'atendente' })
+        UsuarioRestaurante.criar({
+          usuarioId: 'staff-id',
+          restauranteId: 'restaurante-id',
+          papel: 'atendente',
+        })
       );
 
       const input: ReativarRestauranteInput = {
@@ -163,7 +176,11 @@ describe('ReativarRestauranteUseCase', () => {
 
       mockRestauranteRepo.findById.mockResolvedValueOnce(restauranteDesativado);
       mockUsuarioRestauranteRepo.findByUsuarioIdAndRestauranteId.mockResolvedValueOnce(
-        UsuarioRestaurante.criar({ usuarioId: 'manager-id', restauranteId: 'restaurante-id', papel: 'gerente' })
+        UsuarioRestaurante.criar({
+          usuarioId: 'manager-id',
+          restauranteId: 'restaurante-id',
+          papel: 'gerente',
+        })
       );
 
       const input: ReativarRestauranteInput = {

@@ -7,9 +7,11 @@
  * 3. Logout: signOut() → deleta token do DB → limpa cookie
  */
 
-import { cookies } from 'next/headers';
-import { sql } from '@/infrastructure/database/pg-client';
 import { randomBytes } from 'crypto';
+
+import { cookies } from 'next/headers';
+
+import { sql } from '@/infrastructure/database/pg-client';
 
 // Tempo de expiração da sessão: 7 dias
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -28,7 +30,12 @@ export interface Session {
 
 // ─── Criar token de sessão (usado após login) ─────────────────────────────────
 
-export async function createSession(userId: string, _email: string, _role: string, _restaurantId?: string): Promise<string> {
+export async function createSession(
+  userId: string,
+  _email: string,
+  _role: string,
+  _restaurantId?: string
+): Promise<string> {
   const token = randomBytes(32).toString('hex');
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
 
@@ -50,7 +57,13 @@ export async function getSession(): Promise<Session | null> {
 
   if (!token) return null;
 
-  const sessions = await sql<{ user_id: string; email: string; role: string; restaurant_id?: string; expires_at: string }>`
+  const sessions = await sql<{
+    user_id: string;
+    email: string;
+    role: string;
+    restaurant_id?: string;
+    expires_at: string;
+  }>`
     SELECT u.id as user_id, up.email, up.role, up.restaurant_id, s.expires_at
     FROM sessions s
     JOIN users u ON u.id = s.user_id

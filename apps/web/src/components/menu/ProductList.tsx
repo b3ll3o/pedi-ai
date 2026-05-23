@@ -1,6 +1,7 @@
 'use client';
 
 import { useCartStore } from '@/infrastructure/persistence/cartStore';
+
 import styles from './ProductList.module.css';
 
 export type Product = any;

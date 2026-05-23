@@ -4,16 +4,16 @@ Cobertura de testes end-to-end usando [Playwright](https://playwright.dev/).
 
 ## Visão Geral
 
-| Persona | Arquivos de Teste | Fluxos |
-|---------|------------------|--------|
-| Cliente | 16 specs | auth, register, menu, cart, checkout, order, payment, offline, combos, modifier-groups, product-detail, restaurants, table-qr-redirect, logout, register-owner-redirect, checkout-no-payment |
-| Administrador | 18 specs | auth, categories, products, orders, table-qr, combos-admin, realtime-updates, analytics, dashboard, tables, settings, users, modifier-groups, restaurants, order-detail, multi-restaurant, offline-restaurant, restaurant-reactivate |
-| Garçom | 2 specs | kitchen, waiter-dashboard |
-| Cozinha | 2 specs | kds-new-order, kds-update-status |
-| Landing | 1 spec | landing |
-| Offline | 2 specs | cross-tab-sync, offline-flow |
-| Pagamento | 1 spec | pix |
-| Auth | 1 spec | password-recovery |
+| Persona       | Arquivos de Teste | Fluxos                                                                                                                                                                                                                               |
+| ------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Cliente       | 16 specs          | auth, register, menu, cart, checkout, order, payment, offline, combos, modifier-groups, product-detail, restaurants, table-qr-redirect, logout, register-owner-redirect, checkout-no-payment                                         |
+| Administrador | 18 specs          | auth, categories, products, orders, table-qr, combos-admin, realtime-updates, analytics, dashboard, tables, settings, users, modifier-groups, restaurants, order-detail, multi-restaurant, offline-restaurant, restaurant-reactivate |
+| Garçom        | 2 specs           | kitchen, waiter-dashboard                                                                                                                                                                                                            |
+| Cozinha       | 2 specs           | kds-new-order, kds-update-status                                                                                                                                                                                                     |
+| Landing       | 1 spec            | landing                                                                                                                                                                                                                              |
+| Offline       | 2 specs           | cross-tab-sync, offline-flow                                                                                                                                                                                                         |
+| Pagamento     | 1 spec            | pix                                                                                                                                                                                                                                  |
+| Auth          | 1 spec            | password-recovery                                                                                                                                                                                                                    |
 
 **Total: 43 spec files cobrindo fluxos completos**
 
@@ -23,65 +23,65 @@ Cobertura de testes end-to-end usando [Playwright](https://playwright.dev/).
 
 ### Cliente
 
-| Fluxo | Spec File | Tags | Status |
-|-------|-----------|------|--------|
-| auth | `tests/customer/auth.spec.ts` | @smoke, @critical | ✅ |
-| register | `tests/customer/register.spec.ts` | @smoke | ✅ |
-| menu | `tests/customer/menu.spec.ts` | — | ✅ |
-| cart | `tests/customer/cart.spec.ts` | — | ✅ |
-| checkout | `tests/customer/checkout.spec.ts` | @smoke, @slow | ✅ |
-| order | `tests/customer/order.spec.ts` | @slow | ✅ |
-| payment | `tests/customer/payment.spec.ts` | @slow | ✅ |
-| offline | `tests/customer/offline.spec.ts` | — | ✅ |
-| combos | `tests/customer/combos.spec.ts` | — | ✅ |
-| modifier-groups | `tests/customer/modifier-groups.spec.ts` | — | ✅ |
-| product-detail | `tests/customer/product-detail.spec.ts` | — | ✅ |
-| password-recovery | `tests/auth/password-recovery.spec.ts` | — | ✅ |
-| reset-password | `tests/auth/password-recovery.spec.ts` | — | ✅ |
+| Fluxo             | Spec File                                | Tags              | Status |
+| ----------------- | ---------------------------------------- | ----------------- | ------ |
+| auth              | `tests/customer/auth.spec.ts`            | @smoke, @critical | ✅     |
+| register          | `tests/customer/register.spec.ts`        | @smoke            | ✅     |
+| menu              | `tests/customer/menu.spec.ts`            | —                 | ✅     |
+| cart              | `tests/customer/cart.spec.ts`            | —                 | ✅     |
+| checkout          | `tests/customer/checkout.spec.ts`        | @smoke, @slow     | ✅     |
+| order             | `tests/customer/order.spec.ts`           | @slow             | ✅     |
+| payment           | `tests/customer/payment.spec.ts`         | @slow             | ✅     |
+| offline           | `tests/customer/offline.spec.ts`         | —                 | ✅     |
+| combos            | `tests/customer/combos.spec.ts`          | —                 | ✅     |
+| modifier-groups   | `tests/customer/modifier-groups.spec.ts` | —                 | ✅     |
+| product-detail    | `tests/customer/product-detail.spec.ts`  | —                 | ✅     |
+| password-recovery | `tests/auth/password-recovery.spec.ts`   | —                 | ✅     |
+| reset-password    | `tests/auth/password-recovery.spec.ts`   | —                 | ✅     |
 
 ### Administrador
 
-| Fluxo | Spec File | Tags | Status |
-|-------|-----------|------|--------|
-| auth | `tests/admin/auth.spec.ts` | @smoke, @critical | ✅ |
-| dashboard | `tests/admin/dashboard.spec.ts` | — | ✅ |
-| categories | `tests/admin/categories.spec.ts` | — | ✅ |
-| products | `tests/admin/products.spec.ts` | — | ✅ |
-| orders | `tests/admin/orders.spec.ts` | — | ✅ |
-| tables | `tests/admin/tables.spec.ts` | — | ✅ |
-| table-qr | `tests/admin/table-qr.spec.ts` | — | ✅ |
-| settings | `tests/admin/settings.spec.ts` | — | ✅ |
-| users | `tests/admin/users.spec.ts` | — | ✅ |
-| modifier-groups | `tests/admin/modifier-groups.spec.ts` | — | ✅ |
-| restaurants | `tests/admin/restaurants.spec.ts` | — | ✅ |
-| order-detail | `tests/admin/order-detail.spec.ts` | — | ✅ |
-| combos-admin | `tests/admin/combos-admin.spec.ts` | — | ✅ |
-| realtime-updates | `tests/admin/realtime-updates.spec.ts` | — | ✅ |
-| analytics | `tests/admin/analytics.spec.ts` | — | ✅ |
+| Fluxo            | Spec File                              | Tags              | Status |
+| ---------------- | -------------------------------------- | ----------------- | ------ |
+| auth             | `tests/admin/auth.spec.ts`             | @smoke, @critical | ✅     |
+| dashboard        | `tests/admin/dashboard.spec.ts`        | —                 | ✅     |
+| categories       | `tests/admin/categories.spec.ts`       | —                 | ✅     |
+| products         | `tests/admin/products.spec.ts`         | —                 | ✅     |
+| orders           | `tests/admin/orders.spec.ts`           | —                 | ✅     |
+| tables           | `tests/admin/tables.spec.ts`           | —                 | ✅     |
+| table-qr         | `tests/admin/table-qr.spec.ts`         | —                 | ✅     |
+| settings         | `tests/admin/settings.spec.ts`         | —                 | ✅     |
+| users            | `tests/admin/users.spec.ts`            | —                 | ✅     |
+| modifier-groups  | `tests/admin/modifier-groups.spec.ts`  | —                 | ✅     |
+| restaurants      | `tests/admin/restaurants.spec.ts`      | —                 | ✅     |
+| order-detail     | `tests/admin/order-detail.spec.ts`     | —                 | ✅     |
+| combos-admin     | `tests/admin/combos-admin.spec.ts`     | —                 | ✅     |
+| realtime-updates | `tests/admin/realtime-updates.spec.ts` | —                 | ✅     |
+| analytics        | `tests/admin/analytics.spec.ts`        | —                 | ✅     |
 
 ### Realtime
 
-| Fluxo | Spec File | Tags | Status |
-|-------|-----------|------|--------|
-| realtime-updates | `tests/admin/realtime-updates.spec.ts` | — | ✅ |
-| kitchen | `tests/waiter/kitchen.spec.ts` | @slow | ✅ |
-| waiter-dashboard | `tests/waiter/waiter-dashboard.spec.ts` | — | ✅ |
+| Fluxo            | Spec File                               | Tags  | Status |
+| ---------------- | --------------------------------------- | ----- | ------ |
+| realtime-updates | `tests/admin/realtime-updates.spec.ts`  | —     | ✅     |
+| kitchen          | `tests/waiter/kitchen.spec.ts`          | @slow | ✅     |
+| waiter-dashboard | `tests/waiter/waiter-dashboard.spec.ts` | —     | ✅     |
 
 ### Landing Page
 
-| Fluxo | Spec File | Tags | Status |
-|-------|-----------|------|--------|
-| landing | `tests/landing/landing.spec.ts` | @smoke | ✅ |
+| Fluxo   | Spec File                       | Tags   | Status |
+| ------- | ------------------------------- | ------ | ------ |
+| landing | `tests/landing/landing.spec.ts` | @smoke | ✅     |
 
 ---
 
 ## Tags
 
-| Tag | Descrição | Testes |
-|-----|-----------|--------|
-| `@smoke` | Testes essenciais de sanidade | auth, register, checkout, admin auth, landing |
-| `@critical` | Fluxos críticos para negócio | auth, checkout, admin auth |
-| `@slow` | Testes que levam >30s | checkout, order, payment, kitchen |
+| Tag         | Descrição                     | Testes                                        |
+| ----------- | ----------------------------- | --------------------------------------------- |
+| `@smoke`    | Testes essenciais de sanidade | auth, register, checkout, admin auth, landing |
+| `@critical` | Fluxos críticos para negócio  | auth, checkout, admin auth                    |
+| `@slow`     | Testes que levam >30s         | checkout, order, payment, kitchen             |
 
 ---
 
@@ -89,28 +89,28 @@ Cobertura de testes end-to-end usando [Playwright](https://playwright.dev/).
 
 Localização: `tests/e2e/pages/`
 
-| Page Object | Descrição |
-|-------------|-----------|
-| `CustomerLoginPage` | Tela de login do cliente |
-| `CartPage` | Carrinho de compras |
-| `CheckoutPage` | Página de finalização |
-| `OrderPage` | Acompanhamento do pedido |
-| `RestaurantsPage` | Lista de restaurantes públicos |
-| `ProductDetailPage` | Detalhes de produto |
-| `AdminLoginPage` | Tela de login administrativo |
-| `AdminDashboardPage` | Painel administrativo |
-| `AdminCategoriesPage` | Gerenciamento de categorias |
-| `AdminProductsPage` | Gerenciamento de produtos |
-| `AdminOrdersPage` | Lista de pedidos |
-| `AdminOrderDetailPage` | Detalhes de pedido |
-| `AdminTablesPage` | Gerenciamento de mesas |
-| `AdminSettingsPage` | Configurações do restaurante |
-| `AdminUsersPage` | Gerenciamento de usuários |
+| Page Object               | Descrição                                |
+| ------------------------- | ---------------------------------------- |
+| `CustomerLoginPage`       | Tela de login do cliente                 |
+| `CartPage`                | Carrinho de compras                      |
+| `CheckoutPage`            | Página de finalização                    |
+| `OrderPage`               | Acompanhamento do pedido                 |
+| `RestaurantsPage`         | Lista de restaurantes públicos           |
+| `ProductDetailPage`       | Detalhes de produto                      |
+| `AdminLoginPage`          | Tela de login administrativo             |
+| `AdminDashboardPage`      | Painel administrativo                    |
+| `AdminCategoriesPage`     | Gerenciamento de categorias              |
+| `AdminProductsPage`       | Gerenciamento de produtos                |
+| `AdminOrdersPage`         | Lista de pedidos                         |
+| `AdminOrderDetailPage`    | Detalhes de pedido                       |
+| `AdminTablesPage`         | Gerenciamento de mesas                   |
+| `AdminSettingsPage`       | Configurações do restaurante             |
+| `AdminUsersPage`          | Gerenciamento de usuários                |
 | `AdminModifierGroupsPage` | Gerenciamento de grupos de modificadores |
-| `AdminRestaurantsPage` | Gerenciamento de restaurantes |
-| `TableQRPage` | Mesas e QR codes |
-| `WaiterDashboardPage` | Painel do garçom |
-| `KitchenPage` | Exibição dos pedidos em produção |
+| `AdminRestaurantsPage`    | Gerenciamento de restaurantes            |
+| `TableQRPage`             | Mesas e QR codes                         |
+| `WaiterDashboardPage`     | Painel do garçom                         |
+| `KitchenPage`             | Exibição dos pedidos em produção         |
 
 ---
 
@@ -119,27 +119,30 @@ Localização: `tests/e2e/pages/`
 ### Pré-requisitos
 
 ```bash
-# 1. Configurar .env.e2e com Supabase Cloud
+# 1. Configurar .env.e2e com PostgreSQL local (via docker-compose.dev.yml)
 cp .env.local.example .env.e2e
-# Edite .env.e2e com suas credenciais Supabase Cloud
+# Edite .env.e2e — defina DATABASE_URL, JWT_SECRET e NEXT_PUBLIC_API_URL
+
+# Opcional: iniciar toda a stack com docker-compose (postgres + mailpit + api + web)
+docker compose -f docker-compose.dev.yml up -d
 
 # 2. Instalar dependências
 pnpm install
 
 # 3. Instalar navegadores
-pnpm install:browsers
+pnpm exec playwright install chromium --with-deps
 
-# 4. Popular dados de teste no Supabase Cloud
+# 4. Popular dados de teste (seed cria usuários e restaurante de teste)
 pnpm test:e2e:seed
-
-# 5. Iniciar o servidor de desenvolvimento
-pnpm dev
 ```
 
 ### Comandos
 
 ```bash
-# Executar todos os testes (requer servidor rodando em localhost:3000)
+# Seed e2e:seed executa seed com dados isolados por shard (SHARD=1/4 pnpm test:e2e:seed)
+# Seed é executado automaticamente pelo global-setup.ts antes dos testes
+
+# Executar todos os testes (requer api + web rodando — veja above ou use webServer do playwright)
 pnpm test:e2e
 
 # Executar com interface visual (debug)
@@ -162,22 +165,33 @@ pnpm test:e2e:critical
 
 # Fast tests (exclui slow)
 pnpm test:e2e:fast
+
+# Popular dados de teste (cria usuários customer/admin/waiter, restaurante, categorias, produtos)
+pnpm test:e2e:seed
+
+# Limpar dados de teste
+pnpm test:e2e:cleanup
 ```
 
 ### Variáveis de Ambiente
 
-| Variável | Default | Descrição |
-|----------|---------|-----------|
-| `BASE_URL` | `http://localhost:3000` | URL base da aplicação |
-| `CI` | `undefined` | Quando definido, ativa retry e webServer automático |
-| `E2E_SKIP_NEW_TESTS` | `undefined` | Quando `true`, executa apenas auth.spec (rollback) |
-| `SHARD` | `undefined` | Shard atual (ex: `1/4`) |
+| Variável              | Default                 | Descrição                                                      |
+| --------------------- | ----------------------- | -------------------------------------------------------------- |
+| `BASE_URL`            | `http://localhost:3000` | URL base da aplicação web (Next.js)                            |
+| `NEXT_PUBLIC_API_URL` | `http://localhost:3001` | URL base da API (NestJS)                                       |
+| `DATABASE_URL`        | —                       | Connection string do PostgreSQL                                |
+| `JWT_SECRET`          | —                       | Secret para tokens JWT                                         |
+| `JWT_REFRESH_SECRET`  | —                       | Secret para refresh tokens                                     |
+| `CI`                  | `undefined`             | Quando definido, usa retries e webServer automático            |
+| `SHARD`               | `undefined`             | Shard atual em formato `N/M` (ex: `1/4`) — isola dados de seed |
+| `E2E_SKIP_NEW_TESTS`  | `undefined`             | Quando `true`, executa apenas auth.spec                        |
 
-> **Nota**: E2E usa `.env.e2e` (Supabase Cloud). Para development local, use `.env.local`.
+> **Nota**: `.env.e2e` é carregado pelo `playwright.config.ts` via `dotenv.config()`. Defina `BASE_URL`, `NEXT_PUBLIC_API_URL`, `DATABASE_URL`, `JWT_SECRET` e `JWT_REFRESH_SECRET` neste arquivo. Para development local com docker-compose, use o `.env` do `docker-compose.dev.yml`.
 
 ### Relatórios
 
 Os relatórios HTML e JSON são gerados em:
+
 - `playwright-report/` — relatório HTML navegável
 - `playwright-results.json` — resultados em JSON
 - `test-results/` — screenshots e traces de falhas
@@ -186,13 +200,13 @@ Os relatórios HTML e JSON são gerados em:
 
 ## Browsers Suportados
 
-| Browser | Dispositivo | Configuração |
-|---------|-------------|--------------|
-| Chromium | Desktop | `chromium` |
-| Firefox | Desktop | `firefox` |
-| Webkit | Desktop | `webkit` |
-| Chrome | Mobile (Pixel 5) | `Mobile Chrome` |
-| Safari | Mobile (iPhone 12) | `Mobile Safari` |
+| Browser  | Dispositivo        | Configuração    |
+| -------- | ------------------ | --------------- |
+| Chromium | Desktop            | `chromium`      |
+| Firefox  | Desktop            | `firefox`       |
+| Webkit   | Desktop            | `webkit`        |
+| Chrome   | Mobile (Pixel 5)   | `Mobile Chrome` |
+| Safari   | Mobile (iPhone 12) | `Mobile Safari` |
 
 ---
 
@@ -238,9 +252,9 @@ tests/e2e/
 
 1. **Navegação**: Usa `waitUntil: 'load'` em vez de `networkidle'` (2-5x mais rápido)
 2. **Storage State**: Cache TTL de 10 minutos para sessões autenticadas
-3. **Seed Data**: Cache em memória por worker index
+3. **Seed Data**: Cache em memória por worker index + isolamento por shard em CI
 4. **Parallel Execution**: `fullyParallel: true` para testes locais
-5. **Sharding**: 4 shards em CI para distribuição de carga
+5. **Sharding**: 4 shards em CI para distribuição de carga (dados isolados por shard)
 6. **Network Blocking**: Bloqueia requests desnecessários (fonts, analytics)
 
 ### Factories para Dados Específicos
@@ -248,7 +262,7 @@ tests/e2e/
 Para testes que requerem dados específicos, use factories:
 
 ```typescript
-import { createOrder } from '../shared/factories'
+import { createOrder } from '../shared/factories';
 
 test('should update preparing order', async ({ api, seedData }) => {
   const order = await createOrder(api, {
@@ -256,13 +270,15 @@ test('should update preparing order', async ({ api, seedData }) => {
     tableId: seedData.table.id,
     status: 'preparing',
     paymentStatus: 'paid',
-    items: [{
-      productId: seedData.products[0].id,
-      quantity: 1,
-      unitPrice: seedData.products[0].price
-    }]
-  })
-})
+    items: [
+      {
+        productId: seedData.products[0].id,
+        quantity: 1,
+        unitPrice: seedData.products[0].price,
+      },
+    ],
+  });
+});
 ```
 
 ---
@@ -270,6 +286,7 @@ test('should update preparing order', async ({ api, seedData }) => {
 ## Manutenção
 
 Conforme as regras do projeto:
+
 - **Testes DEVEM ser atualizados imediatamente** ao adicionar, modificar ou corrigir qualquer funcionalidade
 - **Antes de merge de PR**: todos os testes E2E DEVEM passar localmente
 - **CI/CD**: o pipeline E2E bloqueia merge se os testes falharem

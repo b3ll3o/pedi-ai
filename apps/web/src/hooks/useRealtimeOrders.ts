@@ -3,10 +3,12 @@
  * Subscribes to order updates via Socket.io with polling fallback.
  */
 
-import { useEffect, useCallback, useState, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useSocketIO } from './useSocketIO';
+import { useEffect, useCallback, useState, useRef } from 'react';
+
 import type { OrderWithItems } from '@/application/services/adminOrderService';
+
+import { useSocketIO } from './useSocketIO';
 
 const POLLING_INTERVAL = 10000; // 10 seconds
 
@@ -34,7 +36,11 @@ export function useRealtimeOrders({
   const [error, _setError] = useState<Error | null>(null);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
-  const { isConnected: socketConnected, on, off } = useSocketIO({
+  const {
+    isConnected: socketConnected,
+    on,
+    off,
+  } = useSocketIO({
     restaurantId,
     enabled,
   });

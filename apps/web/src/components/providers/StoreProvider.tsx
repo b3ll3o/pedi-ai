@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect } from 'react';
+
 import { hydrateCartFromIndexedDB } from '@/infrastructure/persistence/cartStore';
 import { processQueue } from '@/lib/offline/sync';
 

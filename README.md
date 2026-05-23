@@ -19,8 +19,8 @@ Aplicação de **Cardápio Digital** para restaurantes com foco em **mobile-firs
 - **Backend**: NestJS + Fastify + Prisma ORM + PostgreSQL
 - **Offline**: Service Worker (Workbox) + IndexedDB (Dexie)
 - **Estado**: Zustand + React Query
-- **Testes Unitários**: Vitest (116 test files, 1441 tests)
-- **Testes E2E**: Playwright (19 specs)
+- **Testes Unitários**: Vitest (115 test files, 1436 tests)
+- **Testes E2E**: Playwright (43 specs)
 - **Pagamentos**: Mercado Pago (PIX)
 - **Autenticação**: JWT com bcrypt
 
@@ -44,13 +44,13 @@ O projeto possui um sistema de **feature flags** que permite ativar/desativar fu
 
 ### Flags Disponíveis
 
-| Flag                                    | Descrição                                                   |
-| --------------------------------------- | ----------------------------------------------------------- |
-| `NEXT_PUBLIC_FEATURE_OFFLINE_ENABLED`   | Modo offline com service worker e cache local               |
-| `NEXT_PUBLIC_FEATURE_PIX_ENABLED`       | Pagamento via PIX (Mercado Pago)                            |
-| `NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED`   | Leitura e geração de QR codes para mesas                    |
-| `NEXT_PUBLIC_FEATURE_COMBOS_ENABLED`    | Sistema de combos/meal deals                                |
-| `NEXT_PUBLIC_ENABLE_MULTI_RESTAURANT`   | Suporte multi-restaurante (relação N:N usuário-restaurante) |
+| Flag                                  | Descrição                                                   |
+| ------------------------------------- | ----------------------------------------------------------- |
+| `NEXT_PUBLIC_FEATURE_OFFLINE_ENABLED` | Modo offline com service worker e cache local               |
+| `NEXT_PUBLIC_FEATURE_PIX_ENABLED`     | Pagamento via PIX (Mercado Pago)                            |
+| `NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED` | Leitura e geração de QR codes para mesas                    |
+| `NEXT_PUBLIC_FEATURE_COMBOS_ENABLED`  | Sistema de combos/meal deals                                |
+| `NEXT_PUBLIC_ENABLE_MULTI_RESTAURANT` | Suporte multi-restaurante (relação N:N usuário-restaurante) |
 
 ## Getting Started
 
@@ -139,14 +139,14 @@ pedi-ai/
 
 O projeto segue **Domain-Driven Design** com bounded contexts:
 
-| Context | Descrição |
-|---------|-----------|
-| `admin/` | Restaurantes, usuários-restaurante |
-| `autenticacao/` | Usuários, sessões |
-| `cardapio/` | Categorias, produtos, modificadores |
-| `mesa/` | Mesas, QR codes |
-| `pagamento/` | Pagamentos PIX |
-| `pedido/` | Pedidos, itens |
+| Context         | Descrição                           |
+| --------------- | ----------------------------------- |
+| `admin/`        | Restaurantes, usuários-restaurante  |
+| `autenticacao/` | Usuários, sessões                   |
+| `cardapio/`     | Categorias, produtos, modificadores |
+| `mesa/`         | Mesas, QR codes                     |
+| `pagamento/`    | Pagamentos PIX                      |
+| `pedido/`       | Pedidos, itens                      |
 
 ## Segurança
 

@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+
+import { getAnalytics } from '@/application/services/analyticsService';
+import type { AnalyticsData } from '@/application/services/analyticsService';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
-import { getAnalytics } from '@/application/services/analyticsService';
-import { getSession } from '@/lib/auth/client';
 import { useRestaurantStore } from '@/infrastructure/persistence/restaurantStore';
-import type { AnalyticsData } from '@/application/services/analyticsService';
+import { getSession } from '@/lib/auth/client';
 
 export default function AnalyticsPage() {
   const router = useRouter();

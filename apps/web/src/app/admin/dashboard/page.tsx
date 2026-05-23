@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { getSession } from '@/lib/auth/client';
+import { useEffect, useState } from 'react';
+
 import { useRestaurantStore } from '@/infrastructure/persistence/restaurantStore';
+import { getSession } from '@/lib/auth/client';
+
 import styles from './page.module.css';
 
 export default function AdminDashboard() {

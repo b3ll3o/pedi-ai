@@ -1,10 +1,10 @@
-import { sql } from '@/infrastructure/database/pg-client';
 import {
   Assinatura,
   AssinaturaProps,
   StatusAssinatura,
   TipoPlano,
 } from '@/domain/admin/entities/Assinatura';
+import { sql } from '@/infrastructure/database/pg-client';
 
 /**
  * Interface para repositório de assinaturas

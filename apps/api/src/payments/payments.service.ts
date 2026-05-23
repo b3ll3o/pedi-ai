@@ -1,16 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../common/prisma.service';
 import { PaymentStatus } from '@prisma/client';
+
+import { PrismaService } from '../common/prisma.service';
 
 @Injectable()
 export class PaymentsService {
   constructor(private prisma: PrismaService) {}
 
-  async createPixPayment(data: {
-    orderId: string;
-    restaurantId: string;
-    amount: number;
-  }) {
+  async createPixPayment(data: { orderId: string; restaurantId: string; amount: number }) {
     const order = await this.prisma.order.findUnique({ where: { id: data.orderId } });
     if (!order) {
       throw new NotFoundException('Pedido não encontrado');

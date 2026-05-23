@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { ListarRestaurantesDoOwnerUseCase } from '@/application/admin/services/ListarRestaurantesDoOwnerUseCase';
 import { ListarRestaurantesDoOwnerInput } from '@/application/admin/services/ListarRestaurantesDoOwnerUseCase';
 import { Restaurante } from '@/domain/admin/entities/Restaurante';
@@ -48,8 +49,22 @@ describe('ListarRestaurantesDoOwnerUseCase', () => {
         UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'rest-2', papel: 'dono' }),
       ]);
       mockRestauranteRepo.findById
-        .mockResolvedValueOnce(Restaurante.criar({ nome: 'Restaurante 1', cnpj: '11.111.111/0001-11', endereco: '', ativo: true }))
-        .mockResolvedValueOnce(Restaurante.criar({ nome: 'Restaurante 2', cnpj: '22.222.222/0001-22', endereco: '', ativo: true }));
+        .mockResolvedValueOnce(
+          Restaurante.criar({
+            nome: 'Restaurante 1',
+            cnpj: '11.111.111/0001-11',
+            endereco: '',
+            ativo: true,
+          })
+        )
+        .mockResolvedValueOnce(
+          Restaurante.criar({
+            nome: 'Restaurante 2',
+            cnpj: '22.222.222/0001-22',
+            endereco: '',
+            ativo: true,
+          })
+        );
 
       const input: ListarRestaurantesDoOwnerInput = { ownerId: 'owner-id' };
 
@@ -75,7 +90,12 @@ describe('ListarRestaurantesDoOwnerUseCase', () => {
     it('deve usar lógica legacy quando multi-restaurant desativado', async () => {
       mockIsMultiRestaurantEnabled.mockReturnValue(false);
       mockRestauranteRepo.findAtivo.mockResolvedValueOnce(
-        Restaurante.criar({ nome: 'Restaurante Legacy', cnpj: '33.333.333/0001-33', endereco: '', ativo: true })
+        Restaurante.criar({
+          nome: 'Restaurante Legacy',
+          cnpj: '33.333.333/0001-33',
+          endereco: '',
+          ativo: true,
+        })
       );
 
       const input: ListarRestaurantesDoOwnerInput = { ownerId: 'owner-id' };
@@ -90,7 +110,11 @@ describe('ListarRestaurantesDoOwnerUseCase', () => {
 
     it('deve buscar restaurante mesmo quando vínculo existe mas restaurante foi removido', async () => {
       mockUsuarioRestauranteRepo.findByUsuarioId.mockResolvedValueOnce([
-        UsuarioRestaurante.criar({ usuarioId: 'owner-id', restauranteId: 'rest-deletado', papel: 'dono' }),
+        UsuarioRestaurante.criar({
+          usuarioId: 'owner-id',
+          restauranteId: 'rest-deletado',
+          papel: 'dono',
+        }),
       ]);
       mockRestauranteRepo.findById.mockResolvedValueOnce(null);
 

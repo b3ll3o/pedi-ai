@@ -3,15 +3,17 @@
  * Hook para Kitchen Display System (KDS) - lista pedidos e atualiza via Socket.io com polling fallback.
  */
 
-import { useEffect, useCallback, useState, useRef, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useSocketIO } from './useSocketIO';
+import { useEffect, useCallback, useState, useRef, useMemo } from 'react';
+
 import type { OrderWithItems, OrderStatus } from '@/application/services/adminOrderService';
 import {
   getOrderAge,
   getOrderAgeDisplay,
   isOrderStale,
 } from '@/application/services/adminOrderService';
+
+import { useSocketIO } from './useSocketIO';
 
 export interface PedidoKDS extends OrderWithItems {
   age_seconds: number;
@@ -79,7 +81,11 @@ export function usePedidosKDS({
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const previousOrderIdsRef = useRef<Set<string>>(new Set());
 
-  const { isConnected: socketConnected, on, off } = useSocketIO({
+  const {
+    isConnected: socketConnected,
+    on,
+    off,
+  } = useSocketIO({
     restaurantId: restauranteId,
     enabled,
   });
@@ -174,9 +180,7 @@ export function usePedidosKDS({
         }
         pollingRef.current = setInterval(() => {
           // Check for new orders to play sound
-          const currentOrderIds = new Set(
-            (data || []).map((o) => o.id).filter(Boolean)
-          );
+          const currentOrderIds = new Set((data || []).map((o) => o.id).filter(Boolean));
 
           // Detect new orders
           currentOrderIds.forEach((orderId) => {

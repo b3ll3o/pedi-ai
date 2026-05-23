@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSession } from '@/lib/auth/client';
-import { useRestaurantStore } from '@/infrastructure/persistence/restaurantStore';
-import { ProductList, type ProductListProduct } from '@/components/admin/ProductList';
+import { useEffect, useState, useCallback } from 'react';
+
 import { ProductForm, type ProductInput } from '@/components/admin/ProductForm';
+import { ProductList, type ProductListProduct } from '@/components/admin/ProductList';
+import { useRestaurantStore } from '@/infrastructure/persistence/restaurantStore';
+import { getSession } from '@/lib/auth/client';
+
 import styles from './page.module.css';
 
 type ToastType = 'success' | 'error' | null;

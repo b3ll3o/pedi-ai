@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { validateQRPayload } from '@/lib/qr/validator';
 
 // Mock do módulo validator

@@ -10,12 +10,12 @@ O Pedi-AI adota uma arquitetura **Domain-Driven Design (DDD)** em 4 camadas, org
 
 ### Princípios Fundamentais
 
-| Princípio                    | Descrição                                                                                                          |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| **Isolamento do Domínio**    | `apps/web/apps/web/src/domain/` é puro TypeScript — sem imports de React, Next.js ou bibliotecas de infraestrutura |
-| **Inversão de Dependência**  | Repositórios são **interfaces** definidas em domain e **implementadas** em infrastructure                          |
-| **Agregados como Fronteira** | Agregados (PedidoAggregate, MesaAggregate) encapsulam invariantes e são a unidade de persistência                  |
-| **Eventos como Ponte**       | Domain events disparam operações assíncronas sem acoplamento direto entre contextos                                |
+| Princípio                    | Descrição                                                                                                 |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------- |
+| **Isolamento do Domínio**    | `apps/web/src/domain/` é puro TypeScript — sem imports de React, Next.js ou bibliotecas de infraestrutura |
+| **Inversão de Dependência**  | Repositórios são **interfaces** definidas em domain e **implementadas** em infrastructure                 |
+| **Agregados como Fronteira** | Agregados (PedidoAggregate, MesaAggregate) encapsulam invariantes e são a unidade de persistência         |
+| **Eventos como Ponte**       | Domain events disparam operações assíncronas sem acoplamento direto entre contextos                       |
 
 ---
 
@@ -116,7 +116,7 @@ presentation  →  application + (parcialmente) domain types
 
 ## 3. Cada Camada Explicada
 
-### 3.1 Domain Layer (`apps/web/apps/web/src/domain/`)
+### 3.1 Domain Layer (`apps/web/src/domain/`)
 
 **Propósito:** Contém TODA a lógica de negócio pura — entidades, value objects, aggregates, eventos, serviços de domínio e interfaces de repositório. **Zero dependências externas.**
 
@@ -321,7 +321,7 @@ export interface IPedidoRepository {
 
 ---
 
-### 3.2 Application Layer (`apps/web/apps/web/src/application/`)
+### 3.2 Application Layer (`apps/web/src/application/`)
 
 **Propósito:** Orquestra casos de uso (use cases), coordenando domain e infrastructure. Cada bounded context tem seus próprios serviços de use case.
 
@@ -382,7 +382,7 @@ export class CriarPedidoUseCase implements UseCase<CriarPedidoInput, CriarPedido
 }
 ```
 
-### 3.3 Infrastructure Layer (`apps/web/apps/web/src/infrastructure/`)
+### 3.3 Infrastructure Layer (`apps/web/src/infrastructure/`)
 
 **Propósito:** Implementa os contratos definidos em domain (repositórios, adapters). Contém persistência (Dexie/IndexedDB), adapters externos (JWT, Pix) e serviços técnicos.
 
@@ -403,7 +403,6 @@ apps/web/src/infrastructure/
 │   └── admin/
 ├── external/
 │   ├── JwtAuthAdapter.ts        # Adapter para autenticação JWT
-│   ├── StripeAdapter.ts         # Deprecated - usar PixAdapter
 │   └── PixAdapter.ts            # Adapter para Pix/Mercado Pago
 └── services/
     └── QRCodeCryptoService.ts   # Serviço de criptografia de QR code
@@ -460,10 +459,7 @@ export class PixAdapter implements IPixAdapter {
     private baseUrl: string = 'https://api.mercadopago.com'
   ) {}
 
-  async criarPixCharge(
-    valorEmCentavos: number,
-    pedidoId: string
-  ): Promise<PixCharge> {
+  async criarPixCharge(valorEmCentavos: number, pedidoId: string): Promise<PixCharge> {
     // Implementação real faria chamada HTTP para Mercado Pago API
     return {
       id: `pix_${pedidoId}_${Date.now()}`,
@@ -477,7 +473,7 @@ export class PixAdapter implements IPixAdapter {
 
 ---
 
-### 3.4 Presentation Layer (`apps/web/apps/web/src/presentation/`)
+### 3.4 Presentation Layer (`apps/web/src/presentation/`)
 
 **Propósito:** Camada de UI do Next.js — páginas, componentes React e custom hooks. Coexiste com a estrutura tradicional em `src/app/`, `src/components/`, `src/hooks/`.
 
@@ -526,7 +522,7 @@ export function useCriarPedido() {
 
 O sistema é dividido em **6 contextos delimitados**, cada um com sua própria estrutura de domínio:
 
-### 4.1 Pedido (`apps/web/apps/web/src/domain/pedido/`)
+### 4.1 Pedido (`apps/web/src/domain/pedido/`)
 
 **Responsabilidade:** Gestão de pedidos, carrinho e cálculo de totais.
 
@@ -545,7 +541,7 @@ O sistema é dividido em **6 contextos delimitados**, cada um com sua própria e
 | `events/PedidoStatusAlteradoEvent.ts`     | Dispara quando status muda                                                        |
 | `repositories/IPedidoRepository.ts`       | Interface do repositório de pedidos                                               |
 
-### 4.2 Cardápio (`apps/web/apps/web/src/domain/cardapio/`)
+### 4.2 Cardápio (`apps/web/src/domain/cardapio/`)
 
 **Responsabilidade:** Catálogo de produtos, categorias, combos e modificadores.
 
@@ -560,7 +556,7 @@ O sistema é dividido em **6 contextos delimitados**, cada um com sua própria e
 | `repositories/ICategoriaRepository.ts`    | Interface para categorias                   |
 | `repositories/IItemCardapioRepository.ts` | Interface para itens                        |
 
-### 4.3 Mesa (`apps/web/apps/web/src/domain/mesa/`)
+### 4.3 Mesa (`apps/web/src/domain/mesa/`)
 
 **Responsabilidade:** Gestão de mesas e validação de QR codes.
 
@@ -572,7 +568,7 @@ O sistema é dividido em **6 contextos delimitados**, cada um com sua própria e
 | `services/QRCodeValidationService.ts` | Serviço de validação de QR code                   |
 | `repositories/IMesaRepository.ts`     | Interface do repositório de mesas                 |
 
-### 4.4 Pagamento (`apps/web/apps/web/src/domain/pagamento/`)
+### 4.4 Pagamento (`apps/web/src/domain/pagamento/`)
 
 **Responsabilidade:** Processamento de pagamentos, transações e reembolso.
 
@@ -588,7 +584,7 @@ O sistema é dividido em **6 contextos delimitados**, cada um com sua própria e
 | `repositories/IPagamentoRepository.ts` | Interface para pagamentos                            |
 | `repositories/ITransacaoRepository.ts` | Interface para transações                            |
 
-### 4.5 Autenticação (`apps/web/apps/web/src/domain/autenticacao/`)
+### 4.5 Autenticação (`apps/web/src/domain/autenticacao/`)
 
 **Responsabilidade:** Usuários, sessões e papéis.
 
@@ -604,7 +600,7 @@ O sistema é dividido em **6 contextos delimitados**, cada um com sua própria e
 | `repositories/IUsuarioRepository.ts` | Interface para usuários                                   |
 | `repositories/ISessaoRepository.ts`  | Interface para sessões                                    |
 
-### 4.6 Admin (`apps/web/apps/web/src/domain/admin/`)
+### 4.6 Admin (`apps/web/src/domain/admin/`)
 
 **Responsabilidade:** Restaurantes, vínculo usuário-restaurante, configurações, estatísticas.
 
@@ -1111,7 +1107,7 @@ A migração para DDD está **em andamento**. As camadas Domain, Application e I
 | ------------------ | --------------- | ---------------------------------------------------------------------------------------- |
 | **Domain**         | ✅ Implementado | Entidades, VOs, Aggregates, Events, Services, Repositories (interfaces) para 6 contextos |
 | **Application**    | ✅ Implementado | Use Cases para 6 contextos (migrados de services antigos)                                |
-| **Infrastructure** | ✅ Implementado | Repositories (Dexie), Adapters (Pix, JWT)                                       |
+| **Infrastructure** | ✅ Implementado | Repositories (Dexie), Adapters (Pix, JWT)                                                |
 | **Presentation**   | ⚠️ Parcial      | Estrutura existe mas hooks/pages ainda não usam use cases consistentemente               |
 
 ### 8.3 Status por Bounded Context
@@ -1239,17 +1235,17 @@ apps/web/src/infrastructure/
 
 #### Phase 7: Cleanup
 
-- [x] ~~Remover arquivos deprecated em `src/services/`~~ ✅ Migrado para `apps/web/apps/web/src/application/services/`
-- [x] ~~Remover arquivos deprecated em `src/stores/`~~ ✅ Migrado para `apps/web/apps/web/src/infrastructure/persistence/`
+- [x] ~~Remover arquivos deprecated em `src/services/`~~ ✅ Migrado para `apps/web/src/application/services/`
+- [x] ~~Remover arquivos deprecated em `src/stores/`~~ ✅ Migrado para `apps/web/src/infrastructure/persistence/`
 - [ ] Remover `src/lib/qr.ts` (lógica migrada para domain)
 - [ ] Atualizar imports em toda a codebase
 
 ### 8.6 Arquivos Legados (ainda não migrados)
 
-|                 | Arquivo           | Responsabilidade Original               | Status |
-| --------------- | ----------------- | --------------------------------------- | ------ |
-| `src/lib/qr.ts` | Validação QR code | ⚠️ Deprecated, usar MesaAggregate       |
-| `src/lib/auth/` | Autenticação      | ✅ Válido, usar JWT Auth via NestJS    |
+|                 | Arquivo           | Responsabilidade Original           | Status |
+| --------------- | ----------------- | ----------------------------------- | ------ |
+| `src/lib/qr.ts` | Validação QR code | ⚠️ Deprecated, usar MesaAggregate   |
+| `src/lib/auth/` | Autenticação      | ✅ Válido, usar JWT Auth via NestJS |
 
 ---
 

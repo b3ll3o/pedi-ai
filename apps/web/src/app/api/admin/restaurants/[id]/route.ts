@@ -1,6 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { sql } from '@/infrastructure/database/pg-client';
 import { getSession } from '@/lib/auth/session';
+
+type Role = 'dono' | 'gerente' | 'atendente';
+
+async function verifyOwnerManagerAccess(userId: string, restaurantId: string): Promise<boolean> {
+  const profileResult = await sql`
+    SELECT role FROM users_profiles
+    WHERE user_id = ${userId} AND restaurant_id = ${restaurantId}
+    LIMIT 1
+  `;
+
+  if (!profileResult[0]) return false;
+  const role = profileResult[0].role as Role;
+  return role === 'dono' || role === 'gerente';
+}
+
+async function verifyOwnerAccess(userId: string, restaurantId: string): Promise<boolean> {
+  const profileResult = await sql`
+    SELECT role FROM users_profiles
+    WHERE user_id = ${userId} AND restaurant_id = ${restaurantId}
+    LIMIT 1
+  `;
+
+  if (!profileResult[0]) return false;
+  return profileResult[0].role === 'dono';
+}
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -9,14 +35,12 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
-    const userId = session.user.id;
-
     const { id: restaurantId } = await params;
 
     // Verify user has access to this restaurant
     const profileResult = await sql`
       SELECT role FROM users_profiles
-      WHERE user_id = ${userId} AND restaurant_id = ${restaurantId}
+      WHERE user_id = ${session.user.id} AND restaurant_id = ${restaurantId}
       LIMIT 1
     `;
 
@@ -40,6 +64,29 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   }
 }
 
+async function updateRestaurantRecord(
+  restaurantId: string,
+  body: Record<string, unknown>
+): Promise<void> {
+  const { name, description, address, phone, logo_url } = body as Record<
+    string,
+    string | undefined | null
+  >;
+  const now = new Date().toISOString();
+
+  await sql`
+    UPDATE restaurants
+    SET
+      name = COALESCE(${name?.trim() || null}, name),
+      description = ${description?.trim() ?? null},
+      address = ${address?.trim() ?? null},
+      phone = ${phone?.trim() ?? null},
+      logo_url = ${logo_url || null},
+      updated_at = ${now}
+    WHERE id = ${restaurantId}
+  `;
+}
+
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSession();
@@ -47,39 +94,16 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
-    const userId = session.user.id;
-
     const { id: restaurantId } = await params;
 
-    // Verify user has access and is owner/manager
-    const profileResult = await sql`
-      SELECT role FROM users_profiles
-      WHERE user_id = ${userId} AND restaurant_id = ${restaurantId}
-      LIMIT 1
-    `;
-
-    if (!profileResult[0] || (profileResult[0].role !== 'dono' && profileResult[0].role !== 'gerente')) {
+    const hasAccess = await verifyOwnerManagerAccess(session.user.id, restaurantId);
+    if (!hasAccess) {
       return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 });
     }
 
     const body = await request.json();
-    const { name, description, address, phone, logo_url } = body;
-    const now = new Date().toISOString();
+    await updateRestaurantRecord(restaurantId, body);
 
-    // Update with individual fields
-    await sql`
-      UPDATE restaurants
-      SET
-        name = COALESCE(${name?.trim() || null}, name),
-        description = ${description !== undefined ? (description?.trim() || null) : null},
-        address = ${address !== undefined ? (address?.trim() || null) : null},
-        phone = ${phone !== undefined ? (phone?.trim() || null) : null},
-        logo_url = ${logo_url !== undefined ? (logo_url || null) : null},
-        updated_at = ${now}
-      WHERE id = ${restaurantId}
-    `;
-
-    // Fetch updated restaurant
     const updatedRestaurant = await sql`
       SELECT * FROM restaurants WHERE id = ${restaurantId} LIMIT 1
     `;
@@ -101,18 +125,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
-    const userId = session.user.id;
-
     const { id: restaurantId } = await params;
 
-    // Verify user is owner
-    const profileResult = await sql`
-      SELECT role FROM users_profiles
-      WHERE user_id = ${userId} AND restaurant_id = ${restaurantId}
-      LIMIT 1
-    `;
-
-    if (!profileResult[0] || profileResult[0].role !== 'dono') {
+    const isOwner = await verifyOwnerAccess(session.user.id, restaurantId);
+    if (!isOwner) {
       return NextResponse.json(
         { error: 'Apenas o proprietário pode excluir um restaurante' },
         { status: 403 }

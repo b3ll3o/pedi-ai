@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { sql } from '@/infrastructure/database/pg-client';
 import { getSession } from '@/lib/auth/session';
 
@@ -75,7 +76,10 @@ export async function POST(request: NextRequest) {
     `;
 
     if (!profileResult[0] || profileResult[0].role !== 'dono') {
-      return NextResponse.json({ error: 'Apenas o proprietário pode alterar a assinatura' }, { status: 403 });
+      return NextResponse.json(
+        { error: 'Apenas o proprietário pode alterar a assinatura' },
+        { status: 403 }
+      );
     }
 
     const now = new Date().toISOString();

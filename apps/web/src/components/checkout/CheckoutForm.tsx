@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+
 import type { CartItem } from '@/infrastructure/persistence/cartStore';
+
 import styles from './CheckoutForm.module.css';
 
 export interface CheckoutFormProps {
@@ -15,6 +17,7 @@ export interface CheckoutFormProps {
 export interface CheckoutData {
   customerName: string;
   customerPhone: string;
+  customerEmail: string;
 }
 
 const formatPrice = (value: number): string => {
@@ -27,11 +30,17 @@ const formatPrice = (value: number): string => {
 export function CheckoutForm({ items, subtotal, tax, total, onSubmit }: CheckoutFormProps) {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<{ name?: string; phone?: string; offline?: string }>({});
+  const [errors, setErrors] = useState<{
+    name?: string;
+    phone?: string;
+    email?: string;
+    offline?: string;
+  }>({});
 
   const validateForm = (): boolean => {
-    const newErrors: { name?: string; phone?: string } = {};
+    const newErrors: { name?: string; phone?: string; email?: string } = {};
 
     if (!customerName.trim()) {
       newErrors.name = 'Nome é obrigatório';
@@ -41,6 +50,12 @@ export function CheckoutForm({ items, subtotal, tax, total, onSubmit }: Checkout
       newErrors.phone = 'Telefone é obrigatório';
     } else if (customerPhone.replace(/\D/g, '').length < 10) {
       newErrors.phone = 'Telefone inválido';
+    }
+
+    if (!customerEmail.trim()) {
+      newErrors.email = 'E-mail é obrigatório';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
+      newErrors.email = 'E-mail inválido';
     }
 
     setErrors(newErrors);
@@ -55,7 +70,7 @@ export function CheckoutForm({ items, subtotal, tax, total, onSubmit }: Checkout
     setIsSubmitting(true);
     setErrors((prev) => ({ ...prev, offline: undefined }));
     try {
-      await onSubmit({ customerName, customerPhone });
+      await onSubmit({ customerName, customerPhone, customerEmail });
     } catch (error) {
       if (
         navigator.onLine === false ||
@@ -159,6 +174,26 @@ export function CheckoutForm({ items, subtotal, tax, total, onSubmit }: Checkout
           {errors.phone && (
             <span className={styles.error} data-testid="field-error">
               {errors.phone}
+            </span>
+          )}
+        </div>
+        <div className={styles.field}>
+          <label htmlFor="customerEmail" className={styles.label}>
+            E-mail
+          </label>
+          <input
+            id="customerEmail"
+            type="email"
+            className={`${styles.input} ${errors.email ? styles.inputError : ''}`}
+            value={customerEmail}
+            onChange={(e) => setCustomerEmail(e.target.value)}
+            placeholder="seu@email.com"
+            disabled={isSubmitting}
+            data-testid="checkout-email"
+          />
+          {errors.email && (
+            <span className={styles.error} data-testid="field-error">
+              {errors.email}
             </span>
           )}
         </div>

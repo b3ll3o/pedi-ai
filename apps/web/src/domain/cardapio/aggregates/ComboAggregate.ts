@@ -1,5 +1,6 @@
-import { Combo, ComboProps } from '../entities/Combo';
 import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
+
+import { Combo, ComboProps } from '../entities/Combo';
 import { ItemCardapio } from '../entities/ItemCardapio';
 
 export interface CalculoDescontoCombo {

@@ -1,0 +1,2 @@
+# Service worker with TypeScript syntax (`.js` extension used by Workbox)
+apps/web/public/sw.js

@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSession } from '@/lib/auth/client';
+import { useEffect, useState, useCallback } from 'react';
+
 import type { RestaurantSettings } from '@/app/api/admin/settings/route';
+import { getSession } from '@/lib/auth/client';
+
 import styles from './page.module.css';
 
 export default function SettingsPage() {

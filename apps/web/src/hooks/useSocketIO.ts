@@ -4,6 +4,7 @@
  */
 
 import { useEffect, useCallback, useState, useRef } from 'react';
+
 import { getSocket } from '@/lib/socketio';
 
 export interface UseSocketIOOptions {
@@ -94,17 +95,23 @@ export function useSocketIO({
     }
   }, [isConnected, restaurantId]);
 
-  const joinRestaurant = useCallback((id: string) => {
-    if (isConnected) {
-      socketRef.current.emit('joinRestaurant', id);
-    }
-  }, [isConnected]);
+  const joinRestaurant = useCallback(
+    (id: string) => {
+      if (isConnected) {
+        socketRef.current.emit('joinRestaurant', id);
+      }
+    },
+    [isConnected]
+  );
 
-  const leaveRestaurant = useCallback((id: string) => {
-    if (isConnected) {
-      socketRef.current.emit('leaveRestaurant', id);
-    }
-  }, [isConnected]);
+  const leaveRestaurant = useCallback(
+    (id: string) => {
+      if (isConnected) {
+        socketRef.current.emit('leaveRestaurant', id);
+      }
+    },
+    [isConnected]
+  );
 
   const on = useCallback((event: string, callback: (...args: unknown[]) => void) => {
     const wrappedCallback = (...args: unknown[]) => {

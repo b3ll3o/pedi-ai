@@ -15,22 +15,23 @@
  * ```
  */
 
-import { type Page, type Locator, _expect } from '@playwright/test'
-import * as fs from 'fs'
-import * as path from 'path'
+import * as fs from 'fs';
+import * as path from 'path';
+
+import { type Page, type Locator, _expect } from '@playwright/test';
 
 // ============================================
 // Configuration
 // ============================================
 
-const SCREENSHOT_DIR = '__screenshots__'
-const UPDATE_MODE = process.env.UPDATE_SCREENSHOTS === 'true'
+const SCREENSHOT_DIR = '__screenshots__';
+const UPDATE_MODE = process.env.UPDATE_SCREENSHOTS === 'true';
 
 interface VisualRegressionConfig {
-  directory: string
-  fullPage: boolean
-  animations: 'disabled' | 'enabled'
-  updateMissing: boolean
+  directory: string;
+  fullPage: boolean;
+  animations: 'disabled' | 'enabled';
+  updateMissing: boolean;
 }
 
 const defaultConfig: VisualRegressionConfig = {
@@ -38,7 +39,7 @@ const defaultConfig: VisualRegressionConfig = {
   fullPage: true,
   animations: 'disabled',
   updateMissing: true,
-}
+};
 
 // ============================================
 // Screenshot Capture
@@ -51,21 +52,21 @@ export async function captureScreenshot(
   pageOrLocator: Page | Locator,
   name: string,
   options?: {
-    fullPage?: boolean
-    animations?: 'disabled' | 'enabled'
+    fullPage?: boolean;
+    animations?: 'disabled' | 'enabled';
   }
 ): Promise<Buffer> {
-  const isPage = 'goto' in pageOrLocator
+  const isPage = 'goto' in pageOrLocator;
 
   const screenshotOptions = {
     fullPage: options?.fullPage ?? true,
     animations: options?.animations ?? 'disabled',
-  }
+  };
 
   if (isPage) {
-    return await (pageOrLocator as Page).screenshot(screenshotOptions)
+    return await (pageOrLocator as Page).screenshot(screenshotOptions);
   } else {
-    return await (pageOrLocator as Locator).screenshot(screenshotOptions)
+    return await (pageOrLocator as Locator).screenshot(screenshotOptions);
   }
 }
 
@@ -76,19 +77,19 @@ export async function saveScreenshot(
   pageOrLocator: Page | Locator,
   screenshotPath: string,
   options?: {
-    fullPage?: boolean
-    animations?: 'disabled' | 'enabled'
+    fullPage?: boolean;
+    animations?: 'disabled' | 'enabled';
   }
 ): Promise<void> {
-  const buffer = await captureScreenshot(pageOrLocator, screenshotPath, options)
+  const buffer = await captureScreenshot(pageOrLocator, screenshotPath, options);
 
   // Ensure directory exists
-  const dir = path.dirname(screenshotPath)
+  const dir = path.dirname(screenshotPath);
   if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true })
+    fs.mkdirSync(dir, { recursive: true });
   }
 
-  fs.writeFileSync(screenshotPath, buffer)
+  fs.writeFileSync(screenshotPath, buffer);
 }
 
 // ============================================
@@ -107,49 +108,49 @@ export const visualRegression = {
     page: Page,
     name: string,
     options?: {
-      fullPage?: boolean
-      threshold?: number
-      animations?: 'disabled' | 'enabled'
+      fullPage?: boolean;
+      threshold?: number;
+      animations?: 'disabled' | 'enabled';
     }
   ): Promise<void> {
-    const config = { ...defaultConfig, ...options }
-    const screenshotPath = getScreenshotPath(name)
+    const config = { ...defaultConfig, ...options };
+    const screenshotPath = getScreenshotPath(name);
 
     // Create screenshots directory if needed
-    const dir = path.dirname(screenshotPath)
+    const dir = path.dirname(screenshotPath);
     if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true })
+      fs.mkdirSync(dir, { recursive: true });
     }
 
     // Capture current screenshot
     const buffer = await page.screenshot({
       fullPage: config.fullPage,
       animations: config.animations,
-    })
+    });
 
     // If in update mode or screenshot doesn't exist, save it
     if (UPDATE_MODE || !fs.existsSync(screenshotPath)) {
-      fs.writeFileSync(screenshotPath, buffer)
+      fs.writeFileSync(screenshotPath, buffer);
       if (UPDATE_MODE) {
-        console.log(`📸 Screenshot updated: ${screenshotPath}`)
+        console.log(`📸 Screenshot updated: ${screenshotPath}`);
       }
-      return
+      return;
     }
 
     // Compare with existing screenshot
-    const expected = fs.readFileSync(screenshotPath)
-    const diff = compareImages(buffer, expected)
+    const expected = fs.readFileSync(screenshotPath);
+    const diff = compareImages(buffer, expected);
 
     if (diff > (options?.threshold ?? 0.01)) {
       // Save diff for debugging
-      const diffPath = getScreenshotPath(`${name}-diff`)
-      fs.writeFileSync(diffPath, buffer)
+      const diffPath = getScreenshotPath(`${name}-diff`);
+      fs.writeFileSync(diffPath, buffer);
 
       throw new Error(
         `Visual regression detected for "${name}". ` +
-        `Difference: ${(diff * 100).toFixed(2)}%. ` +
-        `Diff saved to: ${diffPath}`
-      )
+          `Difference: ${(diff * 100).toFixed(2)}%. ` +
+          `Diff saved to: ${diffPath}`
+      );
     }
   },
 
@@ -160,38 +161,38 @@ export const visualRegression = {
     locator: Locator,
     name: string,
     options?: {
-      threshold?: number
+      threshold?: number;
     }
   ): Promise<void> {
-    const screenshotPath = getScreenshotPath(name)
+    const screenshotPath = getScreenshotPath(name);
 
     // Ensure directory exists
-    const dir = path.dirname(screenshotPath)
+    const dir = path.dirname(screenshotPath);
     if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true })
+      fs.mkdirSync(dir, { recursive: true });
     }
 
     // Capture current screenshot
-    const buffer = await locator.screenshot()
+    const buffer = await locator.screenshot();
 
     // If in update mode or screenshot doesn't exist, save it
     if (UPDATE_MODE || !fs.existsSync(screenshotPath)) {
-      fs.writeFileSync(screenshotPath, buffer)
+      fs.writeFileSync(screenshotPath, buffer);
       if (UPDATE_MODE) {
-        console.log(`📸 Element screenshot updated: ${screenshotPath}`)
+        console.log(`📸 Element screenshot updated: ${screenshotPath}`);
       }
-      return
+      return;
     }
 
     // Compare with existing screenshot
-    const expected = fs.readFileSync(screenshotPath)
-    const diff = compareImages(buffer, expected)
+    const expected = fs.readFileSync(screenshotPath);
+    const diff = compareImages(buffer, expected);
 
     if (diff > (options?.threshold ?? 0.01)) {
       throw new Error(
         `Visual regression detected for element "${name}". ` +
-        `Difference: ${(diff * 100).toFixed(2)}%`
-      )
+          `Difference: ${(diff * 100).toFixed(2)}%`
+      );
     }
   },
 
@@ -202,33 +203,33 @@ export const visualRegression = {
     page: Page,
     name: string,
     options?: {
-      fullPage?: boolean
-      animations?: 'disabled' | 'enabled'
+      fullPage?: boolean;
+      animations?: 'disabled' | 'enabled';
     }
   ): Promise<string> {
-    const screenshotPath = getScreenshotPath(name)
+    const screenshotPath = getScreenshotPath(name);
     const buffer = await page.screenshot({
       fullPage: options?.fullPage ?? true,
       animations: options?.animations ?? 'disabled',
-    })
+    });
 
     // Ensure directory exists
-    const dir = path.dirname(screenshotPath)
+    const dir = path.dirname(screenshotPath);
     if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true })
+      fs.mkdirSync(dir, { recursive: true });
     }
 
-    fs.writeFileSync(screenshotPath, buffer)
-    return screenshotPath
+    fs.writeFileSync(screenshotPath, buffer);
+    return screenshotPath;
   },
 
   /**
    * Compare two screenshots and return difference percentage.
    */
   compare(screenshot1: Buffer, screenshot2: Buffer): number {
-    return compareImages(screenshot1, screenshot2)
+    return compareImages(screenshot1, screenshot2);
   },
-}
+};
 
 // ============================================
 // Image Comparison
@@ -240,26 +241,26 @@ export const visualRegression = {
  */
 function compareImages(img1: Buffer, img2: Buffer): number {
   if (img1.length !== img2.length) {
-    return Math.abs(img1.length - img2.length) / Math.max(img1.length, img2.length)
+    return Math.abs(img1.length - img2.length) / Math.max(img1.length, img2.length);
   }
 
-  let diffPixels = 0
-  const totalPixels = img1.length
+  let diffPixels = 0;
+  const totalPixels = img1.length;
 
   for (let i = 0; i < img1.length; i++) {
     if (img1[i] !== img2[i]) {
-      diffPixels++
+      diffPixels++;
     }
   }
 
-  return diffPixels / totalPixels
+  return diffPixels / totalPixels;
 }
 
 /**
  * Get screenshot path for a given name.
  */
 function getScreenshotPath(name: string): string {
-  return path.join(SCREENSHOT_DIR, `${name}.png`)
+  return path.join(SCREENSHOT_DIR, `${name}.png`);
 }
 
 // ============================================
@@ -274,33 +275,30 @@ export async function captureResponsiveScreenshots(
   name: string,
   viewports: Array<{ width: number; height: number }>
 ): Promise<Record<string, string>> {
-  const results: Record<string, string> = {}
+  const results: Record<string, string> = {};
 
   for (const viewport of viewports) {
-    await page.setViewportSize(viewport)
-    const path = await visualRegression.capture(page, `${name}-${viewport.width}x${viewport.height}`)
-    results[`${viewport.width}x${viewport.height}`] = path
+    await page.setViewportSize(viewport);
+    const path = await visualRegression.capture(
+      page,
+      `${name}-${viewport.width}x${viewport.height}`
+    );
+    results[`${viewport.width}x${viewport.height}`] = path;
   }
 
-  return results
+  return results;
 }
 
 /**
  * Capture critical UI elements on a page.
  */
-export async function captureUICriticalElements(
-  page: Page,
-  testId: string
-): Promise<void> {
-  const elements = await page.locator(`[data-testid="${testId}"]`).all()
+export async function captureUICriticalElements(page: Page, testId: string): Promise<void> {
+  const elements = await page.locator(`[data-testid="${testId}"]`).all();
 
   for (let i = 0; i < elements.length; i++) {
-    const isVisible = await elements[i].isVisible().catch(() => false)
+    const isVisible = await elements[i].isVisible().catch(() => false);
     if (isVisible) {
-      await visualRegression.assertElementScreenshot(
-        elements[i],
-        `${testId}-${i}`
-      )
+      await visualRegression.assertElementScreenshot(elements[i], `${testId}-${i}`);
     }
   }
 }
@@ -312,35 +310,34 @@ export async function captureUICriticalElements(
 /**
  * Upload screenshots to artifact storage (for CI).
  */
-export async function uploadScreenshotsToArtifacts(
-  artifactName: string
-): Promise<void> {
+export async function uploadScreenshotsToArtifacts(artifactName: string): Promise<void> {
   if (!fs.existsSync(SCREENSHOT_DIR)) {
-    return
+    return;
   }
 
   // This would be implemented based on CI artifact storage
   // e.g., GitHub Actions artifacts, S3, etc.
-  console.log(`📦 Uploading screenshots to ${artifactName}...`)
+  console.log(`📦 Uploading screenshots to ${artifactName}...`);
 }
 
 /**
  * Get list of failed screenshots from last run.
  */
 export function getFailedScreenshots(): string[] {
-  const diffDir = SCREENSHOT_DIR
+  const diffDir = SCREENSHOT_DIR;
 
   if (!fs.existsSync(diffDir)) {
-    return []
+    return [];
   }
 
-  return fs.readdirSync(diffDir)
-    .filter(f => f.includes('-diff'))
-    .map(f => path.join(diffDir, f))
+  return fs
+    .readdirSync(diffDir)
+    .filter((f) => f.includes('-diff'))
+    .map((f) => path.join(diffDir, f));
 }
 
 // ============================================
 // Export types
 // ============================================
 
-export type { VisualRegressionConfig }
+export type { VisualRegressionConfig };

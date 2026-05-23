@@ -4,15 +4,16 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
+
 import {
   ObterDetalheProdutoUseCase,
   type ProdutoDetalhe,
 } from '@/application/cardapio/services/ObterDetalheProdutoUseCase';
+import { db } from '@/infrastructure/persistence/database';
 import {
   ItemCardapioRepository,
   ModificadorGrupoRepository,
 } from '@/infrastructure/persistence/repositories';
-import { db } from '@/infrastructure/persistence/database';
 
 export interface ProdutoDetalheResponse {
   id: string;

@@ -2,7 +2,7 @@
  * Mocks de API para testes E2E com Playwright.
  * Permite interceptar chamadas API comuns durante os testes.
  */
-import { Page, Route } from '@playwright/test'
+import { Page, Route } from '@playwright/test';
 
 /**
  * Dados mockados para respostas da API.
@@ -59,15 +59,15 @@ export const MOCK_DATA = {
       role: 'CUSTOMER',
     },
   },
-} as const
+} as const;
 
 /**
  * Configuração de mock para uma rota.
  */
 interface MockRoute {
-  urlPattern: string | RegExp
-  response: object | ((route: Route) => Promise<void>)
-  status?: number
+  urlPattern: string | RegExp;
+  response: object | ((route: Route) => Promise<void>);
+  status?: number;
 }
 
 /**
@@ -82,7 +82,7 @@ const DEFAULT_MENU_MOCKS: MockRoute[] = [
     urlPattern: '**/api/menu/products',
     response: MOCK_DATA.menu.products,
   },
-]
+];
 
 /**
  * Mock padrão para rotas de mesa.
@@ -92,7 +92,7 @@ const DEFAULT_TABLE_MOCKS: MockRoute[] = [
     urlPattern: '**/api/tables/**',
     response: MOCK_DATA.table,
   },
-]
+];
 
 /**
  * Mock padrão para pedidos.
@@ -102,7 +102,7 @@ const DEFAULT_ORDERS_MOCKS: MockRoute[] = [
     urlPattern: '**/api/orders',
     response: MOCK_DATA.orders.list,
   },
-]
+];
 
 /**
  * Registra mocks de API na página.
@@ -110,21 +110,26 @@ const DEFAULT_ORDERS_MOCKS: MockRoute[] = [
  * @param routes Mock routes adicionais para registrar
  */
 export async function mockAPI(page: Page, routes: MockRoute[] = []): Promise<void> {
-  const allRoutes = [...DEFAULT_MENU_MOCKS, ...DEFAULT_TABLE_MOCKS, ...DEFAULT_ORDERS_MOCKS, ...routes]
+  const allRoutes = [
+    ...DEFAULT_MENU_MOCKS,
+    ...DEFAULT_TABLE_MOCKS,
+    ...DEFAULT_ORDERS_MOCKS,
+    ...routes,
+  ];
 
   for (const mock of allRoutes) {
     await page.route(mock.urlPattern, async (route: Route) => {
       if (typeof mock.response === 'function') {
-        await mock.response(route)
-        return
+        await mock.response(route);
+        return;
       }
 
       await route.fulfill({
         status: mock.status ?? 200,
         contentType: 'application/json',
         body: JSON.stringify(mock.response),
-      })
-    })
+      });
+    });
   }
 }
 
@@ -156,7 +161,7 @@ export async function mockCheckout(page: Page): Promise<void> {
         amount: 51.98,
       },
     },
-  ])
+  ]);
 }
 
 /**
@@ -168,5 +173,5 @@ export async function mockAuth(page: Page): Promise<void> {
       urlPattern: '**/api/auth/session',
       response: MOCK_DATA.session,
     },
-  ])
+  ]);
 }

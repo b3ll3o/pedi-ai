@@ -1,4 +1,5 @@
 import { AggregateRootClass } from '@/domain/shared';
+
 import { Papel } from '../value-objects/Papel';
 
 export interface UsuarioProps {

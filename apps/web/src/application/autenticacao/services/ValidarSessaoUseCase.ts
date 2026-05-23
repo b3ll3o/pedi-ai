@@ -1,4 +1,5 @@
 import { UseCase } from '@/application/shared';
+
 import { IAuthAdapter } from './RegistrarUsuarioUseCase';
 
 /**

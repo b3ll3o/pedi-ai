@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { PostgresAuthAdapter } from '@/infrastructure/external/PostgresAuthAdapter';
 import { logger } from '@/lib/logger';
 

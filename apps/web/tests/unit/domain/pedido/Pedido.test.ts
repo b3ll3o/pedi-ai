@@ -1,12 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { Pedido, PedidoProps } from '@/domain/pedido/entities/Pedido';
+
 import { ItemPedido, ItemPedidoProps } from '@/domain/pedido/entities/ItemPedido';
+import { Pedido, PedidoProps } from '@/domain/pedido/entities/Pedido';
 import { StatusPedido } from '@/domain/pedido/value-objects/StatusPedido';
 import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 
 describe('Pedido', () => {
   // Criar ItemPedido usando new diretamente para ter controle total sobre o id
-  const criarItemPedido = (props: Partial<ItemPedidoProps> & { id?: string; produtoId?: string; nome?: string }): ItemPedido => {
+  const criarItemPedido = (
+    props: Partial<ItemPedidoProps> & { id?: string; produtoId?: string; nome?: string }
+  ): ItemPedido => {
     const id = props.id ?? crypto.randomUUID();
     const itemProps: ItemPedidoProps = {
       id,
@@ -88,7 +91,11 @@ describe('Pedido', () => {
   describe('quantidadeItens', () => {
     it('deve retornar a quantidade total de itens', () => {
       const item1 = criarItemPedido({ quantidade: 2 });
-      const item2 = criarItemPedido({ id: crypto.randomUUID(), produtoId: 'prod-2', quantidade: 3 });
+      const item2 = criarItemPedido({
+        id: crypto.randomUUID(),
+        produtoId: 'prod-2',
+        quantidade: 3,
+      });
       const pedido = criarPedido({
         itens: [item1, item2],
       });
@@ -142,7 +149,9 @@ describe('Pedido', () => {
     it('deve lançar erro se item não existe', () => {
       const pedido = criarPedido({});
 
-      expect(() => pedido.removerItem('nao-existe')).toThrow('Item nao-existe não encontrado no pedido');
+      expect(() => pedido.removerItem('nao-existe')).toThrow(
+        'Item nao-existe não encontrado no pedido'
+      );
     });
   });
 

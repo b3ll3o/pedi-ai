@@ -1,4 +1,5 @@
 import Dexie, { type Table } from 'dexie';
+
 import type { CartItem, MenuCache, PendingSync, TableInfo } from './types';
 
 export class PediDatabase extends Dexie {

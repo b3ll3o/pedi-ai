@@ -1,4 +1,5 @@
 import { EntityClass } from '@/domain/shared';
+
 import { IUsuarioRestauranteRepository } from '../repositories/IUsuarioRestauranteRepository';
 
 export interface RestauranteProps {

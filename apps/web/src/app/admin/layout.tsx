@@ -1,10 +1,5 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { getSession } from '@/lib/auth/client';
 import {
   LayoutDashboard,
   BarChart3,
@@ -17,14 +12,21 @@ import {
   ChevronRight,
   LogOut,
 } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
 import { RestaurantSelector } from '@/components/admin/RestaurantSelector';
-import { useRestaurantStore } from '@/infrastructure/persistence/restaurantStore';
 import { Restaurante } from '@/domain/admin/entities/Restaurante';
 import { UsuarioRestaurante } from '@/domain/admin/entities/UsuarioRestaurante';
 import { ConfiguracoesRestaurante } from '@/domain/admin/value-objects/ConfiguracoesRestaurante';
 import { RestauranteRepository } from '@/infrastructure/persistence/admin/RestauranteRepository';
 import { UsuarioRestauranteRepository } from '@/infrastructure/persistence/admin/UsuarioRestauranteRepository';
 import { db } from '@/infrastructure/persistence/database';
+import { useRestaurantStore } from '@/infrastructure/persistence/restaurantStore';
+import { getSession } from '@/lib/auth/client';
+
 import styles from './layout.module.css';
 
 interface NavItem {
@@ -50,78 +52,93 @@ const navItems: NavItem[] = [
   },
 ];
 
+type UserRole = 'dono' | 'gerente' | 'atendente';
+type UserProfile = { restaurant_id: string; role: UserRole };
+
+async function fetchRestaurants(): Promise<Record<string, unknown>[]> {
+  const response = await fetch('/api/admin/restaurants');
+  if (!response.ok) {
+    console.error('Erro ao buscar restaurantes da API:', response.status);
+    return [];
+  }
+  const data: { restaurants?: Record<string, unknown>[] } = await response.json();
+  return data.restaurants ?? [];
+}
+
+async function fetchUserProfiles(): Promise<UserProfile[]> {
+  try {
+    const profilesRes = await fetch('/api/admin/my-profiles');
+    if (profilesRes.ok) {
+      const profilesData = await profilesRes.json();
+      return profilesData.profiles || [];
+    }
+  } catch (profileError) {
+    console.warn('Não foi possível buscar profiles, usando fallback:', profileError);
+  }
+  return [];
+}
+
+function buildRestauranteEntity(restaurantData: Record<string, unknown>) {
+  return Restaurante.reconstruir({
+    id: String(restaurantData.id ?? ''),
+    nome: String(restaurantData.name ?? ''),
+    cnpj: String(restaurantData.cnpj ?? ''),
+    endereco: String(restaurantData.address ?? ''),
+    telefone: restaurantData.phone ? String(restaurantData.phone) : null,
+    logoUrl: restaurantData.logo_url ? String(restaurantData.logo_url) : null,
+    ativo: true,
+    criadoEm: restaurantData.created_at ? new Date(String(restaurantData.created_at)) : new Date(),
+    atualizadoEm: restaurantData.updated_at
+      ? new Date(String(restaurantData.updated_at))
+      : new Date(),
+    deletedAt: null,
+    version: 1,
+  });
+}
+
+async function syncSingleRestaurant(
+  userId: string,
+  restaurantData: Record<string, unknown>,
+  userProfiles: UserProfile[],
+  restauranteRepo: RestauranteRepository,
+  usuarioRestauranteRepo: UsuarioRestauranteRepository
+): Promise<void> {
+  const restaurante = buildRestauranteEntity(restaurantData);
+  await restauranteRepo.create(restaurante, ConfiguracoesRestaurante.criarPadrao());
+
+  const profile = userProfiles.find((p) => p.restaurant_id === String(restaurantData.id));
+  const role = profile?.role || 'dono';
+
+  const vinculo = UsuarioRestaurante.criar({
+    usuarioId: userId,
+    restauranteId: String(restaurantData.id),
+    papel: role,
+  });
+  await usuarioRestauranteRepo.save(vinculo);
+}
+
 /**
  * Sincroniza restaurantes do Supabase (via API) para IndexedDB.
  * Garante que os dados estejam disponíveis offline e para operações locais.
  */
 async function sincronizarRestaurantes(userId: string): Promise<void> {
   try {
-    // Buscar restaurantes da API (fonte: Supabase)
-    const response = await fetch('/api/admin/restaurants');
-    if (!response.ok) {
-      console.error('Erro ao buscar restaurantes da API:', response.status);
-      return;
-    }
+    const restaurants = await fetchRestaurants();
+    if (restaurants.length === 0) return;
 
-    const data = await response.json();
-    const restaurants = data.restaurants || [];
-
-    if (restaurants.length === 0) {
-      return;
-    }
-
-    // Buscar profiles do usuário para obter roles (vinculos)
-    // A API não retorna roles diretamente, então buscamos profiles separadamente
-    // Usamos o endpoint de profile do usuário logado
-    let userProfiles: Array<{ restaurant_id: string; role: 'dono' | 'gerente' | 'atendente' }> = [];
-    try {
-      const profilesRes = await fetch('/api/admin/my-profiles');
-      if (profilesRes.ok) {
-        const profilesData = await profilesRes.json();
-        userProfiles = profilesData.profiles || [];
-      }
-    } catch (profileError) {
-      console.warn('Não foi possível buscar profiles, usando dados da API:', profileError);
-      // Fallback: se não conseguir buscar profiles, presumir 'dono' para todos
-      userProfiles = restaurants.map((r: { id: string }) => ({
-        restaurant_id: r.id,
-        role: 'dono' as const,
-      }));
-    }
+    const userProfiles = await fetchUserProfiles();
 
     const restauranteRepo = new RestauranteRepository(db);
     const usuarioRestauranteRepo = new UsuarioRestauranteRepository(db);
 
     for (const restaurantData of restaurants) {
-      // Criar entidade Restaurante
-      const restaurante = Restaurante.reconstruir({
-        id: restaurantData.id,
-        nome: restaurantData.name || '',
-        cnpj: restaurantData.cnpj || '',
-        endereco: restaurantData.address || '',
-        telefone: restaurantData.phone || null,
-        logoUrl: restaurantData.logo_url || null,
-        ativo: true,
-        criadoEm: restaurantData.created_at ? new Date(restaurantData.created_at) : new Date(),
-        atualizadoEm: restaurantData.updated_at ? new Date(restaurantData.updated_at) : new Date(),
-        deletedAt: null,
-        version: 1,
-      });
-
-      // Salvar restaurante no IndexedDB
-      await restauranteRepo.create(restaurante, ConfiguracoesRestaurante.criarPadrao());
-
-      // Encontrar role do usuário para este restaurante
-      const profile = userProfiles.find((p) => p.restaurant_id === restaurantData.id);
-      const role = profile?.role || 'dono';
-
-      // Criar e salvar vínculo usuário-restaurante
-      const vinculo = UsuarioRestaurante.criar({
-        usuarioId: userId,
-        restauranteId: restaurantData.id,
-        papel: role,
-      });
-      await usuarioRestauranteRepo.save(vinculo);
+      await syncSingleRestaurant(
+        userId,
+        restaurantData,
+        userProfiles,
+        restauranteRepo,
+        usuarioRestauranteRepo
+      );
     }
 
     console.log(`Sincronizados ${restaurants.length} restaurantes para IndexedDB`);

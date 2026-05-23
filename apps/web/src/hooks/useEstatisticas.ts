@@ -4,15 +4,16 @@
  */
 
 import { useState, useEffect } from 'react';
-import { db } from '@/infrastructure/persistence/database';
-import { EstatisticasRepository } from '@/infrastructure/persistence/admin/EstatisticasRepository';
-import { PedidoRepository } from '@/infrastructure/persistence/pedido/PedidoRepository';
-import { PagamentoRepository } from '@/infrastructure/persistence/pagamento/PagamentoRepository';
+
 import {
   ObterEstatisticasUseCase,
   type Periodo,
   type Estatisticas,
 } from '@/application/admin/services/ObterEstatisticasUseCase';
+import { EstatisticasRepository } from '@/infrastructure/persistence/admin/EstatisticasRepository';
+import { db } from '@/infrastructure/persistence/database';
+import { PagamentoRepository } from '@/infrastructure/persistence/pagamento/PagamentoRepository';
+import { PedidoRepository } from '@/infrastructure/persistence/pedido/PedidoRepository';
 
 // Instanciar repositories
 const _estatisticasRepo = new EstatisticasRepository(db);

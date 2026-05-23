@@ -10,7 +10,7 @@ services:
     container_name: pedi_ai_postgres
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     environment:
       POSTGRES_DB: pedi_ai
       POSTGRES_USER: postgres
@@ -31,8 +31,8 @@ services:
     container_name: pedi_ai_mailpit
     restart: unless-stopped
     ports:
-      - "1025:1025"  # SMTP
-      - "8025:8025"  # Web UI
+      - "127.0.0.1:1025:1025"  # SMTP
+      - "127.0.0.1:8025:8025"  # Web UI
     environment:
       MTX_DEBUG: "0"
 
@@ -75,19 +75,18 @@ services:
     container_name: pedi_ai_web
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     depends_on:
       api:
         condition: service_healthy
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://api:3001}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres123}@postgres:5432/pedi_ai?schema=public
     volumes:
       - ./apps/web/src:/app/src:ro
       - ./packages:/app/packages:ro
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:3000/api/health || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:3000/ || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5

@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { LogOut } from 'lucide-react';
-import { useCartStore } from '@/infrastructure/persistence/cartStore';
-import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
 import { CheckoutForm } from '@/components/checkout/CheckoutForm';
+import { useAuth } from '@/hooks/useAuth';
+import { useCartStore } from '@/infrastructure/persistence/cartStore';
+
 import styles from './page.module.css';
 
 const TAX_RATE = 0.1;
@@ -26,7 +28,11 @@ export default function CheckoutClient() {
   const tax = subtotal * TAX_RATE;
   const total = subtotal + tax;
 
-  const handleSubmit = async (data: { customerName: string; customerPhone: string }) => {
+  const handleSubmit = async (data: {
+    customerName: string;
+    customerPhone: string;
+    customerEmail: string;
+  }) => {
     const response = await fetch('/api/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -34,6 +40,7 @@ export default function CheckoutClient() {
         customer_id: data.customerPhone,
         customer_phone: data.customerPhone,
         customer_name: data.customerName,
+        customer_email: data.customerEmail,
         restaurant_id: restaurantId || undefined,
         table_id: null,
         items: items.map((item) => ({

@@ -1,8 +1,8 @@
 import { UseCase } from '@/application/shared';
 import { Restaurante } from '@/domain/admin/entities/Restaurante';
+import { RestauranteAtualizadoEvent } from '@/domain/admin/events/RestauranteAtualizadoEvent';
 import { IRestauranteRepository } from '@/domain/admin/repositories/IRestauranteRepository';
 import { IUsuarioRestauranteRepository } from '@/domain/admin/repositories/IUsuarioRestauranteRepository';
-import { RestauranteAtualizadoEvent } from '@/domain/admin/events/RestauranteAtualizadoEvent';
 import { isMultiRestaurantEnabled } from '@/lib/feature-flags';
 
 /**
@@ -36,6 +36,70 @@ function validarCNPJ(cnpj: string): boolean {
   return regex.test(cnpj);
 }
 
+/** Lança erro se CNPJ já estiver em uso por outro restaurante */
+async function validarCNPJUnico(
+  cnpj: string,
+  restauranteId: string,
+  restauranteRepo: IRestauranteRepository
+): Promise<void> {
+  const existente = await restauranteRepo.findByCNPJ(cnpj);
+  if (existente && existente.id !== restauranteId) {
+    throw new Error('Já existe um restaurante cadastrado com este CNPJ');
+  }
+}
+
+/** Valida que o usuário é dono do restaurante (multi-restaurant ou legacy) */
+async function validarDonoDoRestaurante(
+  proprietarioId: string,
+  restauranteId: string,
+  usuarioRestauranteRepo: IUsuarioRestauranteRepository
+): Promise<void> {
+  const multiRestaurantAtivo = isMultiRestaurantEnabled();
+
+  if (multiRestaurantAtivo) {
+    const vinculo = await usuarioRestauranteRepo.findByUsuarioIdAndRestauranteId(
+      proprietarioId,
+      restauranteId
+    );
+    if (!vinculo || !vinculo.eDono()) {
+      throw new Error('Você não tem permissão para atualizar este restaurante');
+    }
+    return;
+  }
+
+  // Lógica legacy: verificar se existe algum vínculo
+  const vinculos = await usuarioRestauranteRepo.findByUsuarioId(proprietarioId);
+  const vinculoValido = vinculos.some((v) => v.restauranteId === restauranteId && v.eDono());
+  if (!vinculoValido) {
+    throw new Error('Você não tem permissão para atualizar este restaurante');
+  }
+}
+
+/** Aplica atualizações de campos no restaurante */
+function aplicarAtualizacoes(
+  restaurante: Restaurante,
+  dados: AtualizarRestauranteInput['dados']
+): void {
+  if (dados.nome !== undefined && dados.nome !== null) {
+    if (dados.nome.trim().length < 2) {
+      throw new Error('O nome do restaurante deve ter pelo menos 2 caracteres');
+    }
+    restaurante.atualizarNome(dados.nome.trim());
+  }
+
+  if (dados.endereco !== undefined && dados.endereco !== null) {
+    restaurante.atualizarEndereco(dados.endereco.trim());
+  }
+
+  if (dados.telefone !== undefined) {
+    restaurante.atualizarTelefone(dados.telefone?.trim() ?? null);
+  }
+
+  if (dados.logoUrl !== undefined) {
+    restaurante.atualizarLogo(dados.logoUrl?.trim() ?? null);
+  }
+}
+
 /**
  * Use Case para atualizar dados do restaurante.
  * Requer que o usuário seja owner do restaurante.
@@ -64,65 +128,23 @@ export class AtualizarRestauranteUseCase implements UseCase<
       if (!validarCNPJ(dados.cnpj)) {
         throw new Error('CNPJ inválido. O formato deve ser XX.XXX.XXX/XXXX-XX');
       }
-
-      // Verificar se CNPJ já está em uso por outro restaurante
-      const existente = await this.restauranteRepo.findByCNPJ(dados.cnpj);
-      if (existente && existente.id !== restauranteId) {
-        throw new Error('Já existe um restaurante cadastrado com este CNPJ');
-      }
+      await validarCNPJUnico(dados.cnpj, restauranteId, this.restauranteRepo);
     }
 
     // Validar propriedade do restaurante
-    const multiRestaurantAtivo = isMultiRestaurantEnabled();
-
-    if (multiRestaurantAtivo) {
-      // Verificar via relação N:N
-      const vinculo = await this.usuarioRestauranteRepo.findByUsuarioIdAndRestauranteId(
-        proprietarioId,
-        restauranteId
-      );
-
-      if (!vinculo || !vinculo.eDono()) {
-        throw new Error('Você não tem permissão para atualizar este restaurante');
-      }
-    } else {
-      // Lógica legacy: verificar se existe algum vínculo
-      const vinculos = await this.usuarioRestauranteRepo.findByUsuarioId(proprietarioId);
-      const vinculoValido = vinculos.some((v) => v.restauranteId === restauranteId && v.eDono());
-
-      if (!vinculoValido) {
-        throw new Error('Você não tem permissão para atualizar este restaurante');
-      }
-    }
+    await validarDonoDoRestaurante(proprietarioId, restauranteId, this.usuarioRestauranteRepo);
 
     // Atualizar dados do restaurante
-    if (dados.nome !== undefined && dados.nome !== null) {
-      if (dados.nome.trim().length < 2) {
-        throw new Error('O nome do restaurante deve ter pelo menos 2 caracteres');
-      }
-      restaurante.atualizarNome(dados.nome.trim());
-    }
+    aplicarAtualizacoes(restaurante, dados);
 
-    if (dados.endereco !== undefined && dados.endereco !== null) {
-      restaurante.atualizarEndereco(dados.endereco.trim());
-    }
-
-    if (dados.telefone !== undefined) {
-      restaurante.atualizarTelefone(dados.telefone?.trim() ?? null);
-    }
-
-    if (dados.logoUrl !== undefined) {
-      restaurante.atualizarLogo(dados.logoUrl?.trim() ?? null);
-    }
-
-    // Validar CNPJ se fornecido (CNPJ não pode ser alterado após criação)
+    // Validar que CNPJ não foi alterado
     if (dados.cnpj !== undefined && dados.cnpj !== null) {
       if (dados.cnpj !== restaurante.cnpj) {
         throw new Error('O CNPJ do restaurante não pode ser alterado');
       }
     }
 
-    // Persistir alterações (não temos o config, usar padrão - TODO: buscar config existente)
+    // Persistir alterações
     const { ConfiguracoesRestaurante } =
       await import('@/domain/admin/value-objects/ConfiguracoesRestaurante');
     const configuracoes = ConfiguracoesRestaurante.criarPadrao();

@@ -18,11 +18,11 @@ test.describe('Multi-Restaurant Offline', () => {
   test.beforeEach(async ({ page }) => {
     // Enable offline mode via service worker
     await page.context().setOffline(false); // Start online
-  })
+  });
 
   test.afterEach(async ({ page }) => {
-    await clearClientState(page)
-  })
+    await clearClientState(page);
+  });
 
   test('should cache menu data per restaurant when online', async ({ page }) => {
     // Navigate to restaurant A's menu
@@ -63,10 +63,8 @@ test.describe('Multi-Restaurant Offline', () => {
   test('should isolate sync queue by restaurant', async () => {
     // This test verifies that when multiple restaurants are used,
     // the sync queue properly separates orders by restaurantId
-
     // Simulate offline order for restaurant A
     // Simulate offline order for restaurant B
-
     // When back online, each order should sync to correct restaurant
   });
 

@@ -13,7 +13,6 @@ O Pedi-AI suporta dois provedores de pagamento para processar transações de cl
 | **Mercado Pago** | PIX      | Pagamentos instantâneos, sem custo de transação  | ✅ Implementado |
 | **Demo Mode**    | Simulado | Testes sem custo real (bypassa provedores reais) | ✅ Implementado |
 
-
 ### Variáveis de Ambiente
 
 ```bash
@@ -393,7 +392,7 @@ apps/web/src/
         └── index.ts                     # Edge function para webhooks MP
 ```
 
-> **Nota:** `PixAdapter.ts` é um stub que retorna dados simulados. A integração real com Mercado Pago está em `src/app/api/payments/pix/create/route.ts`.
+> **Nota:** A integração com Mercado Pago está em `src/app/api/payments/pix/create/route.ts`. O `PixAdapter.ts` existe como adapter do domain, mas a rota usa o SDK Mercado Pago diretamente.
 
 ---
 

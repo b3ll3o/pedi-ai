@@ -20,24 +20,30 @@
  * ```
  */
 
-import * as path from 'path'
-import * as fs from 'fs'
+import * as fs from 'fs';
+import * as path from 'path';
 
 // Shard info from environment
-const SHARD = process.env.SHARD || '1/4'
-const [shardCurrent, shardTotal] = SHARD.split('/').map(Number)
+const SHARD = process.env.SHARD || '1/4';
+const [shardCurrent, shardTotal] = SHARD.split('/').map(Number);
 
-// Seed result file path
-const SEED_RESULT_PATH = path.join(__dirname, '..', 'scripts', '.seed-result.json')
+// Seed result file path — shard-specific if running in shard mode
+const SHARD = process.env.SHARD || '';
+const shardMatch = SHARD.match(/^(\d+)\/(\d+)$/);
+const shardCurrent = shardMatch ? Number(shardMatch[1]) : 0;
+const SEED_RESULT_PATH =
+  shardCurrent > 0
+    ? path.join(__dirname, '..', 'scripts', `.seed-result-shard-${shardCurrent}.json`)
+    : path.join(__dirname, '..', 'scripts', '.seed-result.json');
 
 /**
  * Shard configuration for isolated data.
  */
 export interface ShardConfig {
-  current: number
-  total: number
-  prefix: string
-  emailSuffix: string
+  current: number;
+  total: number;
+  prefix: string;
+  emailSuffix: string;
 }
 
 /**
@@ -49,20 +55,20 @@ export function getShardConfig(): ShardConfig {
     total: shardTotal,
     prefix: `sh${shardCurrent}`,
     emailSuffix: `+sh${shardCurrent}@pedi-ai.test`,
-  }
+  };
 }
 
 /**
  * Load and adapt seed data with shard-specific modifications.
  */
 export interface ShardSeedData {
-  restaurant: { id: string; name: string }
-  customer: { email: string; password: string; id: string }
-  admin: { email: string; password: string; id: string }
-  waiter: { email: string; password: string; id: string }
-  table: { id: string; code: string }
-  categories: Array<{ id: string; name: string }>
-  products: Array<{ id: string; name: string; price: number }>
+  restaurant: { id: string; name: string };
+  customer: { email: string; password: string; id: string };
+  admin: { email: string; password: string; id: string };
+  waiter: { email: string; password: string; id: string };
+  table: { id: string; code: string };
+  categories: Array<{ id: string; name: string }>;
+  products: Array<{ id: string; name: string; price: number }>;
 }
 
 /**
@@ -70,7 +76,7 @@ export interface ShardSeedData {
  * Adds shard identifier to emails to ensure uniqueness across shards.
  */
 export function getShardData(baseData: ShardSeedData): ShardSeedData {
-  const config = getShardConfig()
+  const config = getShardConfig();
 
   return {
     ...baseData,
@@ -92,7 +98,7 @@ export function getShardData(baseData: ShardSeedData): ShardSeedData {
       ...baseData.waiter,
       email: baseData.waiter.email.replace('@pedi-ai.test', config.emailSuffix),
     },
-  }
+  };
 }
 
 /**
@@ -100,21 +106,21 @@ export function getShardData(baseData: ShardSeedData): ShardSeedData {
  */
 export function isSeedCompatibleWithShard(): boolean {
   if (!fs.existsSync(SEED_RESULT_PATH)) {
-    return false
+    return false;
   }
 
   try {
-    const data = JSON.parse(fs.readFileSync(SEED_RESULT_PATH, 'utf-8'))
-    const _config = getShardConfig()
+    const data = JSON.parse(fs.readFileSync(SEED_RESULT_PATH, 'utf-8'));
+    const _config = getShardConfig();
 
     // Check if seed data includes shard marker
     // Seeds created with shard suffix will have '+sh' in emails
-    const customerEmail = data.users?.customer?.email || ''
-    const hasShardMarker = customerEmail.includes('+sh')
+    const customerEmail = data.users?.customer?.email || '';
+    const hasShardMarker = customerEmail.includes('+sh');
 
-    return hasShardMarker
+    return hasShardMarker;
   } catch {
-    return false
+    return false;
   }
 }
 
@@ -123,33 +129,33 @@ export function isSeedCompatibleWithShard(): boolean {
  */
 export async function ensureShardCompatibleSeed(): Promise<ShardSeedData> {
   if (isSeedCompatibleWithShard()) {
-    const raw = JSON.parse(fs.readFileSync(SEED_RESULT_PATH, 'utf-8'))
-    return adaptRawSeed(raw)
+    const raw = JSON.parse(fs.readFileSync(SEED_RESULT_PATH, 'utf-8'));
+    return adaptRawSeed(raw);
   }
 
   // Need to re-seed with shard-specific data
   // This should be triggered via global setup
-  console.log('⚠️ Seed not shard-compatible, re-running seed...')
-  const { seed } = await import('../scripts/seed')
-  await seed()
+  console.log('⚠️ Seed not shard-compatible, re-running seed...');
+  const { seed } = await import('../scripts/seed');
+  await seed();
 
-  const raw = JSON.parse(fs.readFileSync(SEED_RESULT_PATH, 'utf-8'))
-  return adaptRawSeed(raw)
+  const raw = JSON.parse(fs.readFileSync(SEED_RESULT_PATH, 'utf-8'));
+  return adaptRawSeed(raw);
 }
 
 /**
  * Adapt raw seed format to ShardSeedData.
  */
 function adaptRawSeed(raw: {
-  restaurant: { id: string; name: string }
+  restaurant: { id: string; name: string };
   users: {
-    customer: { id: string; email: string; password: string }
-    admin: { id: string; email: string; password: string }
-    waiter: { id: string; email: string; password: string }
-  }
-  tables: Array<{ id: string; qr_code: string }>
-  categories: Array<{ id: string; name: string }>
-  products: Array<{ id: string; name: string; price: number }>
+    customer: { id: string; email: string; password: string };
+    admin: { id: string; email: string; password: string };
+    waiter: { id: string; email: string; password: string };
+  };
+  tables: Array<{ id: string; qr_code: string }>;
+  categories: Array<{ id: string; name: string }>;
+  products: Array<{ id: string; name: string; price: number }>;
 }): ShardSeedData {
   return {
     restaurant: raw.restaurant,
@@ -178,21 +184,21 @@ function adaptRawSeed(raw: {
       name: p.name,
       price: p.price,
     })),
-  }
+  };
 }
 
 /**
  * Generate shard-specific table code.
  */
 export function getShardTableCode(tableNumber: number): string {
-  const config = getShardConfig()
-  return `E2E-SH${config.current}-T${tableNumber.toString().padStart(3, '0')}`
+  const config = getShardConfig();
+  return `E2E-SH${config.current}-T${tableNumber.toString().padStart(3, '0')}`;
 }
 
 /**
  * Generate shard-specific order idempotency key.
  */
 export function getShardIdempotencyKey(baseKey: string): string {
-  const config = getShardConfig()
-  return `sh${config.current}-${baseKey}`
+  const config = getShardConfig();
+  return `sh${config.current}-${baseKey}`;
 }

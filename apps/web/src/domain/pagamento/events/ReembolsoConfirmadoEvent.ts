@@ -1,4 +1,5 @@
 import { DomainEvent } from '@/domain/shared';
+
 import { Pagamento } from '../entities/Pagamento';
 
 export class ReembolsoConfirmadoEvent implements DomainEvent {

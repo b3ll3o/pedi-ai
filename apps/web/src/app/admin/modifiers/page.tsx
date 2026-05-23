@@ -1,14 +1,16 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useState, useCallback, useEffect } from 'react';
+
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { getSession } from '@/lib/auth/client';
 import {
   ModifierGroupForm,
   type ModifierGroupInput,
   type ModifierValueInput,
 } from '@/components/admin/ModifierGroupForm';
+import { getSession } from '@/lib/auth/client';
+
 import styles from './page.module.css';
 
 interface ModifierGroupWithValues {

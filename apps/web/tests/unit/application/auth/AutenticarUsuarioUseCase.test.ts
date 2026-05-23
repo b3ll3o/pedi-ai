@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { AutenticarUsuarioUseCase } from '@/application/autenticacao/services/AutenticarUsuarioUseCase';
 import type { AutenticarInput } from '@/application/autenticacao/services/AutenticarUsuarioUseCase';
 import type { IAuthAdapter } from '@/application/autenticacao/services/RegistrarUsuarioUseCase';
@@ -121,7 +122,8 @@ describe('AutenticarUsuarioUseCase', () => {
 
     it('deve preservar token retornado pelo auth adapter', async () => {
       // Arrange
-      const tokenEsperado = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
+      const tokenEsperado =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
       mockAutenticar.mockResolvedValue({
         token: tokenEsperado,
         usuarioId: 'user-id-456',

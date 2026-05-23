@@ -4,16 +4,17 @@
  */
 
 import { useMutation } from '@tanstack/react-query';
+
+import type { PixCharge } from '@/application/pagamento/services/adapters/IPixAdapter';
 import {
   CriarPixChargeUseCase,
   type CriarPixChargeInput,
 } from '@/application/pagamento/services/CriarPixChargeUseCase';
+import { EventDispatcher } from '@/domain/shared';
 import { PixAdapter } from '@/infrastructure/external/PixAdapter';
+import { db } from '@/infrastructure/persistence/database';
 import { PagamentoRepository } from '@/infrastructure/persistence/pagamento/PagamentoRepository';
 import { PedidoRepository } from '@/infrastructure/persistence/pedido/PedidoRepository';
-import { db } from '@/infrastructure/persistence/database';
-import { EventDispatcher } from '@/domain/shared';
-import type { PixCharge } from '@/application/pagamento/services/adapters/IPixAdapter';
 
 export type { PixCharge };
 

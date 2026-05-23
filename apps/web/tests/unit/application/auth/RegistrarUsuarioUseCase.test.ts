@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { RegistrarUsuarioUseCase } from '@/application/autenticacao/services/RegistrarUsuarioUseCase';
-import type { IAuthAdapter, RegistrarUsuarioInput } from '@/application/autenticacao/services/RegistrarUsuarioUseCase';
+import type {
+  IAuthAdapter,
+  RegistrarUsuarioInput,
+} from '@/application/autenticacao/services/RegistrarUsuarioUseCase';
 import { Usuario } from '@/domain/autenticacao/entities/Usuario';
 import { Papel } from '@/domain/autenticacao/value-objects/Papel';
 

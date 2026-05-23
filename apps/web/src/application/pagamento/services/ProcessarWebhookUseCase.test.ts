@@ -1,14 +1,16 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { ProcessarWebhookUseCase, IWebhookSignatureValidator } from './ProcessarWebhookUseCase';
-import { IPagamentoRepository } from '@/domain/pagamento/repositories/IPagamentoRepository';
-import { ITransacaoRepository } from '@/domain/pagamento/repositories/ITransacaoRepository';
+
 import { PagamentoAggregate } from '@/domain/pagamento';
-import { EventDispatcher } from '@/domain/shared';
 import { Pagamento } from '@/domain/pagamento/entities/Pagamento';
 import { Transacao } from '@/domain/pagamento/entities/Transacao';
+import { IPagamentoRepository } from '@/domain/pagamento/repositories/IPagamentoRepository';
+import { ITransacaoRepository } from '@/domain/pagamento/repositories/ITransacaoRepository';
 import { MetodoPagamento } from '@/domain/pagamento/value-objects/MetodoPagamento';
 import { StatusPagamento } from '@/domain/pagamento/value-objects/StatusPagamento';
+import { EventDispatcher } from '@/domain/shared';
 import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
+
+import { ProcessarWebhookUseCase, IWebhookSignatureValidator } from './ProcessarWebhookUseCase';
 
 // Mock do EventDispatcher
 const mockDispatch = vi.fn();
