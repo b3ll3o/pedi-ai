@@ -1,6 +1,11 @@
 # ============================================================
 # Pedi-AI — Development Environment (Docker Compose)
 # Para VPS dev: single host, hot reload habilitado
+#
+# Uso:
+#   cp .env.example .env
+#   # Edite .env com seus valores
+#   docker compose -f docker-compose.dev.yml up -d
 # ============================================================
 
 services:
@@ -94,9 +99,88 @@ services:
       retries: 5
       start_period: 60s
 
+# ── PostgreSQL E2E (para testes, sempre rodando) ────────────
+  postgres_e2e:
+    image: postgres:16-alpine
+    container_name: pedi_ai_postgres_e2e
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5433:5432"
+    environment:
+      POSTGRES_DB: pedi_ai_e2e
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_e2e_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ── NestJS API E2E ──────────────────────────────────────────
+  api_e2e:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile.dev
+    container_name: pedi_ai_api_e2e
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3002:3001"
+    depends_on:
+      postgres_e2e:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres_e2e:5432/pedi_ai_e2e
+      JWT_SECRET: e2e-jwt-secret-for-testing-only
+      JWT_REFRESH_SECRET: e2e-jwt-refresh-secret-for-testing-only
+      JWT_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
+      PORT: "3001"
+      HOST: "0.0.0.0"
+      NODE_ENV: e2e
+      ALLOWED_ORIGINS: http://localhost:3000,http://0.0.0.0:3000
+    volumes:
+      - ./apps/api/src:/app/apps/api/src:ro
+      - ./packages:/app/packages:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:3001/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  # ── Next.js Web E2E ─────────────────────────────────────────
+  web_e2e:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile.dev
+    container_name: pedi_ai_web_e2e
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3003:3000"
+    depends_on:
+      api_e2e:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres_e2e:5432/pedi_ai_e2e
+      NEXT_PUBLIC_API_URL: http://localhost:3002
+      NEXT_PUBLIC_APP_URL: http://localhost:3003
+      NODE_ENV: e2e
+    volumes:
+      - ./apps/web/src:/app/src:ro
+      - ./packages:/app/packages:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:3000/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
 volumes:
   postgres_data:
-    driver: local
+  postgres_e2e_data:
 
 networks:
   default:

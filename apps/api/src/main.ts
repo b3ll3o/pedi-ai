@@ -1,7 +1,6 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
-import { ThrottlerExceptionFilter } from '@nestjs/throttler';
 
 import { AppModule } from './app.module';
 import { TodasExcecoesFiltro } from './common/filters/TodasExcecoesFiltro';
@@ -29,7 +28,6 @@ async function bootstrap() {
   );
 
   app.useGlobalFilters(new TodasExcecoesFiltro());
-  app.useGlobalFilters(new ThrottlerExceptionFilter());
   app.useGlobalInterceptors(new RespostaSucessoInterceptor());
 
   const port = process.env.PORT || 3001;

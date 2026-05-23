@@ -25,10 +25,14 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 #### Cobertura de Testes Unitários
 
-- **Cobertura mínima**: A cobertura de testes unitários DEVE ser de pelo menos **80%** para todas as métricas (statements, branches, functions, lines)
-- Verificar cobertura com `pnpm test:coverage`
-- Métricas de cobertura devem ser monitoradas em CI/CD
-- Arquivos com cobertura abaixo do limiar devem ser tratados como dívida técnica
+- **Cobertura mínima por app/package**: Cada app (`apps/web`, `apps/api`) e package (`packages/shared`) do monorepo DEVE atingir pelo menos **80%** de cobertura em todas as 4 métricas (statements, branches, functions, lines)
+- **Cobertura mínima geral do monorepo**: A cobertura agregada de todos os apps/packages DEVE ser pelo menos **80%**
+- Verificar cobertura com `pnpm test:coverage` (root) — ou `pnpm --filter @pedi-ai/web test:cov` / `pnpm --filter @pedi-ai/api test:cov` individualmente
+- Os thresholds de cobertura são configurados nos arquivos `vitest.config.ts` de cada app:
+  - `vitest.config.ts` (root): cobre `apps/web/src/domain/**/*`, `apps/web/src/application/**/*`, `apps/web/src/lib/**/*`, `apps/api/src/domain/**/*`, `apps/api/src/application/**/*` — thresholds: **80%** para todas as métricas
+  - `apps/api/vitest.config.ts`: cobre todo `apps/api/src/**/*` — thresholds: **80%** para todas as métricas
+- CI/CD **BLOQUEIA** merge se qualquer threshold de cobertura não for atingido
+- Arquivos com cobertura abaixo do limiar devem ser tratados como dívida técnica e priorizados no backlog
 
 #### Testes de Integração
 

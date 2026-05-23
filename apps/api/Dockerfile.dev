@@ -1,7 +1,7 @@
-# ============================================================
+# ====================================
 # NestJS API Dockerfile — Development (hot reload)
 # Build context: repo root (.)
-# ============================================================
+# ====================================
 
 FROM node:20-alpine AS base
 
@@ -21,7 +21,10 @@ RUN pnpm install --no-frozen-lockfile
 # Generate Prisma client
 RUN cd /app/apps/api && pnpm exec prisma generate
 
+# Build the app
+RUN cd /app/apps/api && pnpm run build
+
 EXPOSE 3001
 
-# Development command with hot reload
-CMD ["sh", "-c", "cd /app/apps/api && pnpm exec prisma migrate deploy || pnpm exec prisma db push --accept-data-loss && pnpm start:dev"]
+# Development command - run built dist
+CMD ["sh", "-c", "cd /app/apps/api && node dist/main"]
