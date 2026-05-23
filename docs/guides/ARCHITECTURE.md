@@ -736,7 +736,7 @@ domain: PagamentoAggregate.confirmar()
 // ❌ PROIBIDO em apps/web/src/domain/pedido/entities/Pedido.ts
 import { useState } from 'react'; // BLOQUEADO
 import { createClient } from '@/lib/auth/client'; // BLOQUEADO - domain não pode acessar infrastructure
-import '@/stores/cartStore'; // BLOQUEADO
+import '@/infrastructure/persistence/cartStore'; // BLOQUEADO — domain não pode acessar infrastructure
 import '@/infrastructure/persistence/pedido/PedidoRepository'; // BLOQUEADO
 import 'next/navigation'; // BLOQUEADO
 ```

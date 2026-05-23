@@ -16,7 +16,7 @@ Pedi-AI é uma plataforma de cardápio digital que permite restaurantes gerencia
 | Backend  | NestJS + Fastify + Prisma ORM + PostgreSQL                       |
 | Offline  | Service Worker (Workbox) + IndexedDB (Dexie)                     |
 | Estado   | Zustand + React Query                                            |
-| Testes   | Vitest (115 test files, 1436 testes) + Playwright (43 specs E2E) |
+| Testes   | Vitest (116 test files, 1443 testes) + Playwright (43 specs E2E) |
 
 ---
 

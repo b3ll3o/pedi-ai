@@ -173,15 +173,7 @@ interface CheckoutData {
 
 ---
 
-## 7. Proposal
-
-O design e proposta original estão documentados em:
-
-o spec original do sistema de navegação
-
----
-
-## 8. Estrutura de Arquivos
+## 7. Estrutura de Arquivos
 
 ```
 apps/web/src/
@@ -194,6 +186,10 @@ apps/web/src/
 │   │           ├── page.tsx           # Página de cardápio
 │   │           └── loading.tsx       # Loading state
 │   │
+│   ├── (customer)/
+│   │   └── checkout/
+│   │       └── page.tsx              # Checkout (sem login)
+│   │
 │   └── api/restaurants/
 │       ├── route.ts                   # GET /api/restaurants
 │       └── [id]/route.ts             # GET /api/restaurants/[id]
@@ -201,20 +197,20 @@ apps/web/src/
 ├── components/
 │   └── restaurant/
 │       ├── RestaurantList.tsx        # Grid de restaurantes
-│       ├── RestaurantCard.tsx       # Card individual
+│       ├── RestaurantCard.tsx        # Card individual
 │       └── RestaurantSearch.tsx      # Busca por nome
 │
-├── stores/
-│   ├── menuStore.ts                  # Armazena restaurantId atual
-│   └── cartStore.ts                  # Carrinho isolado por restaurante
+├── infrastructure/persistence/
+│   ├── cartStore.ts                 # Carrinho isolado por restaurante
+│   └── menuStore.ts                 # Armazena restaurantId atual
 │
 └── hooks/
-    └── useCardapio.ts                # Hook de cardápio com restaurantId
+    └── useCardapio.ts               # Hook de cardápio com restaurantId
 ```
 
 ---
 
-## 9. Diferença entre Delivery e Mesa/Salão
+## 8. Diferença entre Delivery e Mesa/Salão
 
 | Aspecto              | Delivery                      | Mesa/Salão        |
 | -------------------- | ----------------------------- | ----------------- |
@@ -228,16 +224,16 @@ apps/web/src/
 
 ---
 
-## 10. Testes
+## 9. Testes
 
-### 10.1 Fluxos E2E
+### 9.1 Fluxos E2E
 
 ```bash
 # Fluxo de delivery público
 npx playwright test tests/e2e/tests/delivery/
 ```
 
-### 10.2 Cenários de Teste
+### 9.2 Cenários de Teste
 
 | Cenário                    | Comportamento Esperado                   |
 | -------------------------- | ---------------------------------------- |

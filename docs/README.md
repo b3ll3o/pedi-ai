@@ -32,7 +32,6 @@
 | [ROLES.md](guides/ROLES.md)                                 | RBAC, multi-tenant, RLS, autenticação                   | Implementar/modificar controle de acesso             |
 | [MOBILE_PWA.md](guides/MOBILE_PWA.md)                       | Mobile-first, PWA, safe areas iOS, CSS                  | Desenvolver UI responsiva                            |
 | [LIGHTHOUSE.md](guides/LIGHTHOUSE.md)                       | Auditoria de performance manual                         | Verificar performance e PWA                          |
-| [ORGANIZACAO.md](guides/ORGANIZACAO.md)                     | Hierarquia de agentes IA, CTO, reporting                | Entender estrutura organizacional                    |
 | [CI_CD.md](guides/CI_CD.md)                                 | GitHub Actions, docker-compose, deploy VPS              | Configurar/modificar pipeline de CI/CD               |
 | [DDD_MIGRACAO_API.md](guides/DDD_MIGRACAO_API.md)           | Plano de migração DDD do apps/api                       | Migrar API para arquitetura DDD                      |
 | [ESLINT_BEST_PRACTICES.md](guides/ESLINT_BEST_PRACTICES.md) | Regras ESLint, complexity threshold                     | Manter qualidade de código                           |
@@ -83,7 +82,6 @@ docs/
     ├── LIGHTHOUSE.md
     ├── MOBILE_PWA.md
     ├── OFFLINE.md
-    ├── ORGANIZACAO.md
     ├── PAYMENTS.md
     ├── PUBLIC_NAVIGATION.md
     ├── QR_CODE.md
@@ -156,7 +154,7 @@ pnpm dev
 pnpm build
 
 # Tests
-pnpm test:unit        # Unit tests (115 files, 1436 tests)
+pnpm test:unit        # Unit tests (116 files, 1443 tests)
 pnpm test:coverage    # Coverage report (thresholds: 80%)
 
 # E2E (requer .env.e2e configurado)

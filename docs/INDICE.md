@@ -37,7 +37,6 @@
 | **ROLES**                 | `./guides/ROLES.md`                 | RBAC, multi-tenant, Row Level Security (RLS), autenticação admin/cliente              | Implementar/modificar controle de acesso           |
 | **MOBILE_PWA**            | `./guides/MOBILE_PWA.md`            | Mobile-first, PWA, safe areas iOS, CSS responsive, touch targets                      | Desenvolver UI responsiva e PWA                    |
 | **LIGHTHOUSE**            | `./guides/LIGHTHOUSE.md`            | Auditoria de performance manual (FCP, LCP, CLS, TTI, PWA, A11y)                       | Verificar performance e PWA                        |
-| **ORGANIZACAO**           | `./guides/ORGANIZACAO.md`           | Hierarquia de agentes IA, CTO, reporting, fluxo de trabalho                           | Entender estrutura organizacional                  |
 | **CI_CD**                 | `./guides/CI_CD.md`                 | GitHub Actions, docker-compose, deploy VPS, testes E2E em CI                          | Configurar/modificar pipeline de CI/CD             |
 | **SUBSCRIPTIONS**         | `./guides/SUBSCRIPTIONS.md`         | Sistema de assinaturas (trial, planos), webhooks de pagamento, gestão de restaurantes | Implementar/modificar sistema de assinaturas       |
 | **DDD_MIGRACAO_API**      | `./guides/DDD_MIGRACAO_API.md`      | Plano de migração da API NestJS para arquitetura DDD (bounded contexts, status atual) | Migrar módulos da API para DDD                     |
@@ -106,4 +105,3 @@ pnpm test:unit   # Rodar todos os testes unitários
 
 - Toda documentação deve estar em **português brasileiro (pt-BR)** conforme `AGENTS.md`
 - Para contribuir com nova documentação, edite o arquivo relevante ou crie em `docs/guides/`
-- Arquivos em `docs/archive/` são histórico e não devem ser editados

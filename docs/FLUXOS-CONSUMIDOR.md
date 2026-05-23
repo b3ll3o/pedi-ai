@@ -44,8 +44,8 @@ Cliente escaneia QR code da mesa
 
 **Arquivos:**
 
-- `src/lib/qr.ts` — Validação de QR code
-- `src/app/restaurantes/[restaurantId]/cardapio/page.tsx` — Página do cardápio
+- `src/lib/qr/validator.ts` — Validação de QR code (HMAC-SHA256)
+- `apps/web/src/app/restaurantes/[restaurantId]/cardapio/page.tsx` — Página do cardápio
 
 ### 1.2 Via Lista Pública (Delivery)
 
@@ -63,8 +63,8 @@ Cliente acessa /restaurantes
 
 **Arquivos:**
 
-- `src/app/restaurantes/page.tsx` — Lista pública
-- `src/components/restaurant/` — Componentes de listagem
+- `apps/web/src/app/restaurantes/page.tsx` — Lista pública
+- `apps/web/src/components/restaurant/` — Componentes de listagem
 
 ---
 
@@ -149,8 +149,8 @@ Cliente acessa cardápio
 
 **Arquivos:**
 
-- `src/domain/cardapio/entities/Categoria.ts`
-- `src/domain/cardapio/entities/ItemCardapio.ts`
+- `apps/web/src/domain/cardapio/entities/Categoria.ts`
+- `apps/web/src/domain/cardapio/entities/ItemCardapio.ts`
 
 **Fluxos E2E:** `apps/web/tests/customer/menu.spec.ts`
 
@@ -234,8 +234,8 @@ Cliente acessa /carrinho ou clica no badge
 
 **Arquivos:**
 
-- `src/infrastructure/persistence/cartStore.ts`
-- `src/infrastructure/persistence/pedido/CarrinhoRepository.ts`
+- `apps/web/src/infrastructure/persistence/cartStore.ts`
+- `apps/web/src/infrastructure/persistence/pedido/CarrinhoRepository.ts`
 
 ### 6.2 Editar Quantidade
 
@@ -332,8 +332,8 @@ Cliente acessa página de pagamento
 
 **Arquivos:**
 
-- `src/application/pagamento/services/CriarPixChargeUseCase.ts`
-- `src/infrastructure/external/PixAdapter.ts`
+- `apps/web/src/application/pagamento/services/CriarPixChargeUseCase.ts`
+- `apps/web/src/infrastructure/external/PixAdapter.ts`
 
 **Fluxos E2E:** `apps/web/tests/customer/payment.spec.ts`, `apps/web/tests/payment/pix.spec.ts`
 
@@ -395,7 +395,7 @@ pending_payment → paid → received → preparing → ready → delivered
 
 **Arquivos:**
 
-- `src/domain/pedido/entities/Pedido.ts`
+- `apps/web/src/domain/pedido/entities/Pedido.ts`
 - `src/hooks/useRealtimeOrders.ts`
 
 **Fluxos E2E:** `apps/web/tests/customer/order.spec.ts`
@@ -430,8 +430,8 @@ Cliente solicita cancelamento
 
 **Arquivos:**
 
-- `src/application/pedido/services/AlterarStatusPedidoUseCase.ts`
-- `src/application/pagamento/services/IniciarReembolsoUseCase.ts`
+- `apps/web/src/application/pedido/services/AlterarStatusPedidoUseCase.ts`
+- `apps/web/src/application/pagamento/services/IniciarReembolsoUseCase.ts`
 
 ### 10.2 Cancelamento pela Cozinha/Garçom
 
@@ -457,7 +457,7 @@ Cliente acessa cardápio online
 
 **Arquivos:**
 
-- `src/infrastructure/persistence/cardapio/CardapioSyncService.ts`
+- `apps/web/src/infrastructure/persistence/cardapio/CardapioSyncService.ts`
 - `src/lib/offline/`
 
 **Fluxos E2E:** `apps/web/tests/customer/offline.spec.ts`
@@ -578,7 +578,7 @@ Cliente acessa histórico de pedidos
 
 **Arquivos:**
 
-- `src/application/pedido/services/ObterHistoricoPedidosUseCase.ts`
+- `apps/web/src/application/pedido/services/ObterHistoricoPedidosUseCase.ts`
 
 **Validações:**
 

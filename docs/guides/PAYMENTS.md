@@ -49,9 +49,9 @@ NEXT_PUBLIC_DEMO_PAYMENT_MODE=true       # Bypassa pagamentos reais (demo/simula
                                                                    │
                                                                    ▼
 ┌─────────────┐    Webhook Notification           ┌─────────────────────────────────────┐
-│   Pago      │                                     │  (Edge Function - Deno)            │
-└─────────────┘                                     └──────────────────┬──────────────────┘
-                                                                    │
+│   Pago      │                                     │  Next.js Route (Edge)               │
+└─────────────┘                                     │  `app/api/webhooks/pix/route.ts`     │
+                                                     └──────────────────┬──────────────────┘
                                                         Validação X-Signature
                                                                     │
                                                                     ▼
@@ -106,26 +106,26 @@ NEXT_PUBLIC_DEMO_PAYMENT_MODE=true       # Bypassa pagamentos reais (demo/simula
 **Validação de Assinatura (HMAC-SHA256):**
 
 ```typescript
-const MP_WEBHOOK_SECRET = Deno.env.get('MP_WEBHOOK_SECRET') ?? '';
+// apps/web/src/app/api/webhooks/pix/route.ts
+const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET ?? '';
 
-async function validateSignature(req: Request, payload: { id: string }): Promise<boolean> {
-  const signature = req.headers.get('X-Signature');
-  if (!signature || !MP_WEBHOOK_SECRET) {
-    return false;
-  }
+function validateSignature(rawBody: string, signature: string): boolean {
+  if (!MP_WEBHOOK_SECRET) return false;
 
-  const bodyStr = JSON.stringify(payload);
-  const dataToSign = `${payload.id}.${bodyStr}`;
-
+  // Mercado Pago assina o body cru (rawBody)
   const hmac = createHmac('sha256', MP_WEBHOOK_SECRET);
-  hmac.update(dataToSign);
+  hmac.update(rawBody);
   const expectedSignature = `sha256=${hmac.digest('base64')}`;
 
   // Constant-time comparison (timingSafeEqual)
-  const sigBuffer = new TextEncoder().encode(signature);
-  const expectedBuffer = new TextEncoder().encode(expectedSignature);
+  const sigBuffer = Buffer.from(signature);
+  const expectedBuffer = Buffer.from(expectedSignature);
+  if (sigBuffer.length !== expectedBuffer.length) return false;
   return timingSafeEqual(sigBuffer, expectedBuffer);
 }
+
+// Header: x-mp-signature
+const signature = request.headers.get('x-mp-signature');
 ```
 
 ### 2.4 Tratamento de Idempotência
@@ -170,7 +170,7 @@ const statusMap: Record<string, string> = {
 
 Quando `NEXT_PUBLIC_DEMO_PAYMENT_MODE=true`, todos os pagamentos são simulados sem interação com provedores reais.
 
-### 4.1 PIX Demo
+### 3.1 PIX Demo
 
 ```typescript
 // POST /api/payments/pix/create
@@ -183,7 +183,7 @@ if (isDemoMode) {
 }
 ```
 
-### 4.2 Status PIX Demo
+### 3.2 Status PIX Demo
 
 ```typescript
 // GET /api/payments/pix/status/[orderId]
@@ -208,14 +208,14 @@ if (isDemoMode) {
 
 ## 4. Segurança de Webhooks
 
-### 5.1 Validação de Assinatura — PIX (Mercado Pago)
+### 4.1 Validação de Assinatura — PIX (Mercado Pago)
 
-| Aspecto             | Implementação                           |
-| ------------------- | --------------------------------------- |
+|                     | Aspecto                                 | Implementação |
+| ------------------- | --------------------------------------- | ------------- |
 | **Algoritmo**       | HMAC-SHA256                             |
-| **Header**          | `X-Signature`                           |
+| **Header**          | `x-mp-signature`                        |
 | **Formato**         | `sha256=base64(hmac)`                   |
-| **Dados assinados** | `webhook_id.body`                       |
+| **Dados assinados** | `rawBody` (corpo cru da requisição)     |
 | **Proteção**        | `timingSafeEqual` contra timing attacks |
 
 ### 4.2 Idempotência
@@ -228,7 +228,7 @@ Todos os webhooks verificam se o evento já foi processadon antes de aplicar qua
 
 ## 5. Status do Pedido
 
-### 6.1 Status de Pagamento (Domain)
+### 5.1 Status de Pagamento (Domain)
 
 ```typescript
 type StatusPagamentoValue = 'pending' | 'confirmed' | 'failed' | 'refunded' | 'cancelled';
@@ -242,7 +242,7 @@ type StatusPagamentoValue = 'pending' | 'confirmed' | 'failed' | 'refunded' | 'c
 | `refunded`  | Reembolsado          | (final)                              |
 | `cancelled` | Cancelado            | (final)                              |
 
-### 6.2 Status no Pedido (Orders)
+### 5.2 Status no Pedido (Orders)
 
 | Status Pagamento | Status Pedido     |
 | ---------------- | ----------------- |
@@ -252,7 +252,7 @@ type StatusPagamentoValue = 'pending' | 'confirmed' | 'failed' | 'refunded' | 'c
 | `refunded`       | `refunded`        |
 | `cancelled`      | `cancelled`       |
 
-### 6.3 Máquina de Estados — PagamentoAggregate
+### 5.3 Máquina de Estados — PagamentoAggregate
 
 ```
                     ┌───────────────────────────────────────────────────────┐
@@ -312,7 +312,7 @@ type StatusPagamentoValue = 'pending' | 'confirmed' | 'failed' | 'refunded' | 'c
 
 ## 7. Flags de Feature
 
-### 8.1 Funções Disponíveis
+### 7.1 Funções Disponíveis
 
 ```typescript
 // src/lib/feature-flags.ts
@@ -323,7 +323,7 @@ export function isPixEnabled(): boolean {
 }
 ```
 
-### 8.2 Uso no Frontend
+### 7.2 Uso no Frontend
 
 ```typescript
 import { isPixEnabled } from '@/lib/feature-flags'
@@ -332,7 +332,7 @@ import { isPixEnabled } from '@/lib/feature-flags'
 {isPixEnabled() && <PixPaymentOption />}
 ```
 
-### 8.3 Todas as Flags
+### 7.3 Todas as Flags
 
 | Flag                                    | Descrição                       |
 | --------------------------------------- | ------------------------------- |
@@ -383,13 +383,14 @@ apps/web/src/
 │       ├── PagamentoRepository.ts
 │       └── TransacaoRepository.ts
 │
-├── app/api/payments/
-│   ├── pix/
-│   │   ├── create/route.ts              # POST - Criar PIX
-│   │   └── status/[orderId]/route.ts    # GET - Status PIX
+├── app/api/webhooks/
+│   └── pix/
+│       └── route.ts                     # POST /api/webhooks/pix (webhook MP)
 │
-    └── pix-webhook/
-        └── index.ts                     # Edge function para webhooks MP
+├── app/api/payments/
+│   └── pix/
+│       ├── create/route.ts              # POST /api/payments/pix/create
+│       └── status/[orderId]/route.ts   # GET /api/payments/pix/status/:orderId
 ```
 
 > **Nota:** A integração com Mercado Pago está em `src/app/api/payments/pix/create/route.ts`. O `PixAdapter.ts` existe como adapter do domain, mas a rota usa o SDK Mercado Pago diretamente.
@@ -402,20 +403,20 @@ apps/web/src/
 
 ```bash
 # Tests de domínio
-npm run test -- tests/unit/domain/pagamento/
+pnpm test -- tests/unit/domain/pagamento/
 
 # Tests de adapters
-npm run test -- tests/unit/infrastructure/payment/
+pnpm test -- tests/unit/infrastructure/payment/
 
 # Tests de use cases
-npm run test -- tests/unit/application/payment/
+pnpm test -- tests/unit/application/payment/
 ```
 
 ### 9.2 Testes de Integração
 
 ```bash
 # PIX API
-npm run test -- tests/integration/api/payments.test.ts
+pnpm test -- tests/integration/api/payments.test.ts
 ```
 
 ### 9.3 Testes E2E

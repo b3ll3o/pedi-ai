@@ -6,15 +6,15 @@ Este documento descreve o sistema de assinaturas implementado no Pedi-AI, inclui
 
 ## 1. Visão Geral
 
-O Pedi-AI utiliza um sistema de assinaturas para controlar o acesso de restaurantes à plataforma:
+O Pedi-AI utiliza um sistema de assinaturas para controlar o acesso de restaurantes à plataforma. O schema do Prisma (`Subscription`) está definido, porém a lógica de negócio completa (verificação de expiração, blocking de operações, webhooks de renovação) ainda **não foi implementada**.
 
-| Plano      | Preço        | Período  | Status          |
-| ---------- | ------------ | -------- | --------------- |
-| **Trial**  | Gratuito     | 14 dias  | ✅ Implementado |
-| **Mensal** | R$ 19,99/mês | 30 dias  | ✅ Implementado |
-| **Anual**  | R$ 19,99/mês | 365 dias | ✅ Implementado |
+|            | Plano        | Preço    | Período      | Status |
+| ---------- | ------------ | -------- | ------------ | ------ |
+| **Trial**  | Gratuito     | 14 dias  | ⚠️ Schema    |
+| **Mensal** | R$ 19,99/mês | 30 dias  | ⚠️ Planejado |
+| **Anual**  | R$ 19,99/mês | 365 dias | ⚠️ Planejado |
 
-> **Nota:** O sistema de assinaturas está integrado à plataforma. Operações de escrita são bloqueadas quando a assinatura expira.
+> **Nota:** A verificação de expiração e bloqueio de operações ainda não está implementada na API. O schema existe para suportar a feature futuramente.
 
 ---
 
