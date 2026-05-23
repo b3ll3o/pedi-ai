@@ -49,7 +49,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       available: boolean;
     }>`
       SELECT id, category_id, name, description, image_url, price, dietary_labels, available
-      FROM products
+      FROM "Product"
       WHERE id = ${id}
     `;
 
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // Fetch category to verify restaurant ownership
     const categoryResult = await sql<{ id: string; name: string; restaurant_id: string }>`
       SELECT id, name, restaurant_id
-      FROM categories
+      FROM "Category"
       WHERE id = ${product.category_id} AND restaurant_id = ${restaurantId}
     `;
 
@@ -78,7 +78,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       modifier_group_id: string;
     }>`
       SELECT product_id, modifier_group_id
-      FROM product_modifier_groups
+      FROM "ProductModifierGroup"
       WHERE product_id = ${id}
     `;
 
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             max_selections: number;
           }>`
             SELECT id, name, required, min_selections, max_selections
-            FROM modifier_groups
+            FROM "ModifierGroup"
             WHERE id = ANY(${modifierGroupIds}) AND restaurant_id = ${restaurantId}
           `
         : [];
@@ -112,7 +112,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             price_adjustment: number;
           }>`
             SELECT id, modifier_group_id, name, price_adjustment
-            FROM modifier_values
+            FROM "ModifierValue"
             WHERE modifier_group_id = ANY(${modifierGroupIds}) AND available = true
           `
         : [];

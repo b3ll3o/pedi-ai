@@ -28,9 +28,16 @@ describe('AuthService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    process.env.JWT_REFRESH_SECRET = 'test-refresh-secret';
+    process.env.JWT_SECRET = 'test-secret';
     mockPrisma = createMockPrisma();
     mockJwt = createMockJwt();
     authService = new AuthService(mockPrisma as unknown as PrismaService, mockJwt as unknown as JwtService);
+  });
+
+  afterEach(() => {
+    delete process.env.JWT_REFRESH_SECRET;
+    delete process.env.JWT_SECRET;
   });
 
   describe('register', () => {
@@ -108,6 +115,18 @@ describe('AuthService', () => {
       });
       const bcrypt = await import('bcrypt');
       vi.mocked(bcrypt.compare).mockResolvedValue(false as never);
+
+      await expect(authService.login(loginData)).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should throw UnauthorizedException if passwordHash is null', async () => {
+      mockPrisma.usersProfile.findUnique.mockResolvedValue({
+        id: 'user-1',
+        email: loginData.email,
+        name: 'Test User',
+        passwordHash: null,
+        role: 'cliente',
+      });
 
       await expect(authService.login(loginData)).rejects.toThrow(UnauthorizedException);
     });

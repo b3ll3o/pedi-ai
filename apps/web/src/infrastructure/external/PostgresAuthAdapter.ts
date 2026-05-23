@@ -4,6 +4,24 @@ import { IAuthAdapter } from '@/application/autenticacao/services/RegistrarUsuar
 import { sql } from '@/infrastructure/database/pg-client';
 
 /**
+ * Validação de força de senha.
+ * Requisitos: mín 8 chars, 1 maiúscula, 1 número, 1 caractere especial
+ */
+function validarForcaSenha(senha: string): void {
+  if (senha.length < 8) {
+    throw new Error('A senha deve ter pelo menos 8 caracteres');
+  }
+  const temMaiuscula = /[A-Z]/.test(senha);
+  const temNumero = /\d/.test(senha);
+  const temEspecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(senha);
+  if (!temMaiuscula || !temNumero || !temEspecial) {
+    throw new Error(
+      'A senha deve conter pelo menos 1 letra maiúscula, 1 número e 1 caractere especial'
+    );
+  }
+}
+
+/**
  * Traduz mensagens de erro para pt-BR
  */
 function traduzirMensagemErro(mensagem: string): string {
@@ -13,7 +31,7 @@ function traduzirMensagemErro(mensagem: string): string {
     'User already registered': 'Este email já está cadastrado',
     'User not found': 'Usuário não encontrado',
     'Email not found': 'Email não encontrado',
-    'Password should be at least 6 characters': 'A senha deve ter pelo menos 6 caracteres',
+    'Password should be at least 6 characters': 'A senha deve ter pelo menos 8 caracteres',
   };
 
   return traducoes[mensagem] || mensagem;
@@ -35,10 +53,7 @@ function hashSenha(senha: string, salt: string): string {
  */
 export class PostgresAuthAdapter implements IAuthAdapter {
   async criarUsuario(email: string, senha: string): Promise<{ id: string }> {
-    // Validar senha
-    if (senha.length < 6) {
-      throw new Error('A senha deve ter pelo menos 6 caracteres');
-    }
+    validarForcaSenha(senha);
 
     // Gerar salt e hash
     const salt = randomBytes(16).toString('hex');

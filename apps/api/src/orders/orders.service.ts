@@ -51,24 +51,36 @@ export class OrdersService {
       notes?: string;
     }>;
   }) {
-    const order = await this.prisma.order.create({
-      data: {
-        restaurantId: data.restaurantId,
-        tableId: data.tableId,
-        customerId: data.customerId,
-        customerPhone: data.customerPhone,
-        customerName: data.customerName,
-        customerEmail: data.customerEmail,
-        subtotal: data.subtotal,
-        tax: data.tax,
-        total: data.total,
-        paymentMethod: data.paymentMethod,
-        idempotencyKey: data.idempotencyKey,
-        items: {
-          create: data.items,
+    const order = await this.prisma.$transaction(async (tx) => {
+      const newOrder = await tx.order.create({
+        data: {
+          restaurantId: data.restaurantId,
+          tableId: data.tableId,
+          customerId: data.customerId,
+          customerPhone: data.customerPhone,
+          customerName: data.customerName,
+          customerEmail: data.customerEmail,
+          subtotal: data.subtotal,
+          tax: data.tax,
+          total: data.total,
+          paymentMethod: data.paymentMethod,
+          idempotencyKey: data.idempotencyKey,
+          items: {
+            create: data.items,
+          },
         },
-      },
-      include: { items: true },
+        include: { items: true },
+      });
+
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId: newOrder.id,
+          status: newOrder.status,
+          notes: 'Pedido criado',
+        },
+      });
+
+      return newOrder;
     });
 
     this.realtimeService.emitNewOrder(data.restaurantId, {
@@ -80,13 +92,17 @@ export class OrdersService {
   }
 
   async updateStatus(id: string, status: OrderStatus, notes?: string) {
-    const order = await this.prisma.order.update({
-      where: { id },
-      data: { status },
-    });
+    const order = await this.prisma.$transaction(async (tx) => {
+      const updatedOrder = await tx.order.update({
+        where: { id },
+        data: { status },
+      });
 
-    await this.prisma.orderStatusHistory.create({
-      data: { orderId: id, status, notes },
+      await tx.orderStatusHistory.create({
+        data: { orderId: id, status, notes },
+      });
+
+      return updatedOrder;
     });
 
     this.realtimeService.emitOrderUpdate(order.restaurantId, {

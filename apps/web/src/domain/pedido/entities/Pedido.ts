@@ -157,6 +157,9 @@ export class Pedido extends AggregateRootClass<PedidoProps> {
       updatedAt: now,
     });
 
+    // atualizaTotais() usa props.itens para calcular subtotal e total,
+    // mas preserva o tax que veio em props (via CarrinhoAggregate.toPedido)
+    pedido.props.tax = props.tax;
     pedido.atualizarTotais();
 
     return pedido;

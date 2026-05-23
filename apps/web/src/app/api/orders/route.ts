@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
       payment_status: string;
     }>`
       SELECT id, status, total, created_at, payment_status
-      FROM orders
+      FROM "Order"
       WHERE customer_id = ${customerId} AND restaurant_id = ${restaurantId}
       ORDER BY created_at DESC
     `;
@@ -100,7 +100,7 @@ async function findRestaurantId(
   if (tableId) {
     const tableResult = await sql<{ restaurant_id: string }>`
       SELECT restaurant_id
-      FROM tables
+      FROM "Table"
       WHERE id = ${tableId}
       LIMIT 1
     `;
@@ -135,7 +135,7 @@ async function checkIdempotency(customerId: string, idempotencyKey: string) {
     created_at: string;
   }>`
     SELECT id, status, total, created_at
-    FROM orders
+    FROM "Order"
     WHERE customer_id = ${customerId} AND idempotency_key = ${idempotencyKey}
     LIMIT 1
   `;

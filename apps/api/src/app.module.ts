@@ -10,6 +10,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { ProductsModule } from './products/products.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { RestaurantsModule } from './restaurants/restaurants.module';
+import { ThrottlerConfigModule } from './common/throttler.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -19,6 +20,7 @@ import { UsersModule } from './users/users.module';
       envFilePath: ['.env.local', '.env'],
     }),
     DatabaseModule,
+    ThrottlerConfigModule,
     AuthModule,
     UsersModule,
     RestaurantsModule,

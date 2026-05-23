@@ -158,8 +158,8 @@ export class PagamentoAggregate extends AggregateRootClass<PagamentoAggregatePro
       throw new Error('Apenas pagamentos confirmados podem ser reembolsados');
     }
 
-    const valorEmCentavos = Math.round(valorReembolso * 100);
-    if (valorEmCentavos > this.props.pagamento.valor.valor) {
+    const valorReembolsoCentavos = valorReembolso;
+    if (valorReembolsoCentavos > this.props.pagamento.valor.valor) {
       throw new Error('Valor de reembolso não pode exceder o valor do pagamento');
     }
 

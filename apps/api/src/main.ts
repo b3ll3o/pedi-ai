@@ -1,8 +1,11 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
+import { ThrottlerExceptionFilter } from '@nestjs/throttler';
 
 import { AppModule } from './app.module';
+import { TodasExcecoesFiltro } from './common/filters/TodasExcecoesFiltro';
+import { RespostaSucessoInterceptor } from './common/interceptors/RespostaSucessoInterceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -25,8 +28,15 @@ async function bootstrap() {
     })
   );
 
+  app.useGlobalFilters(new TodasExcecoesFiltro());
+  app.useGlobalFilters(new ThrottlerExceptionFilter());
+  app.useGlobalInterceptors(new RespostaSucessoInterceptor());
+
   const port = process.env.PORT || 3001;
-  await app.listen({ port: Number(port), host: '0.0.0.0' });
+  // HOST: 0.0.0.0 é intencional para Docker (container precisa escutar em todas as interfaces).
+  // Em desenvolvimento local, defina HOST=127.0.0.1 para escutar apenas em localhost.
+  const host = process.env.HOST || '0.0.0.0';
+  await app.listen({ port: Number(port), host });
   console.log(`🚀 API rodando em http://localhost:${port}`);
 }
 

@@ -30,7 +30,7 @@ async function fetchProductAvailability(productIds: string[]) {
     category_id: string;
   }>`
     SELECT id, name, available, price, category_id
-    FROM products
+    FROM "Product"
     WHERE id = ANY(${productIds})
   `;
 }
@@ -41,7 +41,7 @@ async function fetchRequiredModifierGroups(productIds: string[]) {
     modifier_group_id: string;
   }>`
     SELECT product_id, modifier_group_id
-    FROM product_modifier_groups
+    FROM "ProductModifierGroup"
     WHERE product_id = ANY(${productIds})
   `;
 
@@ -62,7 +62,7 @@ async function fetchRequiredModifierGroups(productIds: string[]) {
     min_selections: number;
   }>`
       SELECT id, name, required, min_selections
-      FROM modifier_groups
+      FROM "ModifierGroup"
       WHERE id = ANY(${modifierGroupIds}) AND required = true
     `;
 
@@ -75,7 +75,7 @@ async function validateTable(
 ): Promise<ValidationError | null> {
   const tableResult = await sql<{ id: string; active: boolean }>`
     SELECT id, active
-    FROM tables
+    FROM "Table"
     WHERE id = ${tableId} AND restaurant_id = ${restaurantId} AND active = true
     LIMIT 1
   `;

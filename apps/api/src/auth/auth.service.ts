@@ -1,9 +1,26 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 import { PrismaService } from '../common/prisma.service';
+
+// ─── Requisitos de senha forte ────────────────────────────────────────────────
+const SENHA_MIN_CARACTERES = 8;
+const SENHA_REGEX_FORCA = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+
+function validarForcaSenha(senha: string): void {
+  if (senha.length < SENHA_MIN_CARACTERES) {
+    throw new BadRequestException(
+      `Senha deve ter no mínimo ${SENHA_MIN_CARACTERES} caracteres`
+    );
+  }
+  if (!SENHA_REGEX_FORCA.test(senha)) {
+    throw new BadRequestException(
+      'Senha deve conter pelo menos 1 letra maiúscula, 1 número e 1 caractere especial'
+    );
+  }
+}
 
 export interface JwtPayload {
   sub: string;
@@ -30,6 +47,8 @@ export class AuthService {
   ) {}
 
   async register(data: { email: string; password: string; name: string }) {
+    validarForcaSenha(data.password);
+
     const existing = await this.prisma.usersProfile.findUnique({
       where: { email: data.email },
     });

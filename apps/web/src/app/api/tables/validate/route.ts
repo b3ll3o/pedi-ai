@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       number: number;
     }>`
       SELECT id, name, number
-      FROM tables
+      FROM "Table"
       WHERE id = ${table_id} AND restaurant_id = ${restaurant_id} AND active = true
       LIMIT 1
     `;

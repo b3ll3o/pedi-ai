@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
       active: boolean;
     }>`
       SELECT id, restaurant_id, name, description, image_url, sort_order, active
-      FROM categories
+      FROM "Category"
       WHERE restaurant_id = ${restaurantId} AND active = true
       ORDER BY sort_order ASC
     `;
@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
       dietary_labels: string[] | null;
     }>`
       SELECT id, category_id, name, description, image_url, price, available, sort_order, dietary_labels
-      FROM products
+      FROM "Product"
       WHERE available = true
       ORDER BY sort_order ASC
     `;
@@ -128,7 +128,7 @@ export async function GET(request: NextRequest) {
       max_selections: number;
     }>`
       SELECT id, restaurant_id, name, required, min_selections, max_selections
-      FROM modifier_groups
+      FROM "ModifierGroup"
       WHERE restaurant_id = ${restaurantId}
     `;
 
@@ -153,7 +153,7 @@ export async function GET(request: NextRequest) {
             available: boolean;
           }>`
             SELECT id, modifier_group_id, name, price_adjustment, available
-            FROM modifier_values
+            FROM "ModifierValue"
             WHERE available = true AND modifier_group_id = ANY(${modifierGroupIds})
           `
         : [];
@@ -211,7 +211,7 @@ export async function GET(request: NextRequest) {
       available: boolean;
     }>`
       SELECT id, restaurant_id, name, description, price, available
-      FROM combos
+      FROM "Combo"
       WHERE restaurant_id = ${restaurantId} AND available = true
     `;
 

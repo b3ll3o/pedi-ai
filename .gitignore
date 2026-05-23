@@ -27,6 +27,9 @@
 # OpenCode Agent
 .opencode/
 
+# Claude Code
+.claude/
+
 # Test Results (root level)
 test-results/
 
@@ -63,12 +66,13 @@ apps/web/tests/e2e/node_modules
 # Cartography
 .lite/
 
-# OS
-Thumbs.db
-
+# Playwright MCP
 .playwright-mcp
+
+# pnpm
 pnpm-lock.yamldata/
 package-lock.json
+.pnpm-store/
 
 # Workspace node_modules
 /apps/*/node_modules
@@ -82,4 +86,9 @@ apps/web/.next
 apps/web/out
 apps/api/dist
 packages/shared/dist
+
+# MCP config (contains secrets)
 .mcp.json
+
+# OS
+Thumbs.db

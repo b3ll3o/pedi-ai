@@ -49,19 +49,20 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres123}@postgres:5432/pedi_ai?schema=public
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres123}@postgres:5432/pedi_ai
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-refresh-change-in-production}
       JWT_EXPIRES_IN: 15m
       JWT_REFRESH_EXPIRES_IN: 7d
       PORT: "3001"
+      HOST: "0.0.0.0"
       NODE_ENV: development
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://0.0.0.0:3000}
     volumes:
       - ./apps/api/src:/app/apps/api/src:ro
       - ./packages:/app/packages:ro
     healthcheck:
-      test: ["CMD-SHELL", "pgrep -f 'node' || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:3001/ || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -80,6 +81,7 @@ services:
       api:
         condition: service_healthy
     environment:
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres123}@postgres:5432/pedi_ai
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://api:3001}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
     volumes:

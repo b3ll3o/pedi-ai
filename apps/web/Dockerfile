@@ -20,6 +20,7 @@ WORKDIR /app
 
 # Copy monorepo workspace config (allows packages/* resolution)
 COPY pnpm-workspace.yaml ./
+COPY pnpm-lock.yaml ./
 
 # Copy all packages (monorepo deps resolution for packages/shared)
 COPY packages ./packages
@@ -31,8 +32,9 @@ COPY apps/web/next.config.ts ./
 COPY apps/web/tsconfig.json ./
 COPY apps/web/package.json ./
 
-# Install dependencies
-RUN pnpm install --ignore-scripts
+# Install dependencies (using --no-frozen-lockfile for compatibility)
+# NOTE: For strict reproducibility, ensure pnpm-lock.yaml matches package.json before build
+RUN pnpm install --no-frozen-lockfile --ignore-scripts
 
 # Build Next.js app
 RUN pnpm build
@@ -58,7 +60,7 @@ COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/packages ./packages
 
 # Install production dependencies only
-RUN pnpm install --ignore-scripts
+RUN pnpm install --no-frozen-lockfile --production --ignore-scripts
 
 RUN chown -R nextjs:nodejs /app
 
