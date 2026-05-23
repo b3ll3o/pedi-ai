@@ -1188,41 +1188,6 @@
   gap: var(--spacing-md);
 }
 
-.faqItem {
-  padding: var(--spacing-xl);
-  background: var(--color-background);
-  border-radius: var(--border-radius-lg);
-  border: 1px solid var(--color-border);
-  transition: var(--transition-normal);
-}
-
-.faqItem:hover {
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-sm);
-}
-
-.faqQuestion {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  font-size: 1.05rem;
-  font-weight: 600;
-  color: var(--color-text);
-  margin-bottom: var(--spacing-sm);
-}
-
-.faqQuestion svg {
-  color: var(--color-primary);
-  flex-shrink: 0;
-}
-
-.faqAnswer {
-  font-size: 0.95rem;
-  color: var(--color-text-muted);
-  line-height: 1.7;
-  padding-left: calc(20px + var(--spacing-md));
-}
-
 /* ----------------------------------------
    Final CTA Section
    ---------------------------------------- */
@@ -1619,19 +1584,6 @@
 
   .faq {
     background: var(--color-surface);
-  }
-
-  .faqItem {
-    background: var(--color-background);
-    border: 1px solid var(--color-border);
-  }
-
-  .faqQuestion {
-    color: #fafaf9;
-  }
-
-  .faqAnswer {
-    color: #a8a29e;
   }
 
   .footer {

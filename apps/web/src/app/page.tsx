@@ -22,6 +22,8 @@ import {
   BarChart3,
   Utensils,
   AlertCircle,
+  Users,
+  Globe,
 } from 'lucide-react';
 import type { Metadata } from 'next';
 
@@ -58,8 +60,6 @@ const faqData = [
   },
 ];
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://pedi-ai.com';
-
 export const metadata: Metadata = {
   title: 'Cardápio Digital para Restaurantes | Pedi-AI - Funciona Offline',
   description:
@@ -71,7 +71,7 @@ export const metadata: Metadata = {
     title: 'Cardápio Digital para Restaurantes | Pedi-AI',
     description:
       'Cardápio digital que funciona offline para restaurantes. Pedidos em tempo real, QR Codes por mesa. Teste grátis 14 dias.',
-    url: BASE_URL,
+    url: '/',
     type: 'website',
     images: [
       {
@@ -90,51 +90,6 @@ export const metadata: Metadata = {
     images: ['/og-image.png'],
   },
 } as Metadata;
-
-export const ldJson = [
-  {
-    type: 'application/ld+json' as const,
-    children: JSON.stringify({
-      '@context': 'https://schema.org',
-      '@graph': [
-        {
-          '@type': 'WebSite',
-          '@id': `${BASE_URL}/#website`,
-          url: BASE_URL,
-          name: 'PediAI - Cardápio Digital para Restaurantes',
-          description:
-            'Cardápio digital que funciona offline para restaurantes. Pedidos em tempo real, QR Codes por mesa.',
-          publisher: {
-            '@id': `${BASE_URL}/#organization`,
-          },
-        },
-        {
-          '@type': 'Organization',
-          '@id': `${BASE_URL}/#organization`,
-          name: 'PediAI',
-          url: BASE_URL,
-          logo: {
-            '@type': 'ImageObject',
-            url: `${BASE_URL}/logo.png`,
-          },
-          sameAs: ['https://twitter.com/pediai', 'https://instagram.com/pediai'],
-        },
-        {
-          '@type': 'FAQPage',
-          '@id': `${BASE_URL}/#faq`,
-          mainEntity: faqData.map((item) => ({
-            '@type': 'Question',
-            name: item.question,
-            acceptedAnswer: {
-              '@type': 'Answer',
-              text: item.answer,
-            },
-          })),
-        },
-      ],
-    }),
-  },
-];
 
 export default function Home() {
   return (
@@ -208,26 +163,18 @@ export default function Home() {
             Mais de 500 restaurantes já aumentaram suas vendas
           </p>
           <div className={styles.socialProofLogos}>
-            <div className={styles.socialProofLogo}>
-              <UtensilsCrossed aria-hidden="true" size={24} />
-              <span>Lanches do Bairro</span>
-            </div>
-            <div className={styles.socialProofLogo}>
-              <ChefHat aria-hidden="true" size={24} />
-              <span>Pizza Express</span>
-            </div>
-            <div className={styles.socialProofLogo}>
-              <UtensilsCrossed aria-hidden="true" size={24} />
-              <span>Espetinho & Cia</span>
-            </div>
-            <div className={styles.socialProofLogo}>
-              <Utensils aria-hidden="true" size={24} />
-              <span>Café Central</span>
-            </div>
-            <div className={styles.socialProofLogo}>
-              <UtensilsCrossed aria-hidden="true" size={24} />
-              <span>Bistrô Gourmet</span>
-            </div>
+            {[
+              { icon: UtensilsCrossed, label: 'Lanches' },
+              { icon: ChefHat, label: 'Massas' },
+              { icon: Utensils, label: 'Brasileira' },
+              { icon: Globe, label: 'Variada' },
+              { icon: UtensilsCrossed, label: 'Petiscos' },
+            ].map(({ icon: Icon, label }) => (
+              <div key={label} className={styles.socialProofLogo}>
+                <Icon aria-hidden="true" size={24} />
+                <span>{label}</span>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -430,12 +377,10 @@ export default function Home() {
           <div className={styles.testimonialsGrid}>
             <article className={styles.testimonialCard}>
               <div className={styles.testimonialHeader}>
-                <div className={styles.testimonialStars}>
-                  <Star aria-hidden="true" size={16} fill="currentColor" />
-                  <Star aria-hidden="true" size={16} fill="currentColor" />
-                  <Star aria-hidden="true" size={16} fill="currentColor" />
-                  <Star aria-hidden="true" size={16} fill="currentColor" />
-                  <Star aria-hidden="true" size={16} fill="currentColor" />
+                <div className={styles.testimonialStars} aria-label="5 de 5 estrelas">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} aria-hidden="true" size={16} fill="currentColor" />
+                  ))}
                 </div>
                 <span className={styles.testimonialBadge}>Básico</span>
               </div>
@@ -444,21 +389,21 @@ export default function Home() {
                 pedidos antes, agora isso não acontece mais.&rdquo;
               </p>
               <footer className={styles.testimonialAuthor}>
-                <div className={styles.testimonialAvatar}>MF</div>
+                <div className={styles.testimonialAvatar} aria-hidden="true">
+                  <UtensilsCrossed size={20} />
+                </div>
                 <div>
-                  <span className={styles.testimonialName}>Marcos Ferreira</span>
-                  <span className={styles.testimonialRole}>Dono, Lanches do Bairro</span>
+                  <span className={styles.testimonialName}>Proprietário de lanchonete</span>
+                  <span className={styles.testimonialRole}>Pequeno restaurante</span>
                 </div>
               </footer>
             </article>
             <article className={styles.testimonialCard}>
               <div className={styles.testimonialHeader}>
-                <div className={styles.testimonialStars}>
-                  <Star aria-hidden="true" size={16} fill="currentColor" />
-                  <Star aria-hidden="true" size={16} fill="currentColor" />
-                  <Star aria-hidden="true" size={16} fill="currentColor" />
-                  <Star aria-hidden="true" size={16} fill="currentColor" />
-                  <Star aria-hidden="true" size={16} fill="currentColor" />
+                <div className={styles.testimonialStars} aria-label="5 de 5 estrelas">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} aria-hidden="true" size={16} fill="currentColor" />
+                  ))}
                 </div>
                 <span className={`${styles.testimonialBadge} ${styles.testimonialBadgePopular}`}>
                   Mais Popular
@@ -469,21 +414,21 @@ export default function Home() {
                 chega direto na tela.&rdquo;
               </p>
               <footer className={styles.testimonialAuthor}>
-                <div className={styles.testimonialAvatar}>AC</div>
+                <div className={styles.testimonialAvatar} aria-hidden="true">
+                  <Users size={20} />
+                </div>
                 <div>
-                  <span className={styles.testimonialName}>Ana Carolina</span>
-                  <span className={styles.testimonialRole}>Gerente, Pizza Express</span>
+                  <span className={styles.testimonialName}>Gerente de restaurante</span>
+                  <span className={styles.testimonialRole}>Restaurante de médio porte</span>
                 </div>
               </footer>
             </article>
             <article className={styles.testimonialCard}>
               <div className={styles.testimonialHeader}>
-                <div className={styles.testimonialStars}>
-                  <Star aria-hidden="true" size={16} fill="currentColor" />
-                  <Star aria-hidden="true" size={16} fill="currentColor" />
-                  <Star aria-hidden="true" size={16} fill="currentColor" />
-                  <Star aria-hidden="true" size={16} fill="currentColor" />
-                  <Star aria-hidden="true" size={16} fill="currentColor" />
+                <div className={styles.testimonialStars} aria-label="5 de 5 estrelas">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} aria-hidden="true" size={16} fill="currentColor" />
+                  ))}
                 </div>
                 <span className={styles.testimonialBadge}>Profissional</span>
               </div>
@@ -492,10 +437,12 @@ export default function Home() {
                 aumentar o ticket médio em 23%.&rdquo;
               </p>
               <footer className={styles.testimonialAuthor}>
-                <div className={styles.testimonialAvatar}>RS</div>
+                <div className={styles.testimonialAvatar} aria-hidden="true">
+                  <TrendingUp size={20} />
+                </div>
                 <div>
-                  <span className={styles.testimonialName}>Roberto Silva</span>
-                  <span className={styles.testimonialRole}>Dono, Espetinho & Cia</span>
+                  <span className={styles.testimonialName}>Dono de restaurante</span>
+                  <span className={styles.testimonialRole}>Rede de alimentação</span>
                 </div>
               </footer>
             </article>
@@ -524,7 +471,7 @@ export default function Home() {
               </div>
               <div className={styles.pricingCardPrice}>
                 <span className={styles.pricingCurrency}>R$</span>
-                <span className={styles.pricingValue}>59</span>
+                <span className={styles.pricingValue}>49</span>
                 <span className={styles.pricingPeriod}>/mês</span>
               </div>
               <p className={styles.pricingCardNote}>Por restaurante</p>
@@ -562,7 +509,7 @@ export default function Home() {
               </div>
               <div className={styles.pricingCardPrice}>
                 <span className={styles.pricingCurrency}>R$</span>
-                <span className={styles.pricingValue}>56</span>
+                <span className={styles.pricingValue}>99</span>
                 <span className={styles.pricingPeriod}>/mês</span>
               </div>
               <p className={styles.pricingCardNote}>Por restaurante (5+ unidades)</p>
@@ -597,7 +544,7 @@ export default function Home() {
               </div>
               <div className={styles.pricingCardPrice}>
                 <span className={styles.pricingCurrency}>R$</span>
-                <span className={styles.pricingValue}>53</span>
+                <span className={styles.pricingValue}>199</span>
                 <span className={styles.pricingPeriod}>/mês</span>
               </div>
               <p className={styles.pricingCardNote}>Por restaurante (10+ unidades)</p>
@@ -645,7 +592,9 @@ export default function Home() {
           </h2>
           <dl className={styles.faqList}>
             {faqData.map((faq, index) => (
-              <FAQItem key={index} question={faq.question} answer={faq.answer} />
+              <div key={index} className={styles.faqItem}>
+                <FAQItem question={faq.question} answer={faq.answer} />
+              </div>
             ))}
           </dl>
         </div>
@@ -704,7 +653,7 @@ export default function Home() {
             </nav>
           </div>
           <div className={styles.footerBottom}>
-            <p>© 2026 Pedi-AI. Todos os direitos reservados.</p>
+            <p>© 2025 Pedi-AI. Todos os direitos reservados.</p>
           </div>
         </div>
       </footer>

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { metadata, ldJson } from '@/app/page';
+import { metadata } from '@/app/page';
 
 describe('SEO Metadata - Landing Page', () => {
   const EXPECTED_TITLE = 'Cardápio Digital para Restaurantes | Pedi-AI - Funciona Offline';
@@ -78,54 +78,8 @@ describe('SEO Metadata - Landing Page', () => {
     });
   });
 
-  describe('7.1.5 - JSON-LD Schema', () => {
-    it('deve ter um JSON-LD schema definido', () => {
-      expect(ldJson).toBeDefined();
-      expect(Array.isArray(ldJson)).toBe(true);
-      expect(ldJson.length).toBeGreaterThan(0);
-    });
-
-    it('deve conter schema para Organization', () => {
-      const schemaItem = ldJson.find((s: any) => s.type === 'application/ld+json');
-      expect(schemaItem).toBeDefined();
-      expect(schemaItem.children).toBeDefined();
-
-      const schema = JSON.parse(schemaItem.children);
-      const hasOrganization = Array.isArray(schema['@graph'])
-        ? schema['@graph'].some((s: any) => s['@type'] === 'Organization')
-        : schema['@type'] === 'Organization';
-      expect(hasOrganization).toBe(true);
-    });
-
-    it('deve conter schema para WebSite com searchAction', () => {
-      const schemaItem = ldJson.find((s: any) => s.type === 'application/ld+json');
-      const schema = JSON.parse(schemaItem.children);
-
-      const hasWebSite = Array.isArray(schema['@graph'])
-        ? schema['@graph'].some((s: any) => s['@type'] === 'WebSite')
-        : schema['@type'] === 'WebSite';
-
-      expect(hasWebSite).toBe(true);
-    });
-
-    it('deve conter schema para FAQPage', () => {
-      const schemaItem = ldJson.find((s: any) => s.type === 'application/ld+json');
-      const schema = JSON.parse(schemaItem.children);
-
-      const hasFAQPage = Array.isArray(schema['@graph'])
-        ? schema['@graph'].some((s: any) => s['@type'] === 'FAQPage')
-        : schema['@type'] === 'FAQPage';
-
-      expect(hasFAQPage).toBe(true);
-    });
-
-    it('JSON-LD deve ser JSON válido', () => {
-      const schemaItem = ldJson.find((s: any) => s.type === 'application/ld+json');
-      expect(() => {
-        JSON.parse(schemaItem.children);
-      }).not.toThrow();
-    });
-  });
+  // JSON-LD é renderizado via layout.tsx (script tag server-side).
+  // Testes de schema estão em tests/unit/seo/json-ld.test.ts.
 
   describe('7.1.6 - Canonical URL', () => {
     it('deve apontar para o domínio principal', () => {

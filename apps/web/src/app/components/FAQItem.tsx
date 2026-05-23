@@ -25,7 +25,7 @@ export default function FAQItem({ question, answer }: FAQItemProps) {
   };
 
   return (
-    <div className={styles.faqItem}>
+    <>
       <dt>
         <button
           type="button"
@@ -44,6 +44,6 @@ export default function FAQItem({ question, answer }: FAQItemProps) {
         </button>
       </dt>
       <dd className={`${styles.faqAnswer} ${isOpen ? styles.faqAnswerOpen : ''}`}>{answer}</dd>
-    </div>
+    </>
   );
 }

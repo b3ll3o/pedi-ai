@@ -80,11 +80,6 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  .faqItem {
-    background: var(--color-background);
-    border-color: var(--color-border);
-  }
-
   .faqQuestion {
     color: var(--color-text);
   }
