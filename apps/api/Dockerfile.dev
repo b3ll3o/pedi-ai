@@ -5,7 +5,7 @@
 
 FROM node:20-alpine AS base
 
-RUN npm install -g pnpm@9 && apk add --no-cache postgresql-client curl procps
+RUN npm install -g pnpm@9 && apk add --no-cache postgresql-client curl procps openssl
 
 WORKDIR /app
 
