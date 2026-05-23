@@ -20,16 +20,15 @@ type OrderStatus = 'pending_payment' | 'paid' | 'preparing' | 'ready' | 'deliver
 const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET ?? '';
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN ?? '';
 
-function validateSignature(payload: { id: string }, signature: string): boolean {
+function validateSignature(rawBody: string, signature: string): boolean {
   if (!MP_WEBHOOK_SECRET) {
     logger.error('webhooks/pix', 'MP_WEBHOOK_SECRET não configurado');
     return false;
   }
 
-  const bodyStr = JSON.stringify(payload);
-  const dataToSign = `${payload.id}.${bodyStr}`;
+  // Mercado Pago signs the raw request body as-is
   const hmac = createHmac('sha256', MP_WEBHOOK_SECRET);
-  hmac.update(dataToSign);
+  hmac.update(rawBody);
   const expectedSignature = `sha256=${hmac.digest('base64')}`;
 
   try {
@@ -131,13 +130,16 @@ async function isEventProcessed(eventId: string): Promise<boolean> {
  * Recebe webhook payloads from Mercado Pago.
  */
 export async function POST(request: NextRequest) {
+  let rawBody: string;
   let payload: { id: string; type: string; data: { id: string } };
   let signature: string | null = null;
 
   try {
+    // Read raw body first for signature validation, then parse JSON
+    rawBody = await request.text();
+    payload = JSON.parse(rawBody);
     // Extract signature from header
     signature = request.headers.get('x-mp-signature');
-    payload = await request.json();
   } catch {
     return NextResponse.json({ error: 'Payload inválido' }, { status: 400 });
   }
@@ -149,8 +151,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ status: 'ignored' }, { status: 200 });
   }
 
-  // Validate signature if provided
-  if (signature && !validateSignature(payload, signature)) {
+  // Require valid signature for webhook authentication
+  if (!signature) {
+    return NextResponse.json({ error: 'Assinatura ausente' }, { status: 401 });
+  }
+
+  if (!validateSignature(rawBody, signature)) {
     return NextResponse.json({ error: 'Assinatura inválida' }, { status: 401 });
   }
 

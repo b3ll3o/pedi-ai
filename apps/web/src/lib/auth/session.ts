@@ -102,8 +102,9 @@ export async function destroySession(): Promise<void> {
 
 export function createSessionCookie(token: string): string {
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
-  // httpOnly, sameSite strict, path=/, expires
-  return `session_token=${token}; HttpOnly; SameSite=Strict; Path=/; Expires=${expiresAt.toUTCString()}`;
+  // httpOnly, sameSite strict, path=/, expires, secure (HTTPS only)
+  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+  return `session_token=${token}; HttpOnly; SameSite=Strict; Path=/; Expires=${expiresAt.toUTCString()}${secure}`;
 }
 
 // ─── Header para limpar cookie ──────────────────────────────────────────────────

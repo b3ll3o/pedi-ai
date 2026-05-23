@@ -82,7 +82,13 @@ export class AuthService {
   async refreshToken(refreshToken: string) {
     try {
       const payload = this.jwtService.verify(refreshToken, {
-        secret: process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
+        secret: (() => {
+          const secret = process.env.JWT_REFRESH_SECRET;
+          if (!secret) {
+            throw new UnauthorizedException('JWT_REFRESH_SECRET não configurado');
+          }
+          return secret;
+        })(),
       });
 
       const user = await this.prisma.usersProfile.findUnique({
@@ -134,10 +140,15 @@ export class AuthService {
       role: payload.role,
     });
 
+    const refreshTokenSecret = process.env.JWT_REFRESH_SECRET;
+    if (!refreshTokenSecret) {
+      throw new Error('JWT_REFRESH_SECRET environment variable is required');
+    }
+
     const refreshToken = this.jwtService.sign(
       { sub: payload.id },
       {
-        secret: process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
+        secret: refreshTokenSecret,
         expiresIn: '7d',
       }
     );
