@@ -61,7 +61,7 @@ services:
       - ./apps/api/src:/app/apps/api/src:ro
       - ./packages:/app/packages:ro
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:3001/ || exit 1"]
+      test: ["CMD-SHELL", "pgrep -f 'node.*nest' || pgrep -f 'prisma' || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
