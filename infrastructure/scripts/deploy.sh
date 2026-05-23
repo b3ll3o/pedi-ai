@@ -25,14 +25,14 @@ echo -e "${GREEN}[1/3]${NC} Fazendo pull das últimas mudanças..."
 git pull origin master
 
 echo -e "${GREEN}[2/3]${NC} Reconstruindo e subindo containers..."
-docker compose -f docker-compose.dev.yml --env-file .env.vps up -d --build
+docker compose -f docker-compose.yml --env-file .env.vps up -d --build
 
 echo -e "${GREEN}[3/3]${NC} Verificando saúde dos serviços..."
 sleep 5
 
 echo ""
 echo "=== Logs Recentes ==="
-docker compose -f docker-compose.dev.yml logs --tail=20
+docker compose -f docker-compose.yml logs --tail=20
 
 echo ""
 echo "=========================================="
