@@ -48,6 +48,7 @@ describe('PedidoAggregate', () => {
       mesaId: 'mesa-789',
       status: StatusPedido.RECEIVED,
       itens: [item],
+      tax: Dinheiro.ZERO,
     });
   };
 
@@ -78,6 +79,7 @@ describe('PedidoAggregate', () => {
         restauranteId: 'restaurante-123',
         status: StatusPedido.RECEIVED,
         itens: [],
+        tax: Dinheiro.ZERO,
       });
 
       expect(() => new PedidoAggregate(pedidoSemItens, mockEventDispatcher)).toThrow(

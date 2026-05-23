@@ -6,8 +6,7 @@ import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 
 describe('ComboAggregate', () => {
   const criarItemCardapio = (id: string, preco: number): ItemCardapio => {
-    return ItemCardapio.criar({
-      id,
+    const item = ItemCardapio.criar({
       nome: `Produto ${id}`,
       descricao: 'Descrição',
       preco: Dinheiro.criar(preco),
@@ -16,11 +15,11 @@ describe('ComboAggregate', () => {
       restauranteId: 'rest-1',
       ativo: true,
     });
+    return ItemCardapio.reconstruir({ ...item.props, id });
   };
 
   const criarCombo = (): Combo => {
-    return Combo.criar({
-      id: 'combo-1',
+    const combo = Combo.criar({
       nome: 'Combo Promocional',
       descricao: 'Combo com desconto',
       precoBundle: Dinheiro.criar(3500),
@@ -30,6 +29,8 @@ describe('ComboAggregate', () => {
       ],
       ativo: true,
     });
+    // Test helpers need to use reconstructing with explicit id for deterministic ids
+    return Combo.reconstruir({ ...combo.props, id: 'combo-1', restauranteId: 'rest-1' } as ComboProps);
   };
 
   describe('calcularDesconto', () => {
@@ -132,7 +133,6 @@ describe('ComboAggregate', () => {
   describe('criar', () => {
     it('deve criar aggregate via método estático', () => {
       const aggregate = ComboAggregate.criar({
-        id: 'combo-3',
         nome: 'Novo Combo',
         descricao: 'Descrição',
         precoBundle: Dinheiro.criar(2500),
@@ -140,41 +140,36 @@ describe('ComboAggregate', () => {
         ativo: true,
       });
 
-      expect(aggregate.id).toBe('combo-3');
+      expect(aggregate.id).toBeDefined();
       expect(aggregate.nome).toBe('Novo Combo');
     });
   });
 
   describe('reconstruir', () => {
     it('deve reconstruir aggregate a partir de props', () => {
-      const props = {
-        id: 'combo-1',
+      const combo = Combo.criar({
         nome: 'Combo',
         descricao: 'Desc',
         precoBundle: Dinheiro.criar(3000),
         itens: [{ produtoId: 'prod-1', quantidade: 1 }],
         ativo: true,
-        criadoEm: new Date(),
-        atualizadoEm: new Date(),
-      };
-
+      });
+      const props = { ...combo.props, id: combo.id, restauranteId: 'rest-1' };
       const aggregate = ComboAggregate.reconstruir(props);
 
-      expect(aggregate.id).toBe('combo-1');
+      expect(aggregate.id).toBe(combo.id);
     });
 
     it('deve reconstruir com preços dos itens', () => {
-      const props = {
-        id: 'combo-1',
+      const combo = Combo.criar({
         nome: 'Combo',
         descricao: 'Desc',
         precoBundle: Dinheiro.criar(3000),
         itens: [{ produtoId: 'prod-1', quantidade: 2 }],
         ativo: true,
-        criadoEm: new Date(),
-        atualizadoEm: new Date(),
-      };
-      const precosItens = new Map([['prod-1', Dinheiro.criar(2000)]]);
+      });
+      const props = { ...combo.props, id: combo.id, restauranteId: 'rest-1' };
+      const precosItens = new Map([[props.itens[0].produtoId, Dinheiro.criar(2000)]]);
 
       const aggregate = ComboAggregate.reconstruir(props, precosItens);
 
