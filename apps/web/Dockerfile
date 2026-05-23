@@ -8,8 +8,8 @@ FROM node:20-alpine AS base
 
 RUN corepack enable && corepack prepare pnpm@9 --activate
 
-# Native build tools for modules like better-sqlite3
-RUN apk add --no-cache python3 make g++
+# Native build tools for modules like sharp
+RUN apk add --no-cache python3 make g++ curl
 
 # ============================================================
 # Build stage
@@ -32,7 +32,7 @@ COPY apps/web/tsconfig.json ./
 COPY apps/web/next-env.d.ts ./
 COPY apps/web/package.json ./
 
-# Install dependencies fresh (no lockfile at this level - root has mixed deps)
+# Install dependencies
 RUN pnpm install --ignore-scripts
 
 # Build Next.js app
@@ -50,16 +50,16 @@ ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
-# Copy built application
+# Copy built application (files are at /app/* not /app/apps/web/*)
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/package.json ./
+COPY --from=builder /app/package.json ./package.json
 
 # Copy packages for runtime resolution
 COPY --from=builder /app/packages ./packages
 
 # Install production dependencies only
-RUN pnpm install --prod --ignore-scripts
+RUN pnpm install --ignore-scripts
 
 RUN chown -R nextjs:nodejs /app
 
@@ -67,4 +67,4 @@ USER nextjs
 
 EXPOSE 3000
 
-CMD ["node_modules/.bin/next", "start", "--port", "3000"]
+CMD ["node", "node_modules/next/dist/bin/next", "start", "--port", "3000"]
