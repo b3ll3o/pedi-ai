@@ -1,5 +1,8 @@
 import { defineConfig } from 'vitest/config';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   test: {
@@ -33,6 +36,7 @@ export default defineConfig({
         'apps/web/src/lib/**/*',
         'apps/api/src/domain/**/*',
         'apps/api/src/application/**/*',
+        'packages/shared/src/**/*',
       ],
       exclude: [
         '**/*.d.ts',

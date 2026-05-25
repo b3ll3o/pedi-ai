@@ -1,2 +1,1 @@
-// Exportações vazias - preenchidas quando implementadas
-export {};
+// Services do bounded context admin

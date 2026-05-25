@@ -29,23 +29,20 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          envs: DATABASE_URL,POSTGRES_PASSWORD,JWT_SECRET
           script: |
             set -e
             mkdir -p ~/.ssh
             ssh-keyscan -H github.com >> ~/.ssh/known_hosts 2>/dev/null || true
 
-            # Pull latest changes
             cd pedi-ai
+
+            # Pull latest changes
             git pull origin master
 
-            # Setup environment variables from secrets
-            export POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-}
-            export JWT_SECRET=${JWT_SECRET:-}
-            export DATABASE_URL=${DATABASE_URL:-}
-
-            # Build and start services
+            # Stop existing services
             docker compose -f docker-compose.dev.yml down || true
+
+            # Build and start services (usa .env local)
             docker compose -f docker-compose.dev.yml up -d --build
 
             # Wait for services to be healthy

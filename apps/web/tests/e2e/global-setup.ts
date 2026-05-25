@@ -17,17 +17,19 @@ const execAsync = promisify(exec);
  * - Cada shard tem dados de teste isolados (emails diferentes, restaurant ID diferente)
  * - Em modo shard, não há lock file — cada shard seed a si mesmo sem conflito
  *
- * Tudo mais (pré-aquecimento do browser, cache de rede) foi removido.
+ * Banco de dados E2E:
+ * - O banco E2E (pedi_ai_e2e) é resetado pelo workflow e2e-vps.yml antes dos testes
+ * - Este global-setup apenas executa o seed se o cache não for válido
  */
+
+const SHARD_MATCH = process.env.SHARD?.match(/^(\d+)\/(\d+)$/);
+const SHARD_NUM = SHARD_MATCH ? Number(SHARD_MATCH[1]) : 0;
 
 /** Determina o arquivo de resultado do seed com base no SHARD atual. */
 function getSeedResultPath(): string {
-  const shard = process.env.SHARD ?? '';
-  const match = shard.match(/^(\d+)\/(\d+)$/);
-  const shardNum = match ? Number(match[1]) : 0;
   const base = path.join(__dirname, 'scripts');
-  return shardNum > 0
-    ? path.join(base, `.seed-result-shard-${shardNum}.json`)
+  return SHARD_NUM > 0
+    ? path.join(base, `.seed-result-shard-${SHARD_NUM}.json`)
     : path.join(base, '.seed-result.json');
 }
 
@@ -67,21 +69,23 @@ const globalSetup = async () => {
   }
 
   const seedPath = getSeedResultPath();
-  const shardLabel = seedPath.includes('shard-')
-    ? `Shard ${path.basename(seedPath).match(/\d+/)?.[0]}`
-    : 'local';
+  const shardLabel = SHARD_NUM > 0 ? `Shard ${SHARD_NUM}` : 'local';
   console.log(`   SHARD: ${shardLabel}`);
   console.log(`   Seed result: ${path.basename(seedPath)}\n`);
 
-  if (isSeedCacheValid(seedPath)) {
-    console.log('✅ Seed cache válido, pulando seed.');
-  } else {
+  // Reset do banco já é feito pelo workflow e2e-vps.yml antes de iniciar os testes
+  // Aqui apenas verificamos se o cache é válido e rodamos o seed
+  const shouldRunSeed = !isSeedCacheValid(seedPath);
+
+  if (shouldRunSeed) {
     try {
       await runSeed();
     } catch (error) {
       console.error('❌ Seed falhou:', error);
       throw error;
     }
+  } else {
+    console.log('✅ Cache de seed válido, pulando seed.\n');
   }
 
   console.log('========================================');

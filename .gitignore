@@ -39,9 +39,6 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
-
 # vercel
 .vercel
 
@@ -70,7 +67,8 @@ apps/web/tests/e2e/node_modules
 .playwright-mcp
 
 # pnpm
-pnpm-lock.yamldata/
+data/
+false/
 package-lock.json
 .pnpm-store/
 

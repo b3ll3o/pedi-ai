@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { RestauranteAggregate } from '@/domain/admin/aggregates/RestauranteAggregate';
+import { ConfiguracoesRestaurante } from '@/domain/admin/value-objects/ConfiguracoesRestaurante';
 
 describe('RestauranteAggregate', () => {
   const criarPropsValidos = () => ({
@@ -24,17 +25,21 @@ describe('RestauranteAggregate', () => {
 
   describe('validarInvariantes', () => {
     it('deve lançar erro se nome vazio', () => {
-      expect(() => RestauranteAggregate.criar({
-        ...criarPropsValidos(),
-        nome: '',
-      })).toThrow(/obrigatório/);
+      expect(() =>
+        RestauranteAggregate.criar({
+          ...criarPropsValidos(),
+          nome: '',
+        })
+      ).toThrow(/obrigatório/);
     });
 
     it('deve lançar erro se CNPJ inválido', () => {
-      expect(() => RestauranteAggregate.criar({
-        ...criarPropsValidos(),
-        cnpj: '12345678000100',
-      })).toThrow(/CNPJ inválido/);
+      expect(() =>
+        RestauranteAggregate.criar({
+          ...criarPropsValidos(),
+          cnpj: '12345678000100',
+        })
+      ).toThrow(/CNPJ inválido/);
     });
 
     it('deve aceitar CNPJ válido', () => {
@@ -45,7 +50,6 @@ describe('RestauranteAggregate', () => {
   describe('atualizarConfiguracoes', () => {
     it('deve atualizar configurações', () => {
       const aggregate = RestauranteAggregate.criar(criarPropsValidos());
-      const { ConfiguracoesRestaurante } = require('@/domain/admin/value-objects/ConfiguracoesRestaurante');
 
       const novasConfig = ConfiguracoesRestaurante.criarPadrao();
       aggregate.atualizarConfiguracoes(novasConfig);
