@@ -245,8 +245,8 @@ export async function waitForCondition(
 // ============================================
 
 /**
- * Wait for real-time update (Supabase subscription).
- * Uses presence channels or database changes.
+ * Wait for real-time update via presence channels.
+ * Uses window.__realtimeEvents for cross-tab communication in tests.
  */
 export async function waitForRealtimeUpdate(
   page: Page,

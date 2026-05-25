@@ -54,7 +54,7 @@ export function LoginForm({ onSubmit, registeredSuccess, resetSuccess }: LoginFo
     setIsResending(true);
     try {
       const { error: signUpError } = await signUp(email, password || 'temporary-password');
-      // Supabase reenvia email de confirmação se o usuário ainda não confirmou
+      // Sistema reenvia email de confirmação se o usuário ainda não confirmou
       if (signUpError) {
         if (signUpError.message !== 'Email not confirmed') {
           setResendError(signUpError.message || 'Erro ao reenviar email de confirmação');

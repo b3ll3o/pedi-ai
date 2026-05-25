@@ -15,7 +15,7 @@ type OrderStatus = 'pending_payment' | 'paid' | 'preparing' | 'ready' | 'deliver
  * 2. Idempotency check
  * 3. Updating order status
  *
- * Note: Realtime broadcasting is removed as we're no longer using Supabase
+ * Note: Realtime broadcasting foi removido
  */
 const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET ?? '';
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN ?? '';

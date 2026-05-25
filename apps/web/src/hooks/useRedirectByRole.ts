@@ -67,7 +67,7 @@ export function useRedirectByRole(
     async function fetchRoleAndRedirect() {
       try {
         // Usar API route server-side para buscar perfil
-        // (SUPABASE_SERVICE_ROLE_KEY não está disponível no browser)
+        // Buscar perfil via API route server-side
         const response = await fetch('/api/auth/profile');
 
         if (!isMountedRef.current) return;

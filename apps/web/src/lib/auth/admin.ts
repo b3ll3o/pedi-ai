@@ -1,7 +1,7 @@
 /**
  * Admin Authentication Helpers
  * Helper functions for admin role-based authentication and authorization.
- * Uses getSession from @/lib/auth/session (no Supabase).
+ * Uses getSession from @/lib/auth/session.
  */
 
 import { getSession } from '@/lib/auth/session';

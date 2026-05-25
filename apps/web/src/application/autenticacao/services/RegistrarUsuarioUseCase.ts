@@ -27,7 +27,7 @@ export interface RegistrarUsuarioOutput {
  */
 export interface IAuthAdapter {
   /**
-   * Criar usuário no sistema de autenticação (Supabase Auth)
+   * Adapter de autenticação (API própria)
    */
   criarUsuario(email: string, senha: string): Promise<{ id: string }>;
 
@@ -79,7 +79,7 @@ export class RegistrarUsuarioUseCase implements UseCase<
       throw new Error('Senha deve ter pelo menos 6 caracteres');
     }
 
-    // Criar usuário no sistema de autenticação (Supabase)
+    // Criar usuário no sistema de autenticação
     const { id: authId } = await this.authAdapter.criarUsuario(input.email, input.senha);
 
     // Confirmar email via Admin API (bypass de confirmação de email)

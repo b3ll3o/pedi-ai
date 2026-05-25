@@ -54,12 +54,7 @@ export class CardapioSyncService {
   private itemRepo: ItemCardapioRepository;
   private grupoRepo: ModificadorGrupoRepository;
 
-  constructor(
-    _db: unknown, // Kept for Dexie repositories (syncFromLocalCache)
-    _supabaseClient?: unknown // Deprecated - no longer used
-  ) {
-    // Initialize local repositories (Dexie-based)
-    // These are used for syncFromLocalCache
+  constructor(_db: unknown) {
     this.categoriaRepo = new CategoriaRepository(_db as PediDatabase);
     this.itemRepo = new ItemCardapioRepository(_db as PediDatabase);
     this.grupoRepo = new ModificadorGrupoRepository(_db as PediDatabase);

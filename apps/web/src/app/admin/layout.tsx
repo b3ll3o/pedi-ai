@@ -118,7 +118,7 @@ async function syncSingleRestaurant(
 }
 
 /**
- * Sincroniza restaurantes do Supabase (via API) para IndexedDB.
+ * Sincroniza restaurantes da API para IndexedDB.
  * Garante que os dados estejam disponíveis offline e para operações locais.
  */
 async function sincronizarRestaurantes(userId: string): Promise<void> {
@@ -175,7 +175,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           return;
         }
 
-        // Sincronizar restaurantes do Supabase para IndexedDB
+        // Sincronizar restaurantes da API para IndexedDB
         await sincronizarRestaurantes(session.user.id);
 
         // Carregar restaurantes do usuário no store (agora disponíveis no IndexedDB)

@@ -1,12 +1,6 @@
 import { NextRequest } from 'next/server';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-const mockFrom = vi.fn();
-
-vi.mock('@/lib/supabase/server', () => ({
-  createClient: vi.fn(() => ({ from: mockFrom })),
-}));
-
 import { POST } from '@/app/api/cart/validate/route';
 
 function makePostRequest(body: unknown) {

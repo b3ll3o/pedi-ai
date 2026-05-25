@@ -1,7 +1,7 @@
 /**
  * Admin Authentication Helpers - Client Safe
  * Helper functions for admin role-based authentication in Client Components.
- * Uses API calls to /api/auth/* routes instead of Supabase directly.
+ * Uses API calls to /api/auth/* routes.
  */
 
 export type Role = 'dono' | 'gerente' | 'atendente';

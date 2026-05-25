@@ -147,10 +147,10 @@ describe('RegistrarUsuarioUseCase', () => {
     it('deve lançar erro quando authAdapter falha', async () => {
       // Arrange
       mockUsuarioRepoFindByEmail.mockResolvedValue(null);
-      mockCriarUsuario.mockRejectedValue(new Error('Erro do Supabase Auth'));
+      mockCriarUsuario.mockRejectedValue(new Error('Erro do Auth'));
 
       // Act & Assert
-      await expect(useCase.execute(baseInput)).rejects.toThrow('Erro do Supabase Auth');
+      await expect(useCase.execute(baseInput)).rejects.toThrow('Erro do Auth');
       expect(mockUsuarioRepoCreate).not.toHaveBeenCalled();
     });
 

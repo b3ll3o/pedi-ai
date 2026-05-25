@@ -1,6 +1,6 @@
 /**
- * Interface para o adapter de sincronização entre Dexie (local) e Supabase (remote).
- * Implementada por infrastructure/external/SupabaseDatabaseAdapter.
+ * Interface para o adapter de sincronização entre Dexie (local) e API remota.
+ * Deprecado - usa API routes internas ao invés de client remoto.
  */
 
 export interface SyncResult {
@@ -10,14 +10,14 @@ export interface SyncResult {
   errors: string[];
 }
 
-export interface SupabaseTable {
+export interface RemoteTable {
   name: string;
   lastSyncAt?: Date;
 }
 
-export interface ISupabaseDatabaseAdapter {
+export interface IRemoteDatabaseAdapter {
   /**
-   * Sincroniza dados de uma tabela específica entre Dexie e Supabase.
+   * Sincroniza dados de uma tabela específica entre Dexie e API.
    * @param tableName Nome da tabela (ex: 'pedidos', 'categorias')
    * @param direction Direção da sincronização: 'push' (local→remote), 'pull' (remote→local), 'both'
    */
@@ -34,17 +34,17 @@ export interface ISupabaseDatabaseAdapter {
   fetchRemote<T>(tableName: string, filters?: Record<string, unknown>): Promise<T[]>;
 
   /**
-   * Envia dados locais para o Supabase.
+   * Envia dados locais para a API.
    */
   pushLocal<T>(tableName: string, data: T[]): Promise<SyncResult>;
 
   /**
-   * Atualiza dados remotos no Supabase.
+   * Atualiza dados remotos na API.
    */
   updateRemote<T>(tableName: string, data: T[]): Promise<SyncResult>;
 
   /**
-   * Deleta dados remotos no Supabase.
+   * Deleta dados remotos na API.
    */
   deleteRemote(tableName: string, ids: string[]): Promise<SyncResult>;
 
@@ -54,7 +54,7 @@ export interface ISupabaseDatabaseAdapter {
   getLastSyncTime(tableName: string): Date | null;
 
   /**
-   * Verifica se há conectividade com o Supabase.
+   * Verifica se há conectividade com a API.
    */
   isConnected(): Promise<boolean>;
 }

@@ -63,8 +63,6 @@ Roteamento e páginas da aplicação Pedi-AI — cardápio digital offline-first
 ```
 Cliente → /menu → Adiciona item → /cart → /checkout → Pagamento → /order/[orderId]
                                                               ↓
-                                                       Supabase Realtime
-                                                              ↓
                                                     Kitchen (KDS) ←→ Waiter Dashboard
 ```
 
@@ -91,7 +89,7 @@ Cliente → /menu → Adiciona item → /cart → /checkout → Pagamento → /o
 
 | Service               | Usage                             |
 | --------------------- | --------------------------------- |
-| **Supabase**          | Auth, Realtime, Database (PG)     |
+| **PostgreSQL**        | Database                          |
 | **Mercado Pago**     | Pagamentos PIX instantâneos       |
 | **Dexie (IndexedDB)** | Persistência offline              |
 | **Workbox**           | Service Worker para cache offline |
@@ -110,7 +108,7 @@ Cliente → /menu → Adiciona item → /cart → /checkout → Pagamento → /o
 - Service Worker cacheia assets e respostas de API
 - IndexedDB (Dexie) armazena cardápio e pedidos localmente
 - Pedidos offline são enfileirados e syncados ao reconectar
-- Supabase Realtime mantém cozinha/garçom atualizados
+- WebSocket/SSE mantêm cozinha/garçom atualizados
 
 ### Tech Stack
 

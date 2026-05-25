@@ -28,7 +28,7 @@ export class RedefinirSenhaUseCase implements UseCase<RedefinirSenhaInput, void>
       return;
     }
 
-    // Solicitar redefinição via AuthAdapter (Supabase)
+    // Solicitar redefinição via AuthAdapter
     await this.authAdapter.enviarRedefinicaoSenha(input.email);
   }
 }

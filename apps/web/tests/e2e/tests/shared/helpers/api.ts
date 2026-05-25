@@ -58,7 +58,7 @@ export async function createTestData(): Promise<SeedData> {
 }
 
 export async function cleanupTestData(_data: SeedData): Promise<void> {
-  // Cleanup é tratado por soft delete do Supabase ou TTL
+  // Cleanup é tratado por soft delete ou TTL
 }
 
 export async function seedMenuData(api: APIRequestContext, data: SeedData): Promise<void> {

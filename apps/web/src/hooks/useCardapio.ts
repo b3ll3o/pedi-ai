@@ -21,7 +21,7 @@ import {
   ItemCardapioRepository,
   CardapioSyncService,
 } from '@/infrastructure/persistence/repositories';
-// Transformação de domain entities para tipos Supabase (compatibilidade com a interface existente)
+// Transformação de domain entities para tipos da interface existente
 function transformarCardapio(cardapio: CardapioCompleto, restauranteId: string) {
   const categoriesTransformadas: any[] = cardapio.categorias.map((cat) => ({
     id: cat.categoria.id,

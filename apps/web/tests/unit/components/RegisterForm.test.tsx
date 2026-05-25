@@ -4,12 +4,6 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import { RegisterForm } from '@/components/auth/RegisterForm';
 
-// ── Mocks ───────────────────────────────────────────────────
-
-vi.mock('@/lib/supabase/auth', () => ({
-  signUp: vi.fn(),
-}));
-
 const mockRouterPush = vi.fn(() => Promise.resolve());
 vi.mock('next/navigation', () => ({
   useRouter: () => ({

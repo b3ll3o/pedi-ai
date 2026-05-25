@@ -1,7 +1,6 @@
 /**
  * useCustomerOrderNotifications Hook
  * Monitora atualizações de status de pedidos via Socket.io com polling fallback.
- * Supabase realtime broadcast removido.
  */
 
 import { useEffect, useCallback, useState, useMemo, useRef } from 'react';

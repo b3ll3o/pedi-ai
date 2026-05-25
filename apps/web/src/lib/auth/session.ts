@@ -1,5 +1,5 @@
 /**
- * Sessão autenticada — substitui Supabase SSR createServerClient
+ * Sessão autenticada — usa JWT em cookie httpOnly
  *
  * Fluxo:
  * 1. Login: autenticar() → token gerado → gravado em cookie httpOnly

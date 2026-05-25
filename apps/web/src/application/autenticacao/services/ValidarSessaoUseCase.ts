@@ -29,7 +29,7 @@ export class ValidarSessaoUseCase implements UseCase<ValidarSessaoInput, Validar
   ) {}
 
   async execute(input: ValidarSessaoInput): Promise<ValidarSessaoOutput> {
-    // Validar token no AuthAdapter (Supabase)
+    // Validar token no AuthAdapter
     const { valido, usuarioId } = await this.authAdapter.validarToken(input.token);
 
     if (!valido || !usuarioId) {

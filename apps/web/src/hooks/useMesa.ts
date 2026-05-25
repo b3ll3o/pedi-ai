@@ -18,7 +18,7 @@ import { db } from '@/infrastructure/persistence/database';
 import { MesaRepository } from '@/infrastructure/persistence/mesa';
 import { QRCodeCryptoService } from '@/infrastructure/services/QRCodeCryptoService';
 
-// Transformação de domain Mesa para formato Supabase (compatibilidade com a interface existente)
+// Transformação de domain Mesa para formato da interface existente
 function _transformarMesa(mesa: {
   id: string;
   restauranteId: string;

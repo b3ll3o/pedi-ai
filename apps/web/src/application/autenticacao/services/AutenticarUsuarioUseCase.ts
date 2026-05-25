@@ -34,7 +34,7 @@ export class AutenticarUsuarioUseCase implements UseCase<AutenticarInput, Autent
   ) {}
 
   async execute(input: AutenticarInput): Promise<AutenticarOutput> {
-    // Autenticar via AuthAdapter (Supabase)
+    // Autenticar via AuthAdapter
     const { token, usuarioId } = await this.authAdapter.autenticar(input.email, input.senha);
 
     // Invalidar sessões existentes do usuário (opcional - depending on business rules)

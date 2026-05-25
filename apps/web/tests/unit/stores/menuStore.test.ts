@@ -8,14 +8,45 @@ import {
   useHydratedMenu,
 } from '@/infrastructure/persistence/menuStore';
 
-import type { categories, products, modifier_groups } from '@/lib/supabase/types';
+interface MenuProduct {
+  id: string;
+  category_id: string;
+  name: string;
+  description: string | null;
+  image_url: string | null;
+  price: number;
+  dietary_labels: string | null;
+  available: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
 
-// ── Mock getCachedMenu ───────────────────────────────────────────────────────
-const mockGetCachedMenu = vi.fn();
+interface MenuCategory {
+  id: string;
+  name: string;
+  description: string | null;
+  image_url: string | null;
+  sort_order: number;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
 
-vi.mock('@/lib/offline/cache', () => ({
-  getCachedMenu: () => mockGetCachedMenu(),
-}));
+interface MenuModifierGroup {
+  id: string;
+  name: string;
+  description: string | null;
+  min_selections: number;
+  max_selections: number | null;
+  required: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+type products = MenuProduct;
+type categories = MenuCategory;
+type modifier_groups = MenuModifierGroup;
 
 // ── Test helpers ────────────────────────────────────────────────────────────
 

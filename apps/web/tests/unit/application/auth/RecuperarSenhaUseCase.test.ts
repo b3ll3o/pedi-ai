@@ -56,13 +56,13 @@ describe('RedefinirSenhaUseCase', () => {
     it('deve lidar com erros do Supabase graciosamente', async () => {
       // Arrange
       mockUsuarioRepoFindByEmail.mockResolvedValue({ id: 'user-123' });
-      mockEnviarRedefinicaoSenha.mockRejectedValue(new Error('Erro do Supabase'));
+      mockEnviarRedefinicaoSenha.mockRejectedValue(new Error('Erro do auth'));
 
       const useCase = new RedefinirSenhaUseCase(mockAuthAdapter, mockUsuarioRepo);
 
       // Act & Assert
       await expect(useCase.execute({ email: 'usuario@exemplo.com' })).rejects.toThrow(
-        'Erro do Supabase'
+        'Erro do auth'
       );
     });
   });
