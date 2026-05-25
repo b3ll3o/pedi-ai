@@ -40,6 +40,10 @@ jobs:
             # Stop existing services
             docker compose -f docker-compose.dev.yml down || true
 
+            # Ensure port 80 is free (kill any process using it)
+            fuser -k 80/tcp 2>/dev/null || true
+            sleep 2
+
             # Build and start services (usa .env local)
             docker compose -f docker-compose.dev.yml up -d --build
 
