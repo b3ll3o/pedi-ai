@@ -44,7 +44,7 @@ services:
     container_name: pedi_ai_api
     restart: unless-stopped
     ports:
-      - "127.0.0.1:3001:3001"
+      - "3001:3001"
     depends_on:
       postgres:
         condition: service_healthy
@@ -93,6 +93,22 @@ services:
       timeout: 5s
       retries: 5
       start_period: 60s
+
+# ── Nginx Reverse Proxy ─────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: pedi_ai_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx.dev.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
 
 volumes:
   postgres_data:
