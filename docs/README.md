@@ -23,7 +23,7 @@
 ### Guias Técnicos
 
 | Documento                                                   | Descrição                                               | Quando Consultar                                     |
-| ----------------------------------------------------------- | ------------------------------------------------------- | ---------------------------------------------------- |
+| ----------------------------------------------------------- | ------------------------------------------------------- | ---------------------------------------------------- | ------------------------------- |
 | [ARCHITECTURE.md](guides/ARCHITECTURE.md)                   | Arquitetura DDD em 4 camadas                            | Entender estrutura domain/application/infrastructure |
 | [OFFLINE.md](guides/OFFLINE.md)                             | Service Worker, Dexie, BackgroundSync, BroadcastChannel | Implementar/modificar funcionalidade offline         |
 | [REALTIME.md](guides/REALTIME.md)                           | Socket.io para updates realtime com polling fallback    | Implementar atualizações em tempo real de pedidos    |
@@ -35,7 +35,7 @@
 | [CI_CD.md](guides/CI_CD.md)                                 | GitHub Actions, docker-compose, deploy VPS              | Configurar/modificar pipeline de CI/CD               |
 | [DDD_MIGRACAO_API.md](guides/DDD_MIGRACAO_API.md)           | Plano de migração DDD do apps/api                       | Migrar API para arquitetura DDD                      |
 | [ESLINT_BEST_PRACTICES.md](guides/ESLINT_BEST_PRACTICES.md) | Regras ESLint, complexity threshold                     | Manter qualidade de código                           |
-|| [SOFT_DELETE.md](guides/SOFT_DELETE.md)                     | Soft delete pattern (deletedAt, archived)               | Implementar exclusão reversível                      |
+|                                                             | [SOFT_DELETE.md](guides/SOFT_DELETE.md)                 | Soft delete pattern (deletedAt, archived)            | Implementar exclusão reversível |
 | [PUBLIC_NAVIGATION.md](guides/PUBLIC_NAVIGATION.md)         | Navegação pública vs protegida, middleware              | Implementar rotas públicas e auth                    |
 
 ### Fluxos Detalhados
@@ -152,7 +152,7 @@ pnpm dev
 pnpm build
 
 # Tests
-pnpm test:unit        # Unit tests (126 files, 1549 tests)
+pnpm test:unit        # Unit tests (154 files, 1852 tests)
 pnpm test:coverage    # Coverage report (thresholds: 80%)
 
 # E2E (requer .env.e2e configurado)

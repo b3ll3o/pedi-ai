@@ -1,5 +1,5 @@
 # Service worker with TypeScript syntax (`.js` extension used by Workbox)
-apps/web/public/sw.js
+public/sw.js
 
 # Build artifacts
 .next/
@@ -23,8 +23,8 @@ public/manifest.json
 public/offline.html
 
 # E2E test artifacts
-apps/web/tests/e2e/playwright-results.json
-apps/web/tests/e2e/test-results/
+tests/e2e/playwright-results.json
+tests/e2e/test-results/
 
 # Docs (codemap generated)
 **/codemap.md

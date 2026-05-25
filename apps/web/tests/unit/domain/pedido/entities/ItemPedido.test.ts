@@ -85,7 +85,7 @@ describe('ItemPedido', () => {
   describe('recalcularSubtotal', () => {
     it('deve recalcular subtotal após adição de modificadores', () => {
       const item = criarItem();
-      const mod = criarModificador();
+      const _mod = criarModificador();
 
       item.recalcularSubtotal();
       expect(item.subtotal.valor).toBe(9000);

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { GerenciarPedidosAdminUseCase, FiltrosPedido } from '@/application/admin/services/GerenciarPedidosAdminUseCase';
+import { GerenciarPedidosAdminUseCase } from '@/application/admin/services/GerenciarPedidosAdminUseCase';
 import { Pedido } from '@/domain/pedido/entities/Pedido';
 import { ItemPedido } from '@/domain/pedido/entities/ItemPedido';
 import { StatusPedido } from '@/domain/pedido/value-objects/StatusPedido';
@@ -17,7 +17,12 @@ describe('GerenciarPedidosAdminUseCase', () => {
     });
   };
 
-  const criarPedido = (id: string, status: StatusPedido, restauranteId: string, mesaId?: string): Pedido => {
+  const criarPedido = (
+    id: string,
+    status: StatusPedido,
+    restauranteId: string,
+    mesaId?: string
+  ): Pedido => {
     return Pedido.criar({
       id,
       restauranteId,
@@ -72,9 +77,7 @@ describe('GerenciarPedidosAdminUseCase', () => {
     });
 
     it('deve filtrar por clienteId', async () => {
-      const pedidos = [
-        criarPedido('p1', StatusPedido.RECEIVED, 'rest-1'),
-      ];
+      const pedidos = [criarPedido('p1', StatusPedido.RECEIVED, 'rest-1')];
       mockPedidoRepo.findByRestauranteId.mockResolvedValue(pedidos);
 
       const result = await useCase.execute({
@@ -118,7 +121,7 @@ describe('GerenciarPedidosAdminUseCase', () => {
       mockPedidoRepo.findById.mockResolvedValue(pedido);
       mockPedidoRepo.update.mockResolvedValue(pedido);
 
-      const result = await useCase.alterarStatus('p1', StatusPedido.PREPARING);
+      const _result = await useCase.alterarStatus('p1', StatusPedido.PREPARING);
 
       expect(mockPedidoRepo.update).toHaveBeenCalled();
     });
@@ -126,8 +129,9 @@ describe('GerenciarPedidosAdminUseCase', () => {
     it('deve lançar erro se pedido não encontrado', async () => {
       mockPedidoRepo.findById.mockResolvedValue(null);
 
-      await expect(useCase.alterarStatus('nao-existe', StatusPedido.PREPARING))
-        .rejects.toThrow('Pedido não encontrado');
+      await expect(useCase.alterarStatus('nao-existe', StatusPedido.PREPARING)).rejects.toThrow(
+        'Pedido não encontrado'
+      );
     });
   });
 });

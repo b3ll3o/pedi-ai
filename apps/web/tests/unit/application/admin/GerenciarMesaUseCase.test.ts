@@ -1,10 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { GerenciarMesaUseCase, MesaInput } from '@/application/admin/services/GerenciarMesaUseCase';
+import { GerenciarMesaUseCase } from '@/application/admin/services/GerenciarMesaUseCase';
 import { Mesa } from '@/domain/mesa/entities/Mesa';
 import { QRCodePayload } from '@/domain/mesa/value-objects/QRCodePayload';
 
 describe('GerenciarMesaUseCase', () => {
-  const criarMesa = (id: string, restauranteId: string, label: string, ativo: boolean = true): Mesa => {
+  const criarMesa = (
+    id: string,
+    restauranteId: string,
+    label: string,
+    ativo: boolean = true
+  ): Mesa => {
     return Mesa.criar({
       id,
       restauranteId,
@@ -58,18 +63,22 @@ describe('GerenciarMesaUseCase', () => {
     it('deve lançar erro se label já existe', async () => {
       mockMesaRepo.findByLabel.mockResolvedValue(criarMesa('existing', 'rest-1', 'Mesa 1'));
 
-      await expect(useCase.execute({
-        acao: 'criar',
-        restauranteId: 'rest-1',
-        label: 'Mesa 1',
-      })).rejects.toThrow('Já existe uma mesa com este label');
+      await expect(
+        useCase.execute({
+          acao: 'criar',
+          restauranteId: 'rest-1',
+          label: 'Mesa 1',
+        })
+      ).rejects.toThrow('Já existe uma mesa com este label');
     });
 
     it('deve lançar erro se label não fornecido', async () => {
-      await expect(useCase.execute({
-        acao: 'criar',
-        restauranteId: 'rest-1',
-      })).rejects.toThrow('Label é obrigatório');
+      await expect(
+        useCase.execute({
+          acao: 'criar',
+          restauranteId: 'rest-1',
+        })
+      ).rejects.toThrow('Label é obrigatório');
     });
   });
 
@@ -94,11 +103,13 @@ describe('GerenciarMesaUseCase', () => {
     it('deve lançar erro se mesa não encontrada', async () => {
       mockMesaRepo.findById.mockResolvedValue(null);
 
-      await expect(useCase.execute({
-        acao: 'atualizar',
-        id: 'nao-existe',
-        restauranteId: 'rest-1',
-      })).rejects.toThrow('Mesa não encontrada');
+      await expect(
+        useCase.execute({
+          acao: 'atualizar',
+          id: 'nao-existe',
+          restauranteId: 'rest-1',
+        })
+      ).rejects.toThrow('Mesa não encontrada');
     });
   });
 
@@ -117,10 +128,12 @@ describe('GerenciarMesaUseCase', () => {
     });
 
     it('deve lançar erro se id não fornecido', async () => {
-      await expect(useCase.execute({
-        acao: 'excluir',
-        restauranteId: 'rest-1',
-      })).rejects.toThrow('ID é obrigatório');
+      await expect(
+        useCase.execute({
+          acao: 'excluir',
+          restauranteId: 'rest-1',
+        })
+      ).rejects.toThrow('ID é obrigatório');
     });
   });
 

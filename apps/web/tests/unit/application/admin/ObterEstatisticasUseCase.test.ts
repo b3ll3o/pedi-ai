@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ObterEstatisticasUseCase, EstatisticasInput, Estatisticas } from '@/application/admin/services/ObterEstatisticasUseCase';
+import { describe, it, expect, vi } from 'vitest';
+import { ObterEstatisticasUseCase } from '@/application/admin/services/ObterEstatisticasUseCase';
 import { StatusPedido } from '@/domain/pedido/value-objects/StatusPedido';
 import { StatusPagamento } from '@/domain/pagamento/value-objects/StatusPagamento';
 import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
@@ -75,9 +75,7 @@ describe('ObterEstatisticasUseCase', () => {
 
     it('deve retornar ZERO para ticket médio se não há pedidos pagos', async () => {
       const agora = new Date();
-      const pedidos = [
-        criarPedidoMock('p1', StatusPedido.CANCELLED, 10000, agora),
-      ];
+      const pedidos = [criarPedidoMock('p1', StatusPedido.CANCELLED, 10000, agora)];
 
       mockPedidoRepo.findByRestauranteId.mockResolvedValue(pedidos);
       mockPagamentoRepo.listarPorRestauranteId.mockResolvedValue([]);

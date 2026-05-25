@@ -42,7 +42,10 @@ describe('OrdersService', () => {
     vi.clearAllMocks();
     mockPrisma = createMockPrisma();
     mockRealtime = createMockRealtime();
-    ordersService = new OrdersService(mockPrisma as unknown as PrismaService, mockRealtime as unknown as RealtimeService);
+    ordersService = new OrdersService(
+      mockPrisma as unknown as PrismaService,
+      mockRealtime as unknown as RealtimeService
+    );
   });
 
   describe('findByRestaurant', () => {
@@ -88,11 +91,15 @@ describe('OrdersService', () => {
         subtotal: 100,
         tax: 10,
         total: 110,
-        items: [
-          { productId: 'prod-1', quantity: 1, unitPrice: 100, totalPrice: 100 },
-        ],
+        items: [{ productId: 'prod-1', quantity: 1, unitPrice: 100, totalPrice: 100 }],
       };
-      const createdOrder = { id: 'order-1', ...orderData, items: orderData.items, status: 'pending', restaurantId: 'rest-1' };
+      const createdOrder = {
+        id: 'order-1',
+        ...orderData,
+        items: orderData.items,
+        status: 'pending',
+        restaurantId: 'rest-1',
+      };
 
       mockPrisma.$transaction.mockImplementation(async (fn) => {
         const tx = {
@@ -169,7 +176,10 @@ describe('OrdersService', () => {
       const result = await ordersService.create(orderData);
 
       expect(result.id).toBe('order-1');
-      expect(mockRealtime.emitNewOrder).toHaveBeenCalledWith('rest-1', expect.objectContaining({ id: 'order-1' }));
+      expect(mockRealtime.emitNewOrder).toHaveBeenCalledWith(
+        'rest-1',
+        expect.objectContaining({ id: 'order-1' })
+      );
     });
 
     it('should create order with customer info', async () => {

@@ -88,7 +88,9 @@ describe('Credenciais', () => {
     it('deve retornar false para objeto que não é Credenciais', () => {
       const credenciais = Credenciais.criar('usuario@email.com', 'senha123');
 
-      expect(credenciais.equals({ email: 'usuario@email.com', senha: 'senha123' } as any)).toBe(false);
+      expect(credenciais.equals({ email: 'usuario@email.com', senha: 'senha123' } as any)).toBe(
+        false
+      );
     });
   });
 });

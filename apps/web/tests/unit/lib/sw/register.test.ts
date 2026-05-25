@@ -8,7 +8,7 @@ describe('lib/sw/register', () => {
   let mockAddEventListener: ReturnType<typeof vi.fn>;
   let mockConfirm: ReturnType<typeof vi.fn>;
 
-  const createMockRegistration = (installing?: ServiceWorker | null) => ({
+  const _createMockRegistration = (installing?: ServiceWorker | null) => ({
     register: mockRegister.mockResolvedValue({
       ...(installing !== undefined ? { installing } : {}),
       addEventListener: mockAddEventListener,

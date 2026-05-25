@@ -53,24 +53,30 @@ describe('PaymentsService', () => {
       expect(result).toHaveProperty('qrCode');
       expect(result).toHaveProperty('expiresAt');
       expect(result.amount).toBe(paymentData.amount);
-      expect(mockPrisma.order.findUnique).toHaveBeenCalledWith({ where: { id: paymentData.orderId } });
+      expect(mockPrisma.order.findUnique).toHaveBeenCalledWith({
+        where: { id: paymentData.orderId },
+      });
       expect(mockPrisma.paymentIntent.create).toHaveBeenCalled();
     });
 
     it('should throw NotFoundException if order not found', async () => {
       mockPrisma.order.findUnique.mockResolvedValue(null);
 
-      await expect(paymentsService.createPixPayment(paymentData)).rejects.toThrow(NotFoundException);
+      await expect(paymentsService.createPixPayment(paymentData)).rejects.toThrow(
+        NotFoundException
+      );
     });
 
     it('should generate QR code with correct order ID', async () => {
       mockPrisma.order.findUnique.mockResolvedValue({ id: 'order-1', total: 5000 });
-      mockPrisma.paymentIntent.create.mockImplementation(async (data: { data: Record<string, unknown> }) => ({
-        id: 'pix-1',
-        ...data.data,
-        expiresAt: new Date(),
-        qrCode: `https://api.qrserver.com/v1/create-qr-code/?data=pix-${paymentData.orderId}`,
-      }));
+      mockPrisma.paymentIntent.create.mockImplementation(
+        async (data: { data: Record<string, unknown> }) => ({
+          id: 'pix-1',
+          ...data.data,
+          expiresAt: new Date(),
+          qrCode: `https://api.qrserver.com/v1/create-qr-code/?data=pix-${paymentData.orderId}`,
+        })
+      );
 
       const result = await paymentsService.createPixPayment(paymentData);
 
@@ -80,18 +86,20 @@ describe('PaymentsService', () => {
     it('should set expiration to 30 minutes from now', async () => {
       const beforeCreate = Date.now();
       mockPrisma.order.findUnique.mockResolvedValue({ id: 'order-1', total: 5000 });
-      mockPrisma.paymentIntent.create.mockImplementation(async (data: { data: Record<string, unknown> }) => {
-        const expiresAt = data.data.expiresAt as Date;
-        const diff = expiresAt.getTime() - beforeCreate;
-        // Should be approximately 30 minutes (allow 5 second variance)
-        expect(diff).toBeGreaterThanOrEqual(30 * 60 * 1000 - 5000);
-        expect(diff).toBeLessThanOrEqual(30 * 60 * 1000 + 5000);
-        return {
-          id: 'pix-1',
-          ...data.data,
-          expiresAt,
-        };
-      });
+      mockPrisma.paymentIntent.create.mockImplementation(
+        async (data: { data: Record<string, unknown> }) => {
+          const expiresAt = data.data.expiresAt as Date;
+          const diff = expiresAt.getTime() - beforeCreate;
+          // Should be approximately 30 minutes (allow 5 second variance)
+          expect(diff).toBeGreaterThanOrEqual(30 * 60 * 1000 - 5000);
+          expect(diff).toBeLessThanOrEqual(30 * 60 * 1000 + 5000);
+          return {
+            id: 'pix-1',
+            ...data.data,
+            expiresAt,
+          };
+        }
+      );
 
       await paymentsService.createPixPayment(paymentData);
     });
@@ -116,7 +124,9 @@ describe('PaymentsService', () => {
     it('should throw NotFoundException if payment not found', async () => {
       mockPrisma.paymentIntent.findUnique.mockResolvedValue(null);
 
-      await expect(paymentsService.getPaymentStatus('non-existent')).rejects.toThrow(NotFoundException);
+      await expect(paymentsService.getPaymentStatus('non-existent')).rejects.toThrow(
+        NotFoundException
+      );
     });
   });
 

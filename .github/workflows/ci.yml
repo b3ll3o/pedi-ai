@@ -68,7 +68,7 @@ jobs:
       - name: Analisar complexidade ciclomática (web)
         id: complexity-web
         run: |
-          pnpm --filter @pedi-ai/web exec eslint apps/web/src \
+          pnpm --filter @pedi-ai/web exec eslint src \
             --quiet \
             --format json --output-file eslint-complexity-web.json
 
@@ -92,7 +92,7 @@ jobs:
       - name: Analisar complexidade ciclomática (api)
         id: complexity-api
         run: |
-          pnpm --filter @pedi-ai/api exec eslint apps/api/src \
+          pnpm --filter @pedi-ai/api exec eslint src \
             --quiet \
             --format json --output-file eslint-complexity-api.json
 

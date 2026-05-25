@@ -39,7 +39,12 @@ describe('ConfiguracoesRestaurante', () => {
       const config = new ConfiguracoesRestaurante(criarConfigValida());
       const horarios = config.horariosFuncionamento;
 
-      horarios.push({ diaSemana: 7, horaAbertura: '09:00', horaFechamento: '23:00', fechado: false });
+      horarios.push({
+        diaSemana: 7,
+        horaAbertura: '09:00',
+        horaFechamento: '23:00',
+        fechado: false,
+      });
 
       expect(config.horariosFuncionamento).toHaveLength(7);
     });
@@ -101,7 +106,12 @@ describe('ConfiguracoesRestaurante', () => {
 
     it('deve retornar false quando dia está fechado', () => {
       const horariosComDomingoFechado = [...horariosValidos];
-      horariosComDomingoFechado[0] = { diaSemana: 0, horaAbertura: '08:00', horaFechamento: '22:00', fechado: true };
+      horariosComDomingoFechado[0] = {
+        diaSemana: 0,
+        horaAbertura: '08:00',
+        horaFechamento: '22:00',
+        fechado: true,
+      };
       const config = new ConfiguracoesRestaurante({
         ...criarConfigValida(),
         horariosFuncionamento: horariosComDomingoFechado,

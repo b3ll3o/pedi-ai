@@ -120,10 +120,7 @@ describe('lib/offline/db', () => {
         timestamp: new Date(),
       });
 
-      const cached = await db.menu_cache
-        .where('restaurantId')
-        .equals('rest-1')
-        .toArray();
+      const cached = await db.menu_cache.where('restaurantId').equals('rest-1').toArray();
 
       expect(cached).toHaveLength(1);
       expect(cached[0].restaurantId).toBe('rest-1');

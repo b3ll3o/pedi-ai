@@ -87,7 +87,13 @@ describe('QRCodePayload', () => {
     it('deve retornar false para objeto que não é QRCodePayload', () => {
       const payload = QRCodePayload.reconstruir(criarPayloadValido());
 
-      expect(payload.equals({ restauranteId: 'rest-123', mesaId: 'mesa-456', assinatura: 'abc123' } as any)).toBe(false);
+      expect(
+        payload.equals({
+          restauranteId: 'rest-123',
+          mesaId: 'mesa-456',
+          assinatura: 'abc123',
+        } as any)
+      ).toBe(false);
     });
   });
 

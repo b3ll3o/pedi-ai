@@ -10,22 +10,27 @@ O projeto utiliza **GitHub Actions** para CI/CD, com pre-commit hooks locais (Hu
 
 ### Jobs do Pipeline
 
-| Job                    | Gatilho            | O que faz                             |
-| ---------------------- | ------------------ | ------------------------------------- |
-| `unit-tests`           | PR                 | Vitest: testes unitários              |
-| `integration-tests`    | PR                 | Vitest: testes de integração          |
-| `coverage`             | PR                 | Verificação de cobertura ≥ 80%        |
-| `e2e-tests` (4 shards) | PR                 | Playwright: testes E2E em paralelo    |
-| `docs-audit`           | schedule/push docs | Verifica consistência da documentação |
+| Job                    | Gatilho           | O que faz                             |
+| ---------------------- | ----------------- | ------------------------------------- |
+| `lint`                 | PR + push master  | ESLint: lintagem de código            |
+| `type-check`           | PR + push master  | TypeScript: verificação de tipos      |
+| `unit-tests`           | PR + push master  | Vitest: testes unitários              |
+| `integration-tests`    | PR + push master  | Vitest: testes de integração          |
+| `complexity`           | PR + push master  | ESLint: complexidade ciclomática ≤ 15 |
+| `coverage`             | após unit-tests   | Verificação de cobertura ≥ 80%        |
+| `e2e-tests` (4 shards) | após CI em master | Playwright: testes E2E em paralelo    |
 
 ### Gates de Bloqueio
 
 Para um PR ser mergeado, **todos** os jobs devem passar:
 
+- `lint` — falha se ESLint encontrar erros
+- `type-check` — falha se TypeScript encontrar erros de tipo
 - `unit-tests` — falha se qualquer teste unitário quebrar
 - `integration-tests` — falha se qualquer teste de integração quebrar
+- `complexity` — falha se qualquer função exceder complexidade ciclomática > 15
 - `coverage` — falha se cobertura de código < 80% (statements/branches/functions/lines)
-- `e2e-tests` — falha se qualquer teste E2E quebrar
+- `e2e-tests` — falha se qualquer teste E2E quebrar (executado após CI em master)
 
 ---
 
@@ -33,17 +38,23 @@ Para um PR ser mergeado, **todos** os jobs devem passar:
 
 ### `.github/workflows/ci.yml` — CI Completo
 
-Disparado em **todo Pull Request**.
+Disparado em **todo Pull Request** e em push para `master`.
 
 ```yaml
-on: pull_request
+on:
+  pull_request:
+  push:
+    branches:
+      - master
 
 jobs:
   lint:
-    run: pnpm lint # ESLint
+    run: pnpm lint # ESLint (web + api)
 
   type-check:
-    run: pnpm tsc --noEmit # TypeScript
+    run: |
+      pnpm --filter @pedi-ai/web exec tsc --noEmit
+      pnpm --filter @pedi-ai/api exec tsc --noEmit
 
   unit-tests:
     run: pnpm test:unit
@@ -51,19 +62,19 @@ jobs:
   integration-tests:
     run: pnpm test:integration
 
-  coverage:
-    run: pnpm test:coverage # must meet 80% threshold
+  complexity:
+    run: |
+      # ESLint complexity rule (max 15)
+      # web e api verificados separadamente
 
-  e2e-tests:
-    strategy:
-      matrix:
-        shard: [1, 2, 3, 4]
-    run: pnpm test:e2e --shard=${{ matrix.shard }}/4
+  coverage:
+    needs: [unit-tests]
+    run: pnpm test:coverage # must meet 80% threshold
 ```
 
-### `.github/workflows/e2e.yml` — E2E em Main
+### `.github/workflows/e2e.yml` — E2E em Master
 
-Disparado em push para `main`/`master` e em PRs. Executa E2E em 4 shards paralelos com Playwright.
+Disparado quando `ci.yml` completa em push para `master`. Executa E2E em 4 shards paralelos com Playwright.
 
 ---
 
@@ -178,10 +189,10 @@ pnpm build              # Next.js build
 
 Os workflows E2E requerem:
 
-| Secret                          | Descrição                          |
-| ------------------------------- | ---------------------------------- |
-| `DATABASE_URL`                  | URL do PostgreSQL                  |
-| `JWT_SECRET`                    | Segredo para assinatura de JWT     |
+| Secret         | Descrição                      |
+| -------------- | ------------------------------ |
+| `DATABASE_URL` | URL do PostgreSQL              |
+| `JWT_SECRET`   | Segredo para assinatura de JWT |
 
 Configure em: **GitHub repo → Settings → Secrets and variables → Actions**
 
@@ -192,8 +203,7 @@ Configure em: **GitHub repo → Settings → Secrets and variables → Actions**
 Para bloquear merges que não passem no CI, configure em **Settings → Branches → Branch protection rules**:
 
 - ✅ "Require status checks to pass before merging"
-- Status checks obrigatórios: `lint`, `type-check`, `unit-tests`, `integration-tests`, `coverage`, `e2e-tests`
-- ✅ "Require branches to be up to date before merging"
+- Status checks obrigatórios: `lint`, `type-check`, `unit-tests`, `integration-tests`, `coverage`, `complexity`
 
 ---
 

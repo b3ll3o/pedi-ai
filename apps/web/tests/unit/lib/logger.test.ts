@@ -4,10 +4,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 const originalNodeEnv = process.env.NODE_ENV;
 
 describe('lib/logger', () => {
-  let consoleError: ReturnType<typeof vi.spyOn>;
-  let consoleWarn: ReturnType<typeof vi.spyOn>;
-  let consoleLog: ReturnType<typeof vi.spyOn>;
-
   beforeEach(() => {
     vi.spyOn(console, 'error').mockImplementation(vi.fn());
     vi.spyOn(console, 'warn').mockImplementation(vi.fn());

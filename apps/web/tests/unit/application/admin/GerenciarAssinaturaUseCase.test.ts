@@ -68,8 +68,9 @@ describe('GerenciarAssinaturaUseCase', () => {
     it('deve lançar erro se assinatura já existe', async () => {
       mockRepo.buscarPorRestauranteId.mockResolvedValue(criarAssinatura('rest-1'));
 
-      await expect(useCase.iniciarTrial({ restauranteId: 'rest-1' }))
-        .rejects.toThrow('Restaurante já possui uma assinatura');
+      await expect(useCase.iniciarTrial({ restauranteId: 'rest-1' })).rejects.toThrow(
+        'Restaurante já possui uma assinatura'
+      );
     });
 
     it('deve criar trial customizado', async () => {
@@ -99,10 +100,12 @@ describe('GerenciarAssinaturaUseCase', () => {
     it('deve lançar erro se assinatura não encontrada', async () => {
       mockRepo.buscarPorRestauranteId.mockResolvedValue(null);
 
-      await expect(useCase.ativarAssinatura({
-        restauranteId: 'rest-1',
-        tipoPlano: 'monthly',
-      })).rejects.toThrow('Assinatura não encontrada');
+      await expect(
+        useCase.ativarAssinatura({
+          restauranteId: 'rest-1',
+          tipoPlano: 'monthly',
+        })
+      ).rejects.toThrow('Assinatura não encontrada');
     });
   });
 
@@ -110,8 +113,7 @@ describe('GerenciarAssinaturaUseCase', () => {
     it('deve lançar erro se assinatura bloqueada', async () => {
       mockRepo.buscarPorRestauranteId.mockResolvedValue(null);
 
-      await expect(useCase.validarOperacao('rest-1'))
-        .rejects.toThrow(/bloqueada/);
+      await expect(useCase.validarOperacao('rest-1')).rejects.toThrow(/bloqueada/);
     });
 
     it('deve passar se assinatura ativa', async () => {

@@ -19,7 +19,11 @@ describe('QRCodeValidationService (Interface)', () => {
       const service: IQRCodeValidationService = {
         validarAssinatura: (payload, secret) => {
           // Mock implementation
-          const expectedSignature = service.gerarAssinatura(payload.restauranteId, payload.mesaId, secret);
+          const expectedSignature = service.gerarAssinatura(
+            payload.restauranteId,
+            payload.mesaId,
+            secret
+          );
           return payload.assinatura === expectedSignature;
         },
         gerarAssinatura: (restauranteId, mesaId, secret) => {
@@ -51,7 +55,7 @@ describe('QRCodeValidationService (Interface)', () => {
 
     it('validarAssinatura deve retornar false para assinatura inválida', () => {
       const service: IQRCodeValidationService = {
-        validarAssinatura: (payload, _secret) => {
+        validarAssinatura: (_payload, _secret) => {
           // Sempre retorna false para teste
           return false;
         },
@@ -64,7 +68,11 @@ describe('QRCodeValidationService (Interface)', () => {
     it('validarAssinatura deve retornar true para assinatura válida', () => {
       const service: IQRCodeValidationService = {
         validarAssinatura: (payload, secret) => {
-          const expectedSignature = service.gerarAssinatura(payload.restauranteId, payload.mesaId, secret);
+          const expectedSignature = service.gerarAssinatura(
+            payload.restauranteId,
+            payload.mesaId,
+            secret
+          );
           return payload.assinatura === expectedSignature;
         },
         gerarAssinatura: (restauranteId, mesaId, secret) => {

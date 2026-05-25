@@ -29,21 +29,20 @@ RUN pnpm install --no-frozen-lockfile
 RUN cd /app/apps/api && pnpm dlx prisma@5.22.0 generate
 
 # Build
-RUN pnpm --filter @pedi-ai/api build
+RUN cd /app/apps/api && pnpm build
 
 # ============================================================
 # Production stage
 # ============================================================
-FROM node:20-bullseye AS runner
+FROM node:20-bookworm AS runner
 
 WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Install curl and OpenSSL 1.1 (Prisma requires it)
+# Install curl for healthchecks (Debian)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
-    libssl1.1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user for running the app
@@ -56,15 +55,18 @@ COPY --from=builder /app/apps/api/dist ./dist
 COPY --from=builder /app/apps/api/package.json ./package.json
 COPY --from=builder /app/apps/api/prisma ./prisma
 
-# Copy pnpm-lock for clean install in production
+# Copy pnpm-lock for production install
 COPY --from=builder /app/pnpm-lock.yaml ./
 
+# Install pnpm globally for production install
+RUN npm install -g pnpm@9
+
 # Do NOT copy node_modules from builder - it contains wrong-platform binaries
-# Fresh install in production
-RUN npm install --omit=dev --ignore-scripts
+# Fresh install in production using pnpm (--production skips devDependencies)
+RUN pnpm install --production --ignore-scripts
 
 # Generate Prisma client for this platform
-RUN cd /app && npm install prisma@5.22.0 && npx prisma generate --schema=./prisma/schema.prisma
+RUN pnpm dlx prisma@5.22.0 generate --schema=./prisma/schema.prisma
 
 # Fix ownership
 RUN chown -R nestjs:nodejs /app
