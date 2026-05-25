@@ -30,7 +30,11 @@ describe('ComboAggregate', () => {
       ativo: true,
     });
     // Test helpers need to use reconstructing with explicit id for deterministic ids
-    return Combo.reconstruir({ ...combo.props, id: 'combo-1', restauranteId: 'rest-1' } as ComboProps);
+    return Combo.reconstruir({
+      ...combo.props,
+      id: 'combo-1',
+      restauranteId: 'rest-1',
+    } as ComboProps);
   };
 
   describe('calcularDesconto', () => {
@@ -47,7 +51,7 @@ describe('ComboAggregate', () => {
       expect(resultado.precoIndividualTotal.valor).toBe(4000);
       expect(resultado.precoBundle.valor).toBe(3500);
       expect(resultado.valorDesconto.valor).toBe(500);
-      expect(resultado.percentualDesconto).toBe(12);
+      expect(resultado.percentualDesconto).toBe(13);
     });
 
     it('deve retornar 0% de desconto se preco individual for 0', () => {

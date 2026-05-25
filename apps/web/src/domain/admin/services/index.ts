@@ -1,1 +1,1 @@
-// Services do bounded context admin
+export {};

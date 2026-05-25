@@ -37,29 +37,27 @@ export class Credenciais extends ValueObjectClass<CredenciaisValue> {
   }
 
   static criar(email: string, senha: string): Credenciais {
-    this.validarEmail(email);
+    const emailNormalizado = email.trim().toLowerCase();
+    this.validarEmail(emailNormalizado);
     this.validarSenha(senha);
-    return new Credenciais({ email: email.toLowerCase().trim(), senha });
+    return new Credenciais({ email: emailNormalizado, senha });
   }
 
   static criarComValidacao(
     email: string,
     senha: string
   ): { success: boolean; credenciais?: Credenciais; erro?: string } {
-    try {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        return { success: false, erro: 'Email inválido' };
-      }
-      if (!senha || senha.length < 6) {
-        return { success: false, erro: 'Senha deve ter pelo menos 6 caracteres' };
-      }
-      return {
-        success: true,
-        credenciais: new Credenciais({ email: email.toLowerCase().trim(), senha }),
-      };
-    } catch (error) {
-      return { success: false, erro: error instanceof Error ? error.message : 'Erro desconhecido' };
+    const emailNormalizado = email.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailNormalizado)) {
+      return { success: false, erro: 'Email inválido' };
     }
+    if (!senha || senha.length < 6) {
+      return { success: false, erro: 'Senha deve ter pelo menos 6 caracteres' };
+    }
+    return {
+      success: true,
+      credenciais: new Credenciais({ email: emailNormalizado, senha }),
+    };
   }
 }

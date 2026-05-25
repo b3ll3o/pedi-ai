@@ -144,23 +144,21 @@ export class Pedido extends AggregateRootClass<PedidoProps> {
     Object.assign(this.props, { subtotal: novoSubtotal, total: novoTotal });
   }
 
-  static criar(
-    props: Omit<PedidoProps, 'createdAt' | 'updatedAt' | 'subtotal' | 'tax' | 'total'>
-  ): Pedido {
+  static criar(props: Omit<PedidoProps, 'createdAt' | 'updatedAt' | 'subtotal' | 'total'>): Pedido {
     const now = new Date();
     const pedido = new Pedido({
       ...props,
       subtotal: Dinheiro.ZERO,
-      tax: Dinheiro.ZERO,
       total: Dinheiro.ZERO,
       createdAt: now,
       updatedAt: now,
     });
 
-    // atualizaTotais() usa props.itens para calcular subtotal e total,
-    // mas preserva o tax que veio em props (via CarrinhoAggregate.toPedido)
-    pedido.props.tax = props.tax;
+    // atualizaTotais() calcula subtotal e total, mas preserva o tax original
     pedido.atualizarTotais();
+    // Preserva o tax passado pelo chamador (ex: CarrinhoAggregate.toPedido)
+    pedido.props.tax = props.tax;
+    pedido.props.total = pedido.props.subtotal.somar(pedido.props.tax);
 
     return pedido;
   }

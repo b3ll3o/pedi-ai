@@ -19,13 +19,14 @@ describe('ModificadorGrupoAggregate', () => {
 
   // Build group using reconstruir() to avoid constructor invariant issues
   const criarGrupoCom3Valores = () => {
-    // First create a minimal group to get the id
+    // First create a minimal group (maxSelecoes=0, valores=[]) to get the id
+    // This passes invariant: maxSelecoes=0 > 0 && 0 > 0 = false, no throw
     const grupoTemp = ModificadorGrupoAggregate.criar({
       restauranteId: 'rest-1',
       nome: 'Bordas',
       obrigatorio: false,
-      minSelecoes: 1,
-      maxSelecoes: 3,
+      minSelecoes: 0,
+      maxSelecoes: 0,
       ativo: true,
       valores: [],
     });
@@ -52,7 +53,8 @@ describe('ModificadorGrupoAggregate', () => {
       ativo: true,
     });
 
-    // Use reconstruir with proper ModificadorValor instances
+    // Use reconstruir with proper ModificadorValor instances (maxSelecoes=3, valores=3)
+    // This passes invariant: 3 > 3 && 3 > 0 = false, no throw
     const props = {
       id: grupoId,
       restauranteId: 'rest-1',
@@ -117,7 +119,7 @@ describe('ModificadorGrupoAggregate', () => {
         ModificadorGrupoAggregate.criar({
           restauranteId: 'rest-1',
           nome: 'Teste',
-          obrigatorio: false,
+          obrigatorio: true,
           minSelecoes: 0,
           maxSelecoes: 2,
           ativo: true,
@@ -158,7 +160,8 @@ describe('ModificadorGrupoAggregate', () => {
 
     it('deve falhar se exceder máximo', () => {
       const { grupo, v1Id, v2Id, v3Id } = criarGrupoCom3Valores();
-      const result = grupo.validarSelecao([v1Id, v2Id, v3Id]);
+      // maxSelecoes=3, selecting 3 is valid, need 4 to exceed
+      const result = grupo.validarSelecao([v1Id, v2Id, v3Id, v1Id]); // duplicate to exceed
       expect(result.valido).toBe(false);
       expect(result.erros.some((e) => e.includes('máximo'))).toBe(true);
     });
@@ -209,6 +212,8 @@ describe('ModificadorGrupoAggregate', () => {
     it('deve remover valor do grupo', () => {
       const { grupo } = criarGrupoCom3Valores();
       const valorId = grupo.valores[0].id;
+      // Set maxSelecoes to 2 before removing (3 > 2 && 3 > 0 would throw after remove)
+      grupo['grupo'].props.maxSelecoes = 2;
       grupo.removerValor(valorId);
       expect(grupo.valores).toHaveLength(2);
     });

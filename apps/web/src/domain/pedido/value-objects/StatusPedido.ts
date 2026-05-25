@@ -12,6 +12,21 @@ export type StatusPedidoValue =
   | 'refunded'
   | 'payment_failed';
 
+type StatusValue = StatusPedidoValue;
+
+const TRANSICOES_VALIDAS: Record<StatusValue, StatusValue[]> = {
+  pending_payment: ['paid', 'cancelled'],
+  paid: ['received', 'refunded'],
+  received: ['preparing', 'rejected', 'cancelled'],
+  preparing: ['ready'],
+  ready: ['delivered'],
+  delivered: [],
+  rejected: [],
+  cancelled: [],
+  refunded: [],
+  payment_failed: ['pending_payment'],
+};
+
 export class StatusPedido extends ValueObjectClass<StatusPedidoValue> {
   static readonly PENDING_PAYMENT = new StatusPedido('pending_payment');
   static readonly PAID = new StatusPedido('paid');
@@ -43,6 +58,15 @@ export class StatusPedido extends ValueObjectClass<StatusPedidoValue> {
 
   toString(): string {
     return this.props;
+  }
+
+  transicoesPermitidas(): StatusPedidoValue[] {
+    const statusValue = this.props as StatusValue;
+    return TRANSICOES_VALIDAS[statusValue] || [];
+  }
+
+  isFinal(): boolean {
+    return this.transicoesPermitidas().length === 0;
   }
 }
 

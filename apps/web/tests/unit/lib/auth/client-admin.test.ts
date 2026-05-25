@@ -17,6 +17,7 @@ describe('lib/auth/client-admin', () => {
     it('deve retornar AuthUser quando sessão válida', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
+        status: 200,
         json: () =>
           Promise.resolve({
             user: {
@@ -36,7 +37,10 @@ describe('lib/auth/client-admin', () => {
         role: 'dono',
         restaurant_id: 'rest-456',
       });
-      expect(mockFetch).toHaveBeenCalledWith('/api/auth/session');
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/auth/session',
+        expect.objectContaining({ headers: expect.any(Object) })
+      );
     });
 
     it('deve lançar erro quando sem sessão (user undefined)', async () => {
@@ -66,6 +70,7 @@ describe('lib/auth/client-admin', () => {
     it('deve fazer parse correto de response com erro genérico', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
+        status: 400,
         json: () => Promise.resolve({}),
       });
 
@@ -105,7 +110,7 @@ describe('lib/auth/client-admin', () => {
       const user = createUser('atendente');
       try {
         requireRole(user, ['dono', 'gerente']);
-        fail('Deveria ter lançado erro');
+        throw new Error('Deveria ter lançado erro');
       } catch (e: any) {
         expect(e.status).toBe(403);
       }

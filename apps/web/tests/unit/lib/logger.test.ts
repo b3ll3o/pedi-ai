@@ -30,48 +30,32 @@ describe('lib/logger', () => {
       const { logger } = await reimportLogger();
       logger.error('TestContext', 'Error message');
 
-      expect(console.error).toHaveBeenCalledWith(
-        expect.stringContaining('[ERROR]')
-      );
-      expect(console.error).toHaveBeenCalledWith(
-        expect.stringContaining('[TestContext]')
-      );
-      expect(console.error).toHaveBeenCalledWith(
-        expect.stringContaining('Error message')
-      );
+      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('[ERROR]'));
+      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('[TestContext]'));
+      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Error message'));
     });
 
     it('deve logar warn com console.warn', async () => {
       const { logger } = await reimportLogger();
       logger.warn('TestContext', 'Warn message');
 
-      expect(console.warn).toHaveBeenCalledWith(
-        expect.stringContaining('[WARN]')
-      );
-      expect(console.warn).toHaveBeenCalledWith(
-        expect.stringContaining('[TestContext]')
-      );
+      expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('[WARN]'));
+      expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('[TestContext]'));
     });
 
     it('deve logar info com console.log', async () => {
       const { logger } = await reimportLogger();
       logger.info('TestContext', 'Info message');
 
-      expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining('[INFO]')
-      );
-      expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining('[TestContext]')
-      );
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('[INFO]'));
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('[TestContext]'));
     });
 
     it('deve logar debug com console.log', async () => {
       const { logger } = await reimportLogger();
       logger.debug('TestContext', 'Debug message');
 
-      expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining('[DEBUG]')
-      );
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('[DEBUG]'));
     });
   });
 
@@ -89,11 +73,11 @@ describe('lib/logger', () => {
   describe('meta object', () => {
     it('deve incluir meta quando fornecido', async () => {
       const { logger } = await reimportLogger();
-      const meta = { key: 'value', number: 42 };
+      const meta = { data: 'value', number: 42 };
       logger.info('Context', 'Message', meta);
 
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining('{"key":"value","number":42}')
+        expect.stringContaining('{"data":"value","number":42}')
       );
     });
 
@@ -102,9 +86,7 @@ describe('lib/logger', () => {
       logger.info('Context', 'Message');
 
       // Deve logar sem trailing meta
-      expect(console.log).toHaveBeenCalledWith(
-        expect.not.stringContaining('undefined')
-      );
+      expect(console.log).toHaveBeenCalledWith(expect.not.stringContaining('undefined'));
     });
   });
 
@@ -240,18 +222,14 @@ describe('lib/logger', () => {
 
       // String
       logger.info('Context', 'Message', 'just a string');
-      expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining('just a string')
-      );
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('just a string'));
     });
 
     it('deve retornar null sem modificação', async () => {
       const { logger } = await reimportLogger();
       logger.info('Context', 'Message', null);
 
-      expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining('null')
-      );
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('null'));
     });
 
     it('deve lidar com meta undefined', async () => {

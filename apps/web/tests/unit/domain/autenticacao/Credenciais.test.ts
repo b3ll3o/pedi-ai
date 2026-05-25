@@ -18,11 +18,9 @@ describe('Credenciais', () => {
     });
 
     it('deve fazer trim do email', () => {
-      // O trim é feito após validação, então espaços extras no email serão rejeitados
-      // A menos que sejam espaços no início/fim de email válido
-      expect(() => Credenciais.criar('  usuario@exemplo.com  ', 'senha123')).toThrow(
-        'Email inválido'
-      );
+      // O trim é feito antes da validação, então espaços extras são removidos
+      const credenciais = Credenciais.criar('  usuario@exemplo.com  ', 'senha@123');
+      expect(credenciais.email).toBe('usuario@exemplo.com');
     });
 
     it('deve lançar erro para email inválido', () => {
