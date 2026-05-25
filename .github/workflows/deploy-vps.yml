@@ -40,9 +40,6 @@ jobs:
             # Stop existing services
             docker compose -f docker-compose.dev.yml down || true
 
-            # Remove stale postgres volume (avoid password mismatch from previous deploys)
-            docker volume rm pedi_ai_postgres_data 2>/dev/null || true
-
             # Ensure port 80 is free (kill any process using it)
             fuser -k 80/tcp 2>/dev/null || true
             sleep 2
@@ -60,6 +57,18 @@ jobs:
               echo "Aguardando... ($i/30)"
               sleep 2
             done
+
+            # Check if API can connect to postgres (detect password mismatch)
+            echo "Verificando conexão do API com banco..."
+            sleep 10
+            API_LOGS=$(docker compose -f docker-compose.dev.yml logs api 2>&1 | tail -20)
+            if echo "$API_LOGS" | grep -q "P1000\|password authentication failed"; then
+              echo "ERRO: Credenciais do banco não conferem!"
+              echo "O volume do postgres foi criado com senha diferente do .env atual."
+              echo "Solução: docker volume rm pedi_ai_postgres_data (apaga dados!)"
+              echo "Ou: altere POSTGRES_PASSWORD no .env para match com o volume existente"
+              exit 1
+            fi
 
             # Wait for services to be healthy
             echo "Aguardando serviços ficarem healthy..."
