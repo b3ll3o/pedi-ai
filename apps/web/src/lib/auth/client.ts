@@ -42,18 +42,29 @@ export async function logout(): Promise<void> {
 
 /**
  * Get current session from API
+ * Usa AbortController com timeout de 8s para evitar fetch pendente infinito
+ * quando o servidor está lento ou indisponível.
  */
 export async function getSession(): Promise<{
   user: { id: string; email: string; role: string; restaurantId?: string };
 } | null> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000);
+
   try {
-    const response = await fetch('/api/auth/session');
+    const response = await fetch('/api/auth/session', { signal: controller.signal });
+    clearTimeout(timeoutId);
     if (!response.ok) {
       return null;
     }
     const data = await response.json();
     return data;
-  } catch {
+  } catch (error) {
+    clearTimeout(timeoutId);
+    // AbortError = timeout, treat as no session
+    if (error instanceof Error && error.name === 'AbortError') {
+      return null;
+    }
     return null;
   }
 }

@@ -83,7 +83,10 @@ describe('lib/auth/client', () => {
       const result = await getSession();
 
       expect(result).toEqual(mockSession);
-      expect(mockFetch).toHaveBeenCalledWith('/api/auth/session');
+      // Verifica que fetch foi chamado com a URL correta e um signal de AbortController
+      const [url, options] = mockFetch.mock.calls[0];
+      expect(url).toBe('/api/auth/session');
+      expect(options).toHaveProperty('signal');
     });
 
     it('deve retornar null quando API retorna erro', async () => {

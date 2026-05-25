@@ -138,4 +138,86 @@ test.describe('Autenticação do Cliente', () => {
     const pageContent = await _page.content();
     expect(pageContent).toContain('login'); // ainda estamos na página de login
   });
+
+  test.describe('Loading states', () => {
+    test(
+      'mostra formulário em até 10s quando API de sessão está lenta',
+      { tag: ['@resilience'] },
+      async ({ page }) => {
+        // Simular API de sessão com delay de 30s
+        await page.route('/api/auth/session', async (route) => {
+          await new Promise((resolve) => setTimeout(resolve, 30000));
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: 'null',
+          });
+        });
+
+        await page.goto('/login');
+
+        // Deve mostrar o formulário em até 10s (timeout de 8s + buffer)
+        await expect(loginPage.emailInput).toBeVisible({ timeout: 10000 });
+        await expect(loginPage.passwordInput).toBeVisible();
+        await expect(loginPage.loginButton).toBeVisible();
+      }
+    );
+
+    test(
+      'mostra formulário quando API de sessão retorna erro 500',
+      { tag: ['@resilience'] },
+      async ({ page }) => {
+        await page.route('/api/auth/session', async (route) => {
+          await route.fulfill({
+            status: 500,
+            contentType: 'application/json',
+            body: '{"error":"Internal Server Error"}',
+          });
+        });
+
+        await page.goto('/login');
+
+        await expect(loginPage.emailInput).toBeVisible({ timeout: 10000 });
+        await expect(loginPage.passwordInput).toBeVisible();
+        await expect(loginPage.loginButton).toBeVisible();
+      }
+    );
+
+    test(
+      'mostra formulário quando API de sessão é interceptada (network error)',
+      { tag: ['@resilience'] },
+      async ({ page }) => {
+        await page.route('/api/auth/session', async (route) => {
+          await route.abort('failed');
+        });
+
+        await page.goto('/login');
+
+        await expect(loginPage.emailInput).toBeVisible({ timeout: 10000 });
+        await expect(loginPage.passwordInput).toBeVisible();
+        await expect(loginPage.loginButton).toBeVisible();
+      }
+    );
+
+    test(
+      'mostra formulário imediatamente quando API de sessão responde OK com null',
+      { tag: ['@resilience'] },
+      async ({ page }) => {
+        await page.route('/api/auth/session', async (route) => {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: 'null',
+          });
+        });
+
+        await page.goto('/login');
+
+        // Deve aparecer rapidamente
+        await expect(loginPage.emailInput).toBeVisible({ timeout: 3000 });
+        await expect(loginPage.passwordInput).toBeVisible();
+        await expect(loginPage.loginButton).toBeVisible();
+      }
+    );
+  });
 });
