@@ -1,44 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { sql } from '@/infrastructure/database/pg-client';
-import { getSession } from '@/lib/auth/session';
+import { apiClient } from '@/lib/api-client';
+
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  timestamp: string;
+}
+
+interface UserProfile {
+  id: string;
+  userId: string | null;
+  restaurantId: string | null;
+  role: string;
+  name: string;
+  email: string;
+  createdAt: string;
+}
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
-    }
+    const { id } = await params;
 
-    const userId = session.user.id;
+    const result = await apiClient.get<ApiResponse<UserProfile>>(`/users/profiles/${id}`);
 
-    const { id: userIdParam } = await params;
-
-    // Get user profile
-    const userResult = await sql`
-      SELECT * FROM users_profiles WHERE id = ${userIdParam} LIMIT 1
-    `;
-
-    if (!userResult[0]) {
-      return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
-    }
-
-    // Verify requesting user has access to same restaurant
-    const requestingUserResult = await sql`
-      SELECT role, restaurant_id FROM users_profiles
-      WHERE user_id = ${userId}
-      LIMIT 1
-    `;
-
-    if (!requestingUserResult[0]) {
-      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
-    }
-
-    if (requestingUserResult[0].restaurant_id !== userResult[0].restaurant_id) {
-      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
-    }
-
-    return NextResponse.json({ user: userResult[0] });
+    return NextResponse.json({ user: result.data });
   } catch (error) {
     console.error('Error in GET /api/admin/users/[id]:', error);
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
@@ -47,68 +33,17 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
-    }
-
-    const userId = session.user.id;
-
-    const { id: userIdParam } = await params;
+    const { id } = await params;
     const body = await request.json();
     const { name, email, role } = body;
 
-    // Get target user
-    const userResult = await sql`
-      SELECT * FROM users_profiles WHERE id = ${userIdParam} LIMIT 1
-    `;
+    const result = await apiClient.patch<ApiResponse<UserProfile>>(`/users/profiles/${id}`, {
+      name,
+      email,
+      role,
+    });
 
-    if (!userResult[0]) {
-      return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
-    }
-
-    // Verify requesting user has access
-    const requestingUserResult = await sql`
-      SELECT role, restaurant_id FROM users_profiles
-      WHERE user_id = ${userId}
-      LIMIT 1
-    `;
-
-    if (!requestingUserResult[0]) {
-      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
-    }
-
-    if (requestingUserResult[0].restaurant_id !== userResult[0].restaurant_id) {
-      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
-    }
-
-    // Only owners can change roles
-    if (role && requestingUserResult[0].role !== 'dono') {
-      return NextResponse.json(
-        { error: 'Apenas o proprietário pode alterar cargos' },
-        { status: 403 }
-      );
-    }
-
-    const now = new Date().toISOString();
-
-    // Update user
-    await sql`
-      UPDATE users_profiles
-      SET
-        name = COALESCE(${name || null}, name),
-        email = COALESCE(${email || null}, email),
-        role = COALESCE(${role || null}, role),
-        updated_at = ${now}
-      WHERE id = ${userIdParam}
-    `;
-
-    // Fetch updated user
-    const updatedUser = await sql`
-      SELECT * FROM users_profiles WHERE id = ${userIdParam} LIMIT 1
-    `;
-
-    return NextResponse.json({ user: updatedUser[0] });
+    return NextResponse.json({ user: result.data });
   } catch (error) {
     console.error('Error in PUT /api/admin/users/[id]:', error);
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
@@ -120,44 +55,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
-    }
+    const { id } = await params;
 
-    const userId = session.user.id;
-
-    const { id: userIdParam } = await params;
-
-    // Get target user
-    const userResult = await sql`
-      SELECT * FROM users_profiles WHERE id = ${userIdParam} LIMIT 1
-    `;
-
-    if (!userResult[0]) {
-      return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
-    }
-
-    // Verify requesting user is owner
-    const requestingUserResult = await sql`
-      SELECT role, restaurant_id FROM users_profiles
-      WHERE user_id = ${userId}
-      LIMIT 1
-    `;
-
-    if (!requestingUserResult[0] || requestingUserResult[0].role !== 'dono') {
-      return NextResponse.json(
-        { error: 'Apenas o proprietário pode remover usuários' },
-        { status: 403 }
-      );
-    }
-
-    if (requestingUserResult[0].restaurant_id !== userResult[0].restaurant_id) {
-      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
-    }
-
-    // Delete user
-    await sql`DELETE FROM users_profiles WHERE id = ${userIdParam}`;
+    await apiClient.delete(`/users/profiles/${id}`);
 
     return NextResponse.json({ success: true });
   } catch (error) {

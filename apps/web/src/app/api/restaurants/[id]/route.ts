@@ -1,6 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { sql } from '@/infrastructure/database/pg-client';
+import { apiClient } from '@/lib/api-client';
+
+interface ApiSingleResponse<T> {
+  success: boolean;
+  data: T;
+  timestamp: string;
+}
+
+interface RestaurantData {
+  id: string;
+  name: string;
+  description: string | null;
+  address: string | null;
+  phone: string | null;
+  logoUrl: string | null;
+  settings: string | null;
+}
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -10,35 +26,17 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'ID do restaurante é obrigatório' }, { status: 400 });
     }
 
-    const result = await sql<{
-      id: string;
-      name: string;
-      description: string | null;
-      address: string | null;
-      phone: string | null;
-      logo_url: string | null;
-      settings: Record<string, unknown> | null;
-    }>`
-      SELECT id, name, description, address, phone, logo_url, settings
-      FROM restaurants
-      WHERE id = ${id}
-      LIMIT 1
-    `;
+    const result = await apiClient.get<ApiSingleResponse<RestaurantData>>(`/restaurants/${id}`);
 
-    if (!result || result.length === 0) {
-      return NextResponse.json({ error: 'Restaurante não encontrado' }, { status: 404 });
-    }
-
-    const restaurant = result[0];
     const response = {
       restaurant: {
-        id: restaurant.id,
-        name: restaurant.name,
-        description: restaurant.description,
-        address: restaurant.address,
-        phone: restaurant.phone,
-        logo_url: restaurant.logo_url,
-        horarios: restaurant.settings?.horarios || null,
+        id: result.data.id,
+        name: result.data.name,
+        description: result.data.description,
+        address: result.data.address,
+        phone: result.data.phone,
+        logo_url: result.data.logoUrl,
+        horarios: result.data.settings ? JSON.parse(result.data.settings).horarios : null,
       },
     };
 

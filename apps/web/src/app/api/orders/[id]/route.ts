@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { sql } from '@/infrastructure/database/pg-client';
+import { apiClient } from '@/lib/api-client';
 
 type OrderStatus = 'pending_payment' | 'paid' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
 type PaymentStatus = 'pending' | 'paid' | 'refunded' | 'failed';
@@ -32,6 +32,28 @@ interface OrderResponse {
   created_at: string;
 }
 
+interface ApiOrderData {
+  id: string;
+  status: string;
+  paymentStatus: string;
+  items: Array<{
+    id: string;
+    productId: string;
+    comboId: string | null;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+    notes: string | null;
+  }>;
+  createdAt: string;
+}
+
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  timestamp: string;
+}
+
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
@@ -42,69 +64,27 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'restaurant_id is required' }, { status: 400 });
     }
 
-    // Fetch order
-    const orderResult = await sql<{
-      id: string;
-      restaurant_id: string;
-      status: string;
-      payment_status: string;
-      created_at: string;
-    }>`
-      SELECT id, restaurant_id, status, payment_status, created_at
-      FROM orders
-      WHERE id = ${id} AND restaurant_id = ${restaurantId}
-      LIMIT 1
-    `;
+    const result = await apiClient.get<ApiResponse<ApiOrderData>>(`/orders/${id}`);
 
-    if (!orderResult || orderResult.length === 0) {
-      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
-    }
+    const order = result.data;
 
-    const order = orderResult[0];
-
-    // Fetch order items
-    const itemsResult = await sql<OrderItemResponse>`
-      SELECT id, order_id, product_id, combo_id, quantity, unit_price, total_price, notes
-      FROM order_items
-      WHERE order_id = ${id}
-    `;
-
-    // Fetch status history
-    const historyResult = await sql<{
-      id: string;
-      status: string;
-      notes: string | null;
-      created_at: string;
-    }>`
-      SELECT id, status, notes, created_at
-      FROM order_status_history
-      WHERE order_id = ${id}
-      ORDER BY created_at ASC
-    `;
-
+    // Transform API response to web format
     const response: OrderResponse = {
       id: order.id,
       status: order.status as OrderStatus,
-      payment_status: order.payment_status as PaymentStatus,
-      items: itemsResult.map((item: OrderItemResponse) => ({
+      payment_status: order.paymentStatus as PaymentStatus,
+      items: order.items.map((item) => ({
         id: item.id,
-        order_id: item.order_id,
-        product_id: item.product_id,
-        combo_id: item.combo_id,
+        order_id: id,
+        product_id: item.productId,
+        combo_id: item.comboId,
         quantity: item.quantity,
-        unit_price: item.unit_price,
-        total_price: item.total_price,
+        unit_price: item.unitPrice,
+        total_price: item.totalPrice,
         notes: item.notes,
       })),
-      status_history: historyResult.map(
-        (entry: { id: string; status: string; notes: string | null; created_at: string }) => ({
-          id: entry.id,
-          status: entry.status as OrderStatus,
-          notes: entry.notes,
-          created_at: entry.created_at,
-        })
-      ),
-      created_at: order.created_at,
+      status_history: [],
+      created_at: order.createdAt,
     };
 
     return NextResponse.json(response);

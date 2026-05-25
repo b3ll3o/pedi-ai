@@ -49,25 +49,94 @@ export class PaymentsService {
     };
   }
 
-  async handleWebhook(data: { paymentId: string; status: string }) {
+  async getPaymentStatusByOrder(orderId: string) {
     const payment = await this.prisma.paymentIntent.findFirst({
-      where: { mercadoPagoPaymentId: data.paymentId },
+      where: { orderId },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!payment) {
+      return { orderId, status: 'pending', qrCode: null, expiresAt: null };
+    }
+    return {
+      orderId,
+      status: payment.status,
+      qrCode: payment.qrCode,
+      expiresAt: payment.expiresAt,
+    };
+  }
+
+  async handleWebhook(data: {
+    eventId: string;
+    paymentId: string;
+    status: string;
+    orderId?: string;
+    restaurantId?: string;
+  }) {
+    // Check idempotency
+    const existingEvent = await this.prisma.webhookEvent.findUnique({
+      where: { id: data.eventId },
     });
 
-    if (!payment) {
-      return null;
+    if (existingEvent) {
+      return { status: 'duplicate', eventId: data.eventId };
     }
 
-    const updated = await this.prisma.paymentIntent.update({
-      where: { id: payment.id },
-      data: { status: data.status as PaymentStatus },
+    // Find payment intent by Mercado Pago payment ID
+    const paymentIntent = await this.prisma.paymentIntent.findFirst({
+      where: { mercadoPagoPaymentId: String(data.paymentId) },
     });
 
+    if (!paymentIntent) {
+      return { status: 'not_found', paymentId: data.paymentId };
+    }
+
+    // Map Mercado Pago status to our status
+    const statusMap: Record<string, PaymentStatus> = {
+      approved: 'paid',
+      pending: 'pending',
+      rejected: 'failed',
+      cancelled: 'failed',
+      refunded: 'refunded',
+    };
+
+    const newStatus = statusMap[data.status] || 'pending';
+
+    // Update payment intent
+    const updatedIntent = await this.prisma.paymentIntent.update({
+      where: { id: paymentIntent.id },
+      data: { status: newStatus },
+    });
+
+    // Map to order status
+    const orderStatusMap: Record<string, 'paid' | 'pending_payment' | 'cancelled'> = {
+      paid: 'paid',
+      approved: 'paid',
+      pending: 'pending_payment',
+      rejected: 'cancelled',
+      cancelled: 'cancelled',
+      refunded: 'cancelled',
+    };
+
+    const orderStatus = orderStatusMap[data.status] || 'pending_payment';
+
+    // Update order
     await this.prisma.order.update({
-      where: { id: updated.orderId },
-      data: { paymentStatus: data.status as PaymentStatus },
+      where: { id: updatedIntent.orderId },
+      data: {
+        status: orderStatus,
+        paymentStatus: newStatus,
+      },
     });
 
-    return updated;
+    // Record webhook event for idempotency
+    await this.prisma.webhookEvent.create({
+      data: {
+        id: data.eventId,
+        eventType: 'payment',
+        processedAt: new Date(),
+      },
+    });
+
+    return { status: 'success', orderId: updatedIntent.orderId };
   }
 }

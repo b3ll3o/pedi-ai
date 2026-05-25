@@ -63,6 +63,30 @@ export class ProductsController {
     return this.productsService.create(data);
   }
 
+  @Post('with-restaurant')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Criar produto com restaurantId (acha primeira categoria se não especificada)',
+  })
+  @ApiResponse({ status: 201, description: 'Produto criado' })
+  @ApiResponse({ status: 401, description: 'Não autenticado' })
+  async createWithRestaurant(
+    @Body()
+    data: {
+      categoryId?: string;
+      restaurantId: string;
+      name: string;
+      description?: string;
+      imageUrl?: string;
+      price: number;
+      dietaryLabels?: string;
+      sortOrder?: number;
+    }
+  ) {
+    return this.productsService.createWithRestaurant(data);
+  }
+
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')

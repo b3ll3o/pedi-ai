@@ -1,19 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { sql } from '@/infrastructure/database/pg-client';
-import { getSession } from '@/lib/auth/session';
+import { apiClient } from '@/lib/api-client';
 
-export interface OpeningHours {
-  open: string;
-  close?: string;
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  timestamp: string;
 }
 
-export interface RestaurantSettings {
+interface Restaurant {
+  id: string;
+  name: string;
+  slug: string | null;
+  description: string | null;
+  address: string | null;
+  phone: string | null;
+  logoUrl: string | null;
+  active: boolean;
+  settings: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface RestaurantSettings {
   restaurant_id: string;
   config: Record<string, unknown>;
   restaurant_name?: string;
   description?: string;
-  opening_hours?: OpeningHours;
+  opening_hours?: { open: string; close?: string };
   phone?: string;
   address?: string;
   created_at?: string;
@@ -22,48 +36,24 @@ export interface RestaurantSettings {
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
-    }
-
-    const userId = session.user.id;
-
     const restaurantId = request.nextUrl.searchParams.get('restaurant_id');
 
     if (!restaurantId) {
       return NextResponse.json({ error: 'restaurant_id é obrigatório' }, { status: 400 });
     }
 
-    // Verify user has access to this restaurant
-    const profileResult = await sql`
-      SELECT role FROM users_profiles
-      WHERE user_id = ${userId} AND restaurant_id = ${restaurantId}
-      LIMIT 1
-    `;
+    const result = await apiClient.get<ApiResponse<Restaurant>>(`/restaurants/${restaurantId}`);
 
-    if (!profileResult[0]) {
-      return NextResponse.json({ error: 'Acesso negado a este restaurante' }, { status: 403 });
-    }
+    const settings: RestaurantSettings = {
+      restaurant_id: result.data.id,
+      config: result.data.settings ? JSON.parse(result.data.settings) : {},
+      restaurant_name: result.data.name,
+      description: result.data.description ?? undefined,
+      phone: result.data.phone ?? undefined,
+      address: result.data.address ?? undefined,
+    };
 
-    // Get settings
-    const settingsResult = await sql`
-      SELECT * FROM restaurant_settings
-      WHERE restaurant_id = ${restaurantId}
-      LIMIT 1
-    `;
-
-    if (!settingsResult[0]) {
-      // Return default settings if none exist
-      return NextResponse.json({
-        settings: {
-          restaurant_id: restaurantId,
-          config: {},
-        },
-      });
-    }
-
-    return NextResponse.json({ settings: settingsResult[0] });
+    return NextResponse.json({ settings });
   } catch (error) {
     console.error('Error in GET /api/admin/settings:', error);
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
@@ -72,13 +62,6 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
-    }
-
-    const userId = session.user.id;
-
     const body = await request.json();
     const { restaurant_id, config } = body;
 
@@ -86,46 +69,20 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'restaurant_id é obrigatório' }, { status: 400 });
     }
 
-    // Verify user has access and is owner/manager
-    const profileResult = await sql`
-      SELECT role FROM users_profiles
-      WHERE user_id = ${userId} AND restaurant_id = ${restaurant_id}
-      LIMIT 1
-    `;
+    const result = await apiClient.patch<ApiResponse<Restaurant>>(`/restaurants/${restaurant_id}`, {
+      settings: JSON.stringify(config),
+    });
 
-    if (
-      !profileResult[0] ||
-      (profileResult[0].role !== 'dono' && profileResult[0].role !== 'gerente')
-    ) {
-      return NextResponse.json({ error: 'Permissão insuficiente' }, { status: 403 });
-    }
+    const settings: RestaurantSettings = {
+      restaurant_id: result.data.id,
+      config: result.data.settings ? JSON.parse(result.data.settings) : {},
+      restaurant_name: result.data.name,
+      description: result.data.description ?? undefined,
+      phone: result.data.phone ?? undefined,
+      address: result.data.address ?? undefined,
+    };
 
-    const now = new Date().toISOString();
-
-    // Upsert settings
-    const existingSettings = await sql`
-      SELECT * FROM restaurant_settings WHERE restaurant_id = ${restaurant_id} LIMIT 1
-    `;
-
-    if (existingSettings[0]) {
-      await sql`
-        UPDATE restaurant_settings
-        SET config = ${JSON.stringify(config)}, updated_at = ${now}
-        WHERE restaurant_id = ${restaurant_id}
-      `;
-    } else {
-      await sql`
-        INSERT INTO restaurant_settings (id, restaurant_id, config, created_at, updated_at)
-        VALUES (${crypto.randomUUID()}, ${restaurant_id}, ${JSON.stringify(config)}, ${now}, ${now})
-      `;
-    }
-
-    // Fetch updated settings
-    const updatedSettings = await sql`
-      SELECT * FROM restaurant_settings WHERE restaurant_id = ${restaurant_id} LIMIT 1
-    `;
-
-    return NextResponse.json({ settings: updatedSettings[0] });
+    return NextResponse.json({ settings });
   } catch (error) {
     console.error('Error in PUT /api/admin/settings:', error);
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });

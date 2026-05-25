@@ -46,6 +46,37 @@ export class ProductsService {
     return this.prisma.product.create({ data });
   }
 
+  async createWithRestaurant(data: {
+    categoryId?: string;
+    restaurantId: string;
+    name: string;
+    description?: string;
+    imageUrl?: string;
+    price: number;
+    dietaryLabels?: string;
+    sortOrder?: number;
+  }) {
+    let categoryId = data.categoryId;
+    if (!categoryId && data.restaurantId) {
+      const cat = await this.prisma.category.findFirst({
+        where: { restaurantId: data.restaurantId },
+        orderBy: { sortOrder: 'asc' },
+      });
+      categoryId = cat?.id;
+    }
+    return this.prisma.product.create({
+      data: {
+        categoryId: categoryId!,
+        name: data.name,
+        description: data.description,
+        imageUrl: data.imageUrl,
+        price: data.price,
+        dietaryLabels: data.dietaryLabels,
+        sortOrder: data.sortOrder ?? 0,
+      },
+    });
+  }
+
   async update(
     id: string,
     data: Partial<{

@@ -1,14 +1,29 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AuthenticatedUser } from '../auth/types/auth.types';
+import { PrismaService } from '../common/prisma.service';
 
 import { RestaurantsService } from './restaurants.service';
 
 @ApiTags('restaurants')
 @Controller('restaurants')
 export class RestaurantsController {
-  constructor(private readonly restaurantsService: RestaurantsService) {}
+  constructor(
+    private readonly restaurantsService: RestaurantsService,
+    private readonly prisma: PrismaService
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Listar todos os restaurantes' })
@@ -33,6 +48,50 @@ export class RestaurantsController {
     return this.restaurantsService.findBySlug(slug);
   }
 
+  @Get('user/me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Listar restaurantes do usuário autenticado' })
+  @ApiResponse({ status: 200, description: 'Lista de restaurantes' })
+  @ApiResponse({ status: 401, description: 'Não autenticado' })
+  async findByUser(@Request() req: { user: AuthenticatedUser }) {
+    const restaurants = await this.restaurantsService.findByUserId(req.user.id);
+    const profiles = await this.prisma.usersProfile.findMany({
+      where: { userId: req.user.id, restaurantId: { not: null } },
+    });
+    const teamCountMap: Record<string, number> = {};
+    if (restaurants.length > 0) {
+      const restaurantIds = restaurants.map((r) => r.id);
+      const profilesCount = await this.prisma.usersProfile.groupBy({
+        by: ['restaurantId'],
+        where: { restaurantId: { in: restaurantIds } },
+        _count: true,
+      });
+      for (const p of profilesCount) {
+        if (p.restaurantId) teamCountMap[p.restaurantId] = p._count;
+      }
+    }
+    const profileMap: Record<string, string> = {};
+    for (const p of profiles) {
+      if (p.restaurantId) profileMap[p.restaurantId] = p.role;
+    }
+    return restaurants.map((r) => ({
+      ...r,
+      role: profileMap[r.id] || 'cliente',
+      team_count: teamCountMap[r.id] || 0,
+    }));
+  }
+
+  @Get('user/me/with-trial')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Listar restaurantes em trial do usuário' })
+  @ApiResponse({ status: 200, description: 'Lista de restaurantes em trial' })
+  @ApiResponse({ status: 401, description: 'Não autenticado' })
+  async findByUserWithTrial(@Request() req: { user: AuthenticatedUser }) {
+    return this.restaurantsService.findByUserIdWithTrial(req.user.id);
+  }
+
   @Post()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
@@ -47,9 +106,15 @@ export class RestaurantsController {
       description?: string;
       address?: string;
       phone?: string;
-    }
+      logoUrl?: string;
+    },
+    @Request() req: { user: AuthenticatedUser }
   ) {
-    return this.restaurantsService.create(data);
+    return this.restaurantsService.createWithOwner({
+      ...data,
+      ownerId: req.user.id,
+      ownerEmail: req.user.email,
+    });
   }
 
   @Patch(':id')
@@ -67,6 +132,7 @@ export class RestaurantsController {
       slug?: string;
       description?: string;
       active?: boolean;
+      settings?: string;
     }
   ) {
     return this.restaurantsService.update(id, data);

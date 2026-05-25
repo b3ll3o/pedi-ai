@@ -1,14 +1,16 @@
 import { NextResponse } from 'next/server';
 
-import { destroySession, clearSessionCookie } from '@/lib/auth/session';
+import { apiClient } from '@/lib/api-client';
 
 export async function POST() {
   try {
-    // Destroy session in database
-    await destroySession();
+    await apiClient.logout();
 
     const response = NextResponse.json({ success: true });
-    response.headers.set('Set-Cookie', clearSessionCookie);
+    response.headers.set(
+      'Set-Cookie',
+      'access_token=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'
+    );
     return response;
   } catch (error) {
     console.error('Logout error:', error);

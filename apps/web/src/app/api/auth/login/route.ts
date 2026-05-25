@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { PostgresAuthAdapter } from '@/infrastructure/external/PostgresAuthAdapter';
-import { createSession, createSessionCookie } from '@/lib/auth/session';
-import { logger } from '@/lib/logger';
+import { apiClient } from '@/lib/api-client';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,34 +11,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email e senha são obrigatórios' }, { status: 400 });
     }
 
-    // Authenticate using PostgresAuthAdapter
-    const resultado = await new PostgresAuthAdapter().autenticar(email, senha);
+    const result = await apiClient.login(email, senha);
 
-    if (!resultado || !resultado.token) {
-      return NextResponse.json({ error: 'Email ou senha incorretos' }, { status: 401 });
-    }
-
-    const { token: _token, usuarioId } = resultado;
-
-    // Create session in our database (using token from auth as the session token)
-    const sessionToken = await createSession(usuarioId, email, 'dono', undefined);
-
-    // Create session cookie
-    const sessionCookie = createSessionCookie(sessionToken);
-
-    const response = NextResponse.json({
+    return NextResponse.json({
       success: true,
-      user: {
-        id: usuarioId,
-        email: email,
-        role: 'dono',
-      },
+      user: result.user,
     });
-
-    response.headers.set('Set-Cookie', sessionCookie);
-    return response;
   } catch (error) {
-    logger.error('auth', 'Unexpected error in /api/auth/login:', { error: error });
-    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Erro interno do servidor';
+    console.error('Login error:', message);
+    return NextResponse.json({ error: message }, { status: 401 });
   }
 }

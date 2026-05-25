@@ -7,6 +7,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 
 import { PrismaService } from '../common/prisma.service';
 
@@ -148,6 +149,67 @@ export class AuthService {
       name: user.name,
       role: user.role,
     };
+  }
+
+  async requestPasswordReset(email: string) {
+    const user = await this.prisma.usersProfile.findUnique({
+      where: { email },
+    });
+
+    // Always return success to prevent email enumeration
+    if (!user) {
+      return { message: 'Se o email existir, um link de recuperação será enviado' };
+    }
+
+    // Generate reset token
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 3600000); // 1 hour
+
+    await this.prisma.passwordResetToken.create({
+      data: {
+        token,
+        userId: user.id,
+        expiresAt,
+      },
+    });
+
+    // In production, send email here
+    console.log(`Password reset token for ${email}: ${token}`);
+
+    return { message: 'Se o email existir, um link de recuperação será enviado' };
+  }
+
+  async resetPassword(data: { token: string; newPassword: string }) {
+    validarForcaSenha(data.newPassword);
+
+    const resetToken = await this.prisma.passwordResetToken.findFirst({
+      where: {
+        token: data.token,
+        used: false,
+        expiresAt: { gt: new Date() },
+      },
+      include: { user: true },
+    });
+
+    if (!resetToken) {
+      throw new BadRequestException('Token inválido ou expirado');
+    }
+
+    // Hash new password and update
+    const passwordHash = await bcrypt.hash(data.newPassword, 10);
+
+    await this.prisma.$transaction([
+      this.prisma.usersProfile.update({
+        where: { id: resetToken.userId },
+        data: { passwordHash },
+      }),
+      this.prisma.passwordResetToken.update({
+        where: { id: resetToken.id },
+        data: { used: true },
+      }),
+    ]);
+
+    return { message: 'Senha redefinida com sucesso' };
   }
 
   private generateTokens(payload: {

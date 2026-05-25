@@ -1,48 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { sql } from '@/infrastructure/database/pg-client';
-import { getSession } from '@/lib/auth/session';
+import { apiClient } from '@/lib/api-client';
 
 export async function POST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
-    }
-
-    const userId = session.user.id;
-
     const { id: restaurantId } = await params;
 
-    // Verify user has access and is owner
-    const profileResult = await sql`
-      SELECT role FROM users_profiles
-      WHERE user_id = ${userId} AND restaurant_id = ${restaurantId}
-      LIMIT 1
-    `;
-
-    if (!profileResult[0] || profileResult[0].role !== 'dono') {
-      return NextResponse.json(
-        { error: 'Apenas o proprietário pode desativar um restaurante' },
-        { status: 403 }
-      );
+    if (!restaurantId) {
+      return NextResponse.json({ error: 'ID do restaurante é obrigatório' }, { status: 400 });
     }
 
-    const now = new Date().toISOString();
-
-    // Soft delete restaurant
-    await sql`
-      UPDATE restaurants
-      SET active = false, updated_at = ${now}
-      WHERE id = ${restaurantId}
-    `;
-
-    // Also cancel any active subscriptions
-    await sql`
-      UPDATE subscriptions
-      SET status = 'canceled', updated_at = ${now}
-      WHERE restaurant_id = ${restaurantId} AND status = 'active'
-    `;
+    await apiClient.patch(`/restaurants/${restaurantId}`, { active: false });
 
     return NextResponse.json({
       success: true,

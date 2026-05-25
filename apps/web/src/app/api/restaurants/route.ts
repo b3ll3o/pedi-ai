@@ -1,43 +1,37 @@
 import { NextResponse } from 'next/server';
 
-import { sql } from '@/infrastructure/database/pg-client';
+import { apiClient } from '@/lib/api-client';
+
+interface RestaurantResponse {
+  id: string;
+  name: string;
+  description: string | null;
+  address: string | null;
+  phone: string | null;
+  logoUrl: string | null;
+  settings: string | null;
+}
+
+interface ApiListResponse {
+  success: boolean;
+  data: RestaurantResponse[];
+  timestamp: string;
+}
 
 export async function GET() {
   try {
-    const result = await sql<{
-      id: string;
-      name: string;
-      description: string | null;
-      address: string | null;
-      phone: string | null;
-      logoUrl: string | null;
-      settings: string | null;
-    }>`
-      SELECT id, name, description, address, phone, "logoUrl", settings
-      FROM "Restaurant"
-      ORDER BY name ASC
-    `;
+    const result = await apiClient.get<ApiListResponse>('/restaurants');
 
     const response = {
-      restaurants: result.map(
-        (r: {
-          id: string;
-          name: string;
-          description: string | null;
-          address: string | null;
-          phone: string | null;
-          logoUrl: string | null;
-          settings: string | null;
-        }) => ({
-          id: r.id,
-          name: r.name,
-          description: r.description,
-          address: r.address,
-          phone: r.phone,
-          logo_url: r.logoUrl,
-          horarios: r.settings ? JSON.parse(r.settings).horarios : null,
-        })
-      ),
+      restaurants: (result.data || []).map((r) => ({
+        id: r.id,
+        name: r.name,
+        description: r.description,
+        address: r.address,
+        phone: r.phone,
+        logo_url: r.logoUrl,
+        horarios: r.settings ? JSON.parse(r.settings).horarios : null,
+      })),
     };
 
     return NextResponse.json(response);

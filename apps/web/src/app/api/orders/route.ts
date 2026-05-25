@@ -1,39 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { sql } from '@/infrastructure/database/pg-client';
+import { apiClient } from '@/lib/api-client';
 
-// GET /api/orders - Fetch orders for a customer
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const customerId = searchParams.get('customer_id');
-    const restaurantId = searchParams.get('restaurant_id');
-
-    if (!customerId || !restaurantId) {
-      return NextResponse.json(
-        { error: 'customer_id and restaurant_id are required' },
-        { status: 400 }
-      );
-    }
-
-    const result = await sql<{
-      id: string;
-      status: string;
-      total: number;
-      created_at: string;
-      payment_status: string;
-    }>`
-      SELECT id, status, total, created_at, payment_status
-      FROM "Order"
-      WHERE customer_id = ${customerId} AND restaurant_id = ${restaurantId}
-      ORDER BY created_at DESC
-    `;
-
-    return NextResponse.json(result);
-  } catch (error) {
-    console.error('Unexpected error in GET /api/orders:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  timestamp: string;
 }
 
 interface OrderItemInput {
@@ -93,92 +65,28 @@ function calculateTotals(items: OrderItemInput[]): {
   return { subtotal, tax, total };
 }
 
-async function findRestaurantId(
-  tableId: string | null | undefined,
-  bodyRestaurantId: string | undefined
-): Promise<string | null> {
-  if (tableId) {
-    const tableResult = await sql<{ restaurant_id: string }>`
-      SELECT restaurant_id
-      FROM "Table"
-      WHERE id = ${tableId}
-      LIMIT 1
-    `;
+// GET /api/orders - Fetch orders for a customer
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const customerId = searchParams.get('customer_id');
+    const restaurantId = searchParams.get('restaurant_id');
 
-    if (tableResult.length === 0) {
-      return null;
+    if (!customerId || !restaurantId) {
+      return NextResponse.json(
+        { error: 'customer_id and restaurant_id are required' },
+        { status: 400 }
+      );
     }
 
-    return tableResult[0].restaurant_id;
-  }
+    const result = await apiClient.get<ApiResponse<unknown[]>>(
+      `/orders/customer?customerId=${customerId}&restaurantId=${restaurantId}`
+    );
 
-  if (bodyRestaurantId) {
-    return bodyRestaurantId;
-  }
-
-  const restaurantResult = await sql<{ id: string }>`
-    SELECT id FROM restaurants LIMIT 1
-  `;
-
-  if (restaurantResult.length === 0) {
-    return null;
-  }
-
-  return restaurantResult[0].id;
-}
-
-async function checkIdempotency(customerId: string, idempotencyKey: string) {
-  return sql<{
-    id: string;
-    status: string;
-    total: number;
-    created_at: string;
-  }>`
-    SELECT id, status, total, created_at
-    FROM "Order"
-    WHERE customer_id = ${customerId} AND idempotency_key = ${idempotencyKey}
-    LIMIT 1
-  `;
-}
-
-async function insertOrder(
-  orderId: string,
-  restaurantId: string,
-  body: CreateOrderRequest,
-  subtotal: number,
-  tax: number,
-  total: number,
-  now: string
-): Promise<void> {
-  await sql`
-    INSERT INTO orders (
-      id, restaurant_id, table_id, customer_id, customer_phone, customer_name, customer_email,
-      status, subtotal, tax, total, payment_method, payment_status, idempotency_key,
-      created_at, updated_at
-    ) VALUES (
-      ${orderId}, ${restaurantId}, ${body.table_id || null}, ${body.customer_id},
-      ${body.customer_phone || null}, ${body.customer_name || null}, ${body.customer_email || null},
-      'pending_payment', ${subtotal}, ${tax}, ${total}, null, 'pending',
-      ${body.idempotency_key}, ${now}, ${now}
-    )
-  `;
-}
-
-async function insertOrderItems(
-  orderId: string,
-  items: OrderItemInput[],
-  now: string
-): Promise<void> {
-  for (const item of items) {
-    const itemId = crypto.randomUUID();
-    await sql`
-      INSERT INTO order_items (
-        id, order_id, product_id, combo_id, quantity, unit_price, total_price, notes, created_at
-      ) VALUES (
-        ${itemId}, ${orderId}, ${item.product_id}, null, ${item.quantity},
-        ${item.unit_price}, ${item.unit_price * item.quantity}, ${item.notes || null}, ${now}
-      )
-    `;
+    return NextResponse.json(result.data || []);
+  } catch (error) {
+    console.error('Unexpected error in GET /api/orders:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -192,43 +100,47 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: validationError }, { status: 400 });
     }
 
-    // Check idempotency
-    const existingOrder = await checkIdempotency(body.customer_id, body.idempotency_key);
-
-    if (existingOrder.length > 0) {
-      const order = existingOrder[0];
-      return NextResponse.json({
-        id: order.id,
-        status: order.status,
-        total: order.total,
-        created_at: order.created_at,
-      });
-    }
-
     // Calculate totals
     const { subtotal, tax, total } = calculateTotals(body.items);
 
-    // Determine restaurant_id: from table > from body > first restaurant (fallback)
-    const restaurantId = await findRestaurantId(body.table_id, body.restaurant_id);
+    // Transform to API format
+    const apiOrderData = {
+      restaurantId: body.restaurant_id || '',
+      tableId: body.table_id,
+      customerId: body.customer_id,
+      customerPhone: body.customer_phone,
+      customerName: body.customer_name,
+      customerEmail: body.customer_email,
+      subtotal,
+      tax,
+      total,
+      paymentMethod: body.payment_method,
+      idempotencyKey: body.idempotency_key,
+      items: body.items.map((item) => ({
+        productId: item.product_id,
+        quantity: item.quantity,
+        unitPrice: item.unit_price,
+        totalPrice: item.unit_price * item.quantity,
+        notes: item.notes,
+      })),
+    };
 
-    if (!restaurantId) {
-      return NextResponse.json({ error: 'No restaurant found' }, { status: 400 });
-    }
+    const result = await apiClient.post<
+      ApiResponse<{
+        id: string;
+        status: string;
+        total: number;
+        createdAt: string;
+      }>
+    >('/orders', apiOrderData);
 
-    const now = new Date().toISOString();
-    const orderId = crypto.randomUUID();
-
-    // Insert order
-    await insertOrder(orderId, restaurantId, body, subtotal, tax, total, now);
-
-    // Insert order items
-    await insertOrderItems(orderId, body.items, now);
+    const order = result.data;
 
     return NextResponse.json({
-      id: orderId,
-      status: 'received',
-      total,
-      created_at: now,
+      id: order.id,
+      status: order.status,
+      total: order.total,
+      created_at: order.createdAt,
     });
   } catch (error) {
     console.error('Unexpected error in /api/orders:', error);

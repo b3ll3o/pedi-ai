@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { sql } from '@/infrastructure/database/pg-client';
-
-interface RouteParams {
-  params: Promise<{ id: string }>;
-}
+import { apiClient } from '@/lib/api-client';
 
 // Valid status transitions
 const VALID_TRANSITIONS: Record<string, string[]> = {
@@ -18,33 +14,33 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
 
 type _OrderStatus = 'pending_payment' | 'paid' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
 
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  timestamp: string;
+}
+
+interface ApiOrderStatus {
+  id: string;
+  status: string;
+  paymentStatus: string;
+  updatedAt: string;
+}
+
 // GET /api/orders/[id]/status - Get order status
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
 
-    const result = await sql<{
-      id: string;
-      status: string;
-      payment_status: string;
-      updated_at: string;
-    }>`
-      SELECT id, status, payment_status, updated_at
-      FROM orders
-      WHERE id = ${id}
-      LIMIT 1
-    `;
+    const result = await apiClient.get<ApiResponse<ApiOrderStatus>>(`/orders/${id}`);
 
-    if (!result || result.length === 0) {
-      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
-    }
+    const order = result.data;
 
-    const order = result[0];
     return NextResponse.json({
       id: order.id,
       status: order.status,
-      payment_status: order.payment_status,
-      updated_at: order.updated_at,
+      payment_status: order.paymentStatus,
+      updated_at: order.updatedAt,
     });
   } catch (error) {
     console.error('Unexpected error in /api/orders/[id]/status:', error);
@@ -53,7 +49,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 }
 
 // PATCH /api/orders/[id]/status - Update order status
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const body = await request.json();
@@ -63,24 +59,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'status is required' }, { status: 400 });
     }
 
-    // Fetch current order
-    const currentResult = await sql<{
-      id: string;
-      status: string;
-      payment_status: string;
-    }>`
-      SELECT id, status, payment_status
-      FROM orders
-      WHERE id = ${id}
-      LIMIT 1
-    `;
+    // Fetch current order first
+    const currentResult = await apiClient.get<ApiResponse<ApiOrderStatus>>(`/orders/${id}`);
 
-    if (!currentResult || currentResult.length === 0) {
+    if (!currentResult.data) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    const currentOrder = currentResult[0];
-    const currentStatus = currentOrder.status as string;
+    const currentOrder = currentResult.data;
+    const currentStatus = currentOrder.status;
     const allowedTransitions = VALID_TRANSITIONS[currentStatus] || [];
 
     if (!allowedTransitions.includes(status)) {
@@ -94,41 +81,19 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const now = new Date().toISOString();
+    // Update order status via API
+    const updatedResult = await apiClient.patch<ApiResponse<ApiOrderStatus>>(
+      `/orders/${id}/status`,
+      { status, notes }
+    );
 
-    // Update order status
-    await sql`
-      UPDATE orders
-      SET status = ${status}, updated_at = ${now}
-      WHERE id = ${id}
-    `;
-
-    // Record status change in history
-    await sql`
-      INSERT INTO order_status_history (id, order_id, status, notes, created_at)
-      VALUES (${crypto.randomUUID()}, ${id}, ${status}, ${notes || null}, ${now})
-    `;
-
-    // Fetch updated order
-    const updatedResult = await sql<{
-      id: string;
-      status: string;
-      payment_status: string;
-      updated_at: string;
-    }>`
-      SELECT id, status, payment_status, updated_at
-      FROM orders
-      WHERE id = ${id}
-      LIMIT 1
-    `;
-
-    const updatedOrder = updatedResult[0];
+    const updatedOrder = updatedResult.data;
 
     return NextResponse.json({
       id: updatedOrder.id,
       status: updatedOrder.status,
-      payment_status: updatedOrder.payment_status,
-      updated_at: updatedOrder.updated_at,
+      payment_status: updatedOrder.paymentStatus,
+      updated_at: updatedOrder.updatedAt,
     });
   } catch (error) {
     console.error('Unexpected error in /api/orders/[id]/status:', error);

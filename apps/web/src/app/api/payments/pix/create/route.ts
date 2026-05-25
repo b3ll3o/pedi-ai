@@ -1,7 +1,7 @@
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 import { NextRequest, NextResponse } from 'next/server';
 
-import { sql } from '@/infrastructure/database/pg-client';
+import { apiClient } from '@/lib/api-client';
 import { logger } from '@/lib/logger';
 
 // Demo mode check
@@ -20,12 +20,26 @@ if (!isDemoMode) {
 
 interface CreatePixPaymentRequest {
   order_id: string;
+  restaurant_id?: string;
 }
 
 interface PixPaymentResponse {
   qr_code: string;
   qr_code_base64: string;
   expires_at: string;
+}
+
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  timestamp: string;
+}
+
+interface ApiPixPayment {
+  id: string;
+  qrCode: string;
+  expiresAt: string;
+  amount: number;
 }
 
 export async function POST(request: NextRequest) {
@@ -53,54 +67,43 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'order_id is required' }, { status: 400 });
     }
 
-    // Fetch order with customer email
-    const orderResult = await sql<{
-      id: string;
-      restaurant_id: string;
-      total: number;
-      payment_status: string;
-      customer_email: string | null;
-    }>`
-      SELECT id, restaurant_id, total, payment_status, customer_email
-      FROM orders
-      WHERE id = ${body.order_id}
-      LIMIT 1
-    `;
+    // Get order details from API
+    let orderTotal = 0;
+    let customerEmail = '';
+    let restaurantId = body.restaurant_id || '';
 
-    if (!orderResult || orderResult.length === 0) {
+    try {
+      const orderResult = await apiClient.get<
+        ApiResponse<{
+          total: number;
+          customerEmail: string | null;
+          restaurantId: string;
+        }>
+      >(`/orders/${body.order_id}`);
+
+      orderTotal = orderResult.data.total;
+      customerEmail = orderResult.data.customerEmail || '';
+      restaurantId = orderResult.data.restaurantId;
+    } catch {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    const order = orderResult[0];
-
-    // Check if order is already paid
-    if (order.payment_status === 'paid') {
-      return NextResponse.json({ error: 'Order is already paid' }, { status: 400 });
-    }
-
-    // Validate we have an email for the payer
-    if (!order.customer_email) {
-      logger.error('payments/pix', 'Customer email not found for order', {
-        orderId: body.order_id,
-      });
-      return NextResponse.json(
-        { error: 'Customer email is required for PIX payment' },
-        { status: 400 }
-      );
-    }
-
     // Create Pix payment with Mercado Pago
-    const payment = await paymentClient!.create({
+    if (!paymentClient) {
+      return NextResponse.json({ error: 'Mercado Pago not configured' }, { status: 500 });
+    }
+
+    const payment = await paymentClient.create({
       body: {
-        transaction_amount: order.total,
-        description: `Pedido ${order.id}`,
+        transaction_amount: orderTotal,
+        description: `Pedido ${body.order_id}`,
         payment_method_id: 'pix',
         payer: {
-          email: order.customer_email,
+          email: customerEmail,
         },
         metadata: {
-          order_id: order.id,
-          restaurant_id: order.restaurant_id,
+          order_id: body.order_id,
+          restaurant_id: restaurantId,
         },
       },
     });
@@ -112,9 +115,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to generate Pix QR code' }, { status: 500 });
     }
 
-    // Store payment intent in database
+    // Calculate expires_at (30 minutes from now)
     const expiresAt = new Date();
-    expiresAt.setMinutes(expiresAt.getMinutes() + 30); // Mercado Pago Pix expires in 30 minutes
+    expiresAt.setMinutes(expiresAt.getMinutes() + 30);
 
     const paymentIntentId = payment.id?.toString();
     if (!paymentIntentId) {
@@ -124,22 +127,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await sql`
-      INSERT INTO payment_intents (
-        id, order_id, restaurant_id, amount, currency, status,
-        payment_method, mercado_pago_payment_id, qr_code, qr_code_base64,
-        expires_at, created_at
-      ) VALUES (
-        ${paymentIntentId}, ${order.id}, ${order.restaurant_id}, ${order.total},
-        'BRL', 'pending', 'pix', ${paymentIntentId}, ${pixData.qr_code},
-        ${pixData.qr_code_base64 ?? null}, ${expiresAt.toISOString()}, ${new Date().toISOString()}
-      )
-    `;
-
-    // Update order with payment method
-    await sql`
-      UPDATE orders SET payment_method = 'pix' WHERE id = ${body.order_id}
-    `;
+    // Store payment intent via API
+    try {
+      await apiClient.post<ApiResponse<ApiPixPayment>>('/payments/pix/create', {
+        orderId: body.order_id,
+        restaurantId,
+        amount: orderTotal,
+      });
+    } catch (error) {
+      logger.error('payments/pix', 'Failed to create payment intent via API:', { error });
+      // Continue anyway - the Mercado Pago payment was created
+    }
 
     const response: PixPaymentResponse = {
       qr_code: pixData.qr_code,

@@ -30,6 +30,14 @@ export class OrdersService {
     return order;
   }
 
+  async findByCustomer(customerId: string, restaurantId: string) {
+    return this.prisma.order.findMany({
+      where: { customerId, restaurantId },
+      orderBy: { createdAt: 'desc' },
+      include: { items: true },
+    });
+  }
+
   async create(data: {
     restaurantId: string;
     tableId?: string;

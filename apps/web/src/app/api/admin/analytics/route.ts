@@ -1,90 +1,55 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { sql } from '@/infrastructure/database/pg-client';
-import { getSession } from '@/lib/auth/session';
+import { apiClient } from '@/lib/api-client';
 
-async function verifyRestaurantAccess(userId: string, restaurantId: string): Promise<boolean> {
-  const profileResult = await sql`
-    SELECT role FROM users_profiles
-    WHERE user_id = ${userId} AND restaurant_id = ${restaurantId}
-    LIMIT 1
-  `;
-  return profileResult.length > 0;
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  timestamp: string;
 }
 
-async function fetchAnalyticsTotals(restaurantId: string) {
-  return sql`
-    SELECT
-      COUNT(*) as total_orders,
-      COALESCE(SUM(total_cents), 0) as total_revenue
-    FROM orders o
-    WHERE o.restaurant_id = ${restaurantId}
-      AND o.status NOT IN ('canceled')
-  `;
+interface AnalyticsData {
+  total_orders: number;
+  total_revenue: number;
+  avg_order_value: number;
 }
 
-async function fetchOrdersByStatus(restaurantId: string) {
-  return sql`
-    SELECT status, COUNT(*) as count
-    FROM orders
-    WHERE restaurant_id = ${restaurantId}
-    GROUP BY status
-  `;
+interface DailyOrder {
+  date: string;
+  orders: number;
+  revenue: number;
 }
 
-async function fetchAverageOrderValue(restaurantId: string) {
-  return sql`
-    SELECT COALESCE(AVG(total_cents), 0) as avg_order_value
-    FROM orders
-    WHERE restaurant_id = ${restaurantId}
-      AND status NOT IN ('canceled')
-  `;
-}
-
-async function fetchDailyOrders(restaurantId: string) {
-  return sql`
-    SELECT DATE(created_at) as date, COUNT(*) as orders, SUM(total_cents) as revenue
-    FROM orders
-    WHERE restaurant_id = ${restaurantId}
-      AND status NOT IN ('canceled')
-      AND created_at >= NOW() - INTERVAL '30 days'
-    GROUP BY DATE(created_at)
-    ORDER BY date ASC
-  `;
+interface OrdersByStatus {
+  status: string;
+  count: number;
 }
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    }
-
     const restaurantId = request.nextUrl.searchParams.get('restaurant_id');
 
     if (!restaurantId) {
       return NextResponse.json({ error: 'restaurant_id é obrigatório' }, { status: 400 });
     }
 
-    const hasAccess = await verifyRestaurantAccess(session.user.id, restaurantId);
-    if (!hasAccess) {
-      return NextResponse.json({ error: 'Acesso negado a este restaurante' }, { status: 403 });
-    }
+    const params = new URLSearchParams({ restaurantId });
 
-    const [totalsResult, statusResult, avgResult, dailyResult] = await Promise.all([
-      fetchAnalyticsTotals(restaurantId),
-      fetchOrdersByStatus(restaurantId),
-      fetchAverageOrderValue(restaurantId),
-      fetchDailyOrders(restaurantId),
+    const [overviewResult, dailyResult, statusResult] = await Promise.all([
+      apiClient.get<ApiResponse<AnalyticsData>>(
+        `/analytics/overview-detailed?${params.toString()}`
+      ),
+      apiClient.get<ApiResponse<DailyOrder[]>>(`/analytics/daily-orders?${params.toString()}`),
+      apiClient.get<ApiResponse<OrdersByStatus[]>>(
+        `/analytics/orders-by-status?${params.toString()}`
+      ),
     ]);
 
     return NextResponse.json({
       analytics: {
-        total_orders: totalsResult[0]?.total_orders || 0,
-        total_revenue: totalsResult[0]?.total_revenue || 0,
-        avg_order_value: avgResult[0]?.avg_order_value || 0,
-        orders_by_status: statusResult,
-        daily_orders: dailyResult,
+        ...overviewResult.data,
+        orders_by_status: statusResult.data,
+        daily_orders: dailyResult.data,
       },
     });
   } catch (error) {
