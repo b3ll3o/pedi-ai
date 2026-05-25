@@ -1,11 +1,7 @@
 name: E2E Tests
 
 on:
-  # Executa em push para master (push do CI completo)
-  push:
-    branches:
-      - master
-  # Dispara quando ci.yml completa (sucesso ou não)
+  # Dispara quando ci.yml completa em master (push ou PR merge)
   workflow_run:
     workflows: ["CI"]
     types: [completed]
