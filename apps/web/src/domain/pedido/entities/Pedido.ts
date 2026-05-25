@@ -37,7 +37,7 @@ export interface PedidoProps {
   status: StatusPedido;
   itens: ItemPedido[];
   subtotal: Dinheiro;
-  tax: Dinheiro;
+  tax?: Dinheiro;
   total: Dinheiro;
   createdAt: Date;
   updatedAt: Date;
@@ -69,7 +69,7 @@ export class Pedido extends AggregateRootClass<PedidoProps> {
   }
 
   get tax(): Dinheiro {
-    return this.props.tax;
+    return this.props.tax ?? Dinheiro.ZERO;
   }
 
   get total(): Dinheiro {
@@ -140,7 +140,7 @@ export class Pedido extends AggregateRootClass<PedidoProps> {
       novoSubtotal = novoSubtotal.somar(item.subtotal);
     }
 
-    const novoTotal = novoSubtotal.somar(this.props.tax);
+    const novoTotal = novoSubtotal.somar(this.tax);
     Object.assign(this.props, { subtotal: novoSubtotal, total: novoTotal });
   }
 
@@ -148,17 +148,19 @@ export class Pedido extends AggregateRootClass<PedidoProps> {
     const now = new Date();
     const pedido = new Pedido({
       ...props,
+      tax: Dinheiro.ZERO,
       subtotal: Dinheiro.ZERO,
       total: Dinheiro.ZERO,
       createdAt: now,
       updatedAt: now,
     });
 
-    // atualizaTotais() calcula subtotal e total, mas preserva o tax original
     pedido.atualizarTotais();
     // Preserva o tax passado pelo chamador (ex: CarrinhoAggregate.toPedido)
-    pedido.props.tax = props.tax;
-    pedido.props.total = pedido.props.subtotal.somar(pedido.props.tax);
+    if (props.tax) {
+      pedido.props.tax = props.tax as Dinheiro;
+      pedido.props.total = pedido.props.subtotal.somar(props.tax as Dinheiro);
+    }
 
     return pedido;
   }
