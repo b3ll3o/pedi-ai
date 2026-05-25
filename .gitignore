@@ -67,7 +67,8 @@ apps/web/tests/e2e/node_modules
 .playwright-mcp
 
 # pnpm
-pnpm-lock.yamldata/
+data/
+false/
 package-lock.json
 .pnpm-store/
 
