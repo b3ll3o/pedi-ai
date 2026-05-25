@@ -40,6 +40,9 @@ jobs:
             # Stop existing services
             docker compose -f docker-compose.dev.yml down || true
 
+            # Remove stale postgres volume (avoid password mismatch from previous deploys)
+            docker volume rm pedi_ai_postgres_data 2>/dev/null || true
+
             # Ensure port 80 is free (kill any process using it)
             fuser -k 80/tcp 2>/dev/null || true
             sleep 2
@@ -47,9 +50,20 @@ jobs:
             # Build and start services (usa .env local)
             docker compose -f docker-compose.dev.yml up -d --build
 
+            # Wait for postgres to be healthy first
+            echo "Aguardando PostgreSQL ficar ready..."
+            for i in {1..30}; do
+              if docker compose -f docker-compose.dev.yml exec -T postgres pg_isready -U postgres > /dev/null 2>&1; then
+                echo "PostgreSQL está pronto!"
+                break
+              fi
+              echo "Aguardando... ($i/30)"
+              sleep 2
+            done
+
             # Wait for services to be healthy
             echo "Aguardando serviços ficarem healthy..."
-            sleep 30
+            sleep 20
 
             # Verify services are running
             docker compose -f docker-compose.dev.yml ps
