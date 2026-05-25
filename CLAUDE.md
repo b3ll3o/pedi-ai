@@ -18,12 +18,13 @@ pnpm dev              # Next.js :3000 + API :3001
 pnpm build            # Production build
 pnpm lint             # ESLint
 
-# Unit tests (apps/web: 107 files, 1513 tests)
+# Unit tests (apps/web: 154 files, 1852 tests)
 pnpm test             # All unit tests
 pnpm test:watch       # Watch mode
 pnpm test:coverage     # With coverage report
 pnpm test:unit         # Unit tests only
 pnpm test:integration  # Integration tests only
+pnpm test:ui          # Vitest UI
 
 # E2E tests (requires docker-compose up)
 pnpm test:e2e:seed     # Seed test data
@@ -32,18 +33,23 @@ pnpm test:e2e:ui       # E2E with UI
 pnpm test:e2e:smoke    # Smoke tests only
 pnpm test:e2e:critical # Critical path tests
 pnpm test:e2e:fast     # Fast tests (excludes @slow, @webhook)
+pnpm test:e2e:cleanup  # Cleanup E2E test data
+pnpm test:e2e:all      # All E2E tests with UI
+pnpm test:e2e:shard:auth     # Auth E2E shard
+pnpm test:e2e:shard:customer # Customer E2E shard
+pnpm test:e2e:shard:admin   # Admin E2E shard
 
 # API tests
 pnpm --filter @pedi-ai/api test
 pnpm --filter @pedi-ai/api test:coverage
 
 # Infrastructure
-docker-compose up -d  # Start PostgreSQL + Mailpit
+docker-compose -f docker-compose.dev.yml up -d  # Dev: PostgreSQL + Mailpit + API + Web + Nginx (hot reload)
 pnpm mailpit          # Start Mailpit SMTP mock (ports 1025, 8025)
 
 # Database
 pnpm db:seed          # Seed development database
-cd apps/api && pnpm prisma db push  # Apply schema
+pnpm prisma db push   # Apply schema (from apps/api/)
 ```
 
 ---
@@ -94,7 +100,7 @@ presentation/    → Next.js: app/, components/, hooks/.
 
 ### apps/api Status
 
-O `apps/api` ainda NÃO segue estrutura DDD completa. Usa módulos tradicionais (auth/, orders/, payments/, restaurants/, users/) que precisam ser reorganizados.
+Migração DDD **em andamento**. Estrutura de diretórios criada (`domain/`, `application/`, `infrastructure/`, `presentation/`) com bounded contexts (admin/, autenticacao/, cardapio/, mesa/, pagamento/, pedido/, shared/). Módulos legados (auth/, orders/, payments/, restaurants/, users/) ainda coexistem. Ver `docs/guides/DDD_MIGRACAO_API.md`.
 
 ---
 
@@ -112,7 +118,7 @@ valor.valor; // 1500 (centavos)
 
 ### QR Code de Mesa
 
-Validação usa **HMAC-SHA256**. Assinatura gerada em `domain/mesa/services/QRCodeValidationService.ts`. QR code contém `restauranteId`, `mesaId` e `assinatura`.
+Validação usa **HMAC-SHA256**. Implementação em `apps/web/src/lib/qr/validator.ts`. QR code contém `restauranteId`, `mesaId` e `assinatura`.
 
 ### Offline-First
 
@@ -126,13 +132,16 @@ Validação usa **HMAC-SHA256**. Assinatura gerada em `domain/mesa/services/QRCo
 
 Flags configuradas via variáveis de ambiente em `.env.local`:
 
-| Flag                                  | Descrição         |
-| ------------------------------------- | ----------------- |
-| `NEXT_PUBLIC_FEATURE_OFFLINE_ENABLED` | Modo offline      |
-| `NEXT_PUBLIC_FEATURE_PIX_ENABLED`     | Pagamento PIX     |
-| `NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED` | QR codes de mesa  |
-| `NEXT_PUBLIC_FEATURE_COMBOS_ENABLED`  | Sistema de combos |
-| `NEXT_PUBLIC_ENABLE_MULTI_RESTAURANT` | Multi-restaurante |
+| Flag                                    | Descrição                      |
+| --------------------------------------- | ------------------------------ |
+| `NEXT_PUBLIC_FEATURE_OFFLINE_ENABLED`   | Modo offline                   |
+| `NEXT_PUBLIC_FEATURE_PIX_ENABLED`       | Pagamento PIX                  |
+| `NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED`   | QR codes de mesa               |
+| `NEXT_PUBLIC_FEATURE_COMBOS_ENABLED`    | Sistema de combos              |
+| `NEXT_PUBLIC_ENABLE_MULTI_RESTAURANT`   | Multi-restaurante              |
+| `NEXT_PUBLIC_FEATURE_WAITER_MODE`       | Sistema de chamada garçom      |
+| `NEXT_PUBLIC_FEATURE_ANALYTICS_ENABLED` | Dashboard de analytics         |
+| `NEXT_PUBLIC_FEATURE_CASHBACK_ENABLED`  | Sistema de cashback/recompensa |
 
 ---
 
@@ -158,7 +167,9 @@ Tabelas principais em `apps/api/prisma/schema.prisma`:
 - `combos` / `combo_items`
 - `orders` / `order_items` / `order_status_history`
 - `users_profiles` — Perfis (owner/manager/staff)
-- `webhook_events` — Idempotência de webhooks
+- `WebhookEvent` — Idempotência de webhooks
+- `PasswordResetToken` — Recuperação de senha
+- `Subscription` — Gestão de assinaturas
 
 ---
 

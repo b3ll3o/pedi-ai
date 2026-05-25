@@ -67,21 +67,23 @@ _(Em construção — specs de domínio serão adicionadas progressivamente)_
 ### Testes
 
 ```bash
-# Unit tests
-pnpm test:unit
+# Unit tests (Vitest)
+pnpm test              # Todos os testes unitários
+pnpm test:watch       # Watch mode
+pnpm test:coverage    # Com coverage report (≥80%)
+pnpm test:unit        # Apenas unitários
+pnpm test:integration # Apenas integração
+pnpm test:ui          # Vitest UI
 
-# Testes com coverage
-pnpm test:coverage
-
-# E2E (requer .env.e2e configurado)
-pnpm test:e2e:seed
-pnpm test:e2e
-
-# Smoke tests (críticos)
-pnpm test:e2e:smoke
-
-# Critical only
-pnpm test:e2e:critical
+# E2E (requer docker-compose.dev.yml up)
+pnpm test:e2e:seed      # Popula banco de dados
+pnpm test:e2e           # Headless
+pnpm test:e2e:ui       # Com UI
+pnpm test:e2e:smoke    # Smoke tests
+pnpm test:e2e:critical  # Critical path
+pnpm test:e2e:fast      # Fast tests
+pnpm test:e2e:cleanup   # Cleanup dados
+pnpm test:all           # Unit + Integration + E2E
 ```
 
 ### Performance

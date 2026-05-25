@@ -168,13 +168,24 @@ Configurado para:
 ## 6. Scripts Disponíveis
 
 ```bash
-# Testes
-pnpm test:unit          # Testes unitários (vitest)
-pnpm test:integration   # Testes de integração (vitest)
-pnpm test:e2e           # Testes E2E (Playwright, chromium-headless-shell)
-pnpm test:e2e:seed      # Popula banco de dados para E2E
-pnpm test:coverage      # Testes + relatório de cobertura (v8)
-pnpm test:all           # Unit + Integration + E2E
+# Testes unitários (Vitest)
+pnpm test              # Todos os testes (unit)
+pnpm test:watch        # Watch mode
+pnpm test:coverage     # Testes + relatório de cobertura (v8)
+pnpm test:unit         # Apenas unitários
+pnpm test:integration  # Apenas integração
+pnpm test:ui           # Vitest UI
+
+# Testes E2E (Playwright) — requer docker-compose.dev.yml up
+pnpm test:e2e          # E2E headless
+pnpm test:e2e:seed     # Popula banco de dados para E2E
+pnpm test:e2e:ui       # E2E com UI
+pnpm test:e2e:smoke    # Smoke tests
+pnpm test:e2e:critical # Critical path tests
+pnpm test:e2e:fast     # Fast tests (excludes @slow, @webhook)
+pnpm test:e2e:cleanup  # Cleanup dados de teste
+pnpm test:e2e:all      # Todos E2E com UI
+pnpm test:all          # Unit + Integration + E2E
 
 # Lint
 pnpm lint               # ESLint

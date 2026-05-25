@@ -151,14 +151,20 @@ pnpm dev
 # Build
 pnpm build
 
-# Tests
-pnpm test:unit        # Unit tests (154 files, 1852 tests)
-pnpm test:coverage    # Coverage report (thresholds: 80%)
+# Tests unitários (Vitest)
+pnpm test              # Todos os testes unitários
+pnpm test:watch        # Watch mode
+pnpm test:coverage     # Coverage report (≥80%)
+pnpm test:unit         # Unit tests
+pnpm test:integration  # Integração
+pnpm test:ui          # Vitest UI
 
-# E2E (requer .env.e2e configurado)
-pnpm test:e2e:seed   # Seed database
-pnpm test:e2e         # Rodar E2E
-pnpm test:e2e:smoke   # Smoke tests críticos
+# E2E (requer docker-compose.dev.yml up)
+pnpm test:e2e:seed    # Seed database
+pnpm test:e2e          # Headless
+pnpm test:e2e:ui      # Com UI
+pnpm test:e2e:smoke   # Smoke tests
+pnpm test:e2e:critical # Critical path
 
 # Offline/Pagamentos
 pnpm mailpit          # Start Mailpit SMTP server
