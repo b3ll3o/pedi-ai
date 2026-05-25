@@ -1,32 +1,29 @@
-name: E2E Pipeline
+name: E2E Tests
 
 on:
+  # Executa em push para master (push do CI completo)
   push:
     branches:
-      # Executa E2E completo em push para master (não em PR — ci.yml faz isso)
       - master
-      # Permite executar E2E em outras branches via push
-  workflow_dispatch:
-    inputs:
-      shard:
-        description: 'Shard específico (opcional)'
-        required: false
-        type: string
+  # Dispara quando ci.yml completa (sucesso ou não)
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [master]
 
-# Não usa cancel-in-progress — E2E em push é separado do CI em PR
+concurrency:
+  group: e2e-tests
+  cancel-in-progress: false
 
 jobs:
   e2e-tests:
-    name: E2E Tests
+    name: E2E Shard ${{ matrix.shard }}/4
     runs-on: ubuntu-latest
-    timeout-minutes: 60
-    # Se triggered via workflow_dispatch com shard input, usa esse shard
-    # Caso contrário, usa matrix para 4 shards
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
         shard: [1, 2, 3, 4]
-    if: github.event.inputs.shard == '' && github.event.inputs.shard == null
     services:
       postgres:
         image: postgres:16-alpine
@@ -42,7 +39,8 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v6
+      - name: Checkout
+        uses: actions/checkout@v6
 
       - name: Setup Node.js 20
         uses: actions/setup-node@v6
@@ -79,9 +77,10 @@ jobs:
         run: |
           for i in {1..30}; do
             if pg_isready -h localhost -U postgres -d pedi_ai; then
-              echo "PostgreSQL pronto"
+              echo "PostgreSQL pronto (tentativa $i)"
               break
             fi
+            echo "Aguardando PostgreSQL... ($i/30)"
             sleep 2
           done
 
@@ -93,27 +92,40 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pedi_ai?schema=public
 
-      - name: Seed database
+      - name: Seed database (shard-isolated)
         run: pnpm test:e2e:seed
         env:
           SHARD: ${{ matrix.shard }}/4
 
       - name: Iniciar API
         run: |
-          cd apps/api && pnpm exec nest start --entryFile main &
-          echo $! > /tmp/pedi-ai-api.pid
-          for i in {1..30}; do curl -sf http://localhost:3001/api/health > /dev/null 2>&1 && echo "API pronta" && break; sleep 2; done
+          cd apps/api
+          pnpm exec nest start --entryFile main &
+          API_PID=$!
+          echo "$API_PID" > /tmp/pedi-ai-api.pid
+          for i in {1..30}; do
+            curl -sf http://localhost:3001/api/health > /dev/null 2>&1 && echo "API pronta (tentativa $i)" && break
+            echo "Aguardando API... ($i/30)"
+            sleep 2
+          done
 
       - name: Iniciar Web
         run: |
-          cd apps/web && pnpm dev &
-          echo $! > /tmp/pedi-ai-web.pid
-          for i in {1..60}; do curl -sf http://localhost:3000 > /dev/null 2>&1 && echo "Web pronta" && break; sleep 3; done
+          cd apps/web
+          pnpm dev &
+          WEB_PID=$!
+          echo "$WEB_PID" > /tmp/pedi-ai-web.pid
+          for i in {1..60}; do
+            curl -sf http://localhost:3000 > /dev/null 2>&1 && echo "Web pronto (tentativa $i)" && break
+            echo "Aguardando Web... ($i/60)"
+            sleep 3
+          done
 
       - name: Run E2E tests (Shard ${{ matrix.shard }}/4)
         run: pnpm test:e2e --shard=${{ matrix.shard }}/4
+        continue-on-error: false
 
-      - name: Upload artifacts
+      - name: Upload artifacts (Shard ${{ matrix.shard }})
         uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -122,24 +134,22 @@ jobs:
             playwright-report-shard-*
             test-results-shard-*
             playwright-results-shard-*.json
-          retention-days: 14
+            playwright-traces/
+          retention-days: 7
 
-      - name: Cleanup
+      - name: Cleanup servers
         if: always()
         run: |
           for pid in $(cat /tmp/pedi-ai-api.pid 2>/dev/null) $(cat /tmp/pedi-ai-web.pid 2>/dev/null); do
             kill $pid 2>/dev/null || true
           done
+          rm -f /tmp/pedi-ai-api.pid /tmp/pedi-ai-web.pid
 
-  # Job único para shard específico (workflow_dispatch)
-  e2e-single-shard:
-    name: E2E Single Shard
+  e2e-report:
+    name: E2E Report Merge
     runs-on: ubuntu-latest
-    timeout-minutes: 60
-    if: github.event.inputs.shard != '' && github.event.inputs.shard != null
+    needs: [e2e-tests]
     steps:
-      - uses: actions/checkout@v6
-
       - name: Setup Node.js 20
         uses: actions/setup-node@v6
         with:
@@ -151,78 +161,36 @@ jobs:
         with:
           version: 9
 
-      - name: Install node-gyp
-        run: npm install -g node-gyp
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install Playwright browsers
-        run: pnpm exec playwright install chromium --with-deps
+      - name: Download all Playwright reports
+        uses: actions/download-artifact@v7
+        with:
+          pattern: pw-shard-*
+          merge-multiple: true
+          path: pw-reports-merged
+        continue-on-error: true
 
-      - name: Setup environment
+      - name: Merge Playwright reports
         run: |
-          echo "CI=true" >> $GITHUB_ENV
-          echo "SHARD=${{ github.event.inputs.shard }}" >> $GITHUB_ENV
-          echo "BASE_URL=http://localhost:3000" >> $GITHUB_ENV
-          echo "NEXT_PUBLIC_API_URL=http://localhost:3001" >> $GITHUB_ENV
-          echo "NODE_ENV=e2e" >> $GITHUB_ENV
-          echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/pedi_ai?schema=public" >> $GITHUB_ENV
-          echo "JWT_SECRET=e2e-jwt-secret-for-testing-only" >> $GITHUB_ENV
-          echo "JWT_REFRESH_SECRET=e2e-jwt-refresh-secret-for-testing-only" >> $GITHUB_ENV
+          JSON_FILES=$(find pw-reports-merged -name "playwright-results-shard-*.json" 2>/dev/null | sort -V | tr '\n' ' ')
+          if [ -n "$JSON_FILES" ]; then
+            echo "=== Merge de $(echo $JSON_FILES | wc -w) arquivos de shard ==="
+            cd apps/web
+            pnpm exec playwright merge-reports \
+              --reporter=list,json \
+              ../pw-reports-merged
+          else
+            echo "Nenhum resultado encontrado para merge"
+          fi
 
-      - name: Verificar PostgreSQL
-        run: |
-          for i in {1..30}; do
-            if pg_isready -h localhost -U postgres -d pedi_ai; then
-              echo "PostgreSQL pronto"
-              break
-            fi
-            sleep 2
-          done
-
-      - name: Setup database schema
-        run: |
-          cd apps/api
-          npx prisma db push --accept-data-loss --skip-generate
-          npx prisma generate
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pedi_ai?schema=public
-
-      - name: Seed database
-        run: pnpm test:e2e:seed
-        env:
-          SHARD: ${{ github.event.inputs.shard }}
-
-      - name: Iniciar API
-        run: |
-          cd apps/api && pnpm exec nest start --entryFile main &
-          echo $! > /tmp/pedi-ai-api.pid
-          for i in {1..30}; do curl -sf http://localhost:3001/api/health > /dev/null 2>&1 && echo "API pronta" && break; sleep 2; done
-
-      - name: Iniciar Web
-        run: |
-          cd apps/web && pnpm dev &
-          echo $! > /tmp/pedi-ai-web.pid
-          for i in {1..60}; do curl -sf http://localhost:3000 > /dev/null 2>&1 && echo "Web pronta" && break; sleep 3; done
-
-      - name: Run E2E tests (Shard ${{ github.event.inputs.shard }})
-        run: pnpm test:e2e --shard=${{ github.event.inputs.shard }}
-
-      - name: Upload artifacts
+      - name: Upload merged report
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: pw-shard-${{ github.event.inputs.shard }}
+          name: pw-report-merged
           path: |
-            playwright-report-shard-*
-            test-results-shard-*
-            playwright-results-shard-*.json
+            pw-reports-merged/
+            playwright-report/
           retention-days: 14
-
-      - name: Cleanup
-        if: always()
-        run: |
-          for pid in $(cat /tmp/pedi-ai-api.pid 2>/dev/null) $(cat /tmp/pedi-ai-web.pid 2>/dev/null); do
-            kill $pid 2>/dev/null || true
-          done
