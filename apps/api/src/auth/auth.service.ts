@@ -1,4 +1,9 @@
-import { Injectable, UnauthorizedException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
@@ -11,9 +16,7 @@ const SENHA_REGEX_FORCA = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\
 
 function validarForcaSenha(senha: string): void {
   if (senha.length < SENHA_MIN_CARACTERES) {
-    throw new BadRequestException(
-      `Senha deve ter no mínimo ${SENHA_MIN_CARACTERES} caracteres`
-    );
+    throw new BadRequestException(`Senha deve ter no mínimo ${SENHA_MIN_CARACTERES} caracteres`);
   }
   if (!SENHA_REGEX_FORCA.test(senha)) {
     throw new BadRequestException(

@@ -5,7 +5,7 @@ import { ConfiguracoesRestaurante } from '@/domain/admin/value-objects/Configura
 describe('RestauranteAggregate', () => {
   const criarPropsValidos = () => ({
     nome: 'Restaurante Teste',
-    cnpj: '28691371000182',
+    cnpj: '00000000000191',
     endereco: 'Rua Teste, 123',
     telefone: null,
     logoUrl: null,
@@ -18,7 +18,7 @@ describe('RestauranteAggregate', () => {
 
       expect(aggregate.id).toBeDefined();
       expect(aggregate.nome).toBe('Restaurante Teste');
-      expect(aggregate.cnpj).toBe('28691371000182');
+      expect(aggregate.cnpj).toBe('00000000000191');
       expect(aggregate.configuracoesValueObject).toBeDefined();
     });
   });

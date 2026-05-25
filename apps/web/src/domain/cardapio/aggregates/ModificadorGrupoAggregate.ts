@@ -53,9 +53,10 @@ export class ModificadorGrupoAggregate {
       throw new Error('Grupo obrigatorio deve ter minSelecoes >= 1');
     }
 
-    // Invariante: maxSelecoes não pode ser maior que a quantidade de valores ativos
+    // Invariante: maxSelecoes não pode exceder a quantidade de valores ativos
+    // (only checked when maxSelecoes > 0, to allow empty groups to be created)
     const quantidadeValoresAtivos = this.grupo.valoresAtivos.length;
-    if (this.grupo.maxSelecoes > quantidadeValoresAtivos) {
+    if (this.grupo.maxSelecoes > quantidadeValoresAtivos && this.grupo.maxSelecoes > 0) {
       throw new Error('maxSelecoes não pode exceder a quantidade de valores ativos');
     }
   }

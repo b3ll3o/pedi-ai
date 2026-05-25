@@ -32,7 +32,10 @@ describe('AuthService', () => {
     process.env.JWT_SECRET = 'test-secret';
     mockPrisma = createMockPrisma();
     mockJwt = createMockJwt();
-    authService = new AuthService(mockPrisma as unknown as PrismaService, mockJwt as unknown as JwtService);
+    authService = new AuthService(
+      mockPrisma as unknown as PrismaService,
+      mockJwt as unknown as JwtService
+    );
   });
 
   afterEach(() => {
@@ -43,7 +46,7 @@ describe('AuthService', () => {
   describe('register', () => {
     const registerData = {
       email: 'test@example.com',
-      password: 'password123',
+      password: 'Password@123',
       name: 'Test User',
     };
 
@@ -154,7 +157,9 @@ describe('AuthService', () => {
         throw new Error('Invalid token');
       });
 
-      await expect(authService.refreshToken('invalid-token')).rejects.toThrow(UnauthorizedException);
+      await expect(authService.refreshToken('invalid-token')).rejects.toThrow(
+        UnauthorizedException
+      );
     });
   });
 
