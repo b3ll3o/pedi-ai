@@ -1,3 +1,7 @@
+/**
+ * Cobertura: RF-MENU-05 (CRUD produto)
+ * @see .openspec/specs/cardapio/design.md
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { GerenciarProdutoUseCase } from '@/application/admin/services/GerenciarProdutoUseCase';

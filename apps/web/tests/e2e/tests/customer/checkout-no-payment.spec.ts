@@ -1,3 +1,7 @@
+/**
+ * Cobertura E2E: RF-ORDER-05 (Criar pedido)
+ * @see .openspec/specs/pedido/design.md
+ */
 import { CheckoutPage } from '../../pages/CheckoutPage';
 import { MenuPage } from '../../pages/MenuPage';
 import { test, expect, clearClientState } from '../shared/fixtures';

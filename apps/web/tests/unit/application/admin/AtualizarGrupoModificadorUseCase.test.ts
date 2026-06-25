@@ -1,3 +1,7 @@
+/**
+ * Cobertura: RF-MENU-06 (CRUD modificador)
+ * @see .openspec/specs/cardapio/design.md
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { ModificadorGrupo } from '@/domain/cardapio/entities/ModificadorGrupo';

@@ -1,3 +1,7 @@
+/**
+ * Cobertura E2E: RF-MENU-03 (Detalhe de produto)
+ * @see .openspec/specs/cardapio/design.md
+ */
 import { ProductDetailPage } from '../../pages/ProductDetailPage';
 import { RestaurantMenuPage } from '../../pages/RestaurantsPage';
 import { test, expect } from '../shared/fixtures';

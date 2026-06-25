@@ -1,3 +1,8 @@
+/**
+ * Cobertura: RF-TABLE-02 (Listar mesas), RF-TABLE-05 (Desativar mesa),
+ * RF-TABLE-06 (Reativar mesa), RF-TABLE-01 (Criar mesa)
+ * @see .openspec/specs/mesa/design.md
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GerenciarMesaUseCase } from '@/application/admin/services/GerenciarMesaUseCase';
 import { Mesa } from '@/domain/mesa/entities/Mesa';

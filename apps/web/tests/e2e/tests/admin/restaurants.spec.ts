@@ -1,5 +1,5 @@
 /**
- * Cobertura E2E: RF-ADM-01, RF-ADM-02
+ * Cobertura E2E: RF-ADM-01, RF-ADM-02, RF-ADM-03, RF-ADM-04, RF-ADM-07, RF-ADM-08
  * @see .openspec/specs/admin/design.md
  */
 import { AdminRestaurantsPage } from '../../pages/AdminRestaurantsPage';

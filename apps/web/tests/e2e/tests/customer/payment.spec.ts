@@ -1,3 +1,8 @@
+/**
+ * Cobertura E2E: RF-PAY-01 (Criar PIX), RF-PAY-02 (Processar webhook),
+ * RF-PAY-05 (Atualizar status), RF-PAY-06 (Modo demo)
+ * @see .openspec/specs/pagamento/design.md
+ */
 import { CheckoutPage } from '../../pages/CheckoutPage';
 import { MenuPage } from '../../pages/MenuPage';
 import { OrderPage } from '../../pages/OrderPage';

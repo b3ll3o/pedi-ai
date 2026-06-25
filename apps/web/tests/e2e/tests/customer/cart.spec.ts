@@ -1,3 +1,8 @@
+/**
+ * Cobertura E2E: RF-ORDER-01 (Adicionar item), RF-ORDER-02 (Remover),
+ * RF-ORDER-03 (Editar quantidade), RF-ORDER-04 (Limpar)
+ * @see .openspec/specs/pedido/design.md
+ */
 import { CartPage } from '../../pages/CartPage';
 import { MenuPage } from '../../pages/MenuPage';
 import { test, expect, clearClientState } from '../shared/fixtures';

@@ -1,3 +1,8 @@
+/**
+ * Cobertura: RF-ORDER-10 (Sincronização offline do carrinho),
+ * RF-MENU-09 (Sincronização offline do cardápio)
+ * @see .openspec/specs/pedido/design.md
+ */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 import { createBroadcastChannelManager, CartBroadcast } from '@/lib/broadcast-channel';

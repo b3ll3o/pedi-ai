@@ -1,3 +1,7 @@
+/**
+ * Cobertura: RF-ORDER-06 (Atualizar status / FSM)
+ * @see .openspec/specs/pedido/design.md
+ */
 import { describe, it, expect } from 'vitest';
 
 import { Pedido, PedidoProps } from '@/domain/pedido/entities/Pedido';

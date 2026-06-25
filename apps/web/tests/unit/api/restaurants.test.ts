@@ -1,3 +1,7 @@
+/**
+ * Cobertura: RF-ADM-01, RF-ADM-02, RF-ADM-03, RF-ADM-04
+ * @see .openspec/specs/admin/design.md
+ */
 import { describe, it, expect } from 'vitest';
 
 /**

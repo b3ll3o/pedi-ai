@@ -1,3 +1,7 @@
+/**
+ * Cobertura: RF-ORDER-05, RF-ORDER-06, RF-ORDER-07, RF-ORDER-08
+ * @see .openspec/specs/pedido/design.md
+ */
 import { NextRequest } from 'next/server';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 

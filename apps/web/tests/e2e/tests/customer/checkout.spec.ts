@@ -1,3 +1,7 @@
+/**
+ * Cobertura E2E: RF-PAY-01 (Criar cobrança PIX)
+ * @see .openspec/specs/pagamento/design.md
+ */
 import { CheckoutPage } from '../../pages/CheckoutPage';
 import { MenuPage } from '../../pages/MenuPage';
 import { test, expect, clearClientState } from '../shared/fixtures';

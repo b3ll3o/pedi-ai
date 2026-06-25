@@ -1,3 +1,7 @@
+/**
+ * Cobertura: RF-ADM-05 (Listar equipe)
+ * @see .openspec/specs/admin/design.md
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { ListarEquipeRestauranteUseCase } from '@/application/admin/services/ListarEquipeRestauranteUseCase';

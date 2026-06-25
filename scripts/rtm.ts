@@ -148,6 +148,7 @@ function collectTestRefs(): TestRef[] {
     ...walk(join(ROOT, 'apps', 'web', 'tests', 'integration'), ['.test.ts', '.spec.ts']),
     ...walk(join(ROOT, 'apps', 'api', 'tests'), ['.test.ts', '.spec.ts']),
     ...walk(join(ROOT, 'apps', 'web', 'tests', 'e2e'), ['.spec.ts']),
+    ...walk(join(ROOT, 'apps', 'web', 'tests', 'bdd'), ['.feature']),
   ];
   const refs: TestRef[] = [];
   for (const file of files) {
@@ -184,6 +185,7 @@ function buildRtm(specs: RfRef[], codeRefs: CodeRef[], testRefs: TestRef[]): Rtm
         (t) =>
           t.path.includes('/unit/') ||
           t.path.includes('/integration/') ||
+          t.path.includes('/bdd/') ||
           t.path.startsWith('apps/api/tests')
       )
       .map((t) => t.path);

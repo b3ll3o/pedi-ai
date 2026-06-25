@@ -1,3 +1,7 @@
+/**
+ * Cobertura E2E: RF-AUTH-06 (Logout)
+ * @see .openspec/specs/autenticacao/design.md
+ */
 import { MenuPage } from '../../pages/MenuPage';
 import { test, expect, clearClientState } from '../shared/fixtures';
 

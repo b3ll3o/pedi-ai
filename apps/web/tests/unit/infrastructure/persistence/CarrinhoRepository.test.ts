@@ -1,3 +1,7 @@
+/**
+ * Cobertura: RF-ORDER-10 (Sincronização offline)
+ * @see .openspec/specs/pedido/design.md
+ */
 import { describe, it, expect, beforeEach } from 'vitest';
 
 import { CarrinhoAggregate } from '@/domain/pedido/aggregates/CarrinhoAggregate';

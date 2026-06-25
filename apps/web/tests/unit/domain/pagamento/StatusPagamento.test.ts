@@ -1,3 +1,7 @@
+/**
+ * Cobertura: RF-PAY-05 (Atualizar status)
+ * @see .openspec/specs/pagamento/design.md
+ */
 import { describe, it, expect } from 'vitest';
 
 import { StatusPagamento } from '@/domain/pagamento/value-objects/StatusPagamento';

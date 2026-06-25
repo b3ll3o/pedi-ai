@@ -1,3 +1,7 @@
+/**
+ * Cobertura E2E: RF-ADM-11 (Gerenciar assinatura), RF-ADM-02 (Configurações)
+ * @see .openspec/specs/admin/design.md
+ */
 import { AdminSettingsPage } from '../../pages/AdminSettingsPage';
 import { test, expect } from '../shared/fixtures';
 

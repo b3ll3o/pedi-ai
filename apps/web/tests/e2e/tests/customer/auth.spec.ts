@@ -1,3 +1,9 @@
+/**
+ * Cobertura E2E: RF-AUTH-01 (Registrar), RF-AUTH-02 (Autenticar),
+ * RF-AUTH-03 (Validar sessão), RF-AUTH-04 (Recuperar senha via e-mail),
+ * RF-AUTH-05 (Redefinir senha)
+ * @see .openspec/specs/autenticacao/design.md
+ */
 import { CustomerLoginPage } from '../../pages/CustomerLoginPage';
 import { test, expect } from '../shared/fixtures';
 

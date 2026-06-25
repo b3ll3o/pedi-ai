@@ -1,3 +1,7 @@
+/**
+ * Cobertura: RF-ADM-11 (Gerenciar assinatura)
+ * @see .openspec/specs/admin/design.md
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GerenciarAssinaturaUseCase } from '@/application/admin/services/GerenciarAssinaturaUseCase';
 import { Assinatura } from '@/domain/admin/entities/Assinatura';

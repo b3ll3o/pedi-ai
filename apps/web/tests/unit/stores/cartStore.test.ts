@@ -1,3 +1,7 @@
+/**
+ * Cobertura: RF-ORDER-01, RF-ORDER-02, RF-ORDER-03, RF-ORDER-04
+ * @see .openspec/specs/pedido/design.md
+ */
 import { act } from 'react-dom/test-utils';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 

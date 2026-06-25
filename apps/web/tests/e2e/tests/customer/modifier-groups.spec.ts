@@ -1,3 +1,7 @@
+/**
+ * Cobertura E2E: RF-MENU-06 (CRUD modificador)
+ * @see .openspec/specs/cardapio/design.md
+ */
 import { CartPage } from '../../pages/CartPage';
 import { MenuPage } from '../../pages/MenuPage';
 import { test, expect } from '../shared/fixtures';

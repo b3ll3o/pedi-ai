@@ -1,3 +1,7 @@
+/**
+ * Cobertura: RF-ORDER-09 (Notificar status realtime)
+ * @see .openspec/specs/pedido/design.md
+ */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock socket.io-client before importing

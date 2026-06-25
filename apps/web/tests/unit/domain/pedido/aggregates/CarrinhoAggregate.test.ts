@@ -1,3 +1,7 @@
+/**
+ * Cobertura: RF-ORDER-01, RF-ORDER-02, RF-ORDER-03, RF-ORDER-04, RF-ORDER-10
+ * @see .openspec/specs/pedido/design.md
+ */
 import { describe, it, expect } from 'vitest';
 import { CarrinhoAggregate } from '@/domain/pedido/aggregates/CarrinhoAggregate';
 import { ItemPedido } from '@/domain/pedido/entities/ItemPedido';

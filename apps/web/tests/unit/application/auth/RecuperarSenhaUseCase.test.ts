@@ -1,3 +1,7 @@
+/**
+ * Cobertura: RF-AUTH-04 (Recuperar senha via e-mail)
+ * @see .openspec/specs/autenticacao/design.md
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { RedefinirSenhaUseCase } from '@/application/autenticacao/services/RedefinirSenhaUseCase';

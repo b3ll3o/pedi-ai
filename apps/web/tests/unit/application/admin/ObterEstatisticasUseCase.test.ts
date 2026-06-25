@@ -1,3 +1,7 @@
+/**
+ * Cobertura: RF-ADM-10 (Analytics / Estatísticas)
+ * @see .openspec/specs/admin/design.md
+ */
 import { describe, it, expect, vi } from 'vitest';
 import { ObterEstatisticasUseCase } from '@/application/admin/services/ObterEstatisticasUseCase';
 import { StatusPedido } from '@/domain/pedido/value-objects/StatusPedido';

@@ -1,3 +1,7 @@
+/**
+ * Cobertura E2E: RF-AUTH-01 (Registrar usuário)
+ * @see .openspec/specs/autenticacao/design.md
+ */
 import { CustomerLoginPage } from '../../pages/CustomerLoginPage';
 import { RegisterPage } from '../../pages/RegisterPage';
 import { test, expect, clearClientState } from '../shared/fixtures';

@@ -1,3 +1,7 @@
+/**
+ * Cobertura: RF-ADM-03 (Vincular usuário), RF-ADM-06 (Alterar papel)
+ * @see .openspec/specs/admin/design.md
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { VincularUsuarioRestauranteUseCase } from '@/application/admin/services/VincularUsuarioRestauranteUseCase';

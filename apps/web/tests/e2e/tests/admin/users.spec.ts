@@ -1,3 +1,8 @@
+/**
+ * Cobertura E2E: RF-ADM-03 (Vincular usuário), RF-ADM-04 (Desvincular),
+ * RF-ADM-05 (Listar equipe), RF-ADM-06 (Alterar papel)
+ * @see .openspec/specs/admin/design.md
+ */
 import { AdminUsersPage } from '../../pages/AdminUsersPage';
 import { test, expect } from '../shared/fixtures';
 

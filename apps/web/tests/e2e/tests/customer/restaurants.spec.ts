@@ -1,3 +1,7 @@
+/**
+ * Cobertura E2E: RF-MENU-02 (Listar cardápio)
+ * @see .openspec/specs/cardapio/design.md
+ */
 import { RestaurantsPage, RestaurantMenuPage } from '../../pages/RestaurantsPage';
 import { test, expect, clearClientState } from '../shared/fixtures';
 

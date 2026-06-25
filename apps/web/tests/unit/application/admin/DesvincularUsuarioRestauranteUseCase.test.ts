@@ -1,3 +1,7 @@
+/**
+ * Cobertura: RF-ADM-04 (Desvincular usuário)
+ * @see .openspec/specs/admin/design.md
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { DesvincularUsuarioRestauranteUseCase } from '@/application/admin/services/DesvincularUsuarioRestauranteUseCase';

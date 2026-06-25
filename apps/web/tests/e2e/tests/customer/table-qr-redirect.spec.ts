@@ -1,3 +1,7 @@
+/**
+ * Cobertura E2E: RF-TABLE-03 (Validar QR code)
+ * @see .openspec/specs/mesa/design.md
+ */
 import { TableQRPage } from '../../pages/TableQRPage';
 import { test, expect, clearClientState } from '../shared/fixtures';
 

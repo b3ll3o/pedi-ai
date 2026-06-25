@@ -1,3 +1,7 @@
+/**
+ * Cobertura: RF-ORDER-05, RF-ORDER-06, RF-ORDER-07
+ * @see .openspec/specs/pedido/design.md
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { PedidoAggregate } from '@/domain/pedido/aggregates/PedidoAggregate';

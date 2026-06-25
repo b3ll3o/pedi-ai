@@ -1,3 +1,8 @@
+/**
+ * Cobertura E2E: RF-ORDER-10 (Sincronização offline do carrinho),
+ * RF-MENU-09 (Sincronização offline do cardápio)
+ * @see .openspec/specs/pedido/design.md
+ */
 import { test, expect, clearClientState } from '../shared/fixtures';
 
 /**

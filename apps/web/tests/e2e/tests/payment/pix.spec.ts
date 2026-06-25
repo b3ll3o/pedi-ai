@@ -1,3 +1,9 @@
+/**
+ * Cobertura E2E: RF-PAY-01 (Criar PIX), RF-PAY-02 (Webhook),
+ * RF-PAY-03 (Validar assinatura), RF-PAY-05 (Atualizar status),
+ * RF-PAY-07 (Idempotência via WebhookEvent), RF-PAY-08 (Iniciar reembolso)
+ * @see .openspec/specs/pagamento/design.md
+ */
 import { CheckoutPage } from '../../pages/CheckoutPage';
 import { MenuPage } from '../../pages/MenuPage';
 import { OrderPage } from '../../pages/OrderPage';

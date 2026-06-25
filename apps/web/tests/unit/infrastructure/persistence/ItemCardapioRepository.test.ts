@@ -1,3 +1,7 @@
+/**
+ * Cobertura: RF-MENU-02 (Listar cardápio)
+ * @see .openspec/specs/cardapio/design.md
+ */
 import { describe, it, expect, beforeEach } from 'vitest';
 
 import { ItemCardapio } from '@/domain/cardapio/entities/ItemCardapio';
