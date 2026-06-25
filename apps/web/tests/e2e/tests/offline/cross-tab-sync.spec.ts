@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { test, expect, _Page, BrowserContext } from '@playwright/test';
+import { test, expect, BrowserContext } from '@playwright/test';
 
 import { CartPage } from '../../pages/CartPage';
 import { MenuPage } from '../../pages/MenuPage';

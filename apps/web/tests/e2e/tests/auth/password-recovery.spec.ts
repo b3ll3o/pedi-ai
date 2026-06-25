@@ -3,6 +3,8 @@ import { CustomerLoginPage } from '../../pages/CustomerLoginPage';
 import { CustomerResetPasswordPage } from '../../pages/CustomerResetPasswordPage';
 import { test, expect } from '../shared/fixtures';
 
+import type { Page } from '@playwright/test';
+
 async function cleanupTest(page: Page) {
   try {
     await page.context().clearCookies();
