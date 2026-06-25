@@ -18,6 +18,10 @@ describe('PaymentsService', () => {
       findFirst: vi.fn(),
       update: vi.fn(),
     },
+    webhookEvent: {
+      findUnique: vi.fn(),
+      create: vi.fn(),
+    },
   });
 
   beforeEach(() => {
@@ -140,31 +144,35 @@ describe('PaymentsService', () => {
       };
       const mockUpdated = { ...mockPayment, status: 'approved' };
 
+      mockPrisma.webhookEvent.findUnique.mockResolvedValue(null);
       mockPrisma.paymentIntent.findFirst.mockResolvedValue(mockPayment);
       mockPrisma.paymentIntent.update.mockResolvedValue(mockUpdated);
       mockPrisma.order.update.mockResolvedValue({ id: 'order-1', paymentStatus: 'approved' });
 
       const result = await paymentsService.handleWebhook({
+        eventId: 'evt-1',
         paymentId: 'mp-123',
         status: 'approved',
       });
 
-      expect(result).toEqual(mockUpdated);
+      expect(result).toMatchObject({ status: 'success' });
       expect(mockPrisma.order.update).toHaveBeenCalledWith({
         where: { id: 'order-1' },
-        data: { paymentStatus: 'approved' },
+        data: { paymentStatus: 'paid', status: 'paid' },
       });
     });
 
-    it('should return null if payment not found by mercado pago ID', async () => {
+    it('should return not_found status if payment not found by mercado pago ID', async () => {
+      mockPrisma.webhookEvent.findUnique.mockResolvedValue(null);
       mockPrisma.paymentIntent.findFirst.mockResolvedValue(null);
 
       const result = await paymentsService.handleWebhook({
+        eventId: 'evt-2',
         paymentId: 'unknown-mp-id',
         status: 'approved',
       });
 
-      expect(result).toBeNull();
+      expect(result).toMatchObject({ status: 'not_found' });
       expect(mockPrisma.paymentIntent.update).not.toHaveBeenCalled();
     });
   });

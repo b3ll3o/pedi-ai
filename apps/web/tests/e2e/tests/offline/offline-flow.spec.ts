@@ -86,7 +86,7 @@ async function _waitForOnlineToast(
 }
 
 test.describe('Offline Flow — PED-5', () => {
-  test.beforeEach(async ({ _browser }) => {
+  test.beforeEach(async () => {
     const seedData = loadSeedData();
     const storagePath = getStoragePath(seedData.customer.email);
     if (!fs.existsSync(storagePath)) {

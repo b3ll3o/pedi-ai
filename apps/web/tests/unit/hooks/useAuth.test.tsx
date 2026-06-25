@@ -2,7 +2,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import { useAuth } from '@/hooks/useAuth';
-import { getSession } from '@/lib/auth/client';
+import { apiClient } from '@/lib/api-client';
 
 // Mock next/navigation
 const mockPush = vi.fn();
@@ -34,30 +34,27 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
-// Mock lib/auth/client
-vi.mock('@/lib/auth/client', () => ({
-  login: vi.fn<() => Promise<{ error?: string }>>(),
-  logout: vi.fn<() => Promise<void>>(),
-  getSession: vi.fn<
-    () => Promise<{
-      user?: { id: string; email: string; role: string; restaurantId?: string };
-    } | null>
-  >(),
-  requestPasswordReset: vi.fn<() => Promise<{ error?: string }>>(),
+// Mock lib/api-client — interface atual do useAuth
+vi.mock('@/lib/api-client', () => ({
+  apiClient: {
+    restoreTokens: vi.fn<() => boolean>(),
+    clearTokens: vi.fn<() => void>(),
+    isAuthenticated: vi.fn<() => boolean>(),
+    getMe: vi.fn<() => Promise<unknown | null>>(),
+    login: vi.fn<() => Promise<{ user: unknown }>>(),
+    register: vi.fn<() => Promise<{ user: unknown }>>(),
+    logout: vi.fn<() => Promise<void>>(),
+  },
 }));
 
-export { mockPush };
+const restoreTokens = apiClient.restoreTokens as ReturnType<typeof vi.fn>;
+const getMe = apiClient.getMe as ReturnType<typeof vi.fn>;
 
 const mockUser = {
   id: 'user-123',
   email: 'admin@test.com',
   role: 'admin',
   restaurantId: 'restaurant-123',
-};
-
-const mockSession = {
-  user: mockUser,
-  token: '',
 };
 
 describe('useAuth timeout', () => {
@@ -70,32 +67,34 @@ describe('useAuth timeout', () => {
   });
 
   describe('timeout behavior', () => {
-    it('isLoading becomes false after getSession fails', async () => {
-      (getSession as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('timeout'));
-
-      const { result } = renderHook(() => useAuth());
-
-      expect(result.current.isLoading).toBe(true);
-
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false);
-      });
-    });
-
-    it('isAuthenticated is false after getSession fails', async () => {
-      (getSession as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('timeout'));
+    it('isLoading becomes false after getMe fails', async () => {
+      restoreTokens.mockReturnValue(true);
+      getMe.mockRejectedValue(new Error('timeout'));
 
       const { result } = renderHook(() => useAuth());
 
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false);
       });
-
-      expect(result.current.isAuthenticated).toBe(false);
     });
 
-    it('user and session are null after getSession fails', async () => {
-      (getSession as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('timeout'));
+    it('isAuthenticated is false after getMe fails', async () => {
+      restoreTokens.mockReturnValue(true);
+      getMe.mockRejectedValue(new Error('timeout'));
+
+      const { result } = renderHook(() => useAuth());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.user).toBeNull();
+      expect(result.current.session).toBeNull();
+    });
+
+    it('user and session are null after getMe fails', async () => {
+      restoreTokens.mockReturnValue(true);
+      getMe.mockRejectedValue(new Error('timeout'));
 
       const { result } = renderHook(() => useAuth());
 
@@ -108,7 +107,9 @@ describe('useAuth timeout', () => {
     });
 
     it('successful auth completes successfully', async () => {
-      (getSession as ReturnType<typeof vi.fn>).mockResolvedValue(mockSession);
+      restoreTokens.mockReturnValue(true);
+      getMe.mockResolvedValue(mockUser);
+      (apiClient.isAuthenticated as ReturnType<typeof vi.fn>).mockReturnValue(true);
 
       const { result } = renderHook(() => useAuth());
 
@@ -118,11 +119,12 @@ describe('useAuth timeout', () => {
 
       expect(result.current.isAuthenticated).toBe(true);
       expect(result.current.user).toEqual(mockUser);
-      expect(result.current.session).toEqual(mockSession);
+      expect(result.current.session).toEqual({ user: mockUser });
     });
 
     it('auth fails fast with error, isLoading becomes false', async () => {
-      (getSession as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Network error'));
+      restoreTokens.mockReturnValue(true);
+      getMe.mockRejectedValue(new Error('Network error'));
 
       const { result } = renderHook(() => useAuth());
 

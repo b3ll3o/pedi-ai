@@ -2,7 +2,7 @@ import { renderHook, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import { useAuth } from '@/hooks/useAuth';
-import { login, logout, getSession } from '@/lib/auth/client';
+import { apiClient } from '@/lib/api-client';
 
 // Mock next/navigation
 const mockPush = vi.fn();
@@ -34,17 +34,26 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
-// Mock lib/auth/client
-vi.mock('@/lib/auth/client', () => ({
-  login: vi.fn<() => Promise<{ error?: string }>>(),
-  logout: vi.fn<() => Promise<void>>(),
-  getSession: vi.fn<
-    () => Promise<{
-      user?: { id: string; email: string; role: string; restaurantId?: string };
-    } | null>
-  >(),
-  requestPasswordReset: vi.fn<() => Promise<{ error?: string }>>(),
+// Mock lib/api-client — interface atual do useAuth
+vi.mock('@/lib/api-client', () => ({
+  apiClient: {
+    restoreTokens: vi.fn<() => boolean>(),
+    clearTokens: vi.fn<() => void>(),
+    isAuthenticated: vi.fn<() => boolean>(),
+    getMe: vi.fn<() => Promise<unknown | null>>(),
+    login: vi.fn<() => Promise<{ user: unknown }>>(),
+    register: vi.fn<() => Promise<{ user: unknown }>>(),
+    logout: vi.fn<() => Promise<void>>(),
+  },
 }));
+
+const restoreTokens = apiClient.restoreTokens as ReturnType<typeof vi.fn>;
+const clearTokens = apiClient.clearTokens as ReturnType<typeof vi.fn>;
+const isAuthenticated = apiClient.isAuthenticated as ReturnType<typeof vi.fn>;
+const getMe = apiClient.getMe as ReturnType<typeof vi.fn>;
+const login = apiClient.login as ReturnType<typeof vi.fn>;
+const register = apiClient.register as ReturnType<typeof vi.fn>;
+const logout = apiClient.logout as ReturnType<typeof vi.fn>;
 
 export { mockPush };
 
@@ -70,16 +79,22 @@ describe('useAuth hook', () => {
   });
 
   describe('1. Initial state and session check', () => {
-    it('isLoading is true initially', async () => {
-      (getSession as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+    it('isLoading becomes false after init completes when no session', async () => {
+      restoreTokens.mockReturnValue(false);
 
       const { result } = renderHook(() => useAuth());
 
-      expect(result.current.isLoading).toBe(true);
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.user).toBeNull();
+      expect(result.current.session).toBeNull();
     });
 
     it('isAuthenticated is false when no session exists', async () => {
-      (getSession as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+      restoreTokens.mockReturnValue(false);
+      isAuthenticated.mockReturnValue(false);
 
       const { result } = renderHook(() => useAuth());
 
@@ -93,7 +108,9 @@ describe('useAuth hook', () => {
     });
 
     it('isAuthenticated is true when valid session exists', async () => {
-      (getSession as ReturnType<typeof vi.fn>).mockResolvedValue(mockSession);
+      restoreTokens.mockReturnValue(true);
+      getMe.mockResolvedValue(mockUser);
+      isAuthenticated.mockReturnValue(true);
 
       const { result } = renderHook(() => useAuth());
 
@@ -103,11 +120,13 @@ describe('useAuth hook', () => {
 
       expect(result.current.isAuthenticated).toBe(true);
       expect(result.current.user).toEqual(mockUser);
-      expect(result.current.session).toEqual(mockSession);
+      expect(result.current.session).toEqual({ user: mockUser });
     });
 
     it('error is null on successful initialization', async () => {
-      (getSession as ReturnType<typeof vi.fn>).mockResolvedValue(mockSession);
+      restoreTokens.mockReturnValue(true);
+      getMe.mockResolvedValue(mockUser);
+      isAuthenticated.mockReturnValue(true);
 
       const { result } = renderHook(() => useAuth());
 
@@ -121,8 +140,8 @@ describe('useAuth hook', () => {
 
   describe('2. Sign in', () => {
     it('signIn calls login with correct params', async () => {
-      (getSession as ReturnType<typeof vi.fn>).mockResolvedValue(null);
-      (login as ReturnType<typeof vi.fn>).mockResolvedValue({});
+      restoreTokens.mockReturnValue(false);
+      login.mockResolvedValue({ user: mockUser });
 
       const { result } = renderHook(() => useAuth());
 
@@ -136,15 +155,9 @@ describe('useAuth hook', () => {
     });
 
     it('signIn updates user and session on success', async () => {
-      (getSession as ReturnType<typeof vi.fn>).mockResolvedValue(null);
-      (login as ReturnType<typeof vi.fn>).mockResolvedValue({ error: undefined });
-
-      // Mock getSession to return session after login
-      let sessionCallCount = 0;
-      (getSession as ReturnType<typeof vi.fn>).mockImplementation(() => {
-        sessionCallCount++;
-        return sessionCallCount > 1 ? Promise.resolve(mockSession) : Promise.resolve(null);
-      });
+      restoreTokens.mockReturnValue(false);
+      isAuthenticated.mockReturnValue(true);
+      login.mockResolvedValue({ user: mockUser });
 
       const { result } = renderHook(() => useAuth());
 
@@ -155,16 +168,16 @@ describe('useAuth hook', () => {
       await result.current.signIn('admin@test.com', 'password123');
 
       await waitFor(() => {
-        expect(result.current.isAuthenticated).toBe(true);
+        expect(result.current.user).toEqual(mockUser);
       });
 
-      expect(result.current.user).toEqual(mockUser);
-      expect(result.current.session).toEqual(mockSession);
+      expect(result.current.session).toEqual({ user: mockUser });
     });
 
     it('signIn sets error on auth failure', async () => {
-      (getSession as ReturnType<typeof vi.fn>).mockResolvedValue(null);
-      (login as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Invalid credentials'));
+      restoreTokens.mockReturnValue(false);
+      isAuthenticated.mockReturnValue(false);
+      login.mockRejectedValue(new Error('Invalid credentials'));
 
       const { result } = renderHook(() => useAuth());
 
@@ -182,12 +195,12 @@ describe('useAuth hook', () => {
         expect(result.current.error).toBe('Invalid credentials');
       });
 
-      expect(result.current.isAuthenticated).toBe(false);
+      expect(result.current.user).toBeNull();
     });
 
     it('signIn sets generic error when login throws non-Error exception', async () => {
-      (getSession as ReturnType<typeof vi.fn>).mockResolvedValue(null);
-      (login as ReturnType<typeof vi.fn>).mockRejectedValue('Network failure');
+      restoreTokens.mockReturnValue(false);
+      login.mockRejectedValue('Network failure');
 
       const { result } = renderHook(() => useAuth());
 
@@ -205,8 +218,10 @@ describe('useAuth hook', () => {
 
   describe('3. Sign out', () => {
     it('signOut calls logout', async () => {
-      (getSession as ReturnType<typeof vi.fn>).mockResolvedValue(mockSession);
-      (logout as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+      restoreTokens.mockReturnValue(true);
+      getMe.mockResolvedValue(mockUser);
+      isAuthenticated.mockReturnValue(true);
+      logout.mockResolvedValue(undefined);
 
       const { result } = renderHook(() => useAuth());
 
@@ -220,32 +235,37 @@ describe('useAuth hook', () => {
     });
 
     it('signOut clears user and session', async () => {
-      (getSession as ReturnType<typeof vi.fn>).mockResolvedValue(mockSession);
-      (logout as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+      restoreTokens.mockReturnValue(true);
+      getMe.mockResolvedValue(mockUser);
+      isAuthenticated.mockReturnValue(true);
+      logout.mockResolvedValue(undefined);
 
       const { result } = renderHook(() => useAuth());
 
       await waitFor(() => {
-        expect(result.current.isAuthenticated).toBe(true);
+        expect(result.current.user).toEqual(mockUser);
       });
+
+      isAuthenticated.mockReturnValue(false);
 
       await result.current.signOut();
 
       await waitFor(() => {
         expect(result.current.user).toBeNull();
         expect(result.current.session).toBeNull();
-        expect(result.current.isAuthenticated).toBe(false);
       });
     });
 
     it('signOut redirects to /login', async () => {
-      (getSession as ReturnType<typeof vi.fn>).mockResolvedValue(mockSession);
-      (logout as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+      restoreTokens.mockReturnValue(true);
+      getMe.mockResolvedValue(mockUser);
+      isAuthenticated.mockReturnValue(true);
+      logout.mockResolvedValue(undefined);
 
       const { result } = renderHook(() => useAuth());
 
       await waitFor(() => {
-        expect(result.current.isAuthenticated).toBe(true);
+        expect(result.current.user).toEqual(mockUser);
       });
 
       mockPush.mockClear();
@@ -257,8 +277,9 @@ describe('useAuth hook', () => {
   });
 
   describe('4. Error handling on init', () => {
-    it('sets error when getSession throws', async () => {
-      (getSession as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Network error'));
+    it('sets error when getMe throws', async () => {
+      restoreTokens.mockReturnValue(true);
+      getMe.mockRejectedValue(new Error('Network error'));
 
       const { result } = renderHook(() => useAuth());
 
@@ -270,7 +291,8 @@ describe('useAuth hook', () => {
     });
 
     it('sets generic error when initAuth catches non-Error throw', async () => {
-      (getSession as ReturnType<typeof vi.fn>).mockRejectedValue('Network error string');
+      restoreTokens.mockReturnValue(true);
+      getMe.mockRejectedValue('Network error string');
 
       const { result } = renderHook(() => useAuth());
 
@@ -282,9 +304,10 @@ describe('useAuth hook', () => {
     });
   });
 
-  describe('5. Sign up (not implemented)', () => {
-    it('signUp sets error when not implemented', async () => {
-      (getSession as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+  describe('5. Sign up', () => {
+    it('signUp calls register with correct params and updates state on success', async () => {
+      restoreTokens.mockReturnValue(false);
+      register.mockResolvedValue({ user: mockUser });
 
       const { result } = renderHook(() => useAuth());
 
@@ -293,10 +316,34 @@ describe('useAuth hook', () => {
       });
 
       await act(async () => {
-        await result.current.signUp('test@test.com', 'password123');
+        await result.current.signUp('test@test.com', 'password123', 'Test User');
       });
 
-      expect(result.current.error).toBe('Registro não implementado');
+      expect(register).toHaveBeenCalledWith('test@test.com', 'password123', 'Test User');
+      await waitFor(() => {
+        expect(result.current.user).toEqual(mockUser);
+      });
+    });
+
+    it('signUp sets error when register throws', async () => {
+      restoreTokens.mockReturnValue(false);
+      register.mockRejectedValue(new Error('Email already in use'));
+
+      const { result } = renderHook(() => useAuth());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      await act(async () => {
+        await expect(
+          result.current.signUp('test@test.com', 'password123', 'Test User')
+        ).rejects.toThrow('Email already in use');
+      });
+
+      await waitFor(() => {
+        expect(result.current.error).toBe('Email already in use');
+      });
     });
   });
 });

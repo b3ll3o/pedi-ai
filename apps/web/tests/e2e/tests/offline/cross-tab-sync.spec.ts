@@ -58,7 +58,7 @@ async function createAuthenticatedContext(
 }
 
 test.describe('Cross-Tab Cart Sync', () => {
-  test.beforeEach(async ({ _browser }) => {
+  test.beforeEach(async () => {
     const seedData = loadSeedData();
     // Ensure storage state exists by checking
     const storagePath = getStoragePath(seedData.customer.email);

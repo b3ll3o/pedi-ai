@@ -32,8 +32,8 @@ function preencherFormulario(
   const {
     name = 'João Silva',
     email = 'teste@email.com',
-    password = 'senha123',
-    confirmPassword = 'senha123',
+    password = 'Senha@123',
+    confirmPassword = 'Senha@123',
     intent = 'Quero gerenciar meu restaurante',
   } = overrides;
 
@@ -173,28 +173,47 @@ describe('RegisterForm', () => {
       });
     });
 
-    it('exibe erro "Senha deve ter pelo menos 6 caracteres" quando senha tem menos de 6 chars', async () => {
+    it('exibe erro "Senha deve ter pelo menos 8 caracteres" quando senha tem menos de 8 chars', async () => {
       const { getByTestId, queryByText } = render(<RegisterForm />);
 
       fireEvent.change(getByTestId('name-input'), { target: { value: 'João Silva' } });
       fireEvent.change(getByTestId('email-input'), { target: { value: 'teste@email.com' } });
-      fireEvent.change(getByTestId('password-input'), { target: { value: '12345' } });
-      fireEvent.change(getByTestId('confirm-password-input'), { target: { value: '12345' } });
+      fireEvent.change(getByTestId('password-input'), { target: { value: 'Ab1@' } });
+      fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'Ab1@' } });
       fireEvent.click(getByTestId('register-button'));
 
       await waitFor(() => {
-        expect(queryByText('Senha deve ter pelo menos 6 caracteres')).toBeInTheDocument();
+        expect(queryByText('Senha deve ter pelo menos 8 caracteres')).toBeInTheDocument();
       });
     });
 
-    it('não exibe erro de senha quando tem 6 ou mais caracteres', async () => {
+    it('exibe erro de complexidade quando senha não tem maiúscula, número e caractere especial', async () => {
+      const { getByTestId, queryByText } = render(<RegisterForm />);
+
+      fireEvent.change(getByTestId('name-input'), { target: { value: 'João Silva' } });
+      fireEvent.change(getByTestId('email-input'), { target: { value: 'teste@email.com' } });
+      fireEvent.change(getByTestId('password-input'), { target: { value: 'abcdefgh' } });
+      fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'abcdefgh' } });
+      fireEvent.click(getByTestId('register-button'));
+
+      await waitFor(() => {
+        expect(
+          queryByText('Senha deve conter letra maiúscula, número e caractere especial')
+        ).toBeInTheDocument();
+      });
+    });
+
+    it('não exibe erro de senha quando tem 8+ caracteres com complexidade', async () => {
       const utils = render(<RegisterForm />);
       preencherFormulario(utils);
       fireEvent.click(utils.getByTestId('register-button'));
 
       await waitFor(() => {
         expect(utils.queryByText('Senha é obrigatória')).not.toBeInTheDocument();
-        expect(utils.queryByText('Senha deve ter pelo menos 6 caracteres')).not.toBeInTheDocument();
+        expect(utils.queryByText('Senha deve ter pelo menos 8 caracteres')).not.toBeInTheDocument();
+        expect(
+          utils.queryByText('Senha deve conter letra maiúscula, número e caractere especial')
+        ).not.toBeInTheDocument();
       });
     });
   });
@@ -205,7 +224,7 @@ describe('RegisterForm', () => {
 
       fireEvent.change(getByTestId('name-input'), { target: { value: 'João Silva' } });
       fireEvent.change(getByTestId('email-input'), { target: { value: 'teste@email.com' } });
-      fireEvent.change(getByTestId('password-input'), { target: { value: 'senha123' } });
+      fireEvent.change(getByTestId('password-input'), { target: { value: 'Senha@123' } });
       fireEvent.change(getByTestId('confirm-password-input'), { target: { value: '' } });
       fireEvent.click(getByTestId('register-button'));
 
@@ -219,8 +238,8 @@ describe('RegisterForm', () => {
 
       fireEvent.change(getByTestId('name-input'), { target: { value: 'João Silva' } });
       fireEvent.change(getByTestId('email-input'), { target: { value: 'teste@email.com' } });
-      fireEvent.change(getByTestId('password-input'), { target: { value: 'senha123' } });
-      fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'senha456' } });
+      fireEvent.change(getByTestId('password-input'), { target: { value: 'Senha@123' } });
+      fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'Outra@456' } });
       fireEvent.click(getByTestId('register-button'));
 
       await waitFor(() => {
@@ -252,7 +271,7 @@ describe('RegisterForm', () => {
         expect(onSubmit).toHaveBeenCalledWith(
           'João Silva',
           'teste@email.com',
-          'senha123',
+          'Senha@123',
           'gerenciar_restaurante'
         );
       });
@@ -398,10 +417,11 @@ describe('RegisterForm', () => {
 
       fireEvent.change(utils.getByTestId('name-input'), { target: { value: 'João Silva' } });
       fireEvent.change(utils.getByTestId('email-input'), { target: { value: 'teste@email.com' } });
-      fireEvent.change(utils.getByTestId('password-input'), { target: { value: 'senha123' } });
+      fireEvent.change(utils.getByTestId('password-input'), { target: { value: 'Senha@123' } });
       fireEvent.change(utils.getByTestId('confirm-password-input'), {
-        target: { value: 'senha123' },
+        target: { value: 'Senha@123' },
       });
+      fireEvent.click(utils.getByText('Quero gerenciar meu restaurante'));
       fireEvent.click(utils.getByTestId('register-button'));
 
       // Aguarda que o erro seja exibido (confirma que finally executou)
@@ -426,9 +446,9 @@ describe('RegisterForm', () => {
 
       fireEvent.change(utils.getByTestId('name-input'), { target: { value: 'João José Silva' } });
       fireEvent.change(utils.getByTestId('email-input'), { target: { value: 'teste@email.com' } });
-      fireEvent.change(utils.getByTestId('password-input'), { target: { value: 'senha123' } });
+      fireEvent.change(utils.getByTestId('password-input'), { target: { value: 'Senha@123' } });
       fireEvent.change(utils.getByTestId('confirm-password-input'), {
-        target: { value: 'senha123' },
+        target: { value: 'Senha@123' },
       });
       fireEvent.click(utils.getByText('Quero gerenciar meu restaurante'));
       fireEvent.click(utils.getByTestId('register-button'));
@@ -437,7 +457,7 @@ describe('RegisterForm', () => {
         expect(onSubmit).toHaveBeenCalledWith(
           'João José Silva',
           'teste@email.com',
-          'senha123',
+          'Senha@123',
           'gerenciar_restaurante'
         );
       });

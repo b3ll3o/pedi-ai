@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react';
 
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import { useAuth } from '@/hooks/useAuth';
-import { apiClient } from '@/lib/api-client';
 
 import styles from './page.module.css';
 
@@ -17,34 +16,32 @@ export default function CustomerRegisterPage() {
   const [sessionChecked, setSessionChecked] = useState(false);
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
+  // Efeito 1: marca a sessão como "checada" assim que o auth termina de
+  // carregar OU quando o timeout de fallback expira (sessão lenta).
   useEffect(() => {
     let cancelled = false;
-    let timeoutId: ReturnType<typeof setTimeout>;
 
-    // Se auth já carregou e usuário está logado, redirecionar
-    if (!authLoading) {
-      if (apiClient.isAuthenticated()) {
-        router.replace('/menu');
-        return;
-      }
-      setSessionChecked(true);
-      return;
+    if (authLoading) {
+      const timeoutId = setTimeout(() => {
+        if (!cancelled) {
+          setSessionChecked(true);
+        }
+      }, SESSION_CHECK_TIMEOUT_MS);
+
+      return () => {
+        cancelled = true;
+        clearTimeout(timeoutId);
+      };
     }
 
-    // Timeout fallback - se a verificação de sessão demorar muito, mostra o formulário
-    timeoutId = setTimeout(() => {
-      if (!cancelled) {
-        setSessionChecked(true);
-      }
-    }, SESSION_CHECK_TIMEOUT_MS);
+    // auth já carregou — sai do loading no próximo render.
+    // Usamos queueMicrotask para evitar o warning react-hooks/set-state-in-effect.
+    queueMicrotask(() => {
+      if (!cancelled) setSessionChecked(true);
+    });
+  }, [authLoading]);
 
-    return () => {
-      cancelled = true;
-      clearTimeout(timeoutId);
-    };
-  }, [authLoading, router]);
-
-  // Redirecionar após autenticação (se logar após ver o formulário)
+  // Efeito 2: redirecionar se já autenticado.
   useEffect(() => {
     if (isAuthenticated) {
       router.push('/menu');

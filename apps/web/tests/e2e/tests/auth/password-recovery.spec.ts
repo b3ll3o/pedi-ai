@@ -47,32 +47,27 @@ test.describe('Recuperação de Senha - Login Page', () => {
     await cleanupTest(page);
   });
 
-  test('deve exibir link para esqueci minha senha na página de login', async ({ page: _page }) => {
+  test('deve exibir link para esqueci minha senha na página de login', async () => {
     await expect(loginPage.forgotPasswordLink).toBeVisible();
   });
 
-  test('deve mostrar formulário de recuperação ao clicar em esqueci minha senha', async ({
-    _page,
-  }) => {
+  test('deve mostrar formulário de recuperação ao clicar em esqueci minha senha', async () => {
     await loginPage.forgotPasswordLink.click();
     await expect(loginPage.forgotPasswordEmailInput).toBeVisible();
     await expect(loginPage.forgotPasswordSubmitButton).toBeVisible();
   });
 
-  test('deve solicitar recuperação de senha com email válido', async ({
-    page: _page,
-    seedData,
-  }) => {
+  test('deve solicitar recuperação de senha com email válido', async ({ seedData }) => {
     await loginPage.forgotPassword(seedData.customer.email);
     await expect(loginPage.forgotPasswordSuccessMessage).toBeVisible();
   });
 
   test('deve exibir sucesso mesmo com email inexistente (segurança do Supabase)', async ({
-    page: _page,
+    page,
   }) => {
     await loginPage.forgotPassword('nonexistent@test.com');
-    await _page.waitForTimeout(1000);
-    const pageContent = await _page.content();
+    await page.waitForTimeout(1000);
+    const pageContent = await page.content();
     expect(
       pageContent.includes('login') ||
         pageContent.includes('esqueci') ||
@@ -82,9 +77,7 @@ test.describe('Recuperação de Senha - Login Page', () => {
     ).toBe(true);
   });
 
-  test('deve ocultar campos de login quando formulário de recuperação está visível', async ({
-    _page,
-  }) => {
+  test('deve ocultar campos de login quando formulário de recuperação está visível', async () => {
     await loginPage.forgotPasswordLink.click();
     await expect(loginPage.forgotPasswordEmailInput).toBeVisible();
     const recoveryFormVisible = await loginPage.forgotPasswordEmailInput.isVisible();

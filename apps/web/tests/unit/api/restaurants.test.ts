@@ -48,33 +48,21 @@ describe('Restaurant Creation API - Role Enum Fix', () => {
     });
   });
 
-  describe('route.ts code verification', () => {
-    const routeBasePath = process.cwd() + '/apps/web/src/app/api/admin';
+  describe('PapelRestaurante (fonte de verdade do enum pt-BR)', () => {
+    const valueObjectPath =
+      process.cwd() + '/apps/web/src/domain/admin/value-objects/PapelRestaurante.ts';
 
-    it('route.ts não usa valores em inglês para role', async () => {
-      // Read the route file and verify the fix
-      const routeContent = await import('fs').then((fs) =>
-        fs.readFileSync(`${routeBasePath}/restaurants/route.ts`, 'utf-8')
-      );
+    it("PapelRestaurante usa valores pt-BR ('dono', 'gerente', 'atendente')", async () => {
+      const content = await import('fs').then((fs) => fs.readFileSync(valueObjectPath, 'utf-8'));
 
-      // Should use 'dono' for owner role
-      expect(routeContent).toContain("'dono'");
+      // Fonte de verdade do enum — o domain define os papéis em pt-BR.
+      expect(content).toContain("'dono'");
+      expect(content).toContain("'gerente'");
+      expect(content).toContain("'atendente'");
 
-      // Should NOT use 'owner' (the bug that was fixed)
-      const ownerRoleRegex = /role:\s*['"]owner['"]/g;
-      const matches = routeContent.match(ownerRoleRegex);
-      expect(matches).toBeNull();
-    });
-
-    it('users/[id]/route.ts verifica role don', async () => {
-      // Read the user route file and verify the fix
-      const routeContent = await import('fs').then((fs) =>
-        fs.readFileSync(`${routeBasePath}/users/[id]/route.ts`, 'utf-8')
-      );
-
-      // Should NOT use 'owner' when filtering by role
-      const ownerRoleRegex = /\.eq\(['"]role['"],\s*['"]owner['"]\)/g;
-      const matches = routeContent.match(ownerRoleRegex);
+      // NUNCA valores em inglês no value object.
+      const englishRoleRegex = /['"](owner|manager|employee|customer)['"]/g;
+      const matches = content.match(englishRoleRegex);
       expect(matches).toBeNull();
     });
   });

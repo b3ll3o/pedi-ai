@@ -1,5 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
+// Mock do cache offline — necessário porque os testes de hydrate/useHydratedMenu
+// dependem de `getCachedMenu`. Sem este mock, a referência `mockGetCachedMenu`
+// usada nos `beforeEach` abaixo ficaria indefinida.
+vi.mock('@/lib/offline/cache', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/offline/cache')>('@/lib/offline/cache');
+  return {
+    ...actual,
+    getCachedMenu: vi.fn(),
+  };
+});
+
 import {
   useMenuStore,
   getFilteredProducts,
@@ -7,6 +18,10 @@ import {
   hydrateFromCache,
   useHydratedMenu,
 } from '@/infrastructure/persistence/menuStore';
+
+import { getCachedMenu } from '@/lib/offline/cache';
+
+const mockGetCachedMenu = vi.mocked(getCachedMenu);
 
 interface MenuProduct {
   id: string;

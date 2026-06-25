@@ -15,6 +15,17 @@ interface RegisterFormProps {
   ) => Promise<void> | void;
 }
 
+/**
+ * Verifica se a senha atende aos requisitos de complexidade da API:
+ * 1 letra maiúscula, 1 número e 1 caractere especial.
+ */
+function validarComplexidadeSenha(password: string): boolean {
+  const temMaiuscula = /[A-Z]/.test(password);
+  const temNumero = /\d/.test(password);
+  const temEspecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+  return temMaiuscula && temNumero && temEspecial;
+}
+
 export function RegisterForm({ onSubmit }: RegisterFormProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -33,10 +44,11 @@ export function RegisterForm({ onSubmit }: RegisterFormProps) {
     return emailRegex.test(value);
   };
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError('');
-
+  /**
+   * Valida o formulário e seta erros específicos em cada campo.
+   * Retorna `null` se tudo OK, ou mensagem de erro geral caso contrário.
+   */
+  const validateForm = (): string | null => {
     setNameError('');
     setEmailError('');
     setPasswordError('');
@@ -44,51 +56,55 @@ export function RegisterForm({ onSubmit }: RegisterFormProps) {
 
     if (!name.trim()) {
       setNameError('Nome é obrigatório');
-      return;
+      return 'Nome inválido';
     }
 
     if (!email) {
       setEmailError('Email é obrigatório');
-      return;
+      return 'Email obrigatório';
     }
-
     if (!validateEmail(email)) {
       setEmailError('Por favor, insira um email válido');
-      return;
+      return 'Email inválido';
     }
 
     if (!password) {
       setPasswordError('Senha é obrigatória');
-      return;
+      return 'Senha obrigatória';
     }
-
     // API exige: 8+ chars, 1 maiúscula, 1 número, 1 caractere especial
     if (password.length < 8) {
       setPasswordError('Senha deve ter pelo menos 8 caracteres');
-      return;
+      return 'Senha curta';
     }
-
-    const temMaiuscula = /[A-Z]/.test(password);
-    const temNumero = /\d/.test(password);
-    const temEspecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
-
-    if (!temMaiuscula || !temNumero || !temEspecial) {
+    if (!validarComplexidadeSenha(password)) {
       setPasswordError('Senha deve conter letra maiúscula, número e caractere especial');
-      return;
+      return 'Senha fraca';
     }
 
     if (!confirmPassword) {
       setConfirmPasswordError('Confirmação de senha é obrigatória');
-      return;
+      return 'Confirmação obrigatória';
     }
-
     if (password !== confirmPassword) {
       setConfirmPasswordError('As senhas não coincidem');
-      return;
+      return 'Senhas não coincidem';
     }
 
     if (!intent) {
-      setError('Por favor, selecione uma intenção');
+      return 'Por favor, selecione uma intenção';
+    }
+
+    return null;
+  };
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError('');
+
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
       return;
     }
 

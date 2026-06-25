@@ -21,7 +21,7 @@ test.describe('Restaurants - Navegação Pública', () => {
   test(
     'deve exibir página de restaurantes com lista de restaurantes',
     { tag: ['@smoke', '@critical'] },
-    async ({ _seedData }) => {
+    async () => {
       await restaurantsPage.goto();
 
       await expect(restaurantsPage.restaurantList).toBeVisible();
@@ -70,18 +70,14 @@ test.describe('Restaurants - Navegação Pública', () => {
     }
   );
 
-  test(
-    'deve filtrar restaurantes por nome na busca',
-    { tag: '@critical' },
-    async ({ _seedData }) => {
-      await restaurantsPage.goto();
-      await restaurantsPage.waitForList();
+  test('deve filtrar restaurantes por nome na busca', { tag: '@critical' }, async () => {
+    await restaurantsPage.goto();
+    await restaurantsPage.waitForList();
 
-      await restaurantsPage.search('Restaurant E2E Test');
+    await restaurantsPage.search('Restaurant E2E Test');
 
-      await expect(restaurantsPage.getCardByName('Restaurant E2E Test')).toBeVisible();
-    }
-  );
+    await expect(restaurantsPage.getCardByName('Restaurant E2E Test')).toBeVisible();
+  });
 
   test(
     'deve limpar busca e mostrar todos restaurantes',
