@@ -87,7 +87,6 @@ describe('BuscaCardapioService (RF-MENU-12)', () => {
     });
 
     it('deve ignorar acentos', () => {
-      const resultados = service.buscar({ cardapio, termo: 'janta' });
       // "Laranja" tem "ja", mas queremos testar acentos: usaremos "laranja" sem til
       const resultados2 = service.buscar({ cardapio, termo: 'laranj' });
       expect(resultados2[0].item.nome).toBe('Suco de Laranja');

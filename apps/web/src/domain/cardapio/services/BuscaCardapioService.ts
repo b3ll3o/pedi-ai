@@ -1,6 +1,6 @@
 import { CategoriaComItens } from '@/application/cardapio/services/ListarCardapioUseCase';
-import { ItemCardapio } from '@/domain/cardapio/entities/ItemCardapio';
 import { Categoria } from '@/domain/cardapio/entities/Categoria';
+import { ItemCardapio } from '@/domain/cardapio/entities/ItemCardapio';
 
 export interface BuscaCardapioInput {
   cardapio: CategoriaComItens[];

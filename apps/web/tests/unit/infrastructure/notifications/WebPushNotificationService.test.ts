@@ -2,7 +2,7 @@
  * Cobertura: RF-ORDER-13 (Notificações push via Web Push API)
  * @see .openspec/specs/pedido/design.md
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { PushSubscriptionVO } from '@/domain/notifications/IPushNotificationService';
 import { WebPushNotificationService } from '@/infrastructure/notifications/WebPushNotificationService';
