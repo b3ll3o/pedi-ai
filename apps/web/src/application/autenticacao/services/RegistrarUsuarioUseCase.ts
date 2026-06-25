@@ -53,7 +53,8 @@ export interface IAuthAdapter {
 }
 
 /**
- * Use Case para registrar um novo usuário no sistema
+ * Use Case para registrar um novo usuário no sistema.
+ * @spec(RF-AUTH-01)
  */
 export class RegistrarUsuarioUseCase implements UseCase<
   RegistrarUsuarioInput,

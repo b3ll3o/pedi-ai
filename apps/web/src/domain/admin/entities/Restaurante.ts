@@ -16,6 +16,10 @@ export interface RestauranteProps {
   version: number;
 }
 
+/**
+ * Entidade Restaurante — raiz do BC admin.
+ * @spec(RF-ADM-01, RF-ADM-07, RF-ADM-08)
+ */
 export class Restaurante extends EntityClass<RestauranteProps> {
   get nome(): string {
     return this.props.nome;

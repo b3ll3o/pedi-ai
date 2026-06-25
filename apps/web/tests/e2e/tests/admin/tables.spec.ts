@@ -1,3 +1,7 @@
+/**
+ * Cobertura E2E: RF-TABLE-01, RF-TABLE-02, RF-TABLE-05
+ * @see .openspec/specs/mesa/design.md
+ */
 import { AdminTablesPage } from '../../pages/AdminTablesPage';
 import { test, expect } from '../shared/fixtures';
 

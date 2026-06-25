@@ -132,16 +132,16 @@ Validação usa **HMAC-SHA256**. Implementação em `apps/web/src/lib/qr/validat
 
 Flags configuradas via variáveis de ambiente em `.env.local`:
 
-| Flag                                    | Descrição                      |
-| --------------------------------------- | ------------------------------ |
-| `NEXT_PUBLIC_FEATURE_OFFLINE_ENABLED`   | Modo offline                   |
-| `NEXT_PUBLIC_FEATURE_PIX_ENABLED`       | Pagamento PIX                  |
-| `NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED`   | QR codes de mesa               |
-| `NEXT_PUBLIC_FEATURE_COMBOS_ENABLED`    | Sistema de combos              |
-| `NEXT_PUBLIC_ENABLE_MULTI_RESTAURANT`   | Multi-restaurante              |
-| `NEXT_PUBLIC_FEATURE_WAITER_MODE`       | Sistema de chamada garçom      |
-| `NEXT_PUBLIC_FEATURE_ANALYTICS_ENABLED` | Dashboard de analytics         |
-| `NEXT_PUBLIC_FEATURE_CASHBACK_ENABLED`  | Sistema de cashback/recompensa |
+| Flag                                    | Descrição                                    |
+| --------------------------------------- | -------------------------------------------- |
+| `NEXT_PUBLIC_FEATURE_OFFLINE_ENABLED`   | Modo offline                                 |
+| `NEXT_PUBLIC_FEATURE_PIX_ENABLED`       | Pagamento PIX                                |
+| `NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED`   | QR codes de mesa                             |
+| `NEXT_PUBLIC_FEATURE_COMBOS_ENABLED`    | Sistema de combos                            |
+| `NEXT_PUBLIC_ENABLE_MULTI_RESTAURANT`   | Multi-restaurante (ver RF-ADM-09, planejado) |
+| `NEXT_PUBLIC_FEATURE_WAITER_MODE`       | Sistema de chamada garçom                    |
+| `NEXT_PUBLIC_FEATURE_ANALYTICS_ENABLED` | Dashboard de analytics                       |
+| `NEXT_PUBLIC_FEATURE_CASHBACK_ENABLED`  | Cashback (planejado, sem RF atual)           |
 
 ---
 

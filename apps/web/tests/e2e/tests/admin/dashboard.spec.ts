@@ -1,3 +1,7 @@
+/**
+ * Cobertura E2E: RF-ADM-10 (Analytics)
+ * @see .openspec/specs/admin/design.md
+ */
 import { AdminDashboardPage } from '../../pages/AdminDashboardPage';
 import { test, expect } from '../shared/fixtures';
 

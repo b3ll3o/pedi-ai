@@ -1,3 +1,7 @@
+/**
+ * @spec(RF-AUTH-02)
+ * @see .openspec/specs/autenticacao/design.md
+ */
 import { UseCase } from '@/application/shared';
 import { Sessao } from '@/domain/autenticacao/entities/Sessao';
 

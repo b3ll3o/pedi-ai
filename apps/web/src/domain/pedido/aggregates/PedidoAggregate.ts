@@ -6,6 +6,10 @@ import { PedidoCriadoEvent } from '../events/PedidoCriadoEvent';
 import { PedidoStatusAlteradoEvent } from '../events/PedidoStatusAlteradoEvent';
 import { StatusPedido } from '../value-objects/StatusPedido';
 
+/**
+ * Aggregate de Pedido — orquestra entidade + eventos de mudança de status.
+ * @spec(RF-ORDER-05, RF-ORDER-06)
+ */
 export class PedidoAggregate {
   private pedido: Pedido;
   private eventDispatcher: EventDispatcher;

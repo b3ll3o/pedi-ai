@@ -1,3 +1,7 @@
+/**
+ * Cobertura E2E: RF-ORDER-06, RF-ORDER-08
+ * @see .openspec/specs/pedido/design.md
+ */
 import {
   AdminOrdersPage,
   AdminOrderStatus as _AdminOrderStatus,

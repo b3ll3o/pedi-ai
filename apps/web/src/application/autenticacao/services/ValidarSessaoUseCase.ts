@@ -18,7 +18,8 @@ export interface ValidarSessaoOutput {
 }
 
 /**
- * Use Case para validar token de sessão
+ * Use Case para validar token de sessão.
+ * @spec(RF-AUTH-03)
  */
 export class ValidarSessaoUseCase implements UseCase<ValidarSessaoInput, ValidarSessaoOutput> {
   constructor(

@@ -1,3 +1,7 @@
+/**
+ * @spec(RF-ADM-05)
+ * @see .openspec/specs/admin/design.md
+ */
 import { UseCase } from '@/application/shared';
 import { IUsuarioRestauranteRepository } from '@/domain/admin/repositories/IUsuarioRestauranteRepository';
 import { isMultiRestaurantEnabled } from '@/lib/feature-flags';

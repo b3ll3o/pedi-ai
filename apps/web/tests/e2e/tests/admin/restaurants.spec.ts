@@ -1,3 +1,7 @@
+/**
+ * Cobertura E2E: RF-ADM-01, RF-ADM-02
+ * @see .openspec/specs/admin/design.md
+ */
 import { AdminRestaurantsPage } from '../../pages/AdminRestaurantsPage';
 import { test, expect } from '../shared/fixtures';
 

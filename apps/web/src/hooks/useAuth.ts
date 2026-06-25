@@ -1,24 +1,24 @@
 /**
  * useAuth Hook
  * Hook para gerenciamento de estado de autenticação.
- * Usa lib/auth/client.ts para operações de autenticação.
+ * Usa lib/api-client.ts para operações de autenticação via API.
  */
 
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
-import { login, logout, getSession } from '@/lib/auth/client';
+import { apiClient } from '@/lib/api-client';
 
 export interface AuthUser {
   id: string;
   email: string;
   role: string;
+  name?: string;
   restaurantId?: string;
 }
 
 export interface AuthSession {
   user: AuthUser;
-  token: string;
 }
 
 export interface UseAuthReturn {
@@ -28,19 +28,14 @@ export interface UseAuthReturn {
   isAuthenticated: boolean;
   error: string | null;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, papel?: string) => Promise<void>;
+  signUp: (email: string, password: string, name: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
 /**
  * React hook for managing authentication state.
  * Provides user session, loading states, and auth actions.
- * Usa lib/auth/client.ts para operações de autenticação.
- *
- * @example
- * ```tsx
- * const { user, isLoading, isAuthenticated, signIn, signUp, signOut, error } = useAuth();
- * ```
+ * Usa lib/api-client.ts para operações de autenticação.
  */
 export function useAuth(): UseAuthReturn {
   const router = useRouter();
@@ -49,23 +44,36 @@ export function useAuth(): UseAuthReturn {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Initialize auth state
+  // Initialize auth state - restore tokens from sessionStorage and verify with API
   useEffect(() => {
     let isMounted = true;
 
     async function initAuth() {
       try {
-        const sessionData = await getSession();
-        if (isMounted) {
-          if (sessionData) {
-            setUser(sessionData.user);
-            setSession({ user: sessionData.user, token: '' });
-          } else {
+        // Try to restore tokens from sessionStorage
+        const restored = apiClient.restoreTokens();
+
+        if (restored) {
+          // Verify token is still valid by fetching /auth/me
+          const currentUser = await apiClient.getMe();
+          if (isMounted) {
+            if (currentUser) {
+              setUser(currentUser as AuthUser);
+              setSession({ user: currentUser as AuthUser });
+            } else {
+              // Token may have expired, clear it
+              apiClient.clearTokens();
+              setUser(null);
+              setSession(null);
+            }
+          }
+        } else {
+          if (isMounted) {
             setUser(null);
             setSession(null);
           }
-          setError(null);
         }
+        setError(null);
       } catch (err) {
         if (isMounted) {
           setError(err instanceof Error ? err.message : 'Falha ao inicializar autenticação');
@@ -89,15 +97,9 @@ export function useAuth(): UseAuthReturn {
     setIsLoading(true);
     setError(null);
     try {
-      const result = await login(email, password);
-      if (result.error) {
-        throw new Error(result.error);
-      }
-      const sessionData = await getSession();
-      if (sessionData) {
-        setUser(sessionData.user);
-        setSession({ user: sessionData.user, token: '' });
-      }
+      const result = await apiClient.login(email, password);
+      setUser(result.user as AuthUser);
+      setSession({ user: result.user as AuthUser });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Falha na autenticação';
       setError(errorMessage);
@@ -107,29 +109,29 @@ export function useAuth(): UseAuthReturn {
     }
   }, []);
 
-  // Handle sign up (placeholder - not implemented in lib/auth/client.ts)
-  const handleSignUp = useCallback(
-    async (email: string, password: string, _papel: string = 'cliente') => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        // Registration is not yet implemented in lib/auth/client.ts
-        throw new Error('Registro não implementado');
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Falha no registro');
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    []
-  );
+  // Handle sign up
+  const handleSignUp = useCallback(async (email: string, password: string, name: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await apiClient.register(email, password, name);
+      setUser(result.user as AuthUser);
+      setSession({ user: result.user as AuthUser });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Falha no registro';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   // Handle sign out
   const handleSignOut = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      await logout();
+      await apiClient.logout();
       setSession(null);
       setUser(null);
       router.push('/login');
@@ -144,7 +146,7 @@ export function useAuth(): UseAuthReturn {
     user,
     session,
     isLoading,
-    isAuthenticated: !!session,
+    isAuthenticated: apiClient.isAuthenticated(),
     error,
     signIn: handleSignIn,
     signUp: handleSignUp,

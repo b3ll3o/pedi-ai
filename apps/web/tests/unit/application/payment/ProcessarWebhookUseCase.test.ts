@@ -1,3 +1,7 @@
+/**
+ * Cobertura: RF-PAY-02 (Processar webhook), RF-PAY-03 (Validar assinatura), RF-PAY-07 (Idempotência)
+ * @see .openspec/specs/pagamento/design.md
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import {

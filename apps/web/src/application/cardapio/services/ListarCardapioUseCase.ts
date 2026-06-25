@@ -19,6 +19,10 @@ export interface ListarCardapioInput {
   restauranteId: string;
 }
 
+/**
+ * Use Case: listar cardápio completo (categorias + itens ativos).
+ * @spec(RF-MENU-02)
+ */
 export class ListarCardapioUseCase implements UseCase<ListarCardapioInput, CardapioCompleto> {
   constructor(
     private categoriaRepo: ICategoriaRepository,

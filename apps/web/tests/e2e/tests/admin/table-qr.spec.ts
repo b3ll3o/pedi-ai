@@ -1,3 +1,7 @@
+/**
+ * Cobertura E2E: RF-TABLE-03, RF-TABLE-04
+ * @see .openspec/specs/mesa/design.md
+ */
 import { TableQRPage } from '../../pages/TableQRPage';
 import { test, expect } from '../shared/fixtures';
 

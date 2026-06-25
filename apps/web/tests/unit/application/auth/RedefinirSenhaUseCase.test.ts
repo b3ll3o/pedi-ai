@@ -1,3 +1,7 @@
+/**
+ * Cobertura: RF-AUTH-05 (Redefinir senha)
+ * @see .openspec/specs/autenticacao/design.md
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { RedefinirSenhaUseCase } from '@/application/autenticacao/services/RedefinirSenhaUseCase';

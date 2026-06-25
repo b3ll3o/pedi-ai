@@ -13,6 +13,10 @@ export interface PagamentoAggregateProps {
   transacoes: Transacao[];
 }
 
+/**
+ * Aggregate de Pagamento — gerencia charge, webhook, refund e estado.
+ * @spec(RF-PAY-01, RF-PAY-05, RF-PAY-08)
+ */
 export class PagamentoAggregate extends AggregateRootClass<PagamentoAggregateProps> {
   private constructor(props: PagamentoAggregateProps) {
     super(props);

@@ -1,3 +1,7 @@
+/**
+ * @spec(RF-PAY-06)
+ * @see .openspec/specs/pagamento/design.md
+ */
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 
 import { IPixAdapter, PixCharge } from '@/application/pagamento/services/adapters/IPixAdapter';

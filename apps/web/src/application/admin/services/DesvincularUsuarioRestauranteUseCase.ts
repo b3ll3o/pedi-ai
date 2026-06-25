@@ -1,3 +1,7 @@
+/**
+ * @spec(RF-ADM-04)
+ * @see .openspec/specs/admin/design.md
+ */
 import { UseCase } from '@/application/shared';
 import { UsuarioDesvinculadoRestauranteEvent } from '@/domain/admin/events/UsuarioDesvinculadoRestauranteEvent';
 import { IUsuarioRestauranteRepository } from '@/domain/admin/repositories/IUsuarioRestauranteRepository';

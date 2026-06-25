@@ -1,3 +1,7 @@
+/**
+ * Cobertura E2E: RF-MENU-04 (CRUD categoria), RF-MENU-08 (Reordenar)
+ * @see .openspec/specs/cardapio/design.md
+ */
 import { AdminCategoriesPage } from '../../pages/AdminCategoriesPage';
 import { test, expect, clearClientState } from '../shared/fixtures';
 

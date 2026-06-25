@@ -5,6 +5,10 @@ export interface ListarCategoriasInput {
   restauranteId: string;
 }
 
+/**
+ * Use Case: listar categorias ativas de um restaurante (ordenadas).
+ * @spec(RF-MENU-01, RF-MENU-08)
+ */
 export class ListarCategoriasUseCase implements UseCase<ListarCategoriasInput, Categoria[]> {
   constructor(private categoriaRepo: ICategoriaRepository) {}
 

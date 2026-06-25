@@ -10,6 +10,10 @@ export interface CalculoDescontoCombo {
   percentualDesconto: number;
 }
 
+/**
+ * Aggregate de Combo — calcula descontos e valida invariantes dos itens.
+ * @spec(RF-MENU-07)
+ */
 export class ComboAggregate {
   private combo: Combo;
   private precosItens: Map<string, Dinheiro>;

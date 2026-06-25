@@ -62,8 +62,18 @@ export function RegisterForm({ onSubmit }: RegisterFormProps) {
       return;
     }
 
-    if (password.length < 6) {
-      setPasswordError('Senha deve ter pelo menos 6 caracteres');
+    // API exige: 8+ chars, 1 maiúscula, 1 número, 1 caractere especial
+    if (password.length < 8) {
+      setPasswordError('Senha deve ter pelo menos 8 caracteres');
+      return;
+    }
+
+    const temMaiuscula = /[A-Z]/.test(password);
+    const temNumero = /\d/.test(password);
+    const temEspecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+
+    if (!temMaiuscula || !temNumero || !temEspecial) {
+      setPasswordError('Senha deve conter letra maiúscula, número e caractere especial');
       return;
     }
 

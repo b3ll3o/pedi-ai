@@ -1,3 +1,7 @@
+/**
+ * @spec(RF-MENU-06)
+ * @see .openspec/specs/cardapio/design.md
+ */
 import { UseCase } from '@/application/shared';
 import { IRestauranteRepository } from '@/domain/admin/repositories/IRestauranteRepository';
 import { ModificadorGrupo } from '@/domain/cardapio/entities/ModificadorGrupo';

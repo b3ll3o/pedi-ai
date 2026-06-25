@@ -6,6 +6,10 @@ export interface ListarMesasInput {
   restauranteId: string;
 }
 
+/**
+ * Use Case: listar mesas de um restaurante.
+ * @spec(RF-TABLE-02)
+ */
 export class ListarMesasUseCase implements UseCase<ListarMesasInput, Mesa[]> {
   constructor(private mesaRepo: IMesaRepository) {}
 

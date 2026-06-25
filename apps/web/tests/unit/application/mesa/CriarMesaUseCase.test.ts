@@ -1,3 +1,7 @@
+/**
+ * Cobertura: RF-TABLE-01 (Criar mesa), RF-TABLE-04 (Gerar QR PDF/PNG)
+ * @see .openspec/specs/mesa/design.md
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { CriarMesaUseCase } from '@/application/mesa/services/CriarMesaUseCase';

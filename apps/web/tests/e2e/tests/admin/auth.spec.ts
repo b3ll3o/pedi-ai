@@ -1,3 +1,7 @@
+/**
+ * Cobertura E2E: RF-AUTH-01, RF-AUTH-02, RF-AUTH-03
+ * @see .openspec/specs/autenticacao/design.md
+ */
 import { AdminLoginPage } from '../../pages/AdminLoginPage';
 import { CustomerLoginPage } from '../../pages/CustomerLoginPage';
 import { test, expect } from '../shared/fixtures';

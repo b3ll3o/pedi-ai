@@ -1,3 +1,7 @@
+/**
+ * Cobertura E2E: RF-MENU-05 (CRUD produto)
+ * @see .openspec/specs/cardapio/design.md
+ */
 import { AdminProductsPage } from '../../pages/AdminProductsPage';
 import { test, expect, clearClientState } from '../shared/fixtures';
 

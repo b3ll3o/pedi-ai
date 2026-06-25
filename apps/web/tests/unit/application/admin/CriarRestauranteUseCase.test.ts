@@ -1,3 +1,7 @@
+/**
+ * Cobertura: RF-ADM-01 (Criar restaurante)
+ * @see .openspec/specs/admin/design.md
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { CriarRestauranteUseCase } from '@/application/admin/services/CriarRestauranteUseCase';

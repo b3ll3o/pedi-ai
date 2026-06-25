@@ -32,6 +32,11 @@ export interface Reembolso {
   status: 'pending' | 'success' | 'failure';
 }
 
+/**
+ * Use Case: iniciar reembolso (parcial ou total) de pagamento PIX.
+ * Integração com `RF-ORDER-12` (cancelamento).
+ * @spec(RF-PAY-08)
+ */
 export class IniciarReembolsoUseCase implements UseCase<IniciarReembolsoInput, Reembolso> {
   constructor(
     private pagamentoRepo: IPagamentoRepository,

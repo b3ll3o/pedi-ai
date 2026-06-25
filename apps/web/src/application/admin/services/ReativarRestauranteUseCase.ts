@@ -25,6 +25,7 @@ export interface ReativarRestauranteOutput {
  * Use Case para reativar um restaurante desativado.
  * O restaurante volta a aparecer para clientes.
  * Requer que o usuário seja owner do restaurante.
+ * @spec(RF-ADM-08)
  */
 export class ReativarRestauranteUseCase implements UseCase<
   ReativarRestauranteInput,

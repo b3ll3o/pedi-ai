@@ -1,3 +1,7 @@
+/**
+ * Cobertura: RF-PAY-08 (Iniciar reembolso)
+ * @see .openspec/specs/pagamento/design.md
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import {

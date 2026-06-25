@@ -1,6 +1,8 @@
 /**
  * Socket.io Client Configuration
  * Configure the Socket.io client connection to the backend.
+ * @spec(RF-ORDER-09)
+ * @see .openspec/specs/pedido/design.md
  */
 
 import { io, Socket } from 'socket.io-client';

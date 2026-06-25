@@ -5,48 +5,46 @@ import { useEffect, useState } from 'react';
 
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import { useAuth } from '@/hooks/useAuth';
-import { getSession } from '@/lib/auth/client';
+import { apiClient } from '@/lib/api-client';
 
 import styles from './page.module.css';
 
 // Timeout para detectar sessão lenta/falhou e exibir o formulário mesmo assim
-const SESSION_CHECK_TIMEOUT_MS = 5000;
+const SESSION_CHECK_TIMEOUT_MS = 3000;
 
 export default function CustomerRegisterPage() {
   const router = useRouter();
   const [sessionChecked, setSessionChecked] = useState(false);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
     let cancelled = false;
+    let timeoutId: ReturnType<typeof setTimeout>;
 
-    const timeoutId = setTimeout(() => {
+    // Se auth já carregou e usuário está logado, redirecionar
+    if (!authLoading) {
+      if (apiClient.isAuthenticated()) {
+        router.replace('/menu');
+        return;
+      }
+      setSessionChecked(true);
+      return;
+    }
+
+    // Timeout fallback - se a verificação de sessão demorar muito, mostra o formulário
+    timeoutId = setTimeout(() => {
       if (!cancelled) {
         setSessionChecked(true);
       }
     }, SESSION_CHECK_TIMEOUT_MS);
 
-    getSession()
-      .then((session) => {
-        if (cancelled) return;
-        if (session?.user) {
-          router.replace('/menu');
-          return;
-        }
-        setSessionChecked(true);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setSessionChecked(true);
-      });
-
     return () => {
       cancelled = true;
       clearTimeout(timeoutId);
     };
-  }, [router]);
+  }, [authLoading, router]);
 
-  // Redirecionar após autenticação bem-sucedida
+  // Redirecionar após autenticação (se logar após ver o formulário)
   useEffect(() => {
     if (isAuthenticated) {
       router.push('/menu');
@@ -71,7 +69,7 @@ export default function CustomerRegisterPage() {
     router.push(`/login?registered=true&intent=${intent}`);
   };
 
-  if (!sessionChecked) {
+  if (!sessionChecked || authLoading) {
     return (
       <div className={styles.container}>
         <div className={styles.loadingContainer}>

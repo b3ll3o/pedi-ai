@@ -1,3 +1,7 @@
+/**
+ * Cobertura: RF-MENU-07 (CRUD combo)
+ * @see .openspec/specs/cardapio/design.md
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import {

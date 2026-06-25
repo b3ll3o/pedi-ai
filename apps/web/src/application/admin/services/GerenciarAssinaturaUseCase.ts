@@ -1,3 +1,7 @@
+/**
+ * @spec(RF-ADM-11)
+ * @see .openspec/specs/admin/design.md
+ */
 import { Assinatura } from '@/domain/admin/entities/Assinatura';
 import { IAssinaturaRepository } from '@/infrastructure/persistence/admin/AssinaturaRepository';
 

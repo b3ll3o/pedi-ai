@@ -1,3 +1,7 @@
+/**
+ * Cobertura: RF-AUTH-02 (Autenticar usuário)
+ * @see .openspec/specs/autenticacao/design.md
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { AutenticarUsuarioUseCase } from '@/application/autenticacao/services/AutenticarUsuarioUseCase';

@@ -14,6 +14,10 @@ export interface CategoriaProps {
   version: number;
 }
 
+/**
+ * Entidade Categoria do cardápio.
+ * @spec(RF-MENU-01, RF-MENU-04, RF-MENU-08)
+ */
 export class Categoria extends EntityClass<CategoriaProps> {
   get restauranteId(): string {
     return this.props.restauranteId;

@@ -1,3 +1,7 @@
+/**
+ * @spec(RF-MENU-05)
+ * @see .openspec/specs/cardapio/design.md
+ */
 import { UseCase } from '@/application/shared';
 import { ItemCardapio } from '@/domain/cardapio/entities/ItemCardapio';
 import { LabelDietetico } from '@/domain/cardapio/value-objects/LabelDietetico';

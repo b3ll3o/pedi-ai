@@ -31,6 +31,10 @@ export interface CriarComboOutput {
   };
 }
 
+/**
+ * Use Case: criar combo (agregação de produtos com desconto).
+ * @spec(RF-MENU-07)
+ */
 export class CriarComboUseCase implements UseCase<CriarComboInput, CriarComboOutput> {
   constructor(
     private itemCardapioRepo: IItemCardapioRepository,

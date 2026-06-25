@@ -15,6 +15,10 @@ export interface UsuarioProps {
   updatedAt: Date;
 }
 
+/**
+ * Entidade raiz de Usuário (autenticação).
+ * @spec(RF-AUTH-01, RF-AUTH-03)
+ */
 export class Usuario extends AggregateRootClass<UsuarioProps> {
   get email(): string {
     return this.props.email;

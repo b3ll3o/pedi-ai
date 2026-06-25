@@ -1,3 +1,7 @@
+/**
+ * Cobertura: RF-ADM-02 (Atualizar configurações)
+ * @see .openspec/specs/admin/design.md
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { AtualizarRestauranteUseCase } from '@/application/admin/services/AtualizarRestauranteUseCase';

@@ -1,3 +1,7 @@
+/**
+ * Cobertura: RF-ADM-07 (Desativar restaurante)
+ * @see .openspec/specs/admin/design.md
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { DesativarRestauranteUseCase } from '@/application/admin/services/DesativarRestauranteUseCase';

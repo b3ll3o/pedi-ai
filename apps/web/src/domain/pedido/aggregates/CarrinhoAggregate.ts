@@ -1,3 +1,7 @@
+/**
+ * @spec(RF-ORDER-01, RF-ORDER-02, RF-ORDER-03, RF-ORDER-04, RF-ORDER-10)
+ * @see .openspec/specs/pedido/design.md
+ */
 import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 
 import { ItemPedido } from '../entities/ItemPedido';
@@ -22,6 +26,10 @@ export interface CarrinhoProps {
   updatedAt: Date;
 }
 
+/**
+ * Aggregate de Carrinho — estado pré-pedido, persistido em IndexedDB.
+ * @spec(RF-ORDER-01, RF-ORDER-04, RF-ORDER-10)
+ */
 export class CarrinhoAggregate {
   private props: CarrinhoProps;
 

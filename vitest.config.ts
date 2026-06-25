@@ -29,7 +29,9 @@ export default defineConfig({
         lines: 80,
         perFile: false,
       },
-      // Incluir código fonte de ambas as apps — apenas lógica de negócio (DDD layers + libs)
+      // Incluir código fonte — apenas lógica de negócio (DDD layers + libs)
+      // NOTA: cobertura da api é feita em `apps/api/vitest.config.ts` (threshold 70%
+      // enquanto dura a migração DDD — ver `docs/guides/DDD_MIGRACAO_API.md`).
       include: [
         'apps/web/src/domain/**/*',
         'apps/web/src/application/**/*',
@@ -53,19 +55,8 @@ export default defineConfig({
         'apps/web/src/hooks/**', // React hooks
         'apps/web/src/public/**', // Arquivos estáticos
         'apps/web/src/lib/sw/**', // Service Worker
-        'apps/api/src/presentation/**', // Controllers NestJS
-        'apps/api/src/infrastructure/**', // Repositories Prisma
-        // Old NestJS modules — não são DDD, excluímos da cobertura
-        'apps/api/src/auth/**',
-        'apps/api/src/categories/**',
-        'apps/api/src/common/**',
-        'apps/api/src/health/**',
-        'apps/api/src/orders/**',
-        'apps/api/src/payments/**',
-        'apps/api/src/products/**',
-        'apps/api/src/realtime/**',
-        'apps/api/src/restaurants/**',
-        'apps/api/src/users/**',
+        // Cobertura da api fica a cargo de `apps/api/vitest.config.ts`
+        'apps/api/src/**',
         'apps/api/src/app.module.ts',
         'apps/api/src/main.ts',
       ],

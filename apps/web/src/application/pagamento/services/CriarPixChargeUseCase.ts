@@ -12,6 +12,10 @@ export interface CriarPixChargeInput {
   pedidoId: string;
 }
 
+/**
+ * Use Case: criar cobrança PIX (QR + txid) para um pedido.
+ * @spec(RF-PAY-01)
+ */
 export class CriarPixChargeUseCase implements UseCase<CriarPixChargeInput, PixCharge> {
   constructor(
     private pixAdapter: IPixAdapter,

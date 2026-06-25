@@ -27,6 +27,7 @@
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage",
     "test:ui": "vitest --ui",
+    "rtm": "tsx scripts/rtm.ts",
     "mailpit": "mailpit",
     "prepare": "husky",
     "db:seed": "tsx scripts/seed-dev-db.ts"

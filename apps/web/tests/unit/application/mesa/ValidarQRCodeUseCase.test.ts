@@ -1,3 +1,7 @@
+/**
+ * Cobertura: RF-TABLE-03 (Validar QR code)
+ * @see .openspec/specs/mesa/design.md
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { ValidarQRCodeUseCase } from '@/application/mesa/services/ValidarQRCodeUseCase';

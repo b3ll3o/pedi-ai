@@ -25,6 +25,7 @@ export interface DesativarRestauranteOutput {
  * Use Case para desativar um restaurante (soft delete).
  * O restaurante deixa de aparecer para clientes mas permanece em dados históricos.
  * Requer que o usuário seja owner do restaurante.
+ * @spec(RF-ADM-07)
  */
 export class DesativarRestauranteUseCase implements UseCase<
   DesativarRestauranteInput,

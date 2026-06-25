@@ -14,6 +14,10 @@ export interface CriarMesaInput {
   label: string;
 }
 
+/**
+ * Use Case: criar mesa com QR code assinado por HMAC-SHA256.
+ * @spec(RF-TABLE-01, RF-TABLE-04)
+ */
 export class CriarMesaUseCase implements UseCase<CriarMesaInput, Mesa> {
   constructor(
     private mesaRepo: IMesaRepository,

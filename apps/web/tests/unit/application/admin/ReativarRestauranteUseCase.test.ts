@@ -1,3 +1,7 @@
+/**
+ * Cobertura: RF-ADM-08 (Reativar restaurante)
+ * @see .openspec/specs/admin/design.md
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { ReativarRestauranteUseCase } from '@/application/admin/services/ReativarRestauranteUseCase';

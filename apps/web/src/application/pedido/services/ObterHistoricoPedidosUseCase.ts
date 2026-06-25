@@ -1,3 +1,7 @@
+/**
+ * @spec(RF-ORDER-07)
+ * @see .openspec/specs/pedido/design.md
+ */
 import { UseCase } from '@/application/shared/types/UseCase';
 import { IPedidoRepository, Pedido } from '@/domain/pedido';
 

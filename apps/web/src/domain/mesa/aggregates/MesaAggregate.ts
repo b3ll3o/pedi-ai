@@ -7,6 +7,10 @@ import { IMesaRepository } from '../repositories/IMesaRepository';
 import { IQRCodeValidationService } from '../services/QRCodeValidationService';
 import { QRCodePayload } from '../value-objects/QRCodePayload';
 
+/**
+ * Aggregate de Mesa — encapsula criação de QR + validação HMAC + invariantes.
+ * @spec(RF-TABLE-01, RF-TABLE-03)
+ */
 export class MesaAggregate {
   private mesa: Mesa;
   private eventDispatcher: EventDispatcher;

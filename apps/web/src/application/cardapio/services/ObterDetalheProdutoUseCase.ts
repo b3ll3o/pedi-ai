@@ -15,6 +15,10 @@ export interface ObterDetalheProdutoInput {
   produtoId: string;
 }
 
+/**
+ * Use Case: obter detalhe de um produto, incluindo modificadores ativos.
+ * @spec(RF-MENU-03)
+ */
 export class ObterDetalheProdutoUseCase implements UseCase<
   ObterDetalheProdutoInput,
   ProdutoDetalhe

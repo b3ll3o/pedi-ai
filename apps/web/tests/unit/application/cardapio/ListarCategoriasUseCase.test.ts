@@ -1,3 +1,7 @@
+/**
+ * Cobertura: RF-MENU-01 (Listar categorias), RF-MENU-08 (Reordenar categorias)
+ * @see .openspec/specs/cardapio/design.md
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { ListarCategoriasUseCase } from '@/application/cardapio/services/ListarCategoriasUseCase';

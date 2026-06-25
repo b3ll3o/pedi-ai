@@ -4,6 +4,10 @@ import { Usuario, UsuarioProps } from '../entities/Usuario';
 import { UsuarioCriadoEvent } from '../events/UsuarioCriadoEvent';
 import { Papel } from '../value-objects/Papel';
 
+/**
+ * Aggregate de Usuário — orquestra criação e checagens de papel.
+ * @spec(RF-AUTH-01)
+ */
 export class UsuarioAggregate {
   private usuario: Usuario;
   private eventDispatcher: EventDispatcher;

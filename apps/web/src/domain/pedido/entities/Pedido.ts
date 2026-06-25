@@ -5,6 +5,10 @@ import { StatusPedido } from '../value-objects/StatusPedido';
 
 import { ItemPedido } from './ItemPedido';
 
+/**
+ * Entidade raiz Pedido. Valida FSM de status e invariantes de totais.
+ * @spec(RF-ORDER-05, RF-ORDER-06)
+ */
 type StatusValue =
   | 'paid'
   | 'received'

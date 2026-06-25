@@ -1,3 +1,7 @@
+/**
+ * Cobertura: RF-MENU-03 (Detalhe de produto)
+ * @see .openspec/specs/cardapio/design.md
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { ObterDetalheProdutoUseCase } from '@/application/cardapio/services/ObterDetalheProdutoUseCase';

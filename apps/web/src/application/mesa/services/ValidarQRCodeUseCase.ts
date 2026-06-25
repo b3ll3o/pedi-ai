@@ -21,6 +21,10 @@ export interface MesaValidada {
  * 1. QR code complexo: JSON stringified e base64 encoded do QRCodePayload
  * 2. QR code simples: "E2E-TABLE-XXX" - busca via API
  */
+/**
+ * Use Case: decodificar e validar QR code de mesa (HMAC-SHA256).
+ * @spec(RF-TABLE-03)
+ */
 export class ValidarQRCodeUseCase implements UseCase<ValidarQRCodeInput, MesaValidada> {
   constructor(
     private qrCodeValidationService: IQRCodeValidationService,

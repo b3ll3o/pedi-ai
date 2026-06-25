@@ -21,6 +21,10 @@ export interface IWebhookSignatureValidator {
   validar(provider: 'pix', payload: string, signature: string): boolean;
 }
 
+/**
+ * Use Case: processar webhook de PIX (idempotente, valida assinatura).
+ * @spec(RF-PAY-02, RF-PAY-03, RF-PAY-07)
+ */
 export class ProcessarWebhookUseCase implements UseCase<WebhookInput, WebhookOutput> {
   constructor(
     private pagamentoRepo: IPagamentoRepository,

@@ -6,6 +6,10 @@ export interface RestauranteAggregateProps {
   configuracoes: ConfiguracoesRestaurante;
 }
 
+/**
+ * Aggregate de Restaurante — encapsula entidade + configurações + invariantes.
+ * @spec(RF-ADM-01, RF-ADM-02)
+ */
 export class RestauranteAggregate {
   private restaurante: Restaurante;
   private configuracoes: ConfiguracoesRestaurante;

@@ -1,3 +1,7 @@
+/**
+ * Cobertura: RF-PAY-01 (Criar cobrança PIX)
+ * @see .openspec/specs/pagamento/design.md
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import type { IPixAdapter, PixCharge } from '@/application/pagamento/services/adapters/IPixAdapter';

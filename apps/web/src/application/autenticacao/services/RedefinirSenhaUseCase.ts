@@ -1,3 +1,7 @@
+/**
+ * @spec(RF-AUTH-04, RF-AUTH-05)
+ * @see .openspec/specs/autenticacao/design.md
+ */
 import { UseCase } from '@/application/shared';
 
 import { IAuthAdapter } from './RegistrarUsuarioUseCase';
@@ -10,7 +14,8 @@ export interface RedefinirSenhaInput {
 }
 
 /**
- * Use Case para solicitar redefinição de senha via email
+ * Use Case para solicitar redefinição de senha via email.
+ * @spec(RF-AUTH-04)
  */
 export class RedefinirSenhaUseCase implements UseCase<RedefinirSenhaInput, void> {
   constructor(

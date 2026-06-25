@@ -42,6 +42,10 @@ export interface CriarPedidoFromInputOutput {
   createdAt: string;
 }
 
+/**
+ * Use Case: criar pedido a partir de input da API (rota HTTP).
+ * @spec(RF-ORDER-05)
+ */
 export class CriarPedidoFromInputUseCase {
   constructor(private readonly pedidoRepo: IPedidoRepository) {}
 

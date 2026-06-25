@@ -1,3 +1,7 @@
+/**
+ * @spec(RF-MENU-09)
+ * @see .openspec/specs/cardapio/design.md
+ */
 import { Categoria } from '@/domain/cardapio/entities/Categoria';
 import { ItemCardapio } from '@/domain/cardapio/entities/ItemCardapio';
 import { ModificadorGrupo } from '@/domain/cardapio/entities/ModificadorGrupo';

@@ -14,6 +14,10 @@ export interface MesaProps {
   version: number;
 }
 
+/**
+ * Entidade Mesa.
+ * @spec(RF-TABLE-01, RF-TABLE-05, RF-TABLE-06)
+ */
 export class Mesa extends EntityClass<MesaProps> {
   get restauranteId(): string {
     return this.props.restauranteId;

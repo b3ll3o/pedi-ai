@@ -1,3 +1,7 @@
+/**
+ * Cobertura: RF-ORDER-05 (Criar pedido a partir do carrinho)
+ * @see .openspec/specs/pedido/design.md
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { CriarPedidoFromInputUseCase } from '@/application/pedido/services/CriarPedidoFromInputUseCase';

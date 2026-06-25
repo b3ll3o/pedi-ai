@@ -1,6 +1,8 @@
 /**
  * Analytics Service
  * Handles fetching analytics data for the admin dashboard.
+ * @spec(RF-ADM-10)
+ * @see .openspec/specs/admin/design.md
  */
 
 export interface AnalyticsFilters {
