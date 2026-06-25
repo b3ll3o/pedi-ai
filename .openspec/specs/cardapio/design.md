@@ -41,11 +41,11 @@
 
 ## 4. Próximos Requisitos
 
-| ID           | Descrição                                      | Quarter alvo |
-| ------------ | ---------------------------------------------- | ------------ |
-| `RF-MENU-10` | Estoque / disponibilidade (planejado)          | Q1/2027      |
-| `RF-MENU-11` | Cardápio sazonal (horário/dia, planejado)      | Q1/2027      |
-| `RF-MENU-12` | Busca fuzzy no cardápio do cliente (planejado) | Q4/2026      |
+| ID           | Descrição                                 | Quarter alvo |
+| ------------ | ----------------------------------------- | ------------ |
+| `RF-MENU-10` | Estoque / disponibilidade (planejado)     | Q1/2027      |
+| `RF-MENU-11` | Cardápio sazonal (horário/dia, planejado) | Q1/2027      |
+| `RF-MENU-12` | Busca fuzzy no cardápio do cliente        | Q4/2026      |
 
 ---
 

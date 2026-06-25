@@ -1,5 +1,6 @@
 /**
- * Cobertura E2E: RF-MENU-01 (Listar categorias), RF-MENU-02 (Listar cardápio)
+ * Cobertura E2E: RF-MENU-01 (Listar categorias), RF-MENU-02 (Listar cardápio),
+ * RF-MENU-12 (Busca fuzzy)
  * @see .openspec/specs/cardapio/design.md
  */
 import { MenuPage } from '../../pages/MenuPage';

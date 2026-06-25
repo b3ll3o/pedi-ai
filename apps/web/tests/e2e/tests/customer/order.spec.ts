@@ -1,6 +1,7 @@
 /**
  * Cobertura E2E: RF-ORDER-05 (Criar pedido), RF-ORDER-06 (Atualizar status FSM),
- * RF-ORDER-07 (Histórico), RF-ORDER-09 (Notificar status realtime)
+ * RF-ORDER-07 (Histórico), RF-ORDER-09 (Notificar status realtime),
+ * RF-ORDER-13 (Notificações push via Web Push API)
  * @see .openspec/specs/pedido/design.md
  */
 import { expect, clearClientState } from '@playwright/test';

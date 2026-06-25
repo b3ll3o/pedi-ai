@@ -93,7 +93,7 @@
 
 | ID            | Descrição                                     | Quarter alvo |
 | ------------- | --------------------------------------------- | ------------ |
-| `RF-ORDER-13` | Notificações push (Web Push API, planejado)   | Q4/2026      |
+| `RF-ORDER-13` | Notificações push (Web Push API)              | Q4/2026      |
 | `RF-ORDER-14` | Pedido agendado (data/hora futura, planejado) | Q1/2027      |
 
 ---

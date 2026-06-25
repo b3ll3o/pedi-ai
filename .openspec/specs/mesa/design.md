@@ -45,9 +45,9 @@
 | ------------- | -------------------------------------------------- | ------------ |
 | ID            | Descrição                                          | Quarter alvo |
 | ------------  | -------------------------------------------------- | ------------ |
-| `RF-TABLE-07` | Geração visual de QR (PNG/PDF, planejado)          | Q3/2026      |
+| `RF-TABLE-07` | Geração visual de QR (PNG/PDF)                     | Q3/2026      |
 | `RF-TABLE-08` | Impressão em lote (várias mesas, planejado)        | Q3/2026      |
-| `RF-TABLE-09` | QR com logo do restaurante (planejado)             | Q4/2026      |
+| `RF-TABLE-09` | QR com logo do restaurante                         | Q4/2026      |
 
 ---
 

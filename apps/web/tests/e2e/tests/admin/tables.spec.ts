@@ -1,5 +1,6 @@
 /**
- * Cobertura E2E: RF-TABLE-01, RF-TABLE-02, RF-TABLE-05, RF-TABLE-06
+ * Cobertura E2E: RF-TABLE-01, RF-TABLE-02, RF-TABLE-05, RF-TABLE-06,
+ * RF-TABLE-07 (Geração visual de QR PNG/PDF), RF-TABLE-09 (QR com logo)
  * @see .openspec/specs/mesa/design.md
  */
 import { AdminTablesPage } from '../../pages/AdminTablesPage';

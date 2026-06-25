@@ -163,3 +163,69 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
+// ─── Web Push Notifications (RF-ORDER-13) ──────────────────────────────────
+// Recebe mensagens push do servidor e exibe notificações nativas.
+// Clique na notificação abre a URL em `data.url` ou cai no fallback.
+
+self.addEventListener('push', (event) => {
+  let payload = {
+    title: 'Pedi-AI',
+    body: 'Seu pedido foi atualizado',
+    url: '/menu',
+    icon: '/icon-192.png',
+    tag: undefined,
+  };
+
+  try {
+    if (event.data) {
+      const data = event.data.json();
+      payload = {
+        title: data.title ?? payload.title,
+        body: data.body ?? payload.body,
+        url: data.url ?? payload.url,
+        icon: data.icon ?? payload.icon,
+        tag: data.tag,
+      };
+    }
+  } catch (err) {
+    // payload padrão já está definido acima
+    console.warn('[SW] push event data parse failed:', err);
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title, {
+      body: payload.body,
+      icon: payload.icon,
+      badge: '/badge-72.png',
+      tag: payload.tag,
+      data: { url: payload.url },
+      requireInteraction: false,
+      vibrate: [200, 100, 200],
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl = event.notification.data?.url || '/menu';
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // Foca aba existente se já houver uma no app
+      for (const client of clientList) {
+        if ('focus' in client && 'url' in client && new URL(client.url).origin === self.location.origin) {
+          client.focus();
+          if ('navigate' in client) {
+            return (client).navigate(targetUrl);
+          }
+          return;
+        }
+      }
+      // Senão, abre nova aba
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(targetUrl);
+      }
+    })
+  );
+});
