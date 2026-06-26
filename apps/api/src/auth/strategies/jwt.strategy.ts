@@ -37,8 +37,21 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     // compatibilidade com tokens emitidos antes desta hardening, mas em
     // produção devem ser obrigatórias (recomenda-se setar `JWT_ISSUER` e
     // `JWT_AUDIENCE` no .env antes do deploy).
+    //
+    // Auditoria ACHADO-N6 (Re-varredura 8): em produção/staging, iss/aud
+    // passam a ser OBRIGATÓRIOS. Sem eles, qualquer token HS256 com a
+    // secret era aceito — vetor de cross-system reuse se o secret vazar
+    // ou for compartilhado entre ambientes. Agora: fail-CLOSED em
+    // prod/staging (boot aborta), opcional em dev (UX preservada).
     const issuer = configService.get<string>('JWT_ISSUER');
     const audience = configService.get<string>('JWT_AUDIENCE');
+    const isStrict = process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging';
+    if (isStrict && (!issuer || !audience)) {
+      throw new Error(
+        'JWT_ISSUER e JWT_AUDIENCE são obrigatórios em produção/staging. ' +
+          'Sem eles, tokens cross-system seriam aceitos.'
+      );
+    }
     super({
       jwtFromRequest: (req: unknown) => {
         const r = req as {
@@ -56,9 +69,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       ignoreExpiration: false,
       secretOrKey: secret,
       algorithms: ['HS256'],
-      // Validação opcional de iss/aud. Se configurados, `passport-jwt` rejeita
-      // tokens com iss/aud divergentes. Se ausentes, mantém o comportamento
-      // legado (qualquer token HS256 com a secret é aceito).
+      // Validação opcional de iss/aud em dev, obrigatória em prod (já validada acima).
       ...(issuer ? { issuer } : {}),
       ...(audience ? { audience } : {}),
     });

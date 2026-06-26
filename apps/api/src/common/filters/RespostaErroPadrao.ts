@@ -5,4 +5,6 @@ export interface RespostaErroPadrao {
   detalhes?: unknown;
   timestamp: string;
   caminho: string;
+  /** ID de correlação (auditoria A15) — eco do header `x-request-id`. */
+  requestId?: string;
 }

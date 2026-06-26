@@ -3,6 +3,7 @@ import * as crypto from 'crypto';
 import {
   Injectable,
   UnauthorizedException,
+  ForbiddenException,
   ConflictException,
   BadRequestException,
   Logger,
@@ -11,7 +12,9 @@ import { JwtService } from '@nestjs/jwt';
 import { UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
+import { piiHash } from '../common/logger/pii-mask';
 import { PrismaService } from '../common/prisma.service';
+import { PASSWORD_RESET_TTL_MS } from '../common/constants/time';
 import { EmailQueue } from '../queues/email.queue';
 
 import { RefreshTokenService } from './refresh-token.service';
@@ -19,6 +22,8 @@ import { RefreshTokenService } from './refresh-token.service';
 // ─── Requisitos de senha forte ────────────────────────────────────────────────
 const SENHA_MIN_CARACTERES = 8;
 const SENHA_REGEX_FORCA = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+
+// `PASSWORD_RESET_TTL_MS` importado de `common/constants/time.ts`.
 
 /**
  * Cost factor do bcrypt. 12 é o mínimo recomendado para 2026
@@ -57,6 +62,95 @@ interface HibpCacheEntry {
 }
 
 const hibpCacheMap = new Map<string, HibpCacheEntry>();
+
+// ─── Login account lockout (auditoria ACHADO-N27 Re-varredura 9) ────────
+/**
+ * Cache LRU em memória para contar tentativas falhas de login POR EMAIL
+ * (não por IP — throttler global já cobre IP).
+ *
+ * - Após `LOGIN_LOCKOUT_THRESHOLD` (5) falhas consecutivas dentro de
+ *   `LOGIN_LOCKOUT_WINDOW_MS` (15 min), emails subsequentes retornam
+ *   `UnauthorizedException` sem checar senha (defesa contra password
+ *   spraying e credential stuffing).
+ * - Lock expira após `LOGIN_LOCKOUT_DURATION_MS` (15 min) — janela igual
+ *   ao de acumulação: usuário legítimo que errou senha 5x espera 15 min
+ *   e tenta novamente.
+ * - Sucesso no login reseta o contador (implementado em `login`).
+ * - Cache compartilhado entre instâncias: aceitável porque a memória é
+ *   por processo. Em produção com múltiplas réplicas, considerar Redis
+ *   para coordenação — mas o throttler IP já mitiga a maioria dos
+ *   ataques automatizados; este lockout é camada extra contra tentativas
+ *   distribuídas no mesmo email.
+ *
+ * LRU real: hibpCacheTouch já implementa o pattern; replicamos aqui.
+ */
+const LOGIN_LOCKOUT_THRESHOLD = 5;
+const LOGIN_LOCKOUT_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_LOCKOUT_DURATION_MS = 15 * 60 * 1000;
+const LOGIN_LOCKOUT_MAX_ENTRIES = 10_000;
+
+interface LoginAttemptEntry {
+  failures: number;
+  firstFailureAt: number; // epoch ms da 1ª falha dentro da janela
+  lockedUntil: number; // epoch ms (0 = não bloqueado)
+}
+const loginAttemptsMap = new Map<string, LoginAttemptEntry>();
+
+function loginAttemptsTouch(key: string): LoginAttemptEntry | undefined {
+  const value = loginAttemptsMap.get(key);
+  if (value === undefined) return undefined;
+  loginAttemptsMap.delete(key);
+  loginAttemptsMap.set(key, value);
+  return value;
+}
+
+function loginAttemptsGet(key: string): LoginAttemptEntry | undefined {
+  const value = loginAttemptsMap.get(key);
+  if (value === undefined) return undefined;
+  const now = Date.now();
+  // Se lock expirou, evict.
+  if (value.lockedUntil > 0 && value.lockedUntil <= now) {
+    loginAttemptsMap.delete(key);
+    return undefined;
+  }
+  // Se a janela de falhas expirou (sem ter virado lock), reseta contador.
+  if (value.lockedUntil === 0 && now - value.firstFailureAt > LOGIN_LOCKOUT_WINDOW_MS) {
+    loginAttemptsMap.delete(key);
+    return undefined;
+  }
+  loginAttemptsTouch(key);
+  return value;
+}
+
+function loginAttemptsRecordFailure(key: string): LoginAttemptEntry | undefined {
+  const now = Date.now();
+  const existing = loginAttemptsGet(key);
+  let entry: LoginAttemptEntry;
+  if (!existing) {
+    entry = { failures: 1, firstFailureAt: now, lockedUntil: 0 };
+  } else {
+    entry = {
+      failures: existing.failures + 1,
+      firstFailureAt: existing.firstFailureAt,
+      lockedUntil: 0,
+    };
+    if (entry.failures >= LOGIN_LOCKOUT_THRESHOLD) {
+      entry.lockedUntil = now + LOGIN_LOCKOUT_DURATION_MS;
+    }
+  }
+  loginAttemptsMap.set(key, entry);
+  // Evict LRU enquanto estourar o limite.
+  while (loginAttemptsMap.size > LOGIN_LOCKOUT_MAX_ENTRIES) {
+    const lruKey = loginAttemptsMap.keys().next().value;
+    if (lruKey === undefined) break;
+    loginAttemptsMap.delete(lruKey);
+  }
+  return entry;
+}
+
+function loginAttemptsReset(key: string): void {
+  loginAttemptsMap.delete(key);
+}
 
 /**
  * Promove a chave para "mais recentemente usada" — re-insert no Map
@@ -229,19 +323,47 @@ export class AuthService {
   }
 
   async login(data: { email: string; password: string }) {
+    // Auditoria ACHADO-N27 (Re-varredura 9): account lockout baseado em
+    // contagem de falhas por email. Chave do cache é hash do email —
+    // evita logar PII e mantém keys opacas em caso de memory dump.
+    const lockoutKey = `login:${piiHash(data.email)}`;
+
+    // Verifica lock ANTES de bater no banco (evita timing oracle).
+    const existing = loginAttemptsGet(lockoutKey);
+    if (existing && existing.lockedUntil > 0 && existing.lockedUntil > Date.now()) {
+      this.logger.warn(
+        `metric=login.account_locked emailHash=${piiHash(data.email)} ` +
+          `failures=${existing.failures} retryAfterMs=${existing.lockedUntil - Date.now()}`
+      );
+      throw new UnauthorizedException('Email ou senha incorretos');
+    }
+
     const user = await this.prisma.usersProfile.findUnique({
       where: { email: data.email },
     });
 
     if (!user || !user.passwordHash) {
       // Mensagem genérica para evitar enumeração de emails.
+      // Registra falha mesmo para email inexistente — mesma defesa que
+      // para email existente (impede enumeração via timing).
+      loginAttemptsRecordFailure(lockoutKey);
       throw new UnauthorizedException('Email ou senha incorretos');
     }
 
     const isPasswordValid = await bcrypt.compare(data.password, user.passwordHash);
     if (!isPasswordValid) {
+      const updated = loginAttemptsRecordFailure(lockoutKey);
+      if (updated.lockedUntil > 0) {
+        this.logger.warn(
+          `metric=login.account_locked_triggered emailHash=${piiHash(data.email)} ` +
+            `failures=${updated.failures}`
+        );
+      }
       throw new UnauthorizedException('Email ou senha incorretos');
     }
+
+    // Sucesso: reset do contador.
+    loginAttemptsReset(lockoutKey);
 
     return this.generateTokens({
       id: user.id,
@@ -276,21 +398,16 @@ export class AuthService {
     const issued = await this.refreshTokenService.issue(user.id, { familyId });
     await this.refreshTokenService.revoke(tokenId, issued.tokenId);
 
-    // Auditoria ACHADO-28: incluir iss/aud ao emitir (mesmo padrão do generateTokens).
-    const refreshIssuer = process.env.JWT_ISSUER;
-    const refreshAudience = process.env.JWT_AUDIENCE;
-    const accessToken = this.jwtService.sign(
-      {
-        sub: user.id,
-        email: user.email,
-        role: user.role,
-        restaurantId: user.restaurantId ?? null,
-      },
-      {
-        ...(refreshIssuer ? { issuer: refreshIssuer } : {}),
-        ...(refreshAudience ? { audience: refreshAudience } : {}),
-      }
-    );
+    // Auditoria ACHADO-N24 (Re-varredura 9): extraído para `signAccessToken`
+    // — antes, este bloco duplicava o pattern de `generateTokens` (mesmo
+    // iss/aud/env). DRY violation: evoluir para RS256 ou adicionar `kid`
+    // exigiria atualizar 2 lugares.
+    const accessToken = this.signAccessToken({
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      restaurantId: user.restaurantId ?? null,
+    });
 
     // Auditoria B1: emite ambos formatos (camel + snake) para compatibilidade.
     return {
@@ -301,13 +418,33 @@ export class AuthService {
     };
   }
 
-  async logout(refreshToken: string | undefined): Promise<{ success: true }> {
+  async logout(
+    refreshToken: string | undefined,
+    requesterUserId: string
+  ): Promise<{ success: true }> {
+    // Auditoria ACHADO-N5 (Re-varredura 8): antes, logout aceitava
+    // refresh_token arbitrário do body e revogava todos os tokens do user
+    // decodificado. Atacante autenticado poderia passar o refresh_token de
+    // OUTRO usuário (vazado via XSS/logs/CSRF) e derrubar a sessão da
+    // vítima — DoS + mascaramento de audit trail. Agora: comparar
+    // `userId` extraído do token com o `requesterUserId` do JWT antes de
+    // revogar. Mismatch → 403.
     if (refreshToken) {
       try {
         const { userId } = await this.refreshTokenService.validateAndRotate(refreshToken);
+        if (userId !== requesterUserId) {
+          // Token apresentado não pertence ao usuário autenticado —
+          // situação anômala. Logamos para auditoria (sem expor o token).
+          this.logger.warn(
+            `[logout] tentativa de revogar refresh_token alheio (requesterUserId=${piiHash(requesterUserId)}, tokenUserId=${piiHash(userId)})`
+          );
+          throw new ForbiddenException('Refresh token não pertence ao usuário autenticado');
+        }
         await this.refreshTokenService.revokeAllForUser(userId, 'user_logout');
-      } catch {
-        // Token inválido — logout idempotente.
+      } catch (err) {
+        if (err instanceof ForbiddenException) throw err;
+        // Token inválido/expirado já revogado ou nunca existiu — não é
+        // erro (idempotência de logout). Silencioso.
       }
     }
     return { success: true };
@@ -348,7 +485,7 @@ export class AuthService {
 
     const token = crypto.randomBytes(32).toString('hex');
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-    const expiresAt = new Date(Date.now() + 3600000); // 1 hora
+    const expiresAt = new Date(Date.now() + PASSWORD_RESET_TTL_MS);
 
     await this.prisma.passwordResetToken.create({
       data: {
@@ -360,8 +497,16 @@ export class AuthService {
 
     // Enfileira envio do e-mail com o token opaco (auditoria A3).
     // URL de reset é construída a partir de variáveis de ambiente.
+    //
+    // Auditoria ACHADO-N9 (Re-varredura 8): token estava em query string,
+    // que vaza em logs de proxy/CDN, header Referer se o usuário clicar
+    // em link externo pós-reset, histórico de navegador/email servers que
+    // logam URLs (Gmail/Outlook). Agora: token no FRAGMENTO (#token),
+    // que NUNCA vai em Referer nem em logs HTTP. O front-end extrai o
+    // fragmento com `new URL(...).hash` e envia via POST /auth/reset-password
+    // (body, nunca URL).
     const baseUrl = process.env.APP_PUBLIC_URL ?? 'http://localhost:3000';
-    const resetLink = `${baseUrl}/auth/reset-password?token=${token}`;
+    const resetLink = `${baseUrl}/auth/reset-password#token=${token}`;
     await this.emailQueue.sendPasswordReset(email, resetLink);
 
     // ⚠️ SEGURANÇA: nunca logar tokens ou PII (email) — antes logava o email
@@ -432,24 +577,14 @@ export class AuthService {
     name: string;
     restaurantId?: string | null;
   }): Promise<AuthResponse> {
-    // Auditoria ACHADO-28 (Re-varredura 6): incluir `iss`/`aud` ao emitir o
-    // JWT quando configurados via env. Sem iss/aud, um secret compartilhado
-    // entre dois sistemas permite que tokens emitidos por um sejam aceitos
-    // pelo outro (cenário de monorepo ou migração).
-    const issuer = process.env.JWT_ISSUER;
-    const audience = process.env.JWT_AUDIENCE;
-    const accessToken = this.jwtService.sign(
-      {
-        sub: payload.id,
-        email: payload.email,
-        role: payload.role,
-        restaurantId: payload.restaurantId ?? null,
-      },
-      {
-        ...(issuer ? { issuer } : {}),
-        ...(audience ? { audience } : {}),
-      }
-    );
+    // Auditoria ACHADO-N24 (Re-varredura 9): usa `signAccessToken` para
+    // centralizar iss/aud/env (mesmo padrão do `refresh`).
+    const accessToken = this.signAccessToken({
+      sub: payload.id,
+      email: payload.email,
+      role: payload.role,
+      restaurantId: payload.restaurantId ?? null,
+    });
 
     const refreshTokenSecret = process.env.JWT_REFRESH_SECRET;
     if (!refreshTokenSecret) {
@@ -475,5 +610,30 @@ export class AuthService {
         restaurantId: payload.restaurantId ?? null,
       },
     };
+  }
+
+  /**
+   * Emite o access token JWT incluindo iss/aud quando configurados via env.
+   * Auditoria ACHADO-N24 (Re-varredura 9): centraliza a lógica de assinatura
+   * do access token. Antes, `generateTokens` e `refresh` tinham blocos
+   * duplicados de `iss`/`aud`/env — DRY violation. Agora ambos chamam este
+   * método, e evoluções futuras (RS256, kid, jti) ficam em um único lugar.
+   */
+  private signAccessToken(payload: {
+    sub: string;
+    email: string;
+    role: string;
+    restaurantId: string | null;
+  }): string {
+    // Auditoria ACHADO-28 (Re-varredura 6): incluir `iss`/`aud` ao emitir o
+    // JWT quando configurados via env. Sem iss/aud, um secret compartilhado
+    // entre dois sistemas permite que tokens emitidos por um sejam aceitos
+    // pelo outro (cenário de monorepo ou migração).
+    const issuer = process.env.JWT_ISSUER;
+    const audience = process.env.JWT_AUDIENCE;
+    return this.jwtService.sign(payload, {
+      ...(issuer ? { issuer } : {}),
+      ...(audience ? { audience } : {}),
+    });
   }
 }

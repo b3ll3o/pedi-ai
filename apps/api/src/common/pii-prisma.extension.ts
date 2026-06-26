@@ -75,7 +75,15 @@ export function createPiiPrismaExtension(crypto: PiiCryptoService) {
  * agregados), é necessário fazer `encrypt`/`decrypt` manualmente na SQL
  * — mas isso deve ser exceção justificada em code review.
  */
-export const PII_PROTECTED_MODELS = new Set<string>(['UsersProfile']);
+export const PII_PROTECTED_MODELS = new Set<string>(['UsersProfile', 'Order']);
+// Auditoria ACHADO-N28 (Re-varredura 9): `Order` adicionado ao guard.
+// `Order.customerPhone`, `customerName`, `customerEmail` são PII direta
+// (registrados em `PiiCryptoService.ENCRYPTED_FIELDS`). Analytics ou
+// relatórios que tentem `prisma.$queryRaw` sobre a tabela `Order` são
+// bloqueados — força uso de operações tipadas que passam pela encriptação.
+// Lembrete: o guard detecta pelo NOME DA TABELA — se a query usar alias
+// (ex: `FROM "Order" o`), `detectRawQueryModel` ainda captura via regex
+// pois matchamos o token imediatamente após FROM/UPDATE/JOIN/INTO.
 
 export function assertNoRawPiiAccess(modelHint: string | undefined): void {
   if (!modelHint) return;

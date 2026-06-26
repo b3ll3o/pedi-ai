@@ -1,12 +1,12 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { Prisma, PrismaClient } from '@prisma/client';
 
+import { PiiCryptoService } from './pii-crypto.service';
 import {
   createPiiPrismaExtension,
   detectRawQueryModel,
   PII_PROTECTED_MODELS,
 } from './pii-prisma.extension';
-import { PiiCryptoService } from './pii-crypto.service';
 
 /**
  * PrismaService que aplica a extensão de PII encryption.
@@ -126,7 +126,12 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
           `(findUnique/update/etc) que passam pela encriptação automática.`
       );
     }
-    return super.$queryRaw(query as never, ...(values as never[])) as unknown as Promise<T>;
+    // Auditoria ACHADO-N29 (Re-varredura 9): `query as never` + cast duplo
+    // mascarava intenção. Prisma's $queryRaw tem sobrecarga complexa
+    // (TemplateStringsArray vs Sql) — a coerção `as never` é a forma
+    // oficial de normalizar antes de delegar. Mantemos mas adicionamos
+    // comentário explicando o porquê (em vez de flag "isso é seguro").
+    return super.$queryRaw(query as TemplateStringsArray & Prisma.Sql, ...(values as never[]));
   }
 
   override $executeRaw(query: TemplateStringsArray | Prisma.Sql): Promise<number> {

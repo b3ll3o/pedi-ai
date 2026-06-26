@@ -91,7 +91,11 @@ export function maskPii<T>(payload: T): T {
   if (payload === null || payload === undefined) return payload;
   if (typeof payload !== 'object') return payload;
   if (Array.isArray(payload)) {
-    return payload.map((item) => maskPii(item)) as unknown as T;
+    // Auditoria ACHADO-N30 (Re-varredura 9): `as unknown as T` evitava
+    // narrowing. Usando tipo explícito `T[]` no map (assumindo que se
+    // `payload` é array, T é array). Para os outros casos (objeto), o
+    // retorno é estruturalmente compatível.
+    return payload.map((item): unknown => maskPii(item)) as T;
   }
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(payload as Record<string, unknown>)) {
