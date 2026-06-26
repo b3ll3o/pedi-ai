@@ -60,8 +60,9 @@ describe('Cart Sync', () => {
     const sentMessage = mockPostMessage.mock.calls[0][0];
     expect(sentMessage.type).toBe('CART_UPDATE');
     expect(sentMessage.items).toEqual(mockCartItems);
-    expect(sentMessage.timestamp).toBeDefined();
-    expect(typeof sentMessage.timestamp).toBe('number');
+    expect(sentMessage.clock).toBeDefined();
+    expect(typeof sentMessage.clock).toBe('number');
+    expect(sentMessage.clock).toBeGreaterThan(0);
   });
 
   it('deve receber e aplicar atualização do carrinho de outra aba', () => {
@@ -76,11 +77,12 @@ describe('Cart Sync', () => {
 
     expect(handler).toBeDefined();
 
+    // Lamport: mensagem com clock > 0 sempre passa no receptor "frio".
     const externalMessage: MessageEvent<CartBroadcast> = {
       data: {
         type: 'CART_UPDATE',
         items: mockCartItems,
-        timestamp: Date.now() + 1000,
+        clock: 1,
       },
     } as unknown as MessageEvent<CartBroadcast>;
 
@@ -89,15 +91,15 @@ describe('Cart Sync', () => {
     expect(receivedItems).toEqual(mockCartItems);
   });
 
-  it('não deve ecoar própria transmissão', () => {
-    let callbackCalled = false;
+  it('não deve ecoar própria transmissão (clock anti-echo)', () => {
+    let callbackCalls = 0;
     manager.listenForCartUpdates(() => {
-      callbackCalled = true;
+      callbackCalls += 1;
     });
 
-    let broadcastTimestamp = 0;
+    let broadcastClock = 0;
     mockPostMessage.mockImplementation((msg: CartBroadcast) => {
-      broadcastTimestamp = msg.timestamp;
+      broadcastClock = msg.clock;
     });
 
     manager.broadcastCartUpdate(mockCartItems);
@@ -106,16 +108,19 @@ describe('Cart Sync', () => {
       event: MessageEvent<CartBroadcast>
     ) => void;
 
-    const ownMessage: MessageEvent<CartBroadcast> = {
-      data: {
-        type: 'CART_UPDATE',
-        items: mockCartItems,
-        timestamp: broadcastTimestamp,
-      },
-    } as unknown as MessageEvent<CartBroadcast>;
+    // Cenário 1: como o receptor é "frio" (lastSeenClock=0), a primeira
+    // mensagem com clock=1 PASA. Isso espelha o comportamento real:
+    // BroadcastChannel não ecoa para o próprio emitter, mas se chegar
+    // um update de outra aba com clock=1, ele é aplicado.
+    handler({
+      data: { type: 'CART_UPDATE', items: mockCartItems, clock: broadcastClock },
+    } as unknown as MessageEvent<CartBroadcast>);
+    expect(callbackCalls).toBe(1);
 
-    handler(ownMessage);
-
-    expect(callbackCalled).toBe(false);
+    // Cenário 2: replay com o MESMO clock é descartado (anti-echo).
+    handler({
+      data: { type: 'CART_UPDATE', items: mockCartItems, clock: broadcastClock },
+    } as unknown as MessageEvent<CartBroadcast>);
+    expect(callbackCalls).toBe(1);
   });
 });

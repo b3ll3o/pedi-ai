@@ -8,7 +8,7 @@ import {
   createBroadcastChannelManager,
   type BroadcastChannelManager,
 } from '@/lib/broadcast-channel';
-import { db } from '@/lib/offline/db';
+import { db, CART_SCHEMA_VERSION } from '@/lib/offline/db';
 import type { CartItem as DBCartItem } from '@/lib/offline/types';
 
 // ── BroadcastChannel Sync (delegated to separate module) ────────
@@ -107,11 +107,27 @@ async function persistCartToIndexedDB(items: CartItem[]) {
   if (items.length === 0) return;
 
   const dbItems: DBCartItem[] = items.map((item) => ({
+    // Mantém o id numérico estável entre persistências para que a
+    // hidratação possa reutilizar a chave primária — evita "ghost items"
+    // quando o usuário atualiza um carrinho logo após recarregar.
     id: parseInt(item.id, 10) || undefined,
     productId: item.productId,
     quantity: item.quantity,
     modifiers: item.modifiers as unknown as Record<string, unknown>,
-    price: item.unitPrice * item.quantity,
+    // Snapshot completo — sem isso a hidratação não consegue reconstruir
+    // a linha exibida no cart drawer (ver H7 do audit).
+    name: item.name,
+    unitPrice: item.unitPrice,
+    notes: item.notes,
+    comboId: item.comboId,
+    bundlePrice: item.bundlePrice,
+    comboItems: item.comboItems,
+    // `price` legado é mantido para retrocompat com leitores que ainda
+    // inspecionem o campo. É o total unitário (sem modifiers aplicados)
+    // porque o cart renderer recalcula totais em runtime via
+    // `getTotalPrice`.
+    price: item.unitPrice,
+    schemaVersion: CART_SCHEMA_VERSION,
     createdAt: item.createdAt,
   }));
 
@@ -124,23 +140,36 @@ export async function hydrateCartFromIndexedDB() {
 
   isHydratingFromIndexedDB = true;
 
-  const items: CartItem[] = dbItems.map((dbItem) => {
-    const modifiers = (dbItem.modifiers as unknown as SelectedModifier[]) || [];
-    return {
-      id: String(dbItem.id),
-      productId: dbItem.productId,
-      name: '',
-      quantity: dbItem.quantity,
-      unitPrice: 0,
-      modifiers: modifiers,
-      notes: undefined,
-      comboId: undefined,
-      bundlePrice: undefined,
-      createdAt: dbItem.createdAt,
-    };
-  });
+  // Descarta linhas legadas (v1) — elas não têm `name`/`unitPrice`, então
+  // renderizar seria pior do que começar vazio. Limpa também do storage
+  // para não acumularem lixos entre upgrades.
+  const legacyItems = dbItems.filter((it) => (it.schemaVersion ?? 1) < CART_SCHEMA_VERSION);
+  if (legacyItems.length > 0) {
+    await db.cart.bulkDelete(legacyItems.map((it) => it.id!).filter(Boolean));
+  }
 
-  useCartStore.setState({ items });
+  const items: CartItem[] = dbItems
+    .filter((it) => (it.schemaVersion ?? 1) >= CART_SCHEMA_VERSION)
+    .map((dbItem) => {
+      const modifiers = (dbItem.modifiers as unknown as SelectedModifier[]) || [];
+      return {
+        id: String(dbItem.id),
+        productId: dbItem.productId,
+        name: dbItem.name ?? '',
+        quantity: dbItem.quantity,
+        unitPrice: dbItem.unitPrice ?? 0,
+        modifiers: modifiers,
+        notes: dbItem.notes,
+        comboId: dbItem.comboId,
+        bundlePrice: dbItem.bundlePrice,
+        comboItems: dbItem.comboItems,
+        createdAt: dbItem.createdAt,
+      };
+    });
+
+  if (items.length > 0) {
+    useCartStore.setState({ items });
+  }
 
   isHydratingFromIndexedDB = false;
 }
@@ -281,13 +310,17 @@ export function initCrossTabSync(): () => void {
     }
   );
 
-  // Cleanup on page unload
+  // Cleanup on page hide — `pagehide` é mais confiável que `unload` em
+  // mobile (Safari/Android não disparam `unload` consistentemente) e é
+  // disparado em bfcache. `{ once: true }` evita leak do listener se a
+  // store for reinstanciada várias vezes (HMR, testes).
   window.addEventListener(
-    'unload',
-    /* istanbul ignore next */ () => {
+    'pagehide',
+    () => {
       cleanup();
       getChannelManager().close();
-    }
+    },
+    { once: true }
   );
 
   return cleanup;

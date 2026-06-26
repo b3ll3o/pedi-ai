@@ -43,6 +43,9 @@ vi.mock('@/lib/offline/db', () => {
   let idCounter = 0;
 
   return {
+    // Espelha o CART_SCHEMA_VERSION real para a lógica de descarte de
+    // legados em `hydrateCartFromIndexedDB` funcionar no teste.
+    CART_SCHEMA_VERSION: 2,
     db: {
       cart: {
         clear: vi.fn(async () => {
@@ -79,6 +82,9 @@ vi.mock('@/lib/offline/db', () => {
         }),
         delete: vi.fn(async (id: number) => {
           cartData.delete(id);
+        }),
+        bulkDelete: vi.fn(async (ids: number[]) => {
+          for (const id of ids) cartData.delete(id);
         }),
         toArray: vi.fn(async () => Array.from(cartData.values())),
         where: vi.fn(() => ({
@@ -815,8 +821,9 @@ describe('cartStore (real store)', () => {
   // ── hydrateCartFromIndexedDB ─────────────────────────────────────────────
 
   describe('hydrateCartFromIndexedDB', () => {
-    it('populates cart from IndexedDB items', async () => {
-      // Add items directly to IndexedDB
+    it('populates cart from IndexedDB items with full schema (v2)', async () => {
+      // Add items directly to IndexedDB using the v2 schema (includes
+      // name/unitPrice/notes/combo fields + schemaVersion marker).
       await db.cart.clear();
       await db.cart.add({
         productId: 'prod-hydrated',
@@ -826,6 +833,10 @@ describe('cartStore (real store)', () => {
           unknown
         >,
         price: 30,
+        name: 'Pizza Calabresa',
+        unitPrice: 45,
+        notes: 'Sem cebola',
+        schemaVersion: 2,
         createdAt: new Date(),
       });
 
@@ -839,6 +850,52 @@ describe('cartStore (real store)', () => {
       expect(items).toHaveLength(1);
       expect(items[0].productId).toBe('prod-hydrated');
       expect(items[0].quantity).toBe(3);
+      // H7: dados de display são preservados pela hidratação.
+      expect(items[0].name).toBe('Pizza Calabresa');
+      expect(items[0].unitPrice).toBe(45);
+      expect(items[0].notes).toBe('Sem cebola');
+
+      await db.cart.clear();
+    });
+
+    it('descartar linhas legadas (v1) e manter apenas v2 na hidratação', async () => {
+      // Simula carrinho de uma versão anterior do app que não tinha
+      // schemaVersion (v1). A hidratação deve descartá-lo em vez de
+      // popular um carrinho com linhas vazias.
+      await db.cart.clear();
+      await db.cart.add({
+        productId: 'prod-legacy',
+        quantity: 2,
+        modifiers: {} as Record<string, unknown>,
+        price: 20,
+        createdAt: new Date(),
+      });
+      await db.cart.add({
+        productId: 'prod-modern',
+        quantity: 1,
+        modifiers: {} as Record<string, unknown>,
+        price: 10,
+        name: 'Item Atual',
+        unitPrice: 10,
+        schemaVersion: 2,
+        createdAt: new Date(),
+      });
+
+      const { hydrateCartFromIndexedDB } = await import('@/infrastructure/persistence/cartStore');
+
+      await act(async () => {
+        await hydrateCartFromIndexedDB();
+      });
+
+      const items = await getItems();
+      expect(items).toHaveLength(1);
+      expect(items[0].productId).toBe('prod-modern');
+      expect(items[0].name).toBe('Item Atual');
+
+      // Linha legacy foi removida do storage também (limpeza proativa).
+      const remaining = await db.cart.toArray();
+      expect(remaining).toHaveLength(1);
+      expect(remaining[0].productId).toBe('prod-modern');
 
       await db.cart.clear();
     });

@@ -62,8 +62,9 @@ describe('BroadcastChannel', () => {
       const sentMessage = mockPostMessage.mock.calls[0][0];
       expect(sentMessage.type).toBe('CART_UPDATE');
       expect(sentMessage.items).toEqual(mockCartItems);
-      expect(sentMessage.timestamp).toBeDefined();
-      expect(typeof sentMessage.timestamp).toBe('number');
+      expect(sentMessage.clock).toBeDefined();
+      expect(typeof sentMessage.clock).toBe('number');
+      expect(sentMessage.clock).toBeGreaterThan(0);
     });
 
     it('deve ignorar broadcast quando window não está disponível', () => {
@@ -77,17 +78,15 @@ describe('BroadcastChannel', () => {
       global.window = originalWindow;
     });
 
-    it('deve definir timestamp crescente', () => {
-      vi.useFakeTimers();
-      const fixedTime = 1700000000000;
-      vi.setSystemTime(fixedTime);
+    it('deve incrementar clock Lamport a cada broadcast', () => {
+      manager.broadcastCartUpdate(mockCartItems);
+      const firstClock = mockPostMessage.mock.calls[0][0].clock;
 
       manager.broadcastCartUpdate(mockCartItems);
+      const secondClock = mockPostMessage.mock.calls[1][0].clock;
 
-      const sentMessage = mockPostMessage.mock.calls[0][0];
-      expect(sentMessage.timestamp).toBe(fixedTime);
-
-      vi.useRealTimers();
+      // Lamport: cada emissão local incrementa o clock em 1.
+      expect(secondClock).toBe(firstClock + 1);
     });
   });
 
@@ -108,12 +107,12 @@ describe('BroadcastChannel', () => {
 
       expect(handler).toBeDefined();
 
-      // Mensagem com timestamp maior que o último broadcast
+      // Mensagem com clock maior que o último visto (Lamport: aceita se > lastSeen)
       const externalMessage: MessageEvent<CartBroadcast> = {
         data: {
           type: 'CART_UPDATE',
           items: mockCartItems,
-          timestamp: Date.now() + 1000,
+          clock: 1,
         },
       } as unknown as MessageEvent<CartBroadcast>;
 
@@ -122,32 +121,28 @@ describe('BroadcastChannel', () => {
       expect(receivedItems).toEqual(mockCartItems);
     });
 
-    it('deve ignorar própria mensagem (timestamp anti-echo)', () => {
+    it('deve ignorar mensagem com clock <= último visto', () => {
       let callbackCalled = false;
       manager.listenForCartUpdates(() => {
         callbackCalled = true;
       });
 
-      // Primeiro broadcast define lastBroadcastTimestamp
-      const broadcastTimestamp = Date.now();
-      manager.broadcastCartUpdate(mockCartItems);
-
       const handler = mockAddEventListener.mock.calls.find(
         (call) => call[0] === 'message'
       )?.[1] as (event: MessageEvent<CartBroadcast>) => void;
 
-      // Mensagem com timestamp menor que o último broadcast para garantir anti-echo
-      const ownMessage: MessageEvent<CartBroadcast> = {
-        data: {
-          type: 'CART_UPDATE',
-          items: mockCartItems,
-          timestamp: broadcastTimestamp - 1,
-        },
-      } as unknown as MessageEvent<CartBroadcast>;
+      // Primeira mensagem: clock=5, aplica.
+      handler({
+        data: { type: 'CART_UPDATE', items: mockCartItems, clock: 5 },
+      } as unknown as MessageEvent<CartBroadcast>);
 
-      handler(ownMessage);
+      // Segunda mensagem: clock=3, NÃO aplica (menor ou igual ao último).
+      handler({
+        data: { type: 'CART_UPDATE', items: mockCartItems, clock: 3 },
+      } as unknown as MessageEvent<CartBroadcast>);
 
-      expect(callbackCalled).toBe(false);
+      // Só a primeira deve ter chamado o callback.
+      expect(callbackCalled).toBe(true);
     });
 
     it('deve ignorar mensagens com type diferente de CART_UPDATE', () => {
@@ -224,13 +219,15 @@ describe('BroadcastChannel', () => {
       manager.broadcastCartUpdate(mockCartItems);
       manager.reset();
 
-      // Após reset, novo broadcast deve usar novo timestamp
-      const firstTimestamp = mockPostMessage.mock.calls[0][0].timestamp;
+      // Após reset, novo broadcast deve reiniciar o clock Lamport do 1.
+      const firstClock = mockPostMessage.mock.calls[0][0].clock;
 
       manager.broadcastCartUpdate(mockCartItems);
-      const secondTimestamp = mockPostMessage.mock.calls[1][0].timestamp;
+      const secondClock = mockPostMessage.mock.calls[1][0].clock;
 
-      expect(secondTimestamp).toBeGreaterThanOrEqual(firstTimestamp);
+      // Reset zera o clock; segundo broadcast deve estar de volta em 1.
+      expect(secondClock).toBe(1);
+      expect(firstClock).toBeGreaterThanOrEqual(1);
     });
   });
 });
