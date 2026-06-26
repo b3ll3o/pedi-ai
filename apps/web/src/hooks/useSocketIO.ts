@@ -37,7 +37,9 @@ export function useSocketIO({
   const socketRef = useRef(getSocket());
   const reconnectAttemptsRef = useRef(0);
   const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const listenersRef = useRef<Map<string, Set<(...args: unknown[]) => void>>>(new Map());
+  const listenersRef = useRef<
+    Map<string, Map<(...args: unknown[]) => void, (...args: unknown[]) => void>>
+  >(new Map());
 
   const clearReconnectTimer = useCallback(() => {
     if (reconnectTimerRef.current) {
@@ -66,7 +68,13 @@ export function useSocketIO({
       setIsReconnecting(true);
       reconnectAttemptsRef.current += 1;
       reconnectTimerRef.current = setTimeout(() => {
-        socketRef.current.connect();
+        // S3#3: guarda contra reconexão redundante. Se o socket já estiver
+        // conectado (browser recuperou rede durante o `reconnectInterval`),
+        // pular `connect()` evita reset do manager interno + re-emissão
+        // de `joinRestaurant` em todas as abas que compartilham o singleton.
+        if (!socketRef.current.connected) {
+          socketRef.current.connect();
+        }
       }, reconnectInterval);
     }
   }, [autoReconnect, maxReconnectAttempts, reconnectInterval]);
@@ -77,14 +85,34 @@ export function useSocketIO({
     socket.on('connect', handleConnect);
     socket.on('disconnect', handleDisconnect);
 
-    if (enabled) {
+    // S3#3: o effect re-roda sempre que `enabled` ou qualquer callback
+    // muda — `handleConnect`/`handleDisconnect` são recriados a cada
+    // render porque fecham sobre `restaurantId`/`reconnectInterval`.
+    // Sem o guarda `!socket.connected`, cada re-render dispara um
+    // `connect()` mesmo com socket já ativo, causando reconnect-storm
+    // visível no admin (joinRestaurant emitido N vezes).
+    if (enabled && !socket.connected) {
       socket.connect();
     }
+
+    // Captura local: ref objects são estáveis, mas `listenersRef.current`
+    // pode mudar entre effect e cleanup (React 18 strict mode, fast refresh).
+    // Copiamos a referência para garantir cleanup correto.
+    const listenersSnapshot = listenersRef.current;
 
     return () => {
       socket.off('connect', handleConnect);
       socket.off('disconnect', handleDisconnect);
       clearReconnectTimer();
+
+      // Defesa em profundidade: se o consumidor esqueceu de chamar `off`
+      // no cleanup do seu useEffect, ainda assim removemos tudo o que foi
+      // registrado por ESTE hook. Crítico para o singleton do socket não
+      // vazar handlers entre navegações de página.
+      listenersSnapshot.forEach((wrappedMap, event) => {
+        wrappedMap.forEach((wrapped) => socket.off(event, wrapped));
+      });
+      listenersSnapshot.clear();
     };
   }, [enabled, handleConnect, handleDisconnect, clearReconnectTimer]);
 
@@ -114,21 +142,32 @@ export function useSocketIO({
   );
 
   const on = useCallback((event: string, callback: (...args: unknown[]) => void) => {
-    const wrappedCallback = (...args: unknown[]) => {
-      // Store callback in ref for potential cleanup
-      if (!listenersRef.current.has(event)) {
-        listenersRef.current.set(event, new Set());
-      }
-      listenersRef.current.get(event)!.add(callback);
-      callback(...args);
-    };
+    // O socket exige que `off` receba a MESMA referência registrada via `on`.
+    // Como queremos expor ao consumidor apenas `callback`, embrulhamos em
+    // `wrappedCallback` e armazenamos o wrapped para que `off` consiga
+    // removê-lo. Sem isso, `off` nunca casa e listeners acumulam no
+    // singleton do socket (KDS em uso contínuo → OOM em horas).
+    const wrappedCallback = (...args: unknown[]) => callback(...args);
+
+    const wrappedMap = listenersRef.current.get(event) ?? new Map();
+    // Se o consumidor registrou o mesmo `callback` duas vezes, mantemos
+    // apenas o wrapper mais recente para evitar duplicação.
+    wrappedMap.set(callback, wrappedCallback);
+    listenersRef.current.set(event, wrappedMap);
 
     socketRef.current.on(event, wrappedCallback);
   }, []);
 
   const off = useCallback((event: string, callback: (...args: unknown[]) => void) => {
-    socketRef.current.off(event, callback);
-    listenersRef.current.get(event)?.delete(callback);
+    const wrappedMap = listenersRef.current.get(event);
+    const wrapped = wrappedMap?.get(callback);
+    if (wrapped) {
+      socketRef.current.off(event, wrapped);
+      wrappedMap!.delete(callback);
+      if (wrappedMap!.size === 0) {
+        listenersRef.current.delete(event);
+      }
+    }
   }, []);
 
   const disconnect = useCallback(() => {
