@@ -15,8 +15,13 @@ export class CombosService {
     const items = await this.prisma.combo.findMany({
       // Auditoria A-S-06: por padrão, só retorna combos disponíveis
       // (cardápio público). Admin/staff passa `includeUnavailable: true`.
+      //
+      // Auditoria ACHADO-1 (Re-varredura 5): rota `/combos` é `@Public()` —
+      // também exige que o restaurante esteja ativo. Sem esse filtro, cliente
+      // poderia enumerar combos de restaurantes desativados.
       where: {
         restaurantId,
+        restaurant: { active: true },
         ...(options.includeUnavailable ? {} : { available: true }),
       },
       include: { comboItems: true },

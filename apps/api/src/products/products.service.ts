@@ -39,8 +39,17 @@ export class ProductsService {
     // Antes: `flatMap` descartava o agrupamento por categoria, forçando o frontend
     // a re-agrupar client-side (com perda de ordenação).
     // Auditoria A-S-05: filtra produtos `available: true` no cardápio público.
+    //
+    // Auditoria ACHADO-1 (Re-varredura 5): rota pública `/products/restaurant/:restaurantId`
+    // exige `restaurant.active: true` para evitar enumeração de cardápio
+    // de restaurantes desativados.
     const categories = await this.prisma.category.findMany({
-      where: { restaurantId, deletedAt: null, active: true },
+      where: {
+        restaurantId,
+        deletedAt: null,
+        active: true,
+        restaurant: { active: true },
+      },
       include: {
         products: {
           where: { available: true },

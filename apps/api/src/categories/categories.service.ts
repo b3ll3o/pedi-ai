@@ -12,7 +12,10 @@ export class CategoriesService {
 
   async findByRestaurant(restaurantId: string) {
     return this.prisma.category.findMany({
-      where: { restaurantId, deletedAt: null },
+      // ACHADO-1 (Re-varredura 5): rota `/categories` é pública — exige
+      // `restaurant.active: true` para evitar enumeração de cardápio de
+      // restaurantes desativados.
+      where: { restaurantId, deletedAt: null, restaurant: { active: true } },
       orderBy: { sortOrder: 'asc' },
     });
   }

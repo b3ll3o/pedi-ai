@@ -15,7 +15,11 @@ export class ModifierGroupsService {
     const items = await this.prisma.modifierGroup.findMany({
       // Auditoria A-S-06: por padrão, filtra modifier values não disponíveis.
       // Modifier groups em si não têm flag `available`; só os valores internos.
-      where: { restaurantId },
+      //
+      // Auditoria ACHADO-2 (Re-varredura 5): rota `/modifier-groups` é
+      // `@Public()` — exige que o restaurante esteja ativo para evitar enumeração
+      // de modificadores de restaurantes desativados.
+      where: { restaurantId, restaurant: { active: true } },
       include: {
         modifierValues: {
           where: options.includeUnavailable ? undefined : { available: true },

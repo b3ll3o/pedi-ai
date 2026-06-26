@@ -38,7 +38,11 @@ describe('CategoriesService', () => {
       expect(result).toHaveLength(3);
       expect(result[0].name).toBe('Appetizers');
       expect(mockPrisma.category.findMany).toHaveBeenCalledWith({
-        where: { restaurantId: 'rest-1', deletedAt: null },
+        where: {
+          restaurantId: 'rest-1',
+          deletedAt: null,
+          restaurant: { active: true },
+        },
         orderBy: { sortOrder: 'asc' },
       });
     });
