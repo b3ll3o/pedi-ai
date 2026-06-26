@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nest
 import { PaymentStatus, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../common/prisma.service';
+import { isValidWebhookTransition } from '../orders/order-state-machine';
 
 /**
  * Gera um payload PIX EMV no formato BR Code (BACEN).
@@ -341,15 +342,44 @@ export class PaymentsService {
           // se a transição for válida. Pedido já em `preparing`/`ready`/`delivered`
           // (movido por staff) não regride para `paid` ao chegar webhook atrasado
           // do MP. Pagamento ainda é refletido em `paymentStatus` e no intent.
+          //
+          // Auditoria ACHADO-6 (Re-varredura 5): optimistic locking via `version`
+          // — o webhook agora usa `updateMany({ where: { id, version } })` em vez
+          // de `update` direto. Se o staff moveu o pedido (incrementando version)
+          // entre o findUnique e este update, `count === 0` e a gente detecta o
+          // conflito. Aqui ainda está em Serializable (transação externa), o que
+          // já evita grande parte do TOCTOU — mas version é **defesa em
+          // profundidade** caso o nível de isolamento seja rebaixado no futuro
+          // (ex: durante tuning de performance).
           const currentOrder = await tx.order.findUnique({
             where: { id: paymentIntent.orderId },
-            select: { status: true },
+            select: { status: true, version: true },
           });
-          if (currentOrder && this.isValidOrderTransition(currentOrder.status, orderStatus)) {
-            await tx.order.update({
-              where: { id: paymentIntent.orderId },
-              data: { status: orderStatus, paymentStatus: newStatus },
+          if (currentOrder && isValidWebhookTransition(currentOrder.status, orderStatus)) {
+            const result = await tx.order.updateMany({
+              where: {
+                id: paymentIntent.orderId,
+                version: currentOrder.version,
+              },
+              data: {
+                status: orderStatus,
+                paymentStatus: newStatus,
+                version: { increment: 1 },
+              },
             });
+            if (result.count === 0) {
+              this.logger.warn(
+                `Webhook MP: conflito de versão no order (orderId=${paymentIntent.orderId}, ` +
+                  `v${currentOrder.version}). Staff moveu o pedido concomitantemente — ` +
+                  `mantendo status atual do staff.`
+              );
+              // Não atualizamos status (mantém staff's), mas sincronizamos
+              // paymentStatus para refletir a confirmação do MP.
+              await tx.order.update({
+                where: { id: paymentIntent.orderId },
+                data: { paymentStatus: newStatus },
+              });
+            }
           } else if (currentOrder) {
             // Mantém status do pedido; só sincroniza paymentStatus.
             this.logger.warn(
@@ -377,20 +407,8 @@ export class PaymentsService {
     }
   }
 
-  /**
-   * State-machine das transições permitidas para o webhook do MP.
-   * Mesmo padrão usado em `OrdersService` (M16). Aqui só importa a via
-   * que o webhook pode forçar: `pending_payment → paid` ou
-   * `pending_payment → cancelled`. Qualquer outro alvo é no-op.
-   */
-  private isValidOrderTransition(
-    from: string,
-    to: 'paid' | 'pending_payment' | 'cancelled'
-  ): boolean {
-    if (from === to) return true;
-    if (from === 'pending_payment' && (to === 'paid' || to === 'cancelled')) {
-      return true;
-    }
-    return false;
-  }
+  // Auditoria ACHADO-31 (Re-varredura 6): a state-machine agora vive em
+  // `orders/order-state-machine.ts` (single source of truth). A função
+  // privada `isValidOrderTransition` foi removida — `handleWebhook` agora
+  // usa `isValidWebhookTransition` do módulo compartilhado.
 }

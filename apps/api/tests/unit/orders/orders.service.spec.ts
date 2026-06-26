@@ -233,11 +233,13 @@ describe('OrdersService', () => {
     it('should update status and emit realtime event', async () => {
       const updatedOrder = { id: 'order-1', status: 'preparing', restaurantId: 'rest-1' };
       // A-01: 1ª findUnique = snapshot, 2ª = post-update dentro do tx.
+      // ACHADO-6: findUnique agora retorna também `version` (optimistic locking).
       mockPrisma.order.findUnique
         .mockResolvedValueOnce({
           id: 'order-1',
           status: 'paid',
           restaurantId: 'rest-1',
+          version: 2,
         })
         .mockResolvedValueOnce(updatedOrder);
 
@@ -253,6 +255,11 @@ describe('OrdersService', () => {
 
       expect(result).toEqual(updatedOrder);
       expect(mockRealtime.emitOrderUpdate).toHaveBeenCalled();
+      // ACHADO-6: updateMany chamado com where: { id, status, version }.
+      expect(mockPrisma.order.updateMany).toHaveBeenCalledWith({
+        where: { id: 'order-1', status: 'paid', version: 2 },
+        data: { status: 'preparing', version: { increment: 1 } },
+      });
     });
   });
 
@@ -428,11 +435,13 @@ describe('OrdersService', () => {
     it('should record status change with notes', async () => {
       const updatedOrder = { id: 'order-1', status: 'cancelled', restaurantId: 'rest-1' };
       // Auditoria A-01: updateMany condicional primeiro; depois findUnique dentro do tx.
+      // ACHADO-6: findUnique inclui `version` para optimistic locking.
       mockPrisma.order.findUnique
         .mockResolvedValueOnce({
           id: 'order-1',
           status: 'pending_payment',
           restaurantId: 'rest-1',
+          version: 0,
         })
         .mockResolvedValueOnce(updatedOrder);
 
@@ -447,6 +456,11 @@ describe('OrdersService', () => {
       const result = await ordersService.updateStatus('order-1', 'cancelled', 'Cliente cancelou');
 
       expect(result.status).toBe('cancelled');
+      // ACHADO-6: updateMany com version.
+      expect(mockPrisma.order.updateMany).toHaveBeenCalledWith({
+        where: { id: 'order-1', status: 'pending_payment', version: 0 },
+        data: { status: 'cancelled', version: { increment: 1 } },
+      });
     });
   });
 
@@ -476,11 +490,13 @@ describe('OrdersService', () => {
     it('should allow paid → preparing (valid transition)', async () => {
       const updatedOrder = { id: 'order-1', status: 'preparing', restaurantId: 'rest-1' };
       // A-01: 1ª chamada findUnique = snapshot; 2ª = dentro do tx (post-update).
+      // ACHADO-6: snapshot inclui version.
       mockPrisma.order.findUnique
         .mockResolvedValueOnce({
           id: 'order-1',
           status: 'paid',
           restaurantId: 'rest-1',
+          version: 1,
         })
         .mockResolvedValueOnce(updatedOrder);
       mockPrisma.$transaction.mockImplementation(async (fn) => {
@@ -492,6 +508,22 @@ describe('OrdersService', () => {
       });
       const result = await ordersService.updateStatus('order-1', 'preparing', undefined);
       expect(result.status).toBe('preparing');
+    });
+
+    it('should throw ConflictException when version mismatch (TOCTOU race)', async () => {
+      // ACHADO-6: outra request incrementou version entre snapshot e update.
+      // updateMany retorna count=0 → 409.
+      mockPrisma.order.findUnique.mockResolvedValueOnce({
+        id: 'order-1',
+        status: 'paid',
+        restaurantId: 'rest-1',
+        version: 5,
+      });
+      mockPrisma.order.updateMany.mockResolvedValueOnce({ count: 0 });
+
+      await expect(ordersService.updateStatus('order-1', 'preparing')).rejects.toThrow(
+        /Pedido foi modificado por outra request/
+      );
     });
   });
 });

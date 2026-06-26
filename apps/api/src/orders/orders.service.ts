@@ -11,6 +11,8 @@ import { PageDto, PAGINATION_DEFAULT_LIMIT } from '../common/dto/pagination.dto'
 import { PrismaService } from '../common/prisma.service';
 import { RealtimeService } from '../realtime/realtime.service';
 
+import { isValidOrderStatusTransition } from './order-state-machine';
+
 /**
  * Service de pedidos com tenant isolation e pricing server-side enforced.
  *
@@ -300,7 +302,11 @@ export class OrdersService {
     // Sem essa validação, o staff (ou um cliente com JWT forjado) poderia
     // pular de `cancelled` direto para `delivered`, "ressuscitando" pedidos
     // cancelados e burlando a fila de produção.
-    if (!this.isValidStatusTransition(existing.status, status)) {
+    //
+    // Auditoria ACHADO-31 (Re-varredura 6): state-machine agora vive em
+    // `order-state-machine.ts` (single source of truth) — antes duplicada
+    // em `OrdersService` e `PaymentsService` com semânticas divergentes.
+    if (!isValidOrderStatusTransition(existing.status, status)) {
       throw new BadRequestException(`Transição de status inválida: ${existing.status} → ${status}`);
     }
 
@@ -308,13 +314,21 @@ export class OrdersService {
     // `findUnique` (snapshot) e o `update`. Se outra request alterou o status
     // entre as duas operações, `count === 0` indica conflito e relançamos
     // 409. Validação dupla: state-machine contra snapshot + atômica contra DB.
+    //
+    // Auditoria ACHADO-6 (Re-varredura 5): optimistic locking via `version`.
+    // Sem isso, um webhook "paid" que chega ao mesmo tempo que um staff
+    // que clica em "cancelled" faz last-write-wins silencioso (dois updates
+    // independentes no mesmo `id`). Agora `version` entra na cláusula
+    // `where` e é incrementado no `data` — se outra request alterou o
+    // pedido entre o `findUnique` e este `updateMany`, `count === 0` e
+    // retornamos 409 com instrução de retry.
     const updateResult = await this.prisma.order.updateMany({
-      where: { id, status: existing.status },
-      data: { status },
+      where: { id, status: existing.status, version: existing.version },
+      data: { status, version: { increment: 1 } },
     });
     if (updateResult.count === 0) {
       throw new ConflictException(
-        `Pedido foi modificado por outra request (esperado=${existing.status}, atual mudou). Tente novamente.`
+        `Pedido foi modificado por outra request (esperado=${existing.status} v${existing.version}, atual mudou). Tente novamente.`
       );
     }
 
@@ -334,31 +348,5 @@ export class OrdersService {
     });
 
     return order;
-  }
-
-  /**
-   * State machine do pedido. Define quais transições são válidas.
-   * - `pending_payment` → `paid` (webhook PIX) ou `cancelled`
-   * - `paid` → `preparing` (staff inicia preparo) ou `cancelled`
-   * - `preparing` → `ready` (staff finaliza) ou `cancelled`
-   * - `ready` → `delivered` (entrega) ou `cancelled` (desistência tardia)
-   * - `delivered` → estado final (sem transições)
-   * - `cancelled` → estado final (sem transições — ver M16)
-   *
-   * `cancelled` é acessível de **qualquer estado ativo** (cliente pode
-   * desistir antes da entrega), mas depois de `delivered` ou `cancelled`
-   * o pedido é imutável.
-   */
-  private isValidStatusTransition(from: OrderStatus, to: OrderStatus): boolean {
-    if (from === to) return true; // idempotente (ex: re-salvar mesmo status)
-    const transitions: Record<OrderStatus, OrderStatus[]> = {
-      pending_payment: ['paid', 'cancelled'],
-      paid: ['preparing', 'cancelled'],
-      preparing: ['ready', 'cancelled'],
-      ready: ['delivered', 'cancelled'],
-      delivered: [],
-      cancelled: [],
-    };
-    return transitions[from]?.includes(to) ?? false;
   }
 }

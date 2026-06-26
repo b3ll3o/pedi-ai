@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../common/prisma.service';
 
@@ -58,7 +58,23 @@ export class MenuService {
   constructor(private prisma: PrismaService) {}
 
   async getMenuByRestaurant(restaurantId: string): Promise<MenuResponse> {
-    // Fetch categories
+    // Auditoria C8: restaurante precisa estar **active: true** para ter o
+    // cardápio exposto publicamente. Sem isso, donos desativam um
+    // restaurante temporariamente mas seu cardápio continua público.
+    const restaurant = await this.prisma.restaurant.findFirst({
+      where: { id: restaurantId, active: true },
+      select: { id: true, name: true },
+    });
+    if (!restaurant) {
+      throw new NotFoundException('Restaurante não encontrado ou inativo');
+    }
+
+    // Auditoria ACHADO-30 (Re-varredura 6): antes estas 4 queries eram
+    // sequenciais (categories → products → modifierGroups → combos),
+    // adicionando latência agregada de ~50-100ms em horários de pico.
+    // Como `products` depende dos IDs de `categories`, mas modifierGroups
+    // e combos são independentes, paralelizamos: 1ª query (categories)
+    // sequencial, depois `Promise.all` para os 3 restantes.
     const categories = await this.prisma.category.findMany({
       where: { restaurantId, active: true },
       orderBy: { sortOrder: 'asc' },
@@ -73,59 +89,59 @@ export class MenuService {
       },
     });
 
-    // Fetch products (available only)
     const categoryIds = categories.map((c) => c.id);
-    const products = await this.prisma.product.findMany({
-      where:
-        categoryIds.length > 0 ? { categoryId: { in: categoryIds }, available: true } : undefined,
-      orderBy: { sortOrder: 'asc' },
-      select: {
-        id: true,
-        categoryId: true,
-        name: true,
-        description: true,
-        imageUrl: true,
-        price: true,
-        available: true,
-        sortOrder: true,
-        dietaryLabels: true,
-      },
-    });
-
-    // Fetch modifier groups
-    const modifierGroups = await this.prisma.modifierGroup.findMany({
-      where: { restaurantId },
-      select: {
-        id: true,
-        restaurantId: true,
-        name: true,
-        required: true,
-        minSelections: true,
-        maxSelections: true,
-        modifierValues: {
-          where: { available: true },
-          select: {
-            id: true,
-            name: true,
-            priceAdjustment: true,
-            available: true,
+    const [products, modifierGroups, combos] = await Promise.all([
+      // Products dependem dos categoryIds resolvidos acima.
+      this.prisma.product.findMany({
+        where:
+          categoryIds.length > 0 ? { categoryId: { in: categoryIds }, available: true } : undefined,
+        orderBy: { sortOrder: 'asc' },
+        select: {
+          id: true,
+          categoryId: true,
+          name: true,
+          description: true,
+          imageUrl: true,
+          price: true,
+          available: true,
+          sortOrder: true,
+          dietaryLabels: true,
+        },
+      }),
+      // Modifier groups são por restaurantId (independente de categorias).
+      this.prisma.modifierGroup.findMany({
+        where: { restaurantId },
+        select: {
+          id: true,
+          restaurantId: true,
+          name: true,
+          required: true,
+          minSelections: true,
+          maxSelections: true,
+          modifierValues: {
+            where: { available: true },
+            select: {
+              id: true,
+              name: true,
+              priceAdjustment: true,
+              available: true,
+            },
           },
         },
-      },
-    });
-
-    // Fetch combos (available only)
-    const combos = await this.prisma.combo.findMany({
-      where: { restaurantId, available: true },
-      select: {
-        id: true,
-        restaurantId: true,
-        name: true,
-        description: true,
-        bundlePrice: true,
-        available: true,
-      },
-    });
+      }),
+      // Combos são por restaurantId (independente de categorias).
+      this.prisma.combo.findMany({
+        where: { restaurantId, available: true },
+        select: {
+          id: true,
+          restaurantId: true,
+          name: true,
+          description: true,
+          bundlePrice: true,
+          available: true,
+        },
+      }),
+    ]);
 
     return {
       categories,
@@ -143,8 +159,14 @@ export class MenuService {
   }
 
   async getProductById(productId: string, restaurantId: string) {
+    // Auditoria C8: produto precisa estar **available: true** E o restaurante
+    // **active: true**. Sem isso, produtos desativados vazam no cardápio.
     const product = await this.prisma.product.findFirst({
-      where: { id: productId, category: { restaurantId } },
+      where: {
+        id: productId,
+        available: true,
+        category: { restaurantId, restaurant: { active: true } },
+      },
       include: {
         category: { select: { id: true, name: true } },
         productModifierGroups: {

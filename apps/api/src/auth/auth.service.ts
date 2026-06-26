@@ -27,14 +27,74 @@ const SENHA_REGEX_FORCA = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\
 const BCRYPT_COST = 12;
 
 /**
- * Cache LRU simples para HIBP — evita bater na API externa a cada signup.
- * Limite: 256 entradas (suficiente para um pool razoável de senhas testadas).
- * Auditoria B2.
+ * Cache LRU para HIBP — evita bater na API externa a cada signup.
+ *
+ * Auditoria B2: limite de 256 entradas (suficiente para um pool razoável de
+ * senhas testadas).
+ *
+ * Auditoria ACHADO-14 (Re-varredura 5): implementação LRU **real** (não FIFO).
+ * Antes, o Map fazia eviction da primeira chave inserida — senhas testadas
+ * mais recentemente (mas há muito tempo) permaneciam na frente. Agora um
+ * `Set` mantém a ordem de acesso e `get`/`set` promovem a chave para o fim;
+ * quando `size >= MAX`, a chave do **início** é removida (a menos
+ * recentemente usada). Isso reflete melhor o uso real: senhas em tentativas
+ * repetidas (e.g. brute force de uma única senha) devem hit cache, e
+ * senhas únicas que só foram testadas uma vez devem ser evictadas primeiro.
+ *
+ * O TTL de 1h (HIBP_CACHE_TTL_MS) é verificado no `get` — entradas
+ * expiradas são removidas e a request cai na API novamente.
  */
-const HIBP_CACHE = new Map<string, { breached: boolean; expiresAt: number }>();
-const HIBP_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hora
 const HIBP_CACHE_MAX = 256;
+const HIBP_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hora
 const HIBP_RANGE_URL = 'https://api.pwnedpasswords.com/range/';
+
+/**
+ * Entrada do cache. `expiresAt` em epoch ms (mais barato de comparar que Date).
+ */
+interface HibpCacheEntry {
+  breached: boolean;
+  expiresAt: number;
+}
+
+const hibpCacheMap = new Map<string, HibpCacheEntry>();
+
+/**
+ * Promove a chave para "mais recentemente usada" — re-insert no Map
+ * (Map preserva ordem de inserção, então delete+set move pro fim).
+ */
+function hibpCacheTouch(key: string): HibpCacheEntry | undefined {
+  const value = hibpCacheMap.get(key);
+  if (value === undefined) return undefined;
+  hibpCacheMap.delete(key);
+  hibpCacheMap.set(key, value);
+  return value;
+}
+
+function hibpCacheGet(key: string): HibpCacheEntry | undefined {
+  const value = hibpCacheMap.get(key);
+  if (value === undefined) return undefined;
+  // Expirada — evict on read.
+  if (value.expiresAt <= Date.now()) {
+    hibpCacheMap.delete(key);
+    return undefined;
+  }
+  hibpCacheTouch(key);
+  return value;
+}
+
+function hibpCacheSet(key: string, entry: HibpCacheEntry): void {
+  // Se já existe, evicta e reinsere para mover pro fim.
+  if (hibpCacheMap.has(key)) {
+    hibpCacheMap.delete(key);
+  }
+  hibpCacheMap.set(key, entry);
+  // Evict LRU enquanto estourar o limite.
+  while (hibpCacheMap.size > HIBP_CACHE_MAX) {
+    const lruKey = hibpCacheMap.keys().next().value;
+    if (lruKey === undefined) break;
+    hibpCacheMap.delete(lruKey);
+  }
+}
 
 // ─── Helpers privados (top-level para reuso e testabilidade) ────────────────
 
@@ -50,8 +110,8 @@ async function senhaFoiVazada(senha: string, logger: Logger): Promise<boolean> {
   const sha1 = crypto.createHash('sha1').update(senha).digest('hex').toUpperCase();
   const cacheKey = sha1.slice(0, 5) + ':' + sha1.slice(5);
 
-  const cached = HIBP_CACHE.get(cacheKey);
-  if (cached && cached.expiresAt > Date.now()) {
+  const cached = hibpCacheGet(cacheKey);
+  if (cached !== undefined) {
     return cached.breached;
   }
 
@@ -70,12 +130,7 @@ async function senhaFoiVazada(senha: string, logger: Logger): Promise<boolean> {
       return s === suffix && Number(count) > 0;
     });
 
-    if (HIBP_CACHE.size >= HIBP_CACHE_MAX) {
-      // Eviction simples: remove a primeira entrada.
-      const firstKey = HIBP_CACHE.keys().next().value;
-      if (firstKey !== undefined) HIBP_CACHE.delete(firstKey);
-    }
-    HIBP_CACHE.set(cacheKey, {
+    hibpCacheSet(cacheKey, {
       breached,
       expiresAt: Date.now() + HIBP_CACHE_TTL_MS,
     });
@@ -221,12 +276,21 @@ export class AuthService {
     const issued = await this.refreshTokenService.issue(user.id, { familyId });
     await this.refreshTokenService.revoke(tokenId, issued.tokenId);
 
-    const accessToken = this.jwtService.sign({
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-      restaurantId: user.restaurantId ?? null,
-    });
+    // Auditoria ACHADO-28: incluir iss/aud ao emitir (mesmo padrão do generateTokens).
+    const refreshIssuer = process.env.JWT_ISSUER;
+    const refreshAudience = process.env.JWT_AUDIENCE;
+    const accessToken = this.jwtService.sign(
+      {
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+        restaurantId: user.restaurantId ?? null,
+      },
+      {
+        ...(refreshIssuer ? { issuer: refreshIssuer } : {}),
+        ...(refreshAudience ? { audience: refreshAudience } : {}),
+      }
+    );
 
     // Auditoria B1: emite ambos formatos (camel + snake) para compatibilidade.
     return {
@@ -368,12 +432,24 @@ export class AuthService {
     name: string;
     restaurantId?: string | null;
   }): Promise<AuthResponse> {
-    const accessToken = this.jwtService.sign({
-      sub: payload.id,
-      email: payload.email,
-      role: payload.role,
-      restaurantId: payload.restaurantId ?? null,
-    });
+    // Auditoria ACHADO-28 (Re-varredura 6): incluir `iss`/`aud` ao emitir o
+    // JWT quando configurados via env. Sem iss/aud, um secret compartilhado
+    // entre dois sistemas permite que tokens emitidos por um sejam aceitos
+    // pelo outro (cenário de monorepo ou migração).
+    const issuer = process.env.JWT_ISSUER;
+    const audience = process.env.JWT_AUDIENCE;
+    const accessToken = this.jwtService.sign(
+      {
+        sub: payload.id,
+        email: payload.email,
+        role: payload.role,
+        restaurantId: payload.restaurantId ?? null,
+      },
+      {
+        ...(issuer ? { issuer } : {}),
+        ...(audience ? { audience } : {}),
+      }
+    );
 
     const refreshTokenSecret = process.env.JWT_REFRESH_SECRET;
     if (!refreshTokenSecret) {

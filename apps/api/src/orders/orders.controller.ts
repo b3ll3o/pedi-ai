@@ -129,6 +129,26 @@ export class OrdersController {
       if (req.user.restaurantId && sanitized.restaurantId !== req.user.restaurantId) {
         throw new ForbiddenException('Restaurante não corresponde ao usuário autenticado');
       }
+      // Auditoria ACHADO-26 (Re-varredura 6): se o body trouxer `tableId`,
+      // precisamos validar que a mesa pertence ao `restaurantId` do JWT
+      // (não apenas do body). Antes, esse check só era feito no caminho
+      // anônimo (linhas abaixo). Cliente autenticado no restaurante A
+      // podia injetar `tableId` de restaurante B — IDOR cross-tenant que
+      // resultava em pedido registrado sob mesa de outro tenant.
+      if (sanitized.tableId) {
+        const table = await this.prisma.table.findUnique({
+          where: { id: sanitized.tableId },
+          select: { restaurantId: true, active: true },
+        });
+        if (!table || !table.active) {
+          throw new BadRequestException('Mesa inválida ou inativa');
+        }
+        if (table.restaurantId !== req.user.restaurantId) {
+          throw new ForbiddenException('Mesa não pertence ao seu restaurante');
+        }
+        // Sobrescreve com o valor server-side (autoritativo).
+        sanitized.restaurantId = table.restaurantId;
+      }
       // Força customerId do JWT, ignora o do body.
       sanitized.customerId = req.user.id;
     } else {

@@ -88,7 +88,11 @@ model Table {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+  // Restrict: impede deletar Restaurant se houver Tables. Garante que
+  // dados de mesas (histórico de pedidos, QR codes) não sejam perdidos
+  // acidentalmente. Para "deletar" um restaurante, use soft-delete ou
+  // cascade explícito após migrar Orders/PaymentIntents.
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
   orders     Order[]
 
   @@index([restaurantId])
@@ -106,7 +110,7 @@ model Category {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
   products   Product[]
 
   @@index([restaurantId])
@@ -142,7 +146,7 @@ model ModifierGroup {
   maxSelections Int     @default(1)
   createdAt    DateTime @default(now())
 
-  restaurant         Restaurant             @relation(fields: [restaurantId], references: [id])
+  restaurant         Restaurant             @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
   modifierValues     ModifierValue[]
   productModifierGroups ProductModifierGroup[]
 
@@ -157,7 +161,7 @@ model ModifierValue {
   available      Boolean  @default(true)
   createdAt      DateTime @default(now())
 
-  modifierGroup ModifierGroup @relation(fields: [modifierGroupId], references: [id])
+  modifierGroup ModifierGroup @relation(fields: [modifierGroupId], references: [id], onDelete: Restrict)
 
   @@index([modifierGroupId])
 }
@@ -173,7 +177,7 @@ model Combo {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  restaurant Restaurant  @relation(fields: [restaurantId], references: [id])
+  restaurant Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
   comboItems ComboItem[]
   orderItems OrderItem[]
 
@@ -187,11 +191,30 @@ model ComboItem {
   quantity  Int      @default(1)
   createdAt DateTime @default(now())
 
-  combo   Combo   @relation(fields: [comboId], references: [id])
-  product Product @relation(fields: [productId], references: [id])
+  combo   Combo   @relation(fields: [comboId], references: [id], onDelete: Restrict)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
 
   @@index([comboId])
   @@index([productId])
+}
+
+// Auditoria A-AD-05: dedupe atômico via tabela dedicada com unique composto.
+// O fluxo é:
+//   1. INSERT IdempotencyKey { scope, key } — se P2002, dedupe disparou.
+//   2. INSERT Order (operação original).
+//   3. Se Order falhar, DELETE IdempotencyKey para permitir retry.
+// Sem unique composto, `findFirst` antes do `create` sofre race condition
+// (TOCTOU). Esta tabela resolve a nível de DB.
+model IdempotencyKey {
+  id          String   @id @default(uuid())
+  scope       String   // ex: "order:create", "payment:create"
+  key         String   // valor do header Idempotency-Key do cliente
+  resultHash  String?  // hash do response para retornar mesma resposta
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime // TTL: 24h (cleanup via job/cron)
+
+  @@unique([scope, key])
+  @@index([expiresAt])
 }
 
 model Order {
@@ -203,6 +226,13 @@ model Order {
   customerName    String?
   customerEmail  String?
   status          OrderStatus    @default(pending_payment)
+  // Auditoria ACHADO-6 (Re-varredura 5): optimistic locking para evitar
+  // TOCTOU entre webhook do Mercado Pago e mudanças de status por staff.
+  // Sem version, um webhook "paid" que chega ao mesmo tempo que um staff
+  // que clica em "cancelled" pode fazer last-write-wins silencioso.
+  // O `update`/`updateMany` deve incluir `where: { id, version }` e
+  // incrementar `version` na mesma operação. Conflito → 409.
+  version         Int            @default(0)
   subtotal        Float
   tax             Float
   total           Float
@@ -212,8 +242,8 @@ model Order {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  restaurant    Restaurant          @relation(fields: [restaurantId], references: [id])
-  table         Table?              @relation(fields: [tableId], references: [id])
+  restaurant    Restaurant          @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
+  table         Table?              @relation(fields: [tableId], references: [id], onDelete: Restrict)
   items         OrderItem[]
   statusHistory OrderStatusHistory[]
   paymentIntents PaymentIntent[]
@@ -235,8 +265,11 @@ model OrderItem {
   createdAt  DateTime  @default(now())
 
   order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product? @relation(fields: [productId], references: [id])
-  combo   Combo?   @relation(fields: [comboId], references: [id])
+  // SetNull (não Restrict) ao deletar Product/Combo: preserva histórico de
+  // pedidos já pagos. O item aparece com productId=null mas mantém o
+  // unitPrice/totalPrice para fins fiscais/auditoria.
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  combo   Combo?   @relation(fields: [comboId], references: [id], onDelete: SetNull)
 
   @@index([orderId])
 }
@@ -263,8 +296,12 @@ model UsersProfile {
   passwordHash  String?
   createdAt     DateTime @default(now())
 
-  restaurant       Restaurant? @relation(fields: [restaurantId], references: [id])
+  // SetNull: se Restaurant for deletado (cenário raro), preserva o
+  // perfil do usuário mas desvincula do restaurante. Cascade apagaria
+  // também refresh tokens, password resets, etc — perda irreversível.
+  restaurant       Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: SetNull)
   passwordResetTokens PasswordResetToken[]
+  refreshTokens       RefreshToken[]
 
   @@index([restaurantId])
 }
@@ -282,6 +319,30 @@ model PasswordResetToken {
   @@index([userId])
 }
 
+/// Refresh tokens com rotação e revogação.
+/// Cada refresh emite um novo registro e revoga o anterior (cadeia auditável).
+/// Reuso de token revogado → invalida toda a família (detecção de reuso).
+model RefreshToken {
+  id            String    @id @default(uuid())
+  userId        String
+  tokenHash     String    @unique
+  /// Família de rotação — todos os tokens descendentes compartilham este ID.
+  familyId      String
+  /// Token que substituiu este na rotação (preenchido após rotação).
+  replacedById  String?
+  expiresAt     DateTime
+  revokedAt     DateTime?
+  revokedReason String?
+  createdAt     DateTime  @default(now())
+  lastUsedAt    DateTime?
+
+  user UsersProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([familyId])
+  @@index([expiresAt])
+}
+
 model PaymentIntent {
   id                  String        @id @default(uuid())
   orderId             String
@@ -297,7 +358,7 @@ model PaymentIntent {
   createdAt           DateTime      @default(now())
 
   order      Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
 
   @@index([orderId])
   @@index([restaurantId])
@@ -320,7 +381,7 @@ model Subscription {
   updatedAt             DateTime           @updatedAt
   version               Int                @default(1)
 
-  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
 
   @@index([restaurantId])
 }
