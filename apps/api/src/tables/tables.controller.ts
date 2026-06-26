@@ -1,5 +1,17 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Req,
+  Logger,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 
 import { Public } from '../auth/decorators/public.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -11,6 +23,8 @@ import { TablesService } from './tables.service';
 @ApiTags('tables')
 @Controller('tables')
 export class TablesController {
+  private readonly logger = new Logger(TablesController.name);
+
   constructor(private readonly tablesService: TablesService) {}
 
   @Get()
@@ -93,6 +107,11 @@ export class TablesController {
    */
   @Post('validate')
   @Public()
+  // Auditoria ACHADO-38 (Re-varredura 7): rate-limit mais restritivo que o
+  // tier 'long' global (300/min). Rota pública, vulnerável a enumeração de
+  // `table_id` + DoS via DB load. 30 req/min/IP = 1 tentativa a cada 2s
+  // (cenário legítimo: cliente reescaneia QR).
+  @Throttle({ default: { ttl: 60_000, limit: 30 } })
   @ApiOperation({ summary: 'Validar QR code de mesa' })
   @ApiResponse({ status: 200, description: 'Validação realizada com sucesso' })
   async validateQrCode(
@@ -114,7 +133,17 @@ export class TablesController {
     );
 
     if (!result.valid) {
-      return { valid: false, error: result.error };
+      // Auditoria ACHADO-38 (Re-varredura 7): unificar mensagem de erro para
+      // evitar enumeração. Antes, mensagens distintas ("Mesa não encontrada"
+      // vs "Assinatura inválida") permitiam ao atacante inferir quais
+      // `table_id` existem antes de tentar adivinhar a assinatura. Agora,
+      // retornamos a mesma mensagem genérica — o motivo real vai para o log
+      // (com IP mascarado em prod) para diagnóstico.
+      this.logger.warn(
+        `[validate] falha (motivo=${result.error}, restaurant=${restaurant_id}, ` +
+          `table=${table_id}, ts=${timestamp})`
+      );
+      return { valid: false, error: 'QR code inválido ou expirado' };
     }
 
     return {

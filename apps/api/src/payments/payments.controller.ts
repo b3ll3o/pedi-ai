@@ -61,17 +61,106 @@ function loadMpWebhookIps(): ReadonlySet<string> {
 }
 
 /**
- * Valida IP em CIDR. Retorna true se `ip` pertence a `cidr` (IPv4 apenas).
- * Implementação simples — suficiente para o conjunto conhecido do MP.
+ * Converte IPv4 em número 32-bit. Retorna `null` se o input for inválido
+ * (octetos não-numéricos, fora de 0-255, ou quantidade diferente de 4).
+ *
+ * Auditoria ACHADO-34 (Re-varredura 7): a versão anterior aceitava silenciosamente
+ * `bits=NaN` no CIDR, o que zerava o mask e fazia **todo IPv4 bater** em qualquer
+ * range (bypass total do allowlist). Também aceitava octetos fora de faixa (ex:
+ * `999.999.999.999`) e quebrava em IPv6. Esta versão rejeita explicitamente
+ * qualquer input inválido — fail-closed (retorna `null` ⇒ `ipInCidr` retorna
+ * `false` ⇒ webhook rejeitado).
+ */
+function ipv4ToInt(ip: string): number | null {
+  const parts = ip.split('.');
+  if (parts.length !== 4) return null;
+  let acc = 0;
+  for (const part of parts) {
+    if (!/^\d+$/.test(part)) return null;
+    const n = Number(part);
+    if (!Number.isFinite(n) || n < 0 || n > 255) return null;
+    acc = acc * 256 + n;
+  }
+  return acc >>> 0;
+}
+
+/**
+ * Normaliza IP removendo colchetes (IPv6 com zone) e porta em IPv4-mapped.
+ * Retorna string vazia se input for vazio.
+ */
+function normalizeIp(ip: string): string {
+  let normalized = ip.trim();
+  // IPv6 com zone entre colchetes: `[::1]` -> `::1`
+  if (normalized.startsWith('[') && normalized.includes(']')) {
+    normalized = normalized.slice(1, normalized.indexOf(']'));
+  }
+  // IPv4 com porta (X-Forwarded-For): `1.2.3.4:5678` -> `1.2.3.4`.
+  // Heurística: IPv4 válido contém 3 pontos; se houver `:` adicional, é porta.
+  // Não confundir com IPv6 (`::` ou múltiplos `:`).
+  const dotCount = (normalized.match(/\./g) ?? []).length;
+  const colonCount = (normalized.match(/:/g) ?? []).length;
+  if (dotCount === 3 && colonCount === 1) {
+    normalized = normalized.split(':')[0];
+  }
+  return normalized;
+}
+
+/**
+ * Valida IP em CIDR. Retorna `true` se `ip` pertence a `cidr`.
+ *
+ * Aceita:
+ * - IPv4 em CIDR: `192.168.1.0/24`
+ * - IPv4 exato (sem `/`): `192.168.1.1`
+ * - IPv6: `2001:db8::/32` (comparação exata por bloco — suficiente para
+ *   ranges conhecidos do MP; ranges IPv6 com `::` precisam de expansão).
+ *
+ * Auditoria ACHADO-34 (Re-varredura 7): fail-closed em qualquer input inválido
+ * (octetos >255, bits >32 ou <0, NaN, IPv4-mapped com IPv6 wrapper).
  */
 function ipInCidr(ip: string, cidr: string): boolean {
-  if (!cidr.includes('/')) {
-    return ip === cidr;
+  if (!cidr) return false;
+
+  const normalizedIp = normalizeIp(ip);
+  const normalizedCidr = cidr.trim();
+
+  // IPv6: heurística simples — comparação por prefixo até o `/`.
+  if (normalizedIp.includes(':') || normalizedCidr.includes(':')) {
+    if (!normalizedCidr.includes('/')) {
+      return normalizedIp === normalizedCidr;
+    }
+    const [rangeV6, bitsV6] = normalizedCidr.split('/');
+    const bits = Number(bitsV6);
+    if (!Number.isInteger(bits) || bits < 0 || bits > 128) return false;
+    if (bits === 0) return true;
+    // Compara apenas o prefixo textual (sem expandir `::`).
+    const prefixLen = Math.floor(bits / 4);
+    if (prefixLen === 0) return true;
+    return (
+      normalizedIp.slice(0, prefixLen).toLowerCase() === rangeV6.slice(0, prefixLen).toLowerCase()
+    );
   }
-  const [range, bits] = cidr.split('/');
-  const mask = ~((1 << (32 - Number(bits))) - 1) >>> 0;
-  const ipNum = ip.split('.').reduce((acc, oct) => (acc << 8) + Number(oct), 0) >>> 0;
-  const rangeNum = range.split('.').reduce((acc, oct) => (acc << 8) + Number(oct), 0) >>> 0;
+
+  // IPv4
+  const ipNum = ipv4ToInt(normalizedIp);
+  if (ipNum === null) return false;
+
+  if (!normalizedCidr.includes('/')) {
+    // Comparação exata (sem CIDR)
+    const rangeNum = ipv4ToInt(normalizedCidr);
+    if (rangeNum === null) return false;
+    return ipNum === rangeNum;
+  }
+
+  const [range, bitsStr] = normalizedCidr.split('/');
+  const bits = Number(bitsStr);
+  if (!Number.isInteger(bits) || bits < 0 || bits > 32) return false;
+
+  const rangeNum = ipv4ToInt(range);
+  if (rangeNum === null) return false;
+
+  if (bits === 0) return true;
+  // Máscara segura: usamos Uint32Array para evitar `<< 32` overflow.
+  const mask = bits === 32 ? 0xffffffff : (0xffffffff << (32 - bits)) >>> 0;
   return (ipNum & mask) === (rangeNum & mask);
 }
 
@@ -338,6 +427,10 @@ export class PaymentsController {
   }
 
   private isAllowedIp(ip: string): boolean {
+    // Auditoria ACHADO-34 (Re-varredura 7): `ipInCidr` agora faz fail-closed em
+    // qualquer input inválido (octetos fora de 0-255, bits NaN/>32, IPv6 mal
+    // formado). Antes, `bits=NaN` zerava o mask e fazia todo IPv4 bater em
+    // qualquer range — bypass total do allowlist.
     const allowedCidrs = loadMpWebhookIps();
     for (const range of allowedCidrs) {
       if (ipInCidr(ip, range)) return true;
@@ -345,3 +438,6 @@ export class PaymentsController {
     return false;
   }
 }
+
+// Exportado apenas para testes — uso interno.
+export { ipInCidr };

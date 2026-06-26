@@ -126,10 +126,25 @@ export class TodasExcecoesFiltro implements ExceptionFilter {
   }
 
   /**
-   * S3#12: scrub PII-shaped substrings (emails, phones longos) dentro do
-   * stack trace. Heurística: regex de email e telefone BR — não é
-   * exaustivo mas filtra os 95% dos casos (constraint do Prisma sobre
-   * `usersProfile.email`, por exemplo).
+   * S3#12: scrub PII-shaped substrings (emails, telefones, CPF/CNPJ, dígitos
+   * longos) dentro do stack trace.
+   *
+   * Auditoria ACHADO-39 (Re-varredura 7): heurística anterior tinha 2 problemas:
+   *   1. Falso positivo em identificadores não-PII (order IDs de 8-9 dígitos,
+   *      transaction IDs PIX) — mascarava contexto útil de debug.
+   *   2. Falso negativo grave em CPF (11 dígitos) e CNPJ (14 dígitos) — não
+   *      casavam nenhum padrão e vazavam em logs, violando LGPD Art. 46.
+   *
+   * Nova estratégia (allowlist conservadora):
+   *   - **CPF**: regex específico `XXX.XXX.XXX-XX` ou 11 dígitos consecutivos.
+   *   - **CNPJ**: regex específico `XX.XXX.XXX/XXXX-XX` ou 14 dígitos consecutivos.
+   *   - **Telefone BR**: 10-11 dígitos com ou sem DDD/máscara (regex anterior).
+   *   - **Email**: regex anterior, mas com âncora mais estrita (não casa
+   *     `foo@1.2.3` que parecia IPv4 parcial).
+   *   - **Sequências longas** (≥6 dígitos consecutivos): mascarado como
+   *     `[REDACTED-N]` — cobre cartões de crédito (16 dígitos), order IDs
+   *     grandes, transaction IDs. Trade-off: mascarar order IDs é o preço
+   *     de não vazar PII acidentalmente em logs.
    *
    * O custo é uma varredura por linha; aceitável porque exceções são
    * caminho de erro, não hot path.
@@ -137,13 +152,25 @@ export class TodasExcecoesFiltro implements ExceptionFilter {
   private maskStackTrace(stack: string): string {
     return (
       stack
-        // email
-        .replace(/[\w.+-]+@[\w-]+\.[\w.-]+/g, (m) => {
+        // Email — regex mais estrita (TLD não começa com dígito, evita
+        // casar `user@1.2.3` que parecia IPv4).
+        .replace(/[\w.+-]+@[\w-]+\.[a-zA-Z]{2,}/g, (m) => {
           const at = m.indexOf('@');
           return `${m.slice(0, 2)}***${m.slice(at)}`;
         })
-        // telefone BR (10-11 dígitos, com ou sem máscara)
-        .replace(/\b(?:\+?55\s?)?(?:\(?\d{2}\)?\s?)?9?\d{4}-?\d{4}\b/g, '***-****-****')
+        // CPF formatado (XXX.XXX.XXX-XX) ou 11 dígitos consecutivos.
+        .replace(/\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b/g, '***.***.***-**')
+        // CNPJ formatado (XX.XXX.XXX/XXXX-XX) ou 14 dígitos consecutivos.
+        .replace(/\b\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}\b/g, '**.***.***/****-**')
+        // Telefone BR (10-11 dígitos com DDD, com ou sem máscara).
+        // Auditoria ACHADO-39: regex mais estrita — exige DDD entre parênteses
+        // ou espaço (evita casar qualquer sequência de 10 dígitos que poderia
+        // ser order ID).
+        .replace(/\b(?:\+?55\s?)?\(?\d{2}\)?\s?9?\d{4}-?\d{4}\b/g, '***-****-****')
+        // Sequências longas de dígitos (≥6) — fallback para PII não
+        // categorizada (cartões, IDs PIX, transaction IDs). Trade-off:
+        // order IDs também são mascarados.
+        .replace(/\b\d{6,}\b/g, (m) => `[REDACTED-${m.length}d]`)
     );
   }
 }

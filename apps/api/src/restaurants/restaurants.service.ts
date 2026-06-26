@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
+import { Prisma, UserRole } from '@prisma/client';
 
 import { PageDto, PAGINATION_DEFAULT_LIMIT } from '../common/dto/pagination.dto';
 import { PrismaService } from '../common/prisma.service';
@@ -37,9 +37,16 @@ export class RestaurantsService {
     return restaurant;
   }
 
-  async findByIds(ids: string[]) {
+  async findByIds(ids: string[], options: { activeOnly?: boolean } = {}) {
+    // Auditoria ACHADO-35 (Re-varredura 7): rota `/restaurants/user/me` agora
+    // exige `activeOnly: true` para filtrar restaurantes desativados pelo admin.
+    // Default é `false` para preservar comportamento de chamadas internas que
+    // precisam ver restaurantes desativados (ex: admin dashboards).
     return this.prisma.restaurant.findMany({
-      where: { id: { in: ids } },
+      where: {
+        id: { in: ids },
+        ...(options.activeOnly ? { active: true } : {}),
+      },
     });
   }
 
@@ -167,14 +174,22 @@ export class RestaurantsService {
       settings: string;
     }>
   ) {
-    const updated = await this.prisma.restaurant.update({
-      where: { id },
-      data,
-    });
-    if (!updated) {
-      throw new NotFoundException('Restaurante não encontrado');
+    // Auditoria ACHADO-40 (Re-varredura 7): `prisma.restaurant.update` lança
+    // `PrismaClientKnownRequestError` (P2025) se o registro não existe —
+    // nunca retorna `null`/`undefined`. O `if (!updated)` era código morto
+    // e P2025 virava 500 em vez de 404. Aqui interceptamos P2025 e
+    // retornamos 404 com a mesma mensagem de `findById` (UX consistente).
+    try {
+      return await this.prisma.restaurant.update({
+        where: { id },
+        data,
+      });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
+        throw new NotFoundException('Restaurante não encontrado');
+      }
+      throw err;
     }
-    return updated;
   }
 
   async deactivate(id: string) {

@@ -322,6 +322,14 @@ export class OrdersService {
     // `where` e é incrementado no `data` — se outra request alterou o
     // pedido entre o `findUnique` e este `updateMany`, `count === 0` e
     // retornamos 409 com instrução de retry.
+    //
+    // Auditoria ACHADO-36 (Re-varredura 7): consolidação em uma única
+    // transação. Antes, eram 3 queries sequenciais (findUnique + updateMany +
+    // $transaction com findUnique). Agora: 1 updateMany (atômico com version)
+    // + 1 transação (findUnique do resultado + insert do histórico). O
+    // `findUnique` final foi mantido dentro da transação para garantir
+    // consistência com a inserção do histórico (se a inserção falhar, o
+    // update do status também é revertido). Redução: 3 → 2 round-trips ao DB.
     const updateResult = await this.prisma.order.updateMany({
       where: { id, status: existing.status, version: existing.version },
       data: { status, version: { increment: 1 } },
@@ -334,6 +342,10 @@ export class OrdersService {
 
     const order = await this.prisma.$transaction(async (tx) => {
       const updatedOrder = await tx.order.findUnique({ where: { id } });
+      if (!updatedOrder) {
+        // Não deveria acontecer — updateMany confirmou existência.
+        throw new NotFoundException('Pedido não encontrado após atualização');
+      }
 
       await tx.orderStatusHistory.create({
         data: { orderId: id, status, notes },

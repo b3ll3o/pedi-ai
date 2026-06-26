@@ -6,15 +6,20 @@ import {
   Delete,
   Param,
   Body,
-  UseGuards,
-  Request,
+  Query,
+  Req,
+  ForbiddenException,
+  NotFoundException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Public } from '../auth/decorators/public.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { AuthenticatedUser } from '../auth/types/auth.types';
+import { PageQueryDto } from '../common/dto/pagination.dto';
 import { PrismaService } from '../common/prisma.service';
 
+import { CreateRestaurantDto, UpdateRestaurantDto } from './dto/restaurants.dto';
 import { RestaurantsService } from './restaurants.service';
 
 @ApiTags('restaurants')
@@ -26,13 +31,18 @@ export class RestaurantsController {
   ) {}
 
   @Get()
-  @ApiOperation({ summary: 'Listar todos os restaurantes' })
-  @ApiResponse({ status: 200, description: 'Lista de restaurantes' })
-  async findAll() {
-    return this.restaurantsService.findAll();
+  @Public()
+  @ApiOperation({ summary: 'Listar todos os restaurantes (público)' })
+  @ApiResponse({ status: 200, description: 'Página de restaurantes' })
+  async findAll(@Query() page: PageQueryDto) {
+    return this.restaurantsService.findAll(true, {
+      cursor: page.cursor,
+      limit: page.limit,
+    });
   }
 
   @Get(':id')
+  @Public()
   @ApiOperation({ summary: 'Obter restaurante por ID' })
   @ApiResponse({ status: 200, description: 'Restaurante encontrado' })
   @ApiResponse({ status: 404, description: 'Restaurante não encontrado' })
@@ -41,6 +51,7 @@ export class RestaurantsController {
   }
 
   @Get('slug/:slug')
+  @Public()
   @ApiOperation({ summary: 'Obter restaurante por slug' })
   @ApiResponse({ status: 200, description: 'Restaurante encontrado' })
   @ApiResponse({ status: 404, description: 'Restaurante não encontrado' })
@@ -49,67 +60,71 @@ export class RestaurantsController {
   }
 
   @Get('user/me')
-  @UseGuards(JwtAuthGuard)
+  @Roles('atendente', 'gerente', 'dono')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Listar restaurantes do usuário autenticado' })
   @ApiResponse({ status: 200, description: 'Lista de restaurantes' })
-  @ApiResponse({ status: 401, description: 'Não autenticado' })
-  async findByUser(@Request() req: { user: AuthenticatedUser }) {
-    const restaurants = await this.restaurantsService.findByUserId(req.user.id);
+  async findByUser(@Req() req: { user: AuthenticatedUser }) {
+    // Auditoria M1: antes 3 queries (profiles + restaurants + groupBy), agora 2 paralelas.
+    // profiles.findMany serve como fonte única para `role` (vínculo) e para
+    // construir o IN(...) usado em restaurants.findMany e groupBy(team_count).
+    //
+    // Auditoria ACHADO-35 (Re-varredura 7): filtra restaurantes DESATIVADOS
+    // (`active: false`) ANTES de retornar. Antes, donos viam restaurantes
+    // desativados pelo admin (ex: por inadimplência) na lista — vazamento
+    // de informação desnecessário e inconsistência com rotas públicas
+    // (que já filtram `active: true`).
     const profiles = await this.prisma.usersProfile.findMany({
       where: { userId: req.user.id, restaurantId: { not: null } },
+      select: { restaurantId: true, role: true },
     });
-    const teamCountMap: Record<string, number> = {};
-    if (restaurants.length > 0) {
-      const restaurantIds = restaurants.map((r) => r.id);
-      const profilesCount = await this.prisma.usersProfile.groupBy({
+    const restaurantIds = Array.from(new Set(profiles.map((p) => p.restaurantId as string)));
+    if (restaurantIds.length === 0) return [];
+
+    const [restaurants, profilesCount] = await Promise.all([
+      // Apenas restaurantes ativos. Restaurante desativado pelo admin não
+      // aparece na lista do dono — admin/staff continuam acessando via
+      // rota autenticada de staff com escopo admin.
+      this.restaurantsService.findByIds(restaurantIds, { activeOnly: true }),
+      this.prisma.usersProfile.groupBy({
         by: ['restaurantId'],
         where: { restaurantId: { in: restaurantIds } },
         _count: true,
-      });
-      for (const p of profilesCount) {
-        if (p.restaurantId) teamCountMap[p.restaurantId] = p._count;
-      }
-    }
-    const profileMap: Record<string, string> = {};
+      }),
+    ]);
+
+    const roleMap: Record<string, string> = {};
     for (const p of profiles) {
-      if (p.restaurantId) profileMap[p.restaurantId] = p.role;
+      if (p.restaurantId) roleMap[p.restaurantId] = p.role;
     }
+    const teamCountMap: Record<string, number> = {};
+    for (const p of profilesCount) {
+      if (p.restaurantId) teamCountMap[p.restaurantId] = p._count;
+    }
+
     return restaurants.map((r) => ({
       ...r,
-      role: profileMap[r.id] || 'cliente',
+      role: roleMap[r.id] || 'cliente',
+      // B1: camelCase canônico + alias snake_case para compatibilidade.
+      teamCount: teamCountMap[r.id] || 0,
       team_count: teamCountMap[r.id] || 0,
     }));
   }
 
   @Get('user/me/with-trial')
-  @UseGuards(JwtAuthGuard)
+  @Roles('atendente', 'gerente', 'dono')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Listar restaurantes em trial do usuário' })
   @ApiResponse({ status: 200, description: 'Lista de restaurantes em trial' })
-  @ApiResponse({ status: 401, description: 'Não autenticado' })
-  async findByUserWithTrial(@Request() req: { user: AuthenticatedUser }) {
+  async findByUserWithTrial(@Req() req: { user: AuthenticatedUser }) {
     return this.restaurantsService.findByUserIdWithTrial(req.user.id);
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Criar novo restaurante' })
+  @ApiOperation({ summary: 'Criar novo restaurante (vínculo automático ao usuário)' })
   @ApiResponse({ status: 201, description: 'Restaurante criado' })
-  @ApiResponse({ status: 401, description: 'Não autenticado' })
-  async create(
-    @Body()
-    data: {
-      name: string;
-      slug?: string;
-      description?: string;
-      address?: string;
-      phone?: string;
-      logoUrl?: string;
-    },
-    @Request() req: { user: AuthenticatedUser }
-  ) {
+  async create(@Req() req: { user: AuthenticatedUser }, @Body() data: CreateRestaurantDto) {
     return this.restaurantsService.createWithOwner({
       ...data,
       ownerId: req.user.id,
@@ -118,33 +133,42 @@ export class RestaurantsController {
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard)
+  @Roles('gerente', 'dono')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Atualizar restaurante' })
   @ApiResponse({ status: 200, description: 'Restaurante atualizado' })
-  @ApiResponse({ status: 401, description: 'Não autenticado' })
-  @ApiResponse({ status: 404, description: 'Restaurante não encontrado' })
+  @ApiResponse({ status: 403, description: 'Acesso restrito' })
   async update(
+    @Req() req: { user: AuthenticatedUser },
     @Param('id') id: string,
-    @Body()
-    data: {
-      name?: string;
-      slug?: string;
-      description?: string;
-      active?: boolean;
-      settings?: string;
-    }
+    @Body() data: UpdateRestaurantDto
   ) {
+    if (!req.user.restaurantId) {
+      throw new ForbiddenException('Usuário sem restaurante vinculado');
+    }
+    // Gerente só edita o próprio tenant; dono pode editar o próprio e
+    // outros restaurantes sob sua governança (multi-restaurante futuro).
+    if (req.user.restaurantId !== id && req.user.role !== 'dono') {
+      throw new ForbiddenException('Só pode editar seu próprio restaurante');
+    }
+    // **Toggle de `active` é restrito a dono.** Gerente não pode colocar o
+    // restaurante inteiro offline nem reativar sem aprovação — reduz risco
+    // de DoS de tenant por usuário interno.
+    if (data.active !== undefined && req.user.role !== 'dono') {
+      throw new ForbiddenException('Apenas dono pode alterar o status ativo do restaurante');
+    }
     return this.restaurantsService.update(id, data);
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
+  @Roles('dono')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Desativar restaurante' })
+  @ApiOperation({ summary: 'Desativar restaurante (apenas dono)' })
   @ApiResponse({ status: 200, description: 'Restaurante desativado' })
-  @ApiResponse({ status: 401, description: 'Não autenticado' })
-  async deactivate(@Param('id') id: string) {
+  async deactivate(@Req() req: { user: AuthenticatedUser }, @Param('id') id: string) {
+    if (req.user.restaurantId !== id) {
+      throw new ForbiddenException('Só pode desativar seu próprio restaurante');
+    }
     return this.restaurantsService.deactivate(id);
   }
 }
