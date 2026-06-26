@@ -1,20 +1,36 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 
+import { PageDto, PAGINATION_DEFAULT_LIMIT } from '../common/dto/pagination.dto';
 import { PrismaService } from '../common/prisma.service';
 
 @Injectable()
 export class RestaurantsService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(active = true) {
-    return this.prisma.restaurant.findMany({
+  async findAll(
+    active = true,
+    options: { cursor?: string; limit?: number } = {}
+  ): Promise<PageDto<unknown>> {
+    const limit = options.limit ?? PAGINATION_DEFAULT_LIMIT;
+    const items = await this.prisma.restaurant.findMany({
       where: active ? { active: true } : undefined,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: limit + 1,
+      ...(options.cursor ? { cursor: { id: options.cursor }, skip: 1 } : {}),
     });
+    const hasNext = items.length > limit;
+    const data = hasNext ? items.slice(0, limit) : items;
+    const nextCursor = hasNext ? data[data.length - 1].id : null;
+    return PageDto.create(data, nextCursor, data.length);
   }
 
   async findById(id: string) {
-    const restaurant = await this.prisma.restaurant.findUnique({ where: { id } });
+    // C-NEW-01: restaurante desativado não deve aparecer em rotas públicas.
+    // Admin/staff continuam acessando via rota autenticada.
+    const restaurant = await this.prisma.restaurant.findFirst({
+      where: { id, active: true },
+    });
     if (!restaurant) {
       throw new NotFoundException('Restaurante não encontrado');
     }
@@ -67,7 +83,8 @@ export class RestaurantsService {
   }
 
   async findBySlug(slug: string) {
-    return this.prisma.restaurant.findFirst({ where: { slug } });
+    // C-NEW-01: filtra `active: true` para rotas públicas.
+    return this.prisma.restaurant.findFirst({ where: { slug, active: true } });
   }
 
   async create(data: {

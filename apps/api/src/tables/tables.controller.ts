@@ -1,18 +1,11 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
-  Body,
-  Param,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Public } from '../auth/decorators/public.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { AuthenticatedUser } from '../auth/types/auth.types';
 
+import { CreateTableDto, UpdateTableDto } from './dto/tables.dto';
 import { TablesService } from './tables.service';
 
 @ApiTags('tables')
@@ -21,79 +14,85 @@ export class TablesController {
   constructor(private readonly tablesService: TablesService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Listar mesas por restaurante' })
+  @Roles('atendente', 'gerente', 'dono')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Listar mesas do restaurante autenticado' })
   @ApiResponse({ status: 200, description: 'Lista de mesas' })
-  async findByRestaurant(@Query('restaurantId') restaurantId: string) {
-    return this.tablesService.findByRestaurant(restaurantId);
+  async findByRestaurant(@Req() req: { user: AuthenticatedUser }) {
+    return this.tablesService.findByRestaurant(req.user.restaurantId);
   }
 
   @Get(':id')
+  @Roles('atendente', 'gerente', 'dono')
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Obter mesa por ID' })
   @ApiResponse({ status: 200, description: 'Mesa encontrada' })
   @ApiResponse({ status: 404, description: 'Mesa não encontrada' })
-  async findById(@Param('id') id: string) {
-    return this.tablesService.findById(id);
+  async findById(@Req() req: { user: AuthenticatedUser }, @Param('id') id: string) {
+    return this.tablesService.findById(id, req.user.restaurantId);
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @Roles('gerente', 'dono')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Criar nova mesa' })
   @ApiResponse({ status: 201, description: 'Mesa criada' })
-  @ApiResponse({ status: 401, description: 'Não autenticado' })
-  async create(
-    @Body()
-    data: {
-      restaurantId: string;
-      name: string;
-      number?: number;
-      capacity?: number;
-    }
-  ) {
-    return this.tablesService.create(data);
+  async create(@Req() req: { user: AuthenticatedUser }, @Body() data: CreateTableDto) {
+    return this.tablesService.create({ ...data, restaurantId: req.user.restaurantId });
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard)
+  @Roles('gerente', 'dono')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Atualizar mesa' })
   @ApiResponse({ status: 200, description: 'Mesa atualizada' })
-  @ApiResponse({ status: 401, description: 'Não autenticado' })
   async update(
+    @Req() req: { user: AuthenticatedUser },
     @Param('id') id: string,
-    @Body() data: { name?: string; number?: number; capacity?: number; active?: boolean }
+    @Body() data: UpdateTableDto
   ) {
-    return this.tablesService.update(id, data);
+    return this.tablesService.update(id, data, req.user.restaurantId);
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
+  @Roles('dono')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Desativar mesa' })
+  @ApiOperation({ summary: 'Desativar mesa (apenas dono)' })
   @ApiResponse({ status: 200, description: 'Mesa desativada' })
-  @ApiResponse({ status: 401, description: 'Não autenticado' })
-  async deactivate(@Param('id') id: string) {
-    return this.tablesService.deactivate(id);
+  async deactivate(@Req() req: { user: AuthenticatedUser }, @Param('id') id: string) {
+    await this.tablesService.deactivate(id, req.user.restaurantId);
+    return { success: true };
   }
 
   @Post(':id/reactivate')
-  @UseGuards(JwtAuthGuard)
+  @Roles('gerente', 'dono')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Reativar mesa' })
   @ApiResponse({ status: 200, description: 'Mesa reativada' })
-  @ApiResponse({ status: 401, description: 'Não autenticado' })
-  async reactivate(@Param('id') id: string) {
-    return this.tablesService.reactivate(id);
+  async reactivate(@Req() req: { user: AuthenticatedUser }, @Param('id') id: string) {
+    await this.tablesService.reactivate(id, req.user.restaurantId);
+    return { success: true };
   }
 
   @Get(':id/qr')
+  @Roles('gerente', 'dono')
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Gerar QR code da mesa' })
   @ApiResponse({ status: 200, description: 'QR code gerado' })
-  async generateQr(@Param('id') id: string) {
-    return this.tablesService.generateQrCode(id);
+  async generateQr(@Req() req: { user: AuthenticatedUser }, @Param('id') id: string) {
+    return this.tablesService.generateQrCode(id, req.user.restaurantId);
   }
 
+  /**
+   * Validação server-side do QR code — defesa em profundidade.
+   * O frontend também valida (UX), mas o backend é a fonte de verdade.
+   *
+   * Auditoria M-NEW-06: usa `validateQrAndGet` consolidado — antes o controller
+   * encadeava `validateQrCode` + `validateTable` + `findById` = 3 chamadas
+   * ao service (2 queries). Agora: 1 query + 1 validação HMAC local.
+   */
   @Post('validate')
+  @Public()
   @ApiOperation({ summary: 'Validar QR code de mesa' })
   @ApiResponse({ status: 200, description: 'Validação realizada com sucesso' })
   async validateQrCode(
@@ -105,25 +104,25 @@ export class TablesController {
       signature: string;
     }
   ) {
-    const { restaurant_id, table_id, signature } = body;
+    const { restaurant_id, table_id, signature, timestamp } = body;
 
-    const isValid = await this.tablesService.validateQrCode(restaurant_id, table_id, signature);
+    const result = await this.tablesService.validateQrAndGet(
+      restaurant_id,
+      table_id,
+      timestamp,
+      signature
+    );
 
-    if (!isValid) {
-      return { valid: false, error: 'Assinatura inválida' };
-    }
-
-    const table = await this.tablesService.findById(table_id).catch(() => null);
-    if (!table || table.restaurantId !== restaurant_id) {
-      return { valid: false, error: 'Mesa não encontrada' };
+    if (!result.valid) {
+      return { valid: false, error: result.error };
     }
 
     return {
       valid: true,
       table: {
-        id: table.id,
-        name: table.name ?? `Mesa ${table.number}`,
-        number: table.number,
+        id: result.table.id,
+        name: result.table.name ?? `Mesa ${result.table.number}`,
+        number: result.table.number,
       },
     };
   }

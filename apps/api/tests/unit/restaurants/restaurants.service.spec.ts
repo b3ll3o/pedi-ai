@@ -33,10 +33,12 @@ describe('RestaurantsService', () => {
 
       const result = await restaurantsService.findAll();
 
-      expect(result).toEqual(mockRestaurants);
-      expect(mockPrisma.restaurant.findMany).toHaveBeenCalledWith({
-        where: { active: true },
-      });
+      expect(result.data).toEqual(mockRestaurants);
+      expect(result.nextCursor).toBeNull();
+      expect(result.count).toBe(2);
+      expect(mockPrisma.restaurant.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { active: true } })
+      );
     });
 
     it('should return all restaurants when active=false', async () => {
@@ -48,33 +50,52 @@ describe('RestaurantsService', () => {
 
       const result = await restaurantsService.findAll(false);
 
-      expect(result).toHaveLength(2);
-      expect(mockPrisma.restaurant.findMany).toHaveBeenCalledWith({
-        where: undefined,
-      });
+      expect(result.data).toHaveLength(2);
+      expect(mockPrisma.restaurant.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: undefined })
+      );
     });
 
-    it('should return empty array when no restaurants', async () => {
+    it('should return empty page when no restaurants', async () => {
       mockPrisma.restaurant.findMany.mockResolvedValue([]);
 
       const result = await restaurantsService.findAll();
 
-      expect(result).toEqual([]);
+      expect(result.data).toEqual([]);
+      expect(result.nextCursor).toBeNull();
+    });
+
+    it('should expose nextCursor when more pages exist', async () => {
+      const items = Array.from({ length: 21 }, (_, i) => ({
+        id: `r${i}`,
+        name: `R${i}`,
+        active: true,
+      }));
+      mockPrisma.restaurant.findMany.mockResolvedValue(items);
+
+      const result = await restaurantsService.findAll(true, { limit: 20 });
+
+      expect(result.data).toHaveLength(20);
+      expect(result.nextCursor).toBe('r19');
     });
   });
 
   describe('findById', () => {
     it('should return restaurant when found', async () => {
       const mockRestaurant = { id: 'r1', name: 'Restaurant 1' };
-      mockPrisma.restaurant.findUnique.mockResolvedValue(mockRestaurant);
+      // C-NEW-01: findById usa findFirst com filtro active: true.
+      mockPrisma.restaurant.findFirst.mockResolvedValue(mockRestaurant);
 
       const result = await restaurantsService.findById('r1');
 
       expect(result).toEqual(mockRestaurant);
+      expect(mockPrisma.restaurant.findFirst).toHaveBeenCalledWith({
+        where: { id: 'r1', active: true },
+      });
     });
 
     it('should throw NotFoundException when restaurant not found', async () => {
-      mockPrisma.restaurant.findUnique.mockResolvedValue(null);
+      mockPrisma.restaurant.findFirst.mockResolvedValue(null);
 
       await expect(restaurantsService.findById('non-existent')).rejects.toThrow(NotFoundException);
     });
@@ -83,13 +104,14 @@ describe('RestaurantsService', () => {
   describe('findBySlug', () => {
     it('should return restaurant when slug matches', async () => {
       const mockRestaurant = { id: 'r1', name: 'Restaurant 1', slug: 'rest-1' };
+      // C-NEW-01: findBySlug filtra active: true em rotas públicas.
       mockPrisma.restaurant.findFirst.mockResolvedValue(mockRestaurant);
 
       const result = await restaurantsService.findBySlug('rest-1');
 
       expect(result).toEqual(mockRestaurant);
       expect(mockPrisma.restaurant.findFirst).toHaveBeenCalledWith({
-        where: { slug: 'rest-1' },
+        where: { slug: 'rest-1', active: true },
       });
     });
 

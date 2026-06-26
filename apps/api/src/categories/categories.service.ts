@@ -1,20 +1,27 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 
 import { PrismaService } from '../common/prisma.service';
 
+/**
+ * Service de categorias com tenant isolation enforced.
+ * Toda escrita valida que o recurso pertence ao restaurante do requisitante.
+ */
 @Injectable()
 export class CategoriesService {
   constructor(private prisma: PrismaService) {}
 
   async findByRestaurant(restaurantId: string) {
     return this.prisma.category.findMany({
-      where: { restaurantId },
+      where: { restaurantId, deletedAt: null },
       orderBy: { sortOrder: 'asc' },
     });
   }
 
   async findById(id: string) {
-    const category = await this.prisma.category.findUnique({ where: { id } });
+    // C-NEW-01: filtra `restaurant.active` em endpoints públicos.
+    const category = await this.prisma.category.findFirst({
+      where: { id, deletedAt: null, restaurant: { active: true } },
+    });
     if (!category) {
       throw new NotFoundException('Categoria não encontrada');
     }
@@ -39,27 +46,55 @@ export class CategoriesService {
       imageUrl: string;
       sortOrder: number;
       active: boolean;
-    }>
+    }>,
+    requesterRestaurantId?: string | null
   ) {
-    const updated = await this.prisma.category.update({
-      where: { id },
-      data,
-    });
-    if (!updated) {
+    const target = await this.prisma.category.findUnique({ where: { id } });
+    if (!target || target.deletedAt) {
       throw new NotFoundException('Categoria não encontrada');
     }
-    return updated;
+    if (requesterRestaurantId && target.restaurantId !== requesterRestaurantId) {
+      throw new ForbiddenException('Categoria pertence a outro restaurante');
+    }
+    return this.prisma.category.update({ where: { id }, data });
   }
 
-  async delete(id: string) {
+  async delete(id: string, requesterRestaurantId?: string | null) {
+    const target = await this.prisma.category.findUnique({ where: { id } });
+    if (!target || target.deletedAt) {
+      throw new NotFoundException('Categoria não encontrada');
+    }
+    if (requesterRestaurantId && target.restaurantId !== requesterRestaurantId) {
+      throw new ForbiddenException('Categoria pertence a outro restaurante');
+    }
     await this.prisma.category.update({
       where: { id },
       data: { deletedAt: new Date() },
     });
   }
 
-  async reorder(categories: Array<{ id: string; sortOrder: number }>) {
-    await Promise.all(
+  async reorder(
+    categories: Array<{ id: string; sortOrder: number }>,
+    requesterRestaurantId?: string | null
+  ) {
+    // Verifica que todas as categorias pertencem ao restaurante.
+    if (requesterRestaurantId) {
+      const ids = categories.map((c) => c.id);
+      const found = await this.prisma.category.findMany({
+        where: { id: { in: ids } },
+        select: { id: true, restaurantId: true },
+      });
+      const allSameRestaurant =
+        found.length === ids.length && found.every((c) => c.restaurantId === requesterRestaurantId);
+      if (!allSameRestaurant) {
+        throw new ForbiddenException('Uma ou mais categorias não pertencem ao restaurante');
+      }
+    }
+
+    // Auditoria M5: wrapped em `prisma.$transaction` para garantir atomicidade.
+    // `Promise.all` permitia updates parciais se uma das queries falhasse no meio,
+    // deixando sortOrder inconsistente.
+    await this.prisma.$transaction(
       categories.map((cat) =>
         this.prisma.category.update({
           where: { id: cat.id },
