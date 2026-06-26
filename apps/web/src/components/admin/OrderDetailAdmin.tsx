@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import type { OrderWithItems, OrderStatus } from '@/application/services/adminOrderService';
+import { useFocusTrap } from '@/lib/a11y/use-focus-trap';
 
 import styles from './OrderDetailAdmin.module.css';
 
@@ -161,12 +162,33 @@ function CancelModal({
   onConfirm: () => void;
   isUpdating: boolean;
 }) {
+  // S3#6: foco preso no modal enquanto aberto + Esc para fechar.
+  // Sem o trap, Tab consegue escapar para o cabeçalho/fundo da página
+  // e screen-readers perdem o contexto (não há `aria-modal` ou
+  // `role="dialog"` que indique fim do conteúdo "fora" do modal).
+  const containerRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(containerRef, show, onCancel);
+
   if (!show) return null;
 
   return (
-    <div className={styles.modalOverlay}>
-      <div className={styles.modal}>
-        <h3 className={styles.modalTitle}>Cancelar Pedido</h3>
+    <div
+      className={styles.modalOverlay}
+      onClick={(e) => {
+        // Fecha ao clicar no overlay (mas não no conteúdo do modal).
+        if (e.target === e.currentTarget) onCancel();
+      }}
+    >
+      <div
+        ref={containerRef}
+        className={styles.modal}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cancel-modal-title"
+      >
+        <h3 id="cancel-modal-title" className={styles.modalTitle}>
+          Cancelar Pedido
+        </h3>
         <p className={styles.modalText}>
           Tem certeza que deseja cancelar este pedido? Esta ação não pode ser desfeita.
         </p>
@@ -176,6 +198,7 @@ function CancelModal({
           value={cancelReason}
           onChange={(e) => onReasonChange(e.target.value)}
           rows={3}
+          aria-label="Motivo do cancelamento"
         />
         <div className={styles.modalActions}>
           <button type="button" className={styles.modalCancel} onClick={onCancel}>

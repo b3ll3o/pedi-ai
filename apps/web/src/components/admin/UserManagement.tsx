@@ -1,8 +1,10 @@
 'use client';
 
 import type { UserDTO } from '@pedi-ai/shared/types';
+import { useState } from 'react';
 
 import { getRoleLabel, getRoleColor, type UserRole } from '@/application/services/userService';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 import styles from './UserManagement.module.css';
 
@@ -31,6 +33,8 @@ export function UserManagement({
     if (!(currentUserRole in hierarchy) || !(userRole in hierarchy)) return false;
     return hierarchy[currentUserRole] > hierarchy[userRole as UserRole];
   };
+
+  const [pendingDelete, setPendingDelete] = useState<UserDTO | null>(null);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -95,11 +99,7 @@ export function UserManagement({
                     <button
                       type="button"
                       className={styles.deleteButton}
-                      onClick={() => {
-                        if (confirm(`Remover ${user.name} da equipe?`)) {
-                          onDelete(user.id);
-                        }
-                      }}
+                      onClick={() => setPendingDelete(user)}
                       title="Remover"
                     >
                       🗑️
@@ -111,6 +111,22 @@ export function UserManagement({
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Remover membro"
+        description={
+          pendingDelete ? `Tem certeza que deseja remover ${pendingDelete.name} da equipe?` : ''
+        }
+        confirmLabel="Remover"
+        cancelLabel="Cancelar"
+        destructive
+        onConfirm={() => {
+          if (pendingDelete) onDelete(pendingDelete.id);
+          setPendingDelete(null);
+        }}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }

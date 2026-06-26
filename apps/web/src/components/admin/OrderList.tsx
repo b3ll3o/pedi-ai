@@ -143,7 +143,10 @@ export function OrderList({ orders, onViewDetails, onUpdateStatus, isLoading }: 
                 <div className={styles.infoRow}>
                   <span className={styles.infoLabel}>Mesa:</span>
                   <span className={styles.infoValue}>
-                    {order.table?.name || `Mesa ${order.table?.number}` || '-'}
+                    {order.table
+                      ? order.table.name?.trim() ||
+                        (order.table.number != null ? `Mesa ${order.table.number}` : '-')
+                      : '-'}
                   </span>
                 </div>
                 <div className={styles.infoRow}>

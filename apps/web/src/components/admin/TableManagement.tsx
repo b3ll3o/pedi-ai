@@ -1,8 +1,9 @@
 'use client';
 
+import type { TableDTO } from '@pedi-ai/shared/types';
 import { useState, useCallback } from 'react';
 
-import type { TableDTO } from '@pedi-ai/shared/types';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 import styles from './TableManagement.module.css';
 
@@ -23,6 +24,7 @@ export function TableManagement({
 }: TableManagementProps) {
   const [search, setSearch] = useState('');
   const [filterActive, setFilterActive] = useState<'all' | 'active' | 'inactive'>('all');
+  const [pendingDelete, setPendingDelete] = useState<TableDTO | null>(null);
 
   const filtered = tables.filter((table) => {
     const matchesSearch =
@@ -38,14 +40,20 @@ export function TableManagement({
     return matchesSearch && matchesFilter;
   });
 
-  const handleDelete = useCallback(
-    (table: TableDTO) => {
-      if (confirm(`Tem certeza que deseja excluir a Mesa ${table.number}?`)) {
-        onDelete(table.id);
-      }
-    },
-    [onDelete]
-  );
+  // S3#7: substituído window.confirm() por modal acessível.
+  // O nativo bloqueia a thread JS, não é estilizável, e não respeita
+  // prefers-reduced-motion; além disso, screen-readers perdem o
+  // contexto ao alternar entre foco do browser e o app.
+  const requestDelete = useCallback((table: TableDTO) => {
+    setPendingDelete(table);
+  }, []);
+
+  const confirmDelete = useCallback(() => {
+    if (pendingDelete) {
+      onDelete(pendingDelete.id);
+      setPendingDelete(null);
+    }
+  }, [pendingDelete, onDelete]);
 
   return (
     <div className={styles.container}>
@@ -130,7 +138,7 @@ export function TableManagement({
                 <button
                   type="button"
                   className={`${styles.btnIcon} ${styles.btnDelete}`}
-                  onClick={() => handleDelete(table)}
+                  onClick={() => requestDelete(table)}
                   title="Excluir"
                   data-testid="delete-button"
                 >
@@ -145,6 +153,21 @@ export function TableManagement({
       <div className={styles.summary}>
         Mostrando {filtered.length} de {tables.length} mesas
       </div>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Excluir mesa"
+        description={
+          pendingDelete
+            ? `Tem certeza que deseja excluir a Mesa ${pendingDelete.number}? Esta ação não pode ser desfeita.`
+            : ''
+        }
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        destructive
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }
