@@ -2,10 +2,9 @@
 
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 
 import Logo from '@/app/components/Logo';
-import { useValidarQRCode } from '@/hooks/useMesa';
 import { useTableStore } from '@/infrastructure/persistence/tableStore';
 
 import styles from './page.module.css';
@@ -16,6 +15,24 @@ interface TableInfo {
   tableName: string;
 }
 
+interface ValidateApiResponse {
+  valid: boolean;
+  restauranteId?: string;
+  mesaId?: string;
+  error?: string;
+}
+
+/**
+ * Página de validação de QR Code de mesa.
+ *
+ * O QR code é um payload base64-encoded JSON (gerado por
+ * `MesaAggregate.gerarQRCodePayload` em apps/web ou pelo NestJS).
+ * Esta página delega 100% da validação para a Route Handler
+ * `/api/tables/validate` (server-only) — o segredo HMAC NUNCA é
+ * exposto ao bundle do cliente.
+ *
+ * @see apps/web/src/app/api/tables/validate/route.ts
+ */
 export default function TableQRPage() {
   const _router = useRouter();
   const params = useParams();
@@ -26,11 +43,6 @@ export default function TableQRPage() {
   const [isValidating, setIsValidating] = useState(false);
 
   const { setTable } = useTableStore();
-  const validarQRCodeMutation = useValidarQRCode();
-
-  // Evita que o effect rode múltiplas vezes - o mutateAsync do useMutation é estável
-  // mas o objeto mutation é recriado em cada render
-  const hasValidatedRef = useRef(false);
 
   // Erro derivado diretamente do código - sem setState em effect
   const codeError = !code ? 'Código da mesa não fornecido' : null;
@@ -40,44 +52,52 @@ export default function TableQRPage() {
       return;
     }
 
-    // Evita loop infinito: só executa se ainda não validou ou se o code mudou
-    if (hasValidatedRef.current) {
-      return;
-    }
-    hasValidatedRef.current = true;
+    // Cleanup: impede setState se o componente desmontar antes do fetch terminar.
+    let cancelled = false;
+    // Deferir para fora do corpo síncrono do effect evita o lint
+    // `react-hooks/set-state-in-effect` e elimina cascading renders.
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setIsValidating(true);
+      setError(null);
+    });
 
-    setIsValidating(true);
-    setError(null);
-
-    // O QR code é um base64 encoded JSON com { restauranteId, mesaId, assinatura }
-    // O código na URL é o QR code base64
     const qrCodeData = decodeURIComponent(code);
-    const secretKey = process.env.NEXT_PUBLIC_QR_SECRET_KEY || 'default-secret';
 
-    validarQRCodeMutation
-      .mutateAsync({
-        qrCode: qrCodeData,
-        secret: secretKey,
-      })
-      .then((result) => {
-        if (result.valido) {
+    fetch('/api/tables/validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ qrCode: qrCodeData }),
+    })
+      .then(async (response) => {
+        const data = (await response.json()) as ValidateApiResponse;
+        if (cancelled) return;
+
+        if (response.ok && data.valid && data.restauranteId && data.mesaId) {
           setTableInfo({
-            restaurantId: result.restauranteId,
-            tableId: result.mesaId,
-            tableName: `Mesa ${result.mesaId.slice(-4)}`,
+            restaurantId: data.restauranteId,
+            tableId: data.mesaId,
+            tableName: `Mesa ${data.mesaId.slice(-4)}`,
           });
-          setTable(result.restauranteId, result.mesaId, `Mesa ${result.mesaId.slice(-4)}`);
+          setTable(data.restauranteId, data.mesaId, `Mesa ${data.mesaId.slice(-4)}`);
         } else {
-          setError('QR Code inválido ou expirado');
+          setError(data.error ?? 'QR Code inválido ou expirado');
         }
       })
       .catch((err) => {
+        if (cancelled) return;
         setError(err instanceof Error ? err.message : 'Erro ao validar QR Code');
       })
       .finally(() => {
-        setIsValidating(false);
+        if (!cancelled) {
+          setIsValidating(false);
+        }
       });
-  }, [code, validarQRCodeMutation, setTable]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [code, setTable]);
 
   if (isValidating) {
     return (
