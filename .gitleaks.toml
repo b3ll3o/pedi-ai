@@ -1,0 +1,91 @@
+# gitleaks config — Pedi-AI
+#
+# Estende as regras padrão do gitleaks (cobre AWS, GitHub PAT, NPM tokens,
+# Stripe, OpenAI, private keys PEM, etc.) e adiciona:
+#   - Regras para segredos específicos do projeto (JWT, QR, Mercado Pago).
+#   - Allowlist para .env.example, lockfiles, docs, fixtures, mocks.
+#
+# Documentação: https://github.com/gitleaks/gitleaks/blob/master/config/gitleaks.toml
+
+title = "Pedi-AI gitleaks config"
+
+# Herda todas as regras padrão (gitleaks v8+)
+extend = "gitleaks:default"
+
+# ─── Allowlist global ─────────────────────────────────────────────────────
+# Arquivos/paths onde falsos positivos são esperados ou onde segredos
+# nunca deveriam aparecer em produção real (build output, deps, docs).
+[allowlist]
+description = "Allowlist global — arquivos sem segredos reais"
+paths = [
+  # Dependências e lockfiles (URLs de registry, hashes, sem secrets)
+  '''pnpm-lock\.yaml$''',
+  '''package-lock\.json$''',
+  '''yarn\.lock$''',
+  '''bun\.lockb?$''',
+  '''node_modules/''',
+  # Build / coverage output
+  '''dist/''',
+  '''build/''',
+  '''coverage/''',
+  '''\.next/''',
+  '''out/''',
+  # Documentação (placeholders, exemplos, sem segredos)
+  '''\.md$''',
+  '''\.mdx$''',
+  '''docs/''',
+  # Service worker e manifestos
+  '''\.webmanifest$''',
+  '''sw\.js$''',
+  # Config deprecado do app
+  '''apps/web/next-env\.d\.ts$''',
+]
+# Stopwords para placeholders óbvios (não exigirão redactor).
+stopwords = [
+  "your-super-secret",
+  "your-.*-here",
+  "troque-por-um-segredo",
+  "example",
+  "placeholder",
+  "changeme",
+  "xxxxxxxx",
+  "00000000",
+  "sample",
+  "fake",
+]
+
+# ─── Regras específicas do projeto ────────────────────────────────────────
+
+# JWT_SECRET / JWT_REFRESH_SECRET / QR_SECRET_KEY com valor >= 32 chars.
+# Placeholders óbvios ("your-super-secret-...") são filtrados pelo stopwords.
+[[rules]]
+id = "pedi-ai-jwt-secret"
+description = "Pedi-AI: segredo JWT ou QR_KEY com valor real (não placeholder)"
+regex = '''(?i)(?:JWT_SECRET|JWT_REFRESH_SECRET|QR_SECRET_KEY)\s*[:=]\s*["']?([a-zA-Z0-9_\-/+]{32,})["']?'''
+keywords = ["jwt_secret", "jwt_refresh_secret", "qr_secret_key"]
+
+# DATABASE_URL com senha hardcoded (não placeholders).
+[[rules]]
+id = "pedi-ai-database-password"
+description = "Pedi-AI: DATABASE_URL com senha (postgresql://user:pass@host)"
+regex = '''postgresql://[^:\s]+:[^@\s/]{8,}@'''
+keywords = ["postgresql://"]
+
+# Mercado Pago access token (formato APP_USR-...)
+[[rules]]
+id = "pedi-ai-mercado-pago-token"
+description = "Pedi-AI: access token do Mercado Pago (APP_USR-...)"
+regex = '''(?i)(?:MERCADOPAGO_ACCESS_TOKEN|MP_ACCESS_TOKEN|MERCADO_PAGO_TOKEN)\s*[:=]\s*["']?APP_USR-[a-z0-9-]{20,}'''
+keywords = ["mercadopago", "mp_access_token", "app_usr"]
+
+# ─── Allowlist por regra (falsos positivos conhecidos) ────────────────────
+
+# .env.example tem placeholders óbvios (não são segredos reais).
+[[rules.allowlists]]
+target = "match"
+regexes = [
+  '''=your-''',
+  '''=troque-por''',
+  '''=your-super-secret''',
+]
+description = "Ignora placeholders óbvios em .env.example"
