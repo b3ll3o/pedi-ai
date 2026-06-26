@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 
+import type { Categoria } from '@/domain/cardapio/entities/Categoria';
+import type { ItemCardapio } from '@/domain/cardapio/entities/ItemCardapio';
+import type { ModificadorGrupo } from '@/domain/cardapio/entities/ModificadorGrupo';
 import { getCachedMenu } from '@/lib/offline/cache';
 
 // ── Types ────────────────────────────────────────────────────
@@ -18,10 +21,10 @@ export interface MenuState {
   // Restaurant context
   restaurantId: string | null;
 
-  // Menu data
-  categories: any[];
-  products: any[];
-  modifierGroups: any[];
+  // Menu data — tipados pelo domínio; nada de any[] aqui.
+  categories: Categoria[];
+  products: ItemCardapio[];
+  modifierGroups: ModificadorGrupo[];
 
   // Filter state
   selectedCategoryId: string | null;
@@ -38,9 +41,9 @@ export interface MenuActions {
   setRestaurantId: (restaurantId: string | null) => void;
 
   // Data setters
-  setCategories: (categories: any[]) => void;
-  setProducts: (products: any[]) => void;
-  setModifierGroups: (modifierGroups: any[]) => void;
+  setCategories: (categories: Categoria[]) => void;
+  setProducts: (products: ItemCardapio[]) => void;
+  setModifierGroups: (modifierGroups: ModificadorGrupo[]) => void;
 
   // Filter setters
   setSelectedCategory: (categoryId: string | null) => void;
@@ -149,26 +152,28 @@ export const useMenuStore = create<MenuStore>()(
  * Dietary filter uses AND logic: product must match ALL selected labels.
  * If no category selected, returns all products (filtered by dietary + search).
  */
-export function getFilteredProducts(state: MenuState): any[] {
+export function getFilteredProducts(state: MenuState): ItemCardapio[] {
   let filtered = state.products;
 
   // Filter by category
   if (state.selectedCategoryId !== null) {
-    filtered = filtered.filter((p) => p.category_id === state.selectedCategoryId);
+    filtered = filtered.filter((p) => p.categoriaId === state.selectedCategoryId);
   }
 
   // Filter by dietary labels (AND logic)
   if (state.dietaryFilters.length > 0) {
     filtered = filtered.filter((p) => {
-      const productLabels = p.dietary_labels ?? [];
-      return state.dietaryFilters.every((label) => productLabels.includes(label));
+      const productLabels = p.labelsDieteticos ?? [];
+      return state.dietaryFilters.every((label) =>
+        productLabels.some((l) => l.toString() === label)
+      );
     });
   }
 
   // Filter by search query (case-insensitive, includes)
   if (state.searchQuery.trim() !== '') {
     const query = state.searchQuery.toLowerCase().trim();
-    filtered = filtered.filter((p) => p.name.toLowerCase().includes(query));
+    filtered = filtered.filter((p) => p.nome.toLowerCase().includes(query));
   }
 
   return filtered;
@@ -177,8 +182,8 @@ export function getFilteredProducts(state: MenuState): any[] {
 /**
  * Get products by category ID.
  */
-export function getProductsByCategory(state: MenuState, categoryId: string): any[] {
-  return state.products.filter((p) => p.category_id === categoryId);
+export function getProductsByCategory(state: MenuState, categoryId: string): ItemCardapio[] {
+  return state.products.filter((p) => p.categoriaId === categoryId);
 }
 
 // ── Hydration helpers ─────────────────────────────────────────
@@ -187,35 +192,59 @@ export function getProductsByCategory(state: MenuState, categoryId: string): any
  * Hydrates the store with cached data from IndexedDB.
  * Used by `useMenu` hook (see hooks/useMenu.ts) — it already calls this
  * automatically when API fetch fails or on startup offline.
+ *
+ * Os itens do cache vêm como `unknown[]` (Persistência nunca deve confiar no
+ * conteúdo). Validamos em runtime com `validateCachedMenu()` antes de atribuir.
+ *
+ * S3#10: única via de cache→store. Antes havia um segundo helper
+ * `useHydratedMenu` duplicando este corpo byte-a-byte — removido para
+ * eliminar caminhos divergentes que poderiam popular o store de formas
+ * distintas (um deles usando validateCached*, o outro bypassando).
  */
-export async function hydrateFromCache(restaurantId: string): Promise<void> {
+export async function hydrateFromCache(restaurantId: string): Promise<boolean> {
   const cached = await getCachedMenu(restaurantId);
-  if (!cached) return;
+  if (!cached) return false;
 
   useMenuStore.getState().setRestaurantId(restaurantId);
-  useMenuStore.getState().setCategories(cached.categories as any[]);
-  useMenuStore.getState().setProducts(cached.products as any[]);
-  useMenuStore.getState().setModifierGroups(cached.modifiers as any[]);
+  useMenuStore.getState().setCategories(validateCachedCategorias(cached.categories));
+  useMenuStore.getState().setProducts(validateCachedProdutos(cached.products));
+  useMenuStore.getState().setModifierGroups(validateCachedModifiers(cached.modifiers));
+  return true;
 }
 
-/**
- * Attempts to fetch menu from API; falls back to IndexedDB cache if offline.
- * Returns { success, fromCache } to indicate data origin.
- */
-export async function useHydratedMenu(
-  restaurantId: string
-): Promise<{ success: boolean; fromCache: boolean }> {
-  try {
-    throw new Error('API not implemented');
-  } catch (err) {
-    console.warn('useHydratedMenu: API not available, falling back to cache', err);
-    const cached = await getCachedMenu(restaurantId);
-    if (!cached) return { success: false, fromCache: false };
+// ── Runtime cache validation ──────────────────────────────────
 
-    useMenuStore.getState().setRestaurantId(restaurantId);
-    useMenuStore.getState().setCategories(cached.categories as any[]);
-    useMenuStore.getState().setProducts(cached.products as any[]);
-    useMenuStore.getState().setModifierGroups(cached.modifiers as any[]);
-    return { success: true, fromCache: true };
-  }
+/**
+ * Validadores de runtime para o que vier do IndexedDB. Persistência não-typed
+ * é uma fronteira de confiança — não assumimos shape do conteúdo.
+ *
+ * Mantemos leniência: aceitamos o item mesmo com campos opcionais faltando,
+ * apenas exigimos os identificadores e campos mínimos.
+ */
+function validateCachedCategorias(raw: unknown[]): Categoria[] {
+  return raw.filter((c): c is Categoria => {
+    return (
+      typeof c === 'object' &&
+      c !== null &&
+      typeof (c as { id?: unknown }).id === 'string' &&
+      typeof (c as { nome?: unknown }).nome === 'string'
+    );
+  });
+}
+
+function validateCachedProdutos(raw: unknown[]): ItemCardapio[] {
+  return raw.filter((p): p is ItemCardapio => {
+    return (
+      typeof p === 'object' &&
+      p !== null &&
+      typeof (p as { id?: unknown }).id === 'string' &&
+      typeof (p as { nome?: unknown }).nome === 'string'
+    );
+  });
+}
+
+function validateCachedModifiers(raw: unknown[]): ModificadorGrupo[] {
+  return raw.filter((m): m is ModificadorGrupo => {
+    return typeof m === 'object' && m !== null && typeof (m as { id?: unknown }).id === 'string';
+  });
 }

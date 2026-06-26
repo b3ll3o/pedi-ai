@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-// Mock do cache offline — necessário porque os testes de hydrate/useHydratedMenu
+// Mock do cache offline — necessário porque os testes de hydrate
 // dependem de `getCachedMenu`. Sem este mock, a referência `mockGetCachedMenu`
 // usada nos `beforeEach` abaixo ficaria indefinida.
 vi.mock('@/lib/offline/cache', async () => {
@@ -16,99 +16,85 @@ import {
   getFilteredProducts,
   getProductsByCategory,
   hydrateFromCache,
-  useHydratedMenu,
 } from '@/infrastructure/persistence/menuStore';
+import { Categoria } from '@/domain/cardapio/entities/Categoria';
+import { ItemCardapio } from '@/domain/cardapio/entities/ItemCardapio';
+import { ModificadorGrupo } from '@/domain/cardapio/entities/ModificadorGrupo';
+import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
+import { LabelDietetico } from '@/domain/cardapio/value-objects/LabelDietetico';
+import { TipoItemCardapio } from '@/domain/cardapio/value-objects/TipoItemCardapio';
 
 import { getCachedMenu } from '@/lib/offline/cache';
 
 const mockGetCachedMenu = vi.mocked(getCachedMenu);
 
-interface MenuProduct {
-  id: string;
-  category_id: string;
-  name: string;
-  description: string | null;
-  image_url: string | null;
-  price: number;
-  dietary_labels: string | null;
-  available: boolean;
-  sort_order: number;
-  created_at: string;
-  updated_at: string;
-}
-
-interface MenuCategory {
-  id: string;
-  name: string;
-  description: string | null;
-  image_url: string | null;
-  sort_order: number;
-  active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-interface MenuModifierGroup {
-  id: string;
-  name: string;
-  description: string | null;
-  min_selections: number;
-  max_selections: number | null;
-  required: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-type products = MenuProduct;
-type categories = MenuCategory;
-type modifier_groups = MenuModifierGroup;
-
 // ── Test helpers ────────────────────────────────────────────────────────────
 
-function makeProduct(overrides: Partial<products> = {}): products {
-  const now = new Date().toISOString();
-  return {
-    id: 'prod-1',
-    category_id: 'cat-main',
-    name: 'Product',
-    description: null,
-    image_url: null,
-    price: 10,
-    dietary_labels: null,
-    available: true,
-    sort_order: 0,
-    created_at: now,
-    updated_at: now,
-    ...overrides,
-  };
+function makeProduct(
+  overrides: {
+    id?: string;
+    categoriaId?: string;
+    nome?: string;
+    descricao?: string | null;
+    precoCentavos?: number;
+    labelsDieteticos?: string[];
+    ativo?: boolean;
+  } = {}
+): ItemCardapio {
+  return ItemCardapio.reconstruir({
+    id: overrides.id ?? 'prod-1',
+    categoriaId: overrides.categoriaId ?? 'cat-main',
+    nome: overrides.nome ?? 'Produto',
+    descricao: overrides.descricao ?? null,
+    preco: Dinheiro.criar(overrides.precoCentavos ?? 1000),
+    imagemUrl: null,
+    tipo: TipoItemCardapio.PRODUTO,
+    labelsDieteticos: (overrides.labelsDieteticos ?? []).map((l) => LabelDietetico.fromValue(l)),
+    ativo: overrides.ativo ?? true,
+    criadoEm: new Date(),
+    atualizadoEm: new Date(),
+    deletedAt: null,
+    version: 1,
+  } as any);
 }
 
-function makeCategory(overrides: Partial<categories> = {}): categories {
-  return {
-    id: 'cat-1',
-    name: 'Categoria',
-    description: null,
-    image_url: null,
-    sort_order: 0,
-    active: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    ...overrides,
-  };
+function makeCategory(
+  overrides: {
+    id?: string;
+    nome?: string;
+    descricao?: string | null;
+    ativo?: boolean;
+  } = {}
+): Categoria {
+  return Categoria.reconstruir({
+    id: overrides.id ?? 'cat-1',
+    nome: overrides.nome ?? 'Categoria',
+    descricao: overrides.descricao ?? null,
+    imagemUrl: null,
+    ordem: 0,
+    ativo: overrides.ativo ?? true,
+    criadoEm: new Date(),
+    atualizadoEm: new Date(),
+    deletedAt: null,
+    version: 1,
+  } as any);
 }
 
-function makeModifierGroup(overrides: Partial<modifier_groups> = {}): modifier_groups {
-  return {
-    id: 'mod-1',
-    name: 'Grupo',
-    description: null,
-    min_selections: 0,
-    max_selections: null,
+function makeModifierGroup(
+  overrides: {
+    id?: string;
+    nome?: string;
+  } = {}
+): ModificadorGrupo {
+  return ModificadorGrupo.reconstruir({
+    id: overrides.id ?? 'mod-1',
+    nome: overrides.nome ?? 'Grupo',
     required: false,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    ...overrides,
-  };
+    minSelections: 0,
+    maxSelections: 1,
+    criadoEm: new Date(),
+    valores: [],
+  } as any);
 }
 
 function buildState(
@@ -137,25 +123,25 @@ function buildState(
 
 // ── Test Data ───────────────────────────────────────────────────────────────
 
-const CAT_MAIN = makeCategory({ id: 'cat-main', name: 'Pratos Principais' });
-const CAT_DESSERT = makeCategory({ id: 'cat-dessert', name: 'Sobremesas' });
+const CAT_MAIN = makeCategory({ id: 'cat-main', nome: 'Pratos Principais' });
+const CAT_DESSERT = makeCategory({ id: 'cat-dessert', nome: 'Sobremesas' });
 
-const PIZZA = makeProduct({ id: 'pizza1', name: 'Pizza Margherita', category_id: 'cat-main' });
+const PIZZA = makeProduct({ id: 'pizza1', nome: 'Pizza Margherita', categoriaId: 'cat-main' });
 const SALAD = makeProduct({
   id: 'salad1',
-  name: 'Salada Verde',
-  category_id: 'cat-main',
-  dietary_labels: ['vegetarian'],
+  nome: 'Salada Verde',
+  categoriaId: 'cat-main',
+  labelsDieteticos: ['vegetariano'],
 });
-const CAKE = makeProduct({ id: 'cake1', name: 'Bolo de Chocolate', category_id: 'cat-dessert' });
+const CAKE = makeProduct({ id: 'cake1', nome: 'Bolo de Chocolate', categoriaId: 'cat-dessert' });
 const QUINOA = makeProduct({
   id: 'quinoa1',
-  name: 'Salada de Quinoa',
-  category_id: 'cat-main',
-  dietary_labels: ['vegetarian', 'gluten_free'],
+  nome: 'Salada de Quinoa',
+  categoriaId: 'cat-main',
+  labelsDieteticos: ['vegetariano', 'glutenFree'],
 });
 
-const MODIFIER_GROUP = makeModifierGroup({ id: 'mod-1', name: 'Extras' });
+const MODIFIER_GROUP = makeModifierGroup({ id: 'mod-1', nome: 'Extras' });
 
 // ══════════════════════════════════════════════════════════════════════════════
 // Store Actions — real store tests
@@ -221,19 +207,19 @@ describe('menuStore — actions (real store)', () => {
 
   describe('toggleDietaryFilter', () => {
     it('adds a dietary filter when not present', () => {
-      useMenuStore.getState().toggleDietaryFilter('vegetarian');
-      expect(useMenuStore.getState().dietaryFilters).toContain('vegetarian');
+      useMenuStore.getState().toggleDietaryFilter('vegetariano');
+      expect(useMenuStore.getState().dietaryFilters).toContain('vegetariano');
     });
 
     it('removes a dietary filter when already present', () => {
-      useMenuStore.getState().toggleDietaryFilter('vegetarian');
-      useMenuStore.getState().toggleDietaryFilter('vegetarian');
-      expect(useMenuStore.getState().dietaryFilters).not.toContain('vegetarian');
+      useMenuStore.getState().toggleDietaryFilter('vegetariano');
+      useMenuStore.getState().toggleDietaryFilter('vegetariano');
+      expect(useMenuStore.getState().dietaryFilters).not.toContain('vegetariano');
     });
 
     it('can have multiple filters', () => {
-      useMenuStore.getState().toggleDietaryFilter('vegetarian');
-      useMenuStore.getState().toggleDietaryFilter('gluten_free');
+      useMenuStore.getState().toggleDietaryFilter('vegetariano');
+      useMenuStore.getState().toggleDietaryFilter('glutenFree');
       expect(useMenuStore.getState().dietaryFilters).toHaveLength(2);
     });
   });
@@ -259,8 +245,8 @@ describe('menuStore — actions (real store)', () => {
     });
 
     it('clears dietaryFilters', () => {
-      useMenuStore.getState().toggleDietaryFilter('vegetarian');
-      useMenuStore.getState().toggleDietaryFilter('gluten_free');
+      useMenuStore.getState().toggleDietaryFilter('vegetariano');
+      useMenuStore.getState().toggleDietaryFilter('glutenFree');
       useMenuStore.getState().clearFilters();
       expect(useMenuStore.getState().dietaryFilters).toEqual([]);
     });
@@ -278,7 +264,7 @@ describe('menuStore — actions (real store)', () => {
       useMenuStore.getState().setProducts([PIZZA]);
       useMenuStore.getState().setModifierGroups([MODIFIER_GROUP]);
       useMenuStore.getState().setSelectedCategory('cat-main');
-      useMenuStore.getState().toggleDietaryFilter('vegetarian');
+      useMenuStore.getState().toggleDietaryFilter('vegetariano');
       useMenuStore.getState().setSearchQuery('pizza');
 
       useMenuStore.getState().reset();
@@ -328,7 +314,7 @@ describe('menuStore — getFilteredProducts selector', () => {
     it('returns only products with ALL selected labels', () => {
       const state = buildState({
         products: [SALAD, QUINOA, PIZZA],
-        dietaryFilters: ['vegetarian', 'gluten_free'],
+        dietaryFilters: ['vegetariano', 'glutenFree'],
       });
 
       const filtered = getFilteredProducts(state);
@@ -339,17 +325,17 @@ describe('menuStore — getFilteredProducts selector', () => {
     it('returns empty when no product matches dietary filter', () => {
       const state = buildState({
         products: [PIZZA, CAKE],
-        dietaryFilters: ['vegan'],
+        dietaryFilters: ['vegano'],
       });
 
       const filtered = getFilteredProducts(state);
       expect(filtered).toHaveLength(0);
     });
 
-    it('product with null dietary_labels does not match filter', () => {
+    it('product with null labelsDieteticos does not match filter', () => {
       const state = buildState({
         products: [PIZZA],
-        dietaryFilters: ['vegetarian'],
+        dietaryFilters: ['vegetariano'],
       });
 
       const filtered = getFilteredProducts(state);
@@ -402,12 +388,12 @@ describe('menuStore — getFilteredProducts selector', () => {
 
   describe('combined filters', () => {
     it('applies category + dietary + search together', () => {
-      const CAT_VEG = makeCategory({ id: 'cat-veg', name: 'Vegetariano' });
+      const CAT_VEG = makeCategory({ id: 'cat-veg', nome: 'Vegetariano' });
       const state = buildState({
         categories: [CAT_MAIN, CAT_VEG],
         products: [SALAD, QUINOA, PIZZA],
         selectedCategoryId: 'cat-main',
-        dietaryFilters: ['vegetarian'],
+        dietaryFilters: ['vegetariano'],
         searchQuery: 'Verde', // uniquely matches SALAD but not QUINOA
       });
 
@@ -486,7 +472,7 @@ describe('menuStore — hydrateFromCache', () => {
     };
     mockGetCachedMenu.mockResolvedValue(cachedData);
 
-    await hydrateFromCache();
+    await hydrateFromCache('r-1');
 
     const state = useMenuStore.getState();
     expect(state.categories).toHaveLength(2);
@@ -496,10 +482,10 @@ describe('menuStore — hydrateFromCache', () => {
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
-// Hydration — useHydratedMenu
+// Hydration — hydrateFromCache (S3#10: única via cache→store)
 // ══════════════════════════════════════════════════════════════════════════════
 
-describe('menuStore — useHydratedMenu', () => {
+describe('menuStore — hydrateFromCache', () => {
   beforeEach(() => {
     useMenuStore.getState().reset();
     mockGetCachedMenu.mockResolvedValue(null);
@@ -509,12 +495,13 @@ describe('menuStore — useHydratedMenu', () => {
     vi.restoreAllMocks();
   });
 
-  it('returns success:false when no cache and API fails', async () => {
-    const result = await useHydratedMenu();
-    expect(result).toEqual({ success: false, fromCache: false });
+  it('returns false quando não há cache', async () => {
+    const result = await hydrateFromCache('r-1');
+    expect(result).toBe(false);
+    expect(useMenuStore.getState().products).toHaveLength(0);
   });
 
-  it('returns success:true with fromCache:true when cache is available after API failure', async () => {
+  it('retorna true e popula o store quando cache existe', async () => {
     const cachedData = {
       categories: [CAT_MAIN],
       products: [PIZZA],
@@ -523,13 +510,14 @@ describe('menuStore — useHydratedMenu', () => {
     };
     mockGetCachedMenu.mockResolvedValue(cachedData);
 
-    const result = await useHydratedMenu();
+    const result = await hydrateFromCache('r-1');
 
-    expect(result).toEqual({ success: true, fromCache: true });
+    expect(result).toBe(true);
     expect(useMenuStore.getState().products).toHaveLength(1);
+    expect(useMenuStore.getState().categories).toHaveLength(1);
   });
 
-  it('loads cached categories, products, and modifiers', async () => {
+  it('carrega categories, products, e modifiers do cache', async () => {
     const cachedData = {
       categories: [CAT_MAIN, CAT_DESSERT],
       products: [PIZZA, CAKE],
@@ -538,7 +526,7 @@ describe('menuStore — useHydratedMenu', () => {
     };
     mockGetCachedMenu.mockResolvedValue(cachedData);
 
-    await useHydratedMenu();
+    await hydrateFromCache('r-1');
 
     const state = useMenuStore.getState();
     expect(state.categories).toHaveLength(2);
