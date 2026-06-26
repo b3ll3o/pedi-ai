@@ -173,7 +173,11 @@ export class RealtimeGateway implements OnModuleInit, OnGatewayConnection, OnGat
       if (!key) continue;
       try {
         out[key] = decodeURIComponent(rawValue);
-      } catch {
+      } catch (err) {
+        // Auditoria ACHADO-N41 (Re-varredura 9): antes `catch {}` silencioso
+        // — invisível para diagnóstico. Agora log em `debug` (não polui
+        // logs de prod mas ajuda a investigar bugs no front ou probes).
+        this.logger.debug(`Cookie decode falhou (key=${key}): ${(err as Error).message}`);
         // Valor com encoding inválido — usa raw como fallback (não confiável,
         // mas pelo menos não lança e quebra o handshake).
         out[key] = rawValue;

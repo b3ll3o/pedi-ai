@@ -145,7 +145,7 @@ export class QRCodeVisualService implements IQRCodeVisualService {
   ): Uint8Array {
     const ratio = Math.max(0.05, Math.min(0.4, opts.ratio));
 
-    const qrImg = PNG.sync.read(qrPng);
+    const qrImg = PNG.sync.read(Buffer.from(qrPng));
     const logoBytes = this.normalizarLogoInput(logo);
     const logoImg = PNG.sync.read(logoBytes);
 

@@ -20,14 +20,6 @@ interface RestaurantData {
   team_count?: number;
 }
 
-interface CreateRestaurantDto {
-  name: string;
-  description?: string;
-  address?: string;
-  phone?: string;
-  logoUrl?: string;
-}
-
 export async function GET() {
   try {
     const result = await apiClient.get<ApiResponse<RestaurantData[]>>('/restaurants/user/me');

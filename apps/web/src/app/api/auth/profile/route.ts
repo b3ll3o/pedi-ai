@@ -15,7 +15,7 @@ export async function GET() {
       email: user.email,
       role: user.role,
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }

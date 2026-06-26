@@ -1,15 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
-  Body,
-  Param,
-  Query,
-  Req,
-  Logger,
-} from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Req, Logger } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 
@@ -111,7 +100,12 @@ export class TablesController {
   // tier 'long' global (300/min). Rota pública, vulnerável a enumeração de
   // `table_id` + DoS via DB load. 30 req/min/IP = 1 tentativa a cada 2s
   // (cenário legítimo: cliente reescaneia QR).
-  @Throttle({ default: { ttl: 60_000, limit: 30 } })
+  // Auditoria ACHADO-N12 (Re-varredura 8): `default` não existe no
+  // ThrottlerModule.forRoot do AppModule (tiers são short/medium/long).
+  // Sem isso, o decorator era no-op e a rota caía no tier 'long' global
+  // (300/min) — vetor de enumeração de table_id. Agora usa tier 'medium'
+  // (30/min) explícito.
+  @Throttle({ medium: { ttl: 60_000, limit: 30 } })
   @ApiOperation({ summary: 'Validar QR code de mesa' })
   @ApiResponse({ status: 200, description: 'Validação realizada com sucesso' })
   async validateQrCode(
@@ -132,7 +126,7 @@ export class TablesController {
       signature
     );
 
-    if (!result.valid) {
+    if (result.valid === false) {
       // Auditoria ACHADO-38 (Re-varredura 7): unificar mensagem de erro para
       // evitar enumeração. Antes, mensagens distintas ("Mesa não encontrada"
       // vs "Assinatura inválida") permitiam ao atacante inferir quais

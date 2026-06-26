@@ -44,7 +44,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   try {
     const { id } = await params;
     const body = await request.json();
-    const { name, price_cents, position } = body;
+    const { name, price_cents } = body;
 
     const result = await apiClient.post<ApiResponse<ModifierValue>>(
       `/modifier-groups/${id}/values`,

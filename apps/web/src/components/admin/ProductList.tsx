@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-
 import type { ProductDTO } from '@pedi-ai/shared/types';
+import { useState, useMemo } from 'react';
 
 import styles from './ProductList.module.css';
 

@@ -148,46 +148,59 @@ export function useCustomerOrderNotifications({
     };
   }, [socketConnected, orderIds, handleOrderUpdated, on, off]);
 
-  const fetchOrderStatus = useCallback(async (orderId: string): Promise<OrderStatus | null> => {
-    try {
-      const response = await fetch(`/api/admin/orders/${orderId}/status`);
-      if (!response.ok) {
+  const fetchOrderStatus = useCallback(
+    async (orderId: string, signal?: AbortSignal): Promise<OrderStatus | null> => {
+      try {
+        const response = await fetch(`/api/admin/orders/${orderId}/status`, {
+          // Timeout defensivo: evita que polling fique pendurado indefinidamente
+          // se o servidor travar (sem AbortSignal, fica "online" no state
+          // mas nenhum dado chega).
+          signal: signal ?? AbortSignal.timeout(5000),
+        });
+        if (!response.ok) {
+          return null;
+        }
+        const data = await response.json();
+        return data.status as OrderStatus;
+      } catch {
         return null;
       }
-      const data = await response.json();
-      return data.status as OrderStatus;
-    } catch {
-      return null;
-    }
-  }, []);
+    },
+    []
+  );
 
-  const pollOrderStatuses = useCallback(async () => {
-    if (!enabled || orderIds.length === 0) {
-      return;
-    }
+  const pollOrderStatuses = useCallback(
+    async (signal?: AbortSignal) => {
+      if (!enabled || orderIds.length === 0) {
+        return;
+      }
+      if (signal?.aborted) return;
 
-    for (const orderId of orderIds) {
-      const currentStatus = await fetchOrderStatus(orderId);
+      for (const orderId of orderIds) {
+        if (signal?.aborted) return;
+        const currentStatus = await fetchOrderStatus(orderId, signal);
 
-      if (currentStatus && previousStatusesRef.current[orderId] !== undefined) {
-        if (previousStatusesRef.current[orderId] !== currentStatus) {
-          // Status changed - notify
-          const payload: OrderUpdatePayload = {
-            order_id: orderId,
-            status: currentStatus,
-            updated_at: new Date().toISOString(),
-            updated_by: 'system',
-          };
-          handleOrderUpdated(payload);
+        if (currentStatus && previousStatusesRef.current[orderId] !== undefined) {
+          if (previousStatusesRef.current[orderId] !== currentStatus) {
+            // Status changed - notify
+            const payload: OrderUpdatePayload = {
+              order_id: orderId,
+              status: currentStatus,
+              updated_at: new Date().toISOString(),
+              updated_by: 'system',
+            };
+            handleOrderUpdated(payload);
+          }
+        }
+
+        // Update the stored status
+        if (currentStatus) {
+          previousStatusesRef.current[orderId] = currentStatus;
         }
       }
-
-      // Update the stored status
-      if (currentStatus) {
-        previousStatusesRef.current[orderId] = currentStatus;
-      }
-    }
-  }, [enabled, orderIds, fetchOrderStatus, handleOrderUpdated]);
+    },
+    [enabled, orderIds, fetchOrderStatus, handleOrderUpdated]
+  );
 
   useEffect(() => {
     if (!enabled || !orderIdsKey) {
@@ -199,11 +212,16 @@ export function useCustomerOrderNotifications({
     }
 
     // Limpa atualizações pendentes quando orderIds mudou
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+
     setPendingUpdates([]);
 
     // Reset previous statuses when orderIds change
     previousStatusesRef.current = {};
+
+    // AbortController local: cancela in-flight requests e marca timer como
+    // morto quando o effect re-roda ou o componente desmonta. Sem isto,
+    // setState após unmount gera warning de React; no StrictMode vira bug.
+    const abortController = new AbortController();
 
     // Use socket if connected, otherwise fall back to polling
     if (socketConnected) {
@@ -213,9 +231,11 @@ export function useCustomerOrderNotifications({
       }
     } else {
       // Start polling as fallback
-      pollOrderStatuses();
+      void pollOrderStatuses(abortController.signal);
 
-      pollingRef.current = setInterval(pollOrderStatuses, POLLING_INTERVAL);
+      pollingRef.current = setInterval(() => {
+        void pollOrderStatuses(abortController.signal);
+      }, POLLING_INTERVAL);
     }
 
     return () => {
@@ -223,6 +243,7 @@ export function useCustomerOrderNotifications({
         clearInterval(pollingRef.current);
         pollingRef.current = null;
       }
+      abortController.abort();
     };
   }, [enabled, orderIdsKey, socketConnected, pollOrderStatuses]);
 

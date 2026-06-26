@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { createHmac, randomUUID } from 'crypto';
 
 export interface QRPayload {

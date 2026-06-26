@@ -1,9 +1,8 @@
 'use client';
 
+import type { UserDTO } from '@pedi-ai/shared/types';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
-
-import type { UserDTO } from '@pedi-ai/shared/types';
 
 import {
   getUsers,

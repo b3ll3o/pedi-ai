@@ -3,6 +3,28 @@ import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 
 import { ModificadorSelecionado } from '../value-objects/ModificadorSelecionado';
 
+/**
+ * Limites de quantidade por item de pedido.
+ *
+ * MAX = 999 casa com o `@Max(999)` do DTO do backend (`orders.dto.ts`).
+ * Definir aqui também evita que `precoUnitario * quantidade` extrapole
+ * `Number.MAX_SAFE_INTEGER` (`2^53 - 1`) — em centavos, 999 × R$ 999.999,99
+ * = ~1e9, muito abaixo do limite, mas é defesa em profundidade.
+ */
+const MIN_QUANTIDADE = 1;
+const MAX_QUANTIDADE = 999;
+
+function assertQuantidadeValida(quantidade: number): void {
+  if (!Number.isInteger(quantidade)) {
+    throw new Error(`quantidade deve ser inteiro, recebido: ${quantidade}`);
+  }
+  if (quantidade < MIN_QUANTIDADE || quantidade > MAX_QUANTIDADE) {
+    throw new Error(
+      `quantidade fora da faixa permitida [${MIN_QUANTIDADE}, ${MAX_QUANTIDADE}]: ${quantidade}`
+    );
+  }
+}
+
 export interface ItemPedidoProps {
   id: string;
   pedidoId?: string;
@@ -65,11 +87,13 @@ export class ItemPedido extends EntityClass<ItemPedidoProps> {
   }
 
   atualizarQuantidade(quantidade: number): void {
+    assertQuantidadeValida(quantidade);
     Object.assign(this.props, { quantidade });
     this.recalcularSubtotal();
   }
 
   static criar(props: Omit<ItemPedidoProps, 'subtotal'>): ItemPedido {
+    assertQuantidadeValida(props.quantidade);
     const item = new ItemPedido({
       ...props,
       subtotal: Dinheiro.ZERO,

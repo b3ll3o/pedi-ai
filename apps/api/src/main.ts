@@ -1,41 +1,179 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { ValidationPipe } from '@nestjs/common';
+// ─── OpenTelemetry DEVE ser importado ANTES de tudo (auditoria A2) ─
+// Auto-instrumentations só capturam módulos carregados depois deste import.
+import './tracing/tracing';
+
+import fastifyCookie from '@fastify/cookie';
+import fastifyHelmet from '@fastify/helmet';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { FastifyRequest } from 'fastify';
 import * as yaml from 'js-yaml';
 
 import { AppModule } from './app.module';
 import { TodasExcecoesFiltro } from './common/filters/TodasExcecoesFiltro';
-import { RespostaSucessoInterceptor } from './common/interceptors/RespostaSucessoInterceptor';
+
+/**
+ * Valores permitidos para `NODE_ENV`. Falha o boot se ausente para garantir
+ * que `isProd` no filtro de exceções nunca caia em modo dev por acidente.
+ */
+const ALLOWED_NODE_ENVS = ['production', 'staging', 'development'] as const;
+type AllowedNodeEnv = (typeof ALLOWED_NODE_ENVS)[number];
+
+function resolveNodeEnv(): AllowedNodeEnv {
+  const raw = process.env.NODE_ENV;
+  if (!raw || !ALLOWED_NODE_ENVS.includes(raw as AllowedNodeEnv)) {
+    throw new Error(
+      `NODE_ENV é obrigatório e deve ser um de: ${ALLOWED_NODE_ENVS.join(', ')}. ` +
+        `Valor recebido: ${raw ?? '(vazio)'}`
+    );
+  }
+  return raw as AllowedNodeEnv;
+}
+
+/**
+ * CORS Origins configuráveis via env `ALLOWED_ORIGINS` (separadas por vírgula).
+ *
+ * ⚠️ Em produção, **NUNCA** use `0.0.0.0` ou `*`. Apenas origens explícitas.
+ *
+ * Validação rigorosa: split por `,` e trim. Se `ALLOWED_ORIGINS` ausente,
+ * usa fallback `http://localhost:3000` (dev) ou falha (NODE_ENV=production).
+ */
+function resolveAllowedOrigins(): string[] {
+  const raw = process.env.ALLOWED_ORIGINS;
+  if (!raw || raw.trim() === '') {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(
+        'ALLOWED_ORIGINS é obrigatório em produção (configure origens explícitas separadas por vírgula)'
+      );
+    }
+    return ['http://localhost:3000'];
+  }
+  return raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0 && s !== '0.0.0.0' && s !== '*');
+}
+
+/**
+ * Logger do bootstrap. Declarado ANTES da função `bootstrap()` para que
+ * os logs de sucesso (`API rodando em...`) usem o mesmo logger dos
+ * handlers `uncaughtException`/`unhandledRejection`.
+ */
+const bootstrapLogger = new Logger('Bootstrap');
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule,
-    new FastifyAdapter({
-      logger: true,
-    })
-  );
+  // ─── Validação rígida de NODE_ENV antes de tudo (C3) ─────────
+  // Garante que filtros (TodasExcecoesFiltro) tenham modo de produção
+  // confiável e evita deploy silencioso em modo dev com stack traces vazados.
+  resolveNodeEnv();
 
-  app.enableCors({
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
-    credentials: true,
+  const adapter = new FastifyAdapter({
+    logger: true,
+    trustProxy: true, // Necessário para `req.ip` correto atrás de Nginx/proxy
   });
 
+  // Captura o raw body para a rota de webhook do Mercado Pago.
+  // Necessário para validar a assinatura HMAC v1, que é calculada sobre
+  // o body original (antes do parse JSON). Aplicamos em application/json
+  // para que o controller de webhook possa acessar `req.rawBody`.
+  adapter
+    .getInstance()
+    .addContentTypeParser(
+      'application/json',
+      { parseAs: 'string' },
+      (
+        req: FastifyRequest & { rawBody?: Buffer },
+        body: string,
+        done: (err: Error | null, out?: unknown) => void
+      ) => {
+        try {
+          req.rawBody = Buffer.from(body, 'utf8');
+          const parsed = body.length > 0 ? JSON.parse(body) : {};
+          done(null, parsed);
+        } catch (err) {
+          done(err as Error);
+        }
+      }
+    );
+
+  const app = await NestFactory.create<NestFastifyApplication>(AppModule, adapter);
+
+  // ─── Cookies (necessário para o fluxo de auth com tokens HttpOnly) ───
+  await app.register(fastifyCookie, {});
+
+  // ─── Helmet: Security Headers (CSP, HSTS, X-Frame-Options, etc.) ───
+  await app.register(fastifyHelmet, {
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:', 'https:'],
+        connectSrc: ["'self'", 'https://api.mercadopago.com'],
+        fontSrc: ["'self'", 'data:'],
+        objectSrc: ["'none'"],
+        frameAncestors: ["'none'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: { policy: 'same-origin' },
+    // 'cross-origin' permite que subdomínios diferentes (ex: app.pedi-ai.com
+    // consumindo api.pedi-ai.com) carreguem recursos. 'same-site' quebra
+    // cenários legítimos em produção.
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    hsts: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: false,
+    },
+    noSniff: true,
+    frameguard: { action: 'deny' },
+    xssFilter: true,
+  });
+
+  // ─── CORS (origens validadas, sem `*` ou `0.0.0.0`) ───
+  app.enableCors({
+    origin: resolveAllowedOrigins(),
+    credentials: true,
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  });
+
+  // ─── Validação global ───
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+      transformOptions: {
+        enableImplicitConversion: false,
+      },
     })
   );
 
   app.useGlobalFilters(new TodasExcecoesFiltro());
-  app.useGlobalInterceptors(new RespostaSucessoInterceptor());
 
-  // Swagger/OpenAPI - contract-first documentation
+  // ─── Graceful shutdown (A4) ─────────────────────────────────
+  // Habilita hooks do Nest para fechar Prisma/BullMQ/etc. em ordem
+  // durante SIGTERM (rolling deploy K8s, docker stop, etc).
+  app.enableShutdownHooks();
+
+  // ─── Swagger/OpenAPI ───
+  // Auditoria ACHADO-N1 (Re-varredura 8): Swagger UI e dump do openapi.yaml
+  // DEVEM ser restritos a development/staging. Em produção, expor toda a
+  // superfície da API (incluindo /payments/webhooks/pix, /auth/refresh,
+  // /auth/reset-password) é vetor de information disclosure e enumeration.
+  const nodeEnv = process.env.NODE_ENV ?? 'development';
+  const swaggerEnabled = nodeEnv !== 'production';
+
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Pedi-AI API')
     .setDescription('API REST para sistema de cardápio digital')
@@ -53,19 +191,59 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
 
-  // Exporta OpenAPI spec para arquivo (para contract testing com Dredd)
-  const specPath = path.resolve(__dirname, '..', 'openapi.yaml');
-  fs.writeFileSync(specPath, yaml.dump(document, { indent: 2 }));
+  // Dump do spec apenas em dev/staging (info disclosure em prod).
+  if (swaggerEnabled) {
+    const specPath = path.resolve(__dirname, '..', 'openapi.yaml');
+    fs.writeFileSync(specPath, yaml.dump(document, { indent: 2 }));
+  }
 
-  SwaggerModule.setup('api/docs', app, document, {
-    swaggerOptions: { persistAuthorization: true },
-  });
+  // Setup do UI apenas em dev/staging.
+  if (swaggerEnabled) {
+    SwaggerModule.setup('api/docs', app, document, {
+      swaggerOptions: { persistAuthorization: false },
+    });
+  }
 
   const port = process.env.PORT || 3001;
   const host = process.env.HOST || '0.0.0.0';
   await app.listen({ port: Number(port), host });
-  console.log(`🚀 API rodando em http://localhost:${port}`);
-  console.log(`📚 Swagger docs em http://localhost:${port}/api/docs`);
+
+  // Auditoria ACHADO-N40 (Re-varredura 9): usar `bootstrapLogger` (já criado)
+  // em vez de `console.log` — alinha com o resto do bootstrap (uncaught
+  // exception, unhandled rejection) e permite que agregadores de log
+  // capturem contexto estruturado.
+  bootstrapLogger.log(`API rodando em http://localhost:${port}`);
+  if (swaggerEnabled) {
+    bootstrapLogger.log(`Swagger docs em http://localhost:${port}/api/docs`);
+  } else {
+    bootstrapLogger.log(`Swagger UI desabilitado (NODE_ENV=${nodeEnv})`);
+  }
 }
 
-bootstrap();
+/**
+ * Handlers globais para garantir visibilidade de falhas catastróficas.
+ * O Nest já tem `enableShutdownHooks()` (A4) para SIGTERM/SIGINT, mas
+ * exceções não-tratadas em promises/código síncrono bypassariam o filtro.
+ *
+ * Política:
+ * - Logar stack completo (via `Logger.error`).
+ * - Encerrar com exit code != 0 para que orquestrador (K8s, systemd)
+ *   marque o pod como falho e dispare reinício/rolling deploy.
+ */
+process.on('uncaughtException', (err) => {
+  bootstrapLogger.error('uncaughtException — encerrando processo', err.stack ?? String(err));
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason) => {
+  bootstrapLogger.error(
+    'unhandledRejection — encerrando processo',
+    reason instanceof Error ? reason.stack : String(reason)
+  );
+  process.exit(1);
+});
+
+bootstrap().catch((err) => {
+  bootstrapLogger.error('Falha no bootstrap', err.stack ?? String(err));
+  process.exit(1);
+});

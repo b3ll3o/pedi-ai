@@ -30,12 +30,19 @@ export const CLEANUP_QUEUE_NAME = 'cleanup';
  * - PasswordResetToken (used=true): 7 dias (janela para auditoria/debug).
  * - RefreshToken (revoked): 30 dias (suficiente para detectar reuso).
  * - WebhookEvent: 30 dias (idem — após isso, MP não reenvia).
+ * - Order (cancelled ou pending_payment há muito): 90 dias (LGPD minimização).
+ *   Pedidos `paid|preparing|ready|delivered` são PRESERVADOS por 5 anos
+ *   (obrigação fiscal/legal — não podem ser deletados).
+ *   Apenas `cancelled` e `pending_payment` (clientes que abandonaram) têm
+ *   ciclo de retenção limitado.
+ * - OrderStatusHistory (de orders deletadas): removido em cascata via FK.
  */
 const TTL = {
   idempotencyGraceMs: 24 * 60 * 60 * 1000,
   passwordResetUsedGraceMs: 7 * 24 * 60 * 60 * 1000,
   refreshTokenRevokedGraceMs: 30 * 24 * 60 * 60 * 1000,
   webhookEventGraceMs: 30 * 24 * 60 * 60 * 1000,
+  orderAbandonedGraceMs: 90 * 24 * 60 * 60 * 1000,
 } as const;
 
 export interface CleanupResult {
@@ -43,6 +50,7 @@ export interface CleanupResult {
   passwordResetTokensDeleted: number;
   refreshTokensDeleted: number;
   webhookEventsDeleted: number;
+  abandonedOrdersDeleted: number;
   ranAt: string;
 }
 
@@ -72,7 +80,8 @@ export class CleanupQueue implements OnModuleInit {
           `[cleanup] idempotencyKeys=${result.idempotencyKeysDeleted}, ` +
             `passwordResetTokens=${result.passwordResetTokensDeleted}, ` +
             `refreshTokens=${result.refreshTokensDeleted}, ` +
-            `webhookEvents=${result.webhookEventsDeleted}`
+            `webhookEvents=${result.webhookEventsDeleted}, ` +
+            `abandonedOrders=${result.abandonedOrdersDeleted}`
         );
       }
     );
@@ -142,11 +151,34 @@ export class CleanupQueue implements OnModuleInit {
       })
       .then((r) => r.count);
 
+    // 5. Pedidos ABANDONADOS há mais de 90 dias.
+    // Auditoria ACHADO-N8 (Re-varredura 8): cleanup diário não cobria a
+    // tabela `Order`. Pedidos `cancelled` (cliente desistiu) e
+    // `pending_payment` (cliente abandonou checkout) ficavam para sempre
+    // — retenção indefinida de PII (customerPhone/customerEmail/customerName)
+    // viola LGPD Art. 16 (eliminação após cessada finalidade).
+    //
+    // PRESERVAMOS pedidos `paid | preparing | ready | delivered` por 5 anos
+    // (obrigação fiscal — não devem ser deletados automaticamente).
+    //
+    // Apenas pedidos ABANDONADOS (cancelled ou pending_payment há > 90 dias)
+    // são removidos. O `@@index([restaurantId, status])` torna este DELETE
+    // eficiente mesmo em produção.
+    const abandonedOrdersDeleted = await this.prisma.order
+      .deleteMany({
+        where: {
+          status: { in: ['cancelled', 'pending_payment'] },
+          createdAt: { lt: new Date(now - TTL.orderAbandonedGraceMs) },
+        },
+      })
+      .then((r) => r.count);
+
     return {
       idempotencyKeysDeleted,
       passwordResetTokensDeleted,
       refreshTokensDeleted,
       webhookEventsDeleted,
+      abandonedOrdersDeleted,
       ranAt: nowIso,
     };
   }

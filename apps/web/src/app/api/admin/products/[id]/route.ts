@@ -46,7 +46,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     const body = await request.json();
-    const { name, description, price_cents, image_url, category_id, active } = body;
+    const { name, description, price_cents, image_url, active } = body;
 
     const result = await apiClient.patch<ApiResponse<ProductData>>(`/products/${productId}`, {
       name: name?.trim(),

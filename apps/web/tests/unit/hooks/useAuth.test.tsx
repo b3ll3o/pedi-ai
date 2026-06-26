@@ -1,16 +1,11 @@
 /**
  * Testes do hook useAuth — consolidação em arquivo único (.tsx).
  *
- * O hook usa lib/api-client (singleton mutado) para gerenciar tokens de acesso.
- * O tokenVersion no hook força recálculo reativo de isAuthenticated.
- *
- * Suites:
- *  1. Initial state and session check
- *  2. Sign in (sucesso, falha, exceções não-Error)
- *  3. Sign out (limpa state, redireciona, trata erro de API)
- *  4. Error handling on init (getMe throws, string não-Error)
- *  5. Sign up (sucesso, falha)
- *  6. Timeout/failure scenarios (initAuth com getMe rejeitado, getMe resolvendo null)
+ * No novo modelo HttpOnly-cookie, o hook:
+ *  - chama `apiClient.verifySession()` (que faz GET /auth/me via cookie) no mount
+ *  - em sucesso, popula user; em falha, user=null
+ *  - signIn/signUp populam user após chamada ao servidor (servidor define cookie)
+ *  - signOut limpa user e chama /auth/logout (servidor limpa cookie)
  */
 
 import { renderHook, waitFor, act } from '@testing-library/react';
@@ -19,7 +14,6 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { useAuth } from '@/hooks/useAuth';
 import { apiClient } from '@/lib/api-client';
 
-// Mock next/navigation
 const mockPush = vi.fn();
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
@@ -39,33 +33,24 @@ vi.mock('next/navigation', () => ({
     isPreview: false,
     isFallback: false,
     basePath: '',
-    events: {
-      on: vi.fn(),
-      off: vi.fn(),
-      emit: vi.fn(),
-    },
+    events: { on: vi.fn(), off: vi.fn(), emit: vi.fn() },
   }),
   usePathname: () => '/',
   useSearchParams: () => new URLSearchParams(),
 }));
 
-// Mock lib/api-client — interface atual do useAuth.
-// ATENÇÃO: vi.mock é hoisted, então precisamos usar vi.fn() aqui dentro (não no escopo externo).
 vi.mock('@/lib/api-client', () => ({
   apiClient: {
-    restoreTokens: vi.fn<() => boolean>(),
-    clearTokens: vi.fn<() => void>(),
-    isAuthenticated: vi.fn<() => boolean>(),
+    verifySession: vi.fn<() => Promise<unknown | null>>(),
     getMe: vi.fn<() => Promise<unknown | null>>(),
     login: vi.fn<() => Promise<{ user: unknown }>>(),
     register: vi.fn<() => Promise<{ user: unknown }>>(),
     logout: vi.fn<() => Promise<void>>(),
+    clearUser: vi.fn<() => void>(),
   },
 }));
 
-const restoreTokens = apiClient.restoreTokens as ReturnType<typeof vi.fn>;
-const isAuthenticated = apiClient.isAuthenticated as ReturnType<typeof vi.fn>;
-const getMe = apiClient.getMe as ReturnType<typeof vi.fn>;
+const verifySession = apiClient.verifySession as ReturnType<typeof vi.fn>;
 const login = apiClient.login as ReturnType<typeof vi.fn>;
 const register = apiClient.register as ReturnType<typeof vi.fn>;
 const logout = apiClient.logout as ReturnType<typeof vi.fn>;
@@ -93,7 +78,7 @@ describe('useAuth hook', () => {
 
   describe('1. Initial state and session check', () => {
     it('isLoading becomes false after init completes when no session', async () => {
-      restoreTokens.mockReturnValue(false);
+      verifySession.mockResolvedValue(null);
 
       const { result } = renderHook(() => useAuth());
 
@@ -103,27 +88,11 @@ describe('useAuth hook', () => {
 
       expect(result.current.user).toBeNull();
       expect(result.current.session).toBeNull();
-    });
-
-    it('isAuthenticated is false when no session exists', async () => {
-      restoreTokens.mockReturnValue(false);
-      isAuthenticated.mockReturnValue(false);
-
-      const { result } = renderHook(() => useAuth());
-
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false);
-      });
-
       expect(result.current.isAuthenticated).toBe(false);
-      expect(result.current.user).toBeNull();
-      expect(result.current.session).toBeNull();
     });
 
     it('isAuthenticated is true when valid session exists', async () => {
-      restoreTokens.mockReturnValue(true);
-      getMe.mockResolvedValue(mockUser);
-      isAuthenticated.mockReturnValue(true);
+      verifySession.mockResolvedValue(mockUser);
 
       const { result } = renderHook(() => useAuth());
 
@@ -137,9 +106,7 @@ describe('useAuth hook', () => {
     });
 
     it('error is null on successful initialization', async () => {
-      restoreTokens.mockReturnValue(true);
-      getMe.mockResolvedValue(mockUser);
-      isAuthenticated.mockReturnValue(true);
+      verifySession.mockResolvedValue(mockUser);
 
       const { result } = renderHook(() => useAuth());
 
@@ -155,7 +122,7 @@ describe('useAuth hook', () => {
 
   describe('2. Sign in', () => {
     it('signIn calls login with correct params', async () => {
-      restoreTokens.mockReturnValue(false);
+      verifySession.mockResolvedValue(null);
       login.mockResolvedValue({ user: mockUser });
 
       const { result } = renderHook(() => useAuth());
@@ -170,8 +137,7 @@ describe('useAuth hook', () => {
     });
 
     it('signIn updates user and session on success', async () => {
-      restoreTokens.mockReturnValue(false);
-      isAuthenticated.mockReturnValue(true);
+      verifySession.mockResolvedValue(null);
       login.mockResolvedValue({ user: mockUser });
 
       const { result } = renderHook(() => useAuth());
@@ -190,8 +156,7 @@ describe('useAuth hook', () => {
     });
 
     it('signIn sets error on auth failure', async () => {
-      restoreTokens.mockReturnValue(false);
-      isAuthenticated.mockReturnValue(false);
+      verifySession.mockResolvedValue(null);
       login.mockRejectedValue(new Error('Invalid credentials'));
 
       const { result } = renderHook(() => useAuth());
@@ -214,7 +179,7 @@ describe('useAuth hook', () => {
     });
 
     it('signIn sets generic error when login throws non-Error exception', async () => {
-      restoreTokens.mockReturnValue(false);
+      verifySession.mockResolvedValue(null);
       login.mockRejectedValue('Network failure');
 
       const { result } = renderHook(() => useAuth());
@@ -235,26 +200,7 @@ describe('useAuth hook', () => {
 
   describe('3. Sign out', () => {
     it('signOut calls logout', async () => {
-      restoreTokens.mockReturnValue(true);
-      getMe.mockResolvedValue(mockUser);
-      isAuthenticated.mockReturnValue(true);
-      logout.mockResolvedValue(undefined);
-
-      const { result } = renderHook(() => useAuth());
-
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false);
-      });
-
-      await result.current.signOut();
-
-      expect(logout).toHaveBeenCalledTimes(1);
-    });
-
-    it('signOut clears user and session', async () => {
-      restoreTokens.mockReturnValue(true);
-      getMe.mockResolvedValue(mockUser);
-      isAuthenticated.mockReturnValue(true);
+      verifySession.mockResolvedValue(mockUser);
       logout.mockResolvedValue(undefined);
 
       const { result } = renderHook(() => useAuth());
@@ -263,7 +209,20 @@ describe('useAuth hook', () => {
         expect(result.current.user).toEqual(mockUser);
       });
 
-      isAuthenticated.mockReturnValue(false);
+      await result.current.signOut();
+
+      expect(logout).toHaveBeenCalledTimes(1);
+    });
+
+    it('signOut clears user and session', async () => {
+      verifySession.mockResolvedValue(mockUser);
+      logout.mockResolvedValue(undefined);
+
+      const { result } = renderHook(() => useAuth());
+
+      await waitFor(() => {
+        expect(result.current.user).toEqual(mockUser);
+      });
 
       await act(async () => {
         await result.current.signOut();
@@ -276,9 +235,7 @@ describe('useAuth hook', () => {
     });
 
     it('signOut redirects to /login', async () => {
-      restoreTokens.mockReturnValue(true);
-      getMe.mockResolvedValue(mockUser);
-      isAuthenticated.mockReturnValue(true);
+      verifySession.mockResolvedValue(mockUser);
       logout.mockResolvedValue(undefined);
 
       const { result } = renderHook(() => useAuth());
@@ -297,10 +254,7 @@ describe('useAuth hook', () => {
     });
 
     it('signOut clears state and redirects even if logout API fails', async () => {
-      // Garante que o usuário sempre sai do app mesmo se /auth/logout falhar.
-      restoreTokens.mockReturnValue(true);
-      getMe.mockResolvedValue(mockUser);
-      isAuthenticated.mockReturnValue(true);
+      verifySession.mockResolvedValue(mockUser);
       logout.mockRejectedValue(new Error('Network error during logout'));
 
       const { result } = renderHook(() => useAuth());
@@ -327,9 +281,8 @@ describe('useAuth hook', () => {
   // ── 4. Error handling on init ──────────────────────────────────────────────
 
   describe('4. Error handling on init', () => {
-    it('sets error when getMe throws', async () => {
-      restoreTokens.mockReturnValue(true);
-      getMe.mockRejectedValue(new Error('Network error'));
+    it('sets error when verifySession throws', async () => {
+      verifySession.mockRejectedValue(new Error('Network error'));
 
       const { result } = renderHook(() => useAuth());
 
@@ -341,8 +294,7 @@ describe('useAuth hook', () => {
     });
 
     it('sets generic error when initAuth catches non-Error throw', async () => {
-      restoreTokens.mockReturnValue(true);
-      getMe.mockRejectedValue('Network error string');
+      verifySession.mockRejectedValue('Network error string');
 
       const { result } = renderHook(() => useAuth());
 
@@ -358,7 +310,7 @@ describe('useAuth hook', () => {
 
   describe('5. Sign up', () => {
     it('signUp calls register with correct params and updates state on success', async () => {
-      restoreTokens.mockReturnValue(false);
+      verifySession.mockResolvedValue(null);
       register.mockResolvedValue({ user: mockUser });
 
       const { result } = renderHook(() => useAuth());
@@ -378,7 +330,7 @@ describe('useAuth hook', () => {
     });
 
     it('signUp sets error when register throws', async () => {
-      restoreTokens.mockReturnValue(false);
+      verifySession.mockResolvedValue(null);
       register.mockRejectedValue(new Error('Email already in use'));
 
       const { result } = renderHook(() => useAuth());
@@ -399,12 +351,11 @@ describe('useAuth hook', () => {
     });
   });
 
-  // ── 6. Timeout/failure scenarios (initAuth edge cases) ─────────────────────
+  // ── 6. Init failure scenarios ──────────────────────────────────────────────
 
   describe('6. Init failure scenarios', () => {
-    it('isLoading becomes false after getMe rejects', async () => {
-      restoreTokens.mockReturnValue(true);
-      getMe.mockRejectedValue(new Error('timeout'));
+    it('isLoading becomes false after verifySession rejects', async () => {
+      verifySession.mockRejectedValue(new Error('timeout'));
 
       const { result } = renderHook(() => useAuth());
 
@@ -413,9 +364,8 @@ describe('useAuth hook', () => {
       });
     });
 
-    it('user and session are null after getMe rejects', async () => {
-      restoreTokens.mockReturnValue(true);
-      getMe.mockRejectedValue(new Error('timeout'));
+    it('user and session are null after verifySession rejects', async () => {
+      verifySession.mockRejectedValue(new Error('timeout'));
 
       const { result } = renderHook(() => useAuth());
 
@@ -427,9 +377,8 @@ describe('useAuth hook', () => {
       expect(result.current.session).toBeNull();
     });
 
-    it('clears tokens when restored tokens yield null user (token expired)', async () => {
-      restoreTokens.mockReturnValue(true);
-      getMe.mockResolvedValue(null);
+    it('user and session are null when verifySession returns null (cookie missing/expired)', async () => {
+      verifySession.mockResolvedValue(null);
 
       const { result } = renderHook(() => useAuth());
 
@@ -437,8 +386,8 @@ describe('useAuth hook', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      expect(apiClient.clearTokens).toHaveBeenCalled();
       expect(result.current.user).toBeNull();
+      expect(result.current.session).toBeNull();
     });
   });
 });

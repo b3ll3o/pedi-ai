@@ -3,21 +3,44 @@ import { UnauthorizedException, ConflictException } from '@nestjs/common';
 import { AuthService } from '../../../src/auth/auth.service';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../../src/common/prisma.service';
+import { RefreshTokenService } from '../../../src/auth/refresh-token.service';
 
 vi.mock('bcrypt', () => ({
   hash: vi.fn().mockResolvedValue('hashed-password'),
   compare: vi.fn().mockResolvedValue(true),
 }));
 
+// Mock global.fetch para HIBP — não fazer chamadas reais durante testes.
+const mockFetch = vi.fn().mockResolvedValue({
+  ok: true,
+  text: () => Promise.resolve(''),
+});
+vi.stubGlobal('fetch', mockFetch);
+
 describe('AuthService', () => {
   let authService: AuthService;
   let mockPrisma: ReturnType<typeof createMockPrisma>;
   let mockJwt: ReturnType<typeof createMockJwt>;
+  let mockRefreshTokenService: ReturnType<typeof createMockRefreshTokenService>;
 
   const createMockPrisma = () => ({
     usersProfile: {
       findUnique: vi.fn(),
       create: vi.fn(),
+    },
+    refreshToken: {
+      findUnique: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      updateMany: vi.fn(),
+    },
+    passwordResetToken: {
+      create: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      // Auditoria A-04: claim atômico do token via updateMany (count === 1).
+      findFirst: vi.fn(),
+      updateMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
   });
 
@@ -26,15 +49,34 @@ describe('AuthService', () => {
     verify: vi.fn(),
   });
 
+  const createMockRefreshTokenService = () => ({
+    issue: vi.fn().mockResolvedValue({
+      token: 'mock-refresh-token',
+      tokenId: 'mock-token-id',
+      familyId: 'mock-family-id',
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    }),
+    validateAndRotate: vi.fn().mockResolvedValue({
+      userId: 'user-1',
+      familyId: 'mock-family-id',
+      presented: { id: 'mock-token-id', familyId: 'mock-family-id' },
+    }),
+    revoke: vi.fn().mockResolvedValue(undefined),
+    revokeAllForUser: vi.fn().mockResolvedValue(undefined),
+    revokeFamily: vi.fn().mockResolvedValue(undefined),
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.JWT_REFRESH_SECRET = 'test-refresh-secret';
     process.env.JWT_SECRET = 'test-secret';
     mockPrisma = createMockPrisma();
     mockJwt = createMockJwt();
+    mockRefreshTokenService = createMockRefreshTokenService();
     authService = new AuthService(
       mockPrisma as unknown as PrismaService,
-      mockJwt as unknown as JwtService
+      mockJwt as unknown as JwtService,
+      mockRefreshTokenService as unknown as RefreshTokenService
     );
   });
 
@@ -135,31 +177,32 @@ describe('AuthService', () => {
     });
   });
 
-  describe('refreshToken', () => {
+  describe('refresh', () => {
     it('should refresh token successfully', async () => {
       const refreshToken = 'valid-refresh-token';
-      mockJwt.verify.mockReturnValue({ sub: 'user-1', email: 'test@example.com', role: 'cliente' });
       mockPrisma.usersProfile.findUnique.mockResolvedValue({
         id: 'user-1',
         email: 'test@example.com',
         name: 'Test User',
         role: 'cliente',
       });
+      mockPrisma.refreshToken.findUnique.mockResolvedValue({
+        id: 'mock-token-id',
+        familyId: 'mock-family-id',
+      });
 
-      const result = await authService.refreshToken(refreshToken);
+      const result = await authService.refresh(refreshToken);
 
       expect(result).toHaveProperty('access_token');
       expect(mockJwt.sign).toHaveBeenCalled();
     });
 
     it('should throw UnauthorizedException if token is invalid', async () => {
-      mockJwt.verify.mockImplementation(() => {
-        throw new Error('Invalid token');
-      });
-
-      await expect(authService.refreshToken('invalid-token')).rejects.toThrow(
-        UnauthorizedException
+      mockRefreshTokenService.validateAndRotate.mockRejectedValueOnce(
+        new UnauthorizedException('Refresh token inválido')
       );
+
+      await expect(authService.refresh('invalid-token')).rejects.toThrow(UnauthorizedException);
     });
   });
 
@@ -178,7 +221,7 @@ describe('AuthService', () => {
         role: 'cliente',
       });
 
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         id: 'user-1',
         email: 'test@example.com',
         name: 'Test User',

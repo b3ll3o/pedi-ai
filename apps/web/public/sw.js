@@ -1,12 +1,11 @@
 // prettier-ignore
 /// <reference lib="webworker" />
 
-import { BackgroundSyncPlugin } from 'workbox-background-sync';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 import { ExpirationPlugin } from 'workbox-expiration';
 import { precacheAndRoute } from 'workbox-precaching';
 import { registerRoute } from 'workbox-routing';
-import { NetworkFirst, StaleWhileRevalidate, CacheFirst } from 'workbox-strategies';
+import { NetworkFirst, NetworkOnly, StaleWhileRevalidate, CacheFirst } from 'workbox-strategies';
 
 declare const self: ServiceWorkerGlobalScope;
 
@@ -116,25 +115,40 @@ registerRoute(
   'GET'
 );
 
-// Orders API - NetworkFirst with background sync for POST
-const bgSyncPlugin = new BackgroundSyncPlugin('orders-queue', {
-  maxRetentionTime: 24 * 60, // Retry for 24 hours (in minutes)
-});
-
+// Pedidos POST — `NetworkOnly` (sem cache, sem background sync).
+//
+// Por que NÃO usar `BackgroundSyncPlugin`? O plugin só funciona em
+// Chrome/Edge (suporte a `BackgroundSyncManager`). Em Firefox/Safari,
+// o plugin apenas loga warning e **descarta** a request — o cliente
+// perde o pedido silenciosamente, embora a UI mostre "enviado".
+//
+// A persistência offline é responsabilidade exclusiva do cliente via
+// `lib/offline/sync.ts` (IndexedDB + `processQueue` com mutex). Esta
+// rota SW é apenas um pass-through: se a rede estiver fora, o `fetch`
+// falha com erro de rede normal e o cliente re-enfileira o pedido no
+// IndexedDB para o próximo `processQueue`. Isso é cross-browser.
 registerRoute(
   ({ url }) => url.pathname.startsWith('/api/orders'),
-  new NetworkFirst({
-    cacheName: 'orders-api-cache',
-    networkTimeoutSeconds: 3,
-    plugins: [
-      new CacheableResponsePlugin({
-        statuses: [0, 200],
-      }),
-      bgSyncPlugin,
-    ],
-  }),
+  new NetworkOnly(),
   'POST'
 );
+
+// Mutations de pagamento, carrinho e status (KDS) — também `NetworkOnly`.
+// Sem cache: nunca devemos servir uma resposta antiga para uma mutação.
+// O SW não enfileira nada — se a rede cair, o cliente recebe o erro
+// e decide se vale re-tentar localmente.
+const MUTATION_ROUTES = [
+  '/api/payments',
+  '/api/cart',
+  '/api/admin/orders', // PATCH de status no KDS
+];
+
+MUTATION_ROUTES.forEach((prefix) => {
+  registerRoute(({ url }) => url.pathname.startsWith(prefix), new NetworkOnly(), 'POST');
+  registerRoute(({ url }) => url.pathname.startsWith(prefix), new NetworkOnly(), 'PUT');
+  registerRoute(({ url }) => url.pathname.startsWith(prefix), new NetworkOnly(), 'PATCH');
+  registerRoute(({ url }) => url.pathname.startsWith(prefix), new NetworkOnly(), 'DELETE');
+});
 
 // Update detection
 self.addEventListener('message', (event) => {
@@ -167,6 +181,32 @@ self.addEventListener('fetch', (event) => {
 // ─── Web Push Notifications (RF-ORDER-13) ──────────────────────────────────
 // Recebe mensagens push do servidor e exibe notificações nativas.
 // Clique na notificação abre a URL em `data.url` ou cai no fallback.
+//
+// Segurança: o payload push é assinado pelo servidor (VAPID), mas o SW é o
+// boundary final. Validamos:
+//   1. Origem da URL — só permitimos paths internos do mesmo origin.
+//   2. Tamanho do payload — payloads > 4KB são rejeitados (limite do protocolo).
+//   3. Tipo dos campos — strings apenas; ignora silenciosamente campos
+//      inesperados (sem eval, sem URL schemes perigosos).
+
+const MAX_PUSH_PAYLOAD_BYTES = 4096;
+const ALLOWED_URL_PROTOCOLS = ['http:', 'https:'];
+
+function sanitizePushUrl(rawUrl) {
+  try {
+    const parsed = new URL(rawUrl, self.location.origin);
+    if (parsed.origin !== self.location.origin) return '/menu';
+    if (!ALLOWED_URL_PROTOCOLS.includes(parsed.protocol)) return '/menu';
+    return parsed.pathname + parsed.search + parsed.hash;
+  } catch {
+    return '/menu';
+  }
+}
+
+function sanitizePushString(value, maxLength = 200) {
+  if (typeof value !== 'string') return undefined;
+  return value.slice(0, maxLength);
+}
 
 self.addEventListener('push', (event) => {
   let payload = {
@@ -179,13 +219,18 @@ self.addEventListener('push', (event) => {
 
   try {
     if (event.data) {
+      // Limite de tamanho do protocolo
+      if (event.data.byteLength > MAX_PUSH_PAYLOAD_BYTES) {
+        console.warn('[SW] push payload exceeds 4KB; ignoring');
+        return;
+      }
       const data = event.data.json();
       payload = {
-        title: data.title ?? payload.title,
-        body: data.body ?? payload.body,
-        url: data.url ?? payload.url,
-        icon: data.icon ?? payload.icon,
-        tag: data.tag,
+        title: sanitizePushString(data.title, 100) ?? payload.title,
+        body: sanitizePushString(data.body, 300) ?? payload.body,
+        url: sanitizePushUrl(data.url ?? payload.url),
+        icon: sanitizePushString(data.icon, 200) ?? payload.icon,
+        tag: sanitizePushString(data.tag, 100),
       };
     }
   } catch (err) {
@@ -208,7 +253,9 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const targetUrl = event.notification.data?.url || '/menu';
+  // Sanitizar novamente no clique (payload pode ter sido adulterado entre
+  // recebimento e clique).
+  const targetUrl = sanitizePushUrl(event.notification.data?.url || '/menu');
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {

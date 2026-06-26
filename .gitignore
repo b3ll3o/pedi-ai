@@ -90,3 +90,22 @@ packages/shared/dist
 
 # OS
 Thumbs.db
+
+# Environment files (CRITICAL — never commit secrets)
+# ──────────────────────────────────────────────────────
+# Block all env files by default. Whitelist explicitly with `!` if needed.
+.env
+.env.*
+!.env.example
+!.env.*.example
+apps/api/.env
+apps/api/.env.*
+apps/web/.env
+apps/web/.env.*
+apps/web/tests/e2e/.env.e2e
+packages/*/.env
+packages/*/.env.*
+
+# Local config with potential secrets
+*.local
+config/local.json

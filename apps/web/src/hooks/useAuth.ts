@@ -1,11 +1,13 @@
 /**
  * useAuth Hook
+ *
  * Hook para gerenciamento de estado de autenticação.
- * Usa lib/api-client.ts para operações de autenticação via API.
+ * Os tokens vivem em **cookies HttpOnly** definidos pelo servidor;
+ * este hook só mantém o perfil do usuário (não-confidencial) em estado React.
  */
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { apiClient } from '@/lib/api-client';
 
@@ -34,8 +36,10 @@ export interface UseAuthReturn {
 
 /**
  * React hook for managing authentication state.
- * Provides user session, loading states, and auth actions.
- * Usa lib/api-client.ts para operações de autenticação.
+ *
+ * A autenticação é derivada de uma única chamada a `/auth/me` no mount:
+ * se o servidor responder 200 com um usuário, há cookie HttpOnly válido;
+ * se responder 401, o cookie expirou ou não existe.
  */
 export function useAuth(): UseAuthReturn {
   const router = useRouter();
@@ -43,50 +47,30 @@ export function useAuth(): UseAuthReturn {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // Bump sempre que apiClient.login/register/logout/clearTokens for chamado
-  // para forçar recálculo reativo de isAuthenticated.
-  const [tokenVersion, setTokenVersion] = useState(0);
-  const bumpTokenVersion = useCallback(() => setTokenVersion((v) => v + 1), []);
 
-  // Initialize auth state - restore tokens from sessionStorage and verify with API
+  // Verifica a sessão no mount via /auth/me (cookie HttpOnly viaja no request).
   useEffect(() => {
     let isMounted = true;
 
     async function initAuth() {
       try {
-        // Try to restore tokens from sessionStorage
-        const restored = apiClient.restoreTokens();
-        // restoreTokens pode ter mutado apiClient; sincroniza versão reativa.
-        bumpTokenVersion();
-
-        if (restored) {
-          // Verify token is still valid by fetching /auth/me
-          const currentUser = await apiClient.getMe();
-          if (isMounted) {
-            if (currentUser) {
-              setUser(currentUser as AuthUser);
-              setSession({ user: currentUser as AuthUser });
-            } else {
-              // Token may have expired, clear it
-              apiClient.clearTokens();
-              bumpTokenVersion();
-              setUser(null);
-              setSession(null);
-            }
-          }
-        } else {
-          if (isMounted) {
+        const currentUser = await apiClient.verifySession();
+        if (isMounted) {
+          if (currentUser) {
+            setUser(currentUser as AuthUser);
+            setSession({ user: currentUser as AuthUser });
+          } else {
             setUser(null);
             setSession(null);
           }
+          setError(null);
         }
-        setError(null);
       } catch (err) {
         if (isMounted) {
           setError(err instanceof Error ? err.message : 'Falha ao inicializar autenticação');
         }
       } finally {
-        /* istanbul ignore if */ if (isMounted) {
+        if (isMounted) {
           setIsLoading(false);
         }
       }
@@ -97,51 +81,40 @@ export function useAuth(): UseAuthReturn {
     return () => {
       isMounted = false;
     };
-  }, [bumpTokenVersion]);
+  }, []);
 
-  // Handle sign in
-  const handleSignIn = useCallback(
-    async (email: string, password: string) => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const result = await apiClient.login(email, password);
-        setUser(result.user as AuthUser);
-        setSession({ user: result.user as AuthUser });
-        bumpTokenVersion();
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Falha na autenticação';
-        setError(errorMessage);
-        throw new Error(errorMessage);
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [bumpTokenVersion]
-  );
+  const handleSignIn = useCallback(async (email: string, password: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await apiClient.login(email, password);
+      setUser(result.user as AuthUser);
+      setSession({ user: result.user as AuthUser });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Falha na autenticação';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-  // Handle sign up
-  const handleSignUp = useCallback(
-    async (email: string, password: string, name: string) => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const result = await apiClient.register(email, password, name);
-        setUser(result.user as AuthUser);
-        setSession({ user: result.user as AuthUser });
-        bumpTokenVersion();
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Falha no registro';
-        setError(errorMessage);
-        throw new Error(errorMessage);
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [bumpTokenVersion]
-  );
+  const handleSignUp = useCallback(async (email: string, password: string, name: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await apiClient.register(email, password, name);
+      setUser(result.user as AuthUser);
+      setSession({ user: result.user as AuthUser });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Falha no registro';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-  // Handle sign out
   const handleSignOut = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -149,34 +122,22 @@ export function useAuth(): UseAuthReturn {
       await apiClient.logout();
       setSession(null);
       setUser(null);
-      bumpTokenVersion();
       router.push('/login');
     } catch (err) {
-      // Mesmo se a chamada /auth/logout falhar, garantimos o estado local consistente
-      // e redirecionamos para /login: o usuário saiu do app e não deve permanecer logado.
       setSession(null);
       setUser(null);
-      bumpTokenVersion();
       setError(err instanceof Error ? err.message : 'Falha ao sair');
       router.push('/login');
     } finally {
       setIsLoading(false);
     }
-  }, [router, bumpTokenVersion]);
-
-  // isAuthenticated é derivado de apiClient e reativo via tokenVersion (issue #3).
-  // Sem isso, o retorno ficaria stale até o próximo setUser/setSession porque
-  // apiClient é um singleton mutado fora do ciclo de render do React.
-  const isAuthenticated = useMemo(() => {
-    void tokenVersion;
-    return apiClient.isAuthenticated();
-  }, [tokenVersion]);
+  }, [router]);
 
   return {
     user,
     session,
     isLoading,
-    isAuthenticated,
+    isAuthenticated: user !== null,
     error,
     signIn: handleSignIn,
     signUp: handleSignUp,

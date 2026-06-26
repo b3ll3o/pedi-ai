@@ -42,16 +42,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const {
-      restaurant_id,
-      category_id,
-      name,
-      description,
-      price_cents,
-      image_url,
-      preparation_time_minutes,
-      active,
-    } = body;
+    const { restaurant_id, category_id, name, description, price_cents, image_url } = body;
 
     if (!restaurant_id || !name || price_cents === undefined) {
       return NextResponse.json(

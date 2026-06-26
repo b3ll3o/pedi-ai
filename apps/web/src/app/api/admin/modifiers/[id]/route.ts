@@ -53,7 +53,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     const body = await request.json();
-    const { name, description, min_selections, max_selections, required, active } = body;
+    const { name, min_selections, max_selections, required } = body;
 
     const result = await apiClient.patch<ApiResponse<ModifierGroup>>(
       `/modifier-groups/${modifierId}`,

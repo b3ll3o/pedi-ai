@@ -1,5 +1,7 @@
 'use client';
 
+import { useId } from 'react';
+
 import styles from './ModifierSelector.module.css';
 import type { ModifierGroup, SelectedModifier } from './types';
 
@@ -36,7 +38,23 @@ export function ModifierSelector({
   onChange,
   'data-testid': dataTestid,
 }: ModifierSelectorProps) {
-  const { min_selections, max_selections, required, name } = modifierGroup;
+  const {
+    id: groupId,
+    min_selections,
+    max_selections,
+    required,
+    name,
+    modifier_values,
+  } = modifierGroup;
+
+  // IDs únicos e estáveis — necessário para conectar `<legend>`/`<label>`
+  // via `aria-labelledby`/`for`, e para que o screen reader consiga
+  // anunciar cada opção com seu nome.
+  const reactId = useId();
+  const groupLegendId = `${reactId}-legend`;
+  const hintId = `${reactId}-hint`;
+  const errorId = `${reactId}-error`;
+  const inputId = (valueId: string) => `${reactId}-${valueId}`;
 
   const selectedIds = new Set(selectedValues.map((v) => v.modifier_id));
   const selectedCount = selectedIds.size;
@@ -47,7 +65,7 @@ export function ModifierSelector({
 
   const handleToggle = (modifierValue: ModifierGroup['modifier_values'][number]) => {
     const modifier: SelectedModifier = {
-      group_id: modifierGroup.id,
+      group_id: groupId,
       group_name: name,
       modifier_id: modifierValue.id,
       name: modifierValue.name,
@@ -74,30 +92,47 @@ export function ModifierSelector({
   };
 
   return (
-    <div className={styles.group} data-testid={dataTestid}>
-      <div className={styles.header}>
-        <h4 className={styles.name}>{name}</h4>
+    <fieldset className={styles.group} data-testid={dataTestid} data-modifier-group-id={groupId}>
+      <legend className={styles.header}>
+        <span id={groupLegendId} className={styles.name}>
+          {name}
+        </span>
         {required && <span className={styles.requiredBadge}>Obrigatório</span>}
-        <span className={styles.selectionHint}>
+        <span id={hintId} className={styles.selectionHint}>
           {buildSelectionHint(min_selections, max_selections)}
         </span>
-      </div>
+      </legend>
 
-      <div className={styles.options} role={isMulti ? 'group' : 'radiogroup'}>
-        {modifierGroup.modifier_values.map((mv) => {
+      <div
+        className={styles.options}
+        role={isMulti ? 'group' : 'radiogroup'}
+        aria-labelledby={groupLegendId}
+        aria-describedby={hintId}
+        aria-required={required}
+        aria-invalid={required && isBelowMin ? 'true' : undefined}
+      >
+        {modifier_values.map((mv) => {
           const isSelected = selectedIds.has(mv.id);
           const isDisabled = isMulti && !isSelected && isAtMax;
+          // `unavailable` values: bloqueia seleção mas mantém visível
+          const isUnavailable = !mv.available;
 
           return (
-            <button
+            <label
               key={mv.id}
-              type="button"
-              className={`${styles.option} ${isSelected ? styles.selected : ''} ${isDisabled ? styles.disabled : ''}`}
-              onClick={() => !isDisabled && handleToggle(mv)}
-              disabled={isDisabled}
-              aria-checked={isMulti ? undefined : isSelected}
-              role={isMulti ? 'checkbox' : 'radio'}
+              htmlFor={inputId(mv.id)}
+              className={`${styles.option} ${isSelected ? styles.selected : ''} ${isDisabled || isUnavailable ? styles.disabled : ''}`}
             >
+              <input
+                id={inputId(mv.id)}
+                type={isMulti ? 'checkbox' : 'radio'}
+                name={`${reactId}-group`}
+                value={mv.id}
+                checked={isSelected}
+                disabled={isDisabled || isUnavailable}
+                onChange={() => !isDisabled && handleToggle(mv)}
+                className={styles.visuallyHiddenInput}
+              />
               <span className={styles.optionName}>{mv.name}</span>
               {mv.price_adjustment !== 0 && (
                 <span className={styles.priceAdjustment}>
@@ -105,16 +140,16 @@ export function ModifierSelector({
                   {formatPrice(mv.price_adjustment)}
                 </span>
               )}
-            </button>
+            </label>
           );
         })}
       </div>
 
       {required && isBelowMin && (
-        <p className={styles.error}>
+        <p id={errorId} className={styles.error} role="alert">
           Selecione pelo menos {min_selections} opção{min_selections > 1 ? 'ões' : ''}.
         </p>
       )}
-    </div>
+    </fieldset>
   );
 }

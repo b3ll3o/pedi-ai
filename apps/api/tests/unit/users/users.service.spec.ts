@@ -72,33 +72,13 @@ describe('UsersService', () => {
     });
   });
 
-  describe('updateRole', () => {
-    it('should update user role successfully', async () => {
-      mockPrisma.usersProfile.update.mockResolvedValue({
-        id: 'user-1',
-        role: 'admin',
-      });
-
-      await usersService.updateRole('user-1', 'admin' as never);
-
-      expect(mockPrisma.usersProfile.update).toHaveBeenCalledWith({
-        where: { id: 'user-1' },
-        data: { role: 'admin' },
-      });
-    });
-
-    it('should update role to staff', async () => {
-      mockPrisma.usersProfile.update.mockResolvedValue({
-        id: 'user-1',
-        role: 'staff',
-      });
-
-      await usersService.updateRole('user-1', 'staff' as never);
-
-      expect(mockPrisma.usersProfile.update).toHaveBeenCalledWith({
-        where: { id: 'user-1' },
-        data: { role: 'staff' },
-      });
+  describe('M-04: updateRole removido', () => {
+    // Auditoria M-04: `updateRole` foi removido do UsersService (código morto
+    // + vetor latente de privilege escalation). Estes testes existem para
+    // documentar a remoção e garantir que ninguém reintroduz o método sem
+    // passar pelos guards adequados.
+    it('should NOT expose updateRole method', () => {
+      expect((usersService as unknown as { updateRole?: unknown }).updateRole).toBeUndefined();
     });
   });
 });

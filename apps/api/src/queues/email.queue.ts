@@ -26,6 +26,10 @@ export class EmailQueue implements OnModuleInit {
   constructor(private readonly queueService: QueueService) {}
 
   onModuleInit() {
+    // HIGH-012 (2ª varredura QA): o handler do BullMQ recebe o `Job<T>`
+    // completo, onde `data` é o `EmailJob`. Para acessar `job.id`, precisamos
+    // tipar corretamente o handler — antes o tipo estava errado e
+    // `job.id` era confundido com `EmailJob.id`.
     this.queueService.register<EmailJob>(
       {
         name: EMAIL_QUEUE_NAME,
@@ -35,6 +39,10 @@ export class EmailQueue implements OnModuleInit {
         },
       },
       async (job) => {
+        // `job` aqui é o payload `EmailJob` (já extraído pelo worker em
+        // `queue.module.ts:88`). O ID real do job BullMQ é logado pelo
+        // próprio worker (linha 90 do queue.module.ts) — aqui só precisamos
+        // do conteúdo do email.
         // Implementação concreta: SMTP via nodemailer / Mailgun / SES.
         // Stub atual: log + audit. Em produção, substituir por adapter SMTP.
         //
@@ -43,10 +51,8 @@ export class EmailQueue implements OnModuleInit {
         // (`us***@dominio.com`) para manter diagnóstico operacional sem
         // expor PII em logs agregados.
         const maskedTo = maskEmail(job.to);
-        this.logger.log(
-          `[email] enviando '${job.subject}' para ${maskedTo} (tipo=${job.type}, jobId=${job.id})`
-        );
-        // TODO: integrar com SMTP (Mailpit em dev / SES em prod)
+        this.logger.log(`[email] enviando '${job.subject}' para ${maskedTo} (tipo=${job.type})`);
+        // TODO(EMAIL-001): integrar com SMTP (Mailpit em dev / SES em prod)
       }
     );
   }

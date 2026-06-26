@@ -12,9 +12,9 @@ import { JwtService } from '@nestjs/jwt';
 import { UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
+import { PASSWORD_RESET_TTL_MS } from '../common/constants/time';
 import { piiHash } from '../common/logger/pii-mask';
 import { PrismaService } from '../common/prisma.service';
-import { PASSWORD_RESET_TTL_MS } from '../common/constants/time';
 import { EmailQueue } from '../queues/email.queue';
 
 import { RefreshTokenService } from './refresh-token.service';

@@ -1,9 +1,4 @@
-import {
-  registerDecorator,
-  ValidationOptions,
-  ValidatorConstraint,
-  ValidatorConstraintInterface,
-} from 'class-validator';
+import { registerDecorator, ValidationOptions } from 'class-validator';
 
 /**
  * Validador de URL segura para campos `imageUrl`/`logoUrl`/`websiteUrl`.
@@ -27,46 +22,6 @@ import {
  * - `javascript:` é bloqueado por filtro de protocolo, mas a validação extra
  *   por hostname protege contra SSRF.
  */
-@ValidatorConstraint({ name: 'IsSafeUrl', async: false })
-class IsSafeUrlConstraint implements ValidatorConstraintInterface {
-  // Implementação da interface — usa o helper interno.
-  validate(value: unknown, validationArguments?: unknown): boolean {
-    return this.checkInternal(value, { allowPrivate: false });
-  }
-
-  defaultMessage(): string {
-    return 'URL inválida ou não permitida (apenas http(s) e host público)';
-  }
-
-  private checkInternal(value: unknown, options: { allowPrivate?: boolean } = {}): boolean {
-    if (typeof value !== 'string' || value.trim() === '') return false;
-
-    let parsed: URL;
-    try {
-      parsed = new URL(value);
-    } catch {
-      return false;
-    }
-
-    // Protocolo
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
-
-    // Host vazio (ex.: "https:///foo") → inválido
-    if (!parsed.hostname) return false;
-
-    // Localhost em produção
-    if (process.env.NODE_ENV === 'production' && parsed.hostname === 'localhost') {
-      return false;
-    }
-
-    // IPs privados (defesa SSRF)
-    if (!options.allowPrivate && isPrivateHost(parsed.hostname)) {
-      return false;
-    }
-
-    return true;
-  }
-}
 
 /**
  * Heurística para detectar hosts internos/privados via IPv4.

@@ -2,12 +2,6 @@ import { NextResponse } from 'next/server';
 
 import { apiClient } from '@/lib/api-client';
 
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  timestamp: string;
-}
-
 interface PixStatusResponse {
   status: 'pending' | 'confirmed' | 'expired' | 'payment_failed';
   updated_at: string;
@@ -52,7 +46,7 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ orderId: string }> }
 ): Promise<NextResponse<PixStatusResponse>> {
-  const { orderId } = params;
+  const { orderId } = await params;
 
   // DEMO MODE: Return simulated confirmed status
   if (isDemoMode) {
@@ -60,11 +54,9 @@ export async function GET(
   }
 
   try {
-    const result = await apiClient.get<ApiResponse<ApiPixStatus>>(
-      `/payments/pix/status/${orderId}`
-    );
+    const result = await apiClient.get<ApiPixStatus>(`/payments/pix/status/${orderId}`);
 
-    return NextResponse.json(mapApiStatusToResponse(result.data));
+    return NextResponse.json(mapApiStatusToResponse(result));
   } catch (error) {
     console.error('Error in payments/pix/status:', error);
     return NextResponse.json(

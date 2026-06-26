@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { restaurant_id, name, description, min_selections, max_selections, required } = body;
+    const { restaurant_id, name, min_selections, max_selections, required } = body;
 
     if (!restaurant_id || !name) {
       return NextResponse.json({ error: 'restaurant_id e name são obrigatórios' }, { status: 400 });

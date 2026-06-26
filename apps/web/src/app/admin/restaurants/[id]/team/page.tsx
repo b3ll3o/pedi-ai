@@ -1,14 +1,13 @@
 'use client';
 
+import type { RestaurantDTO, UserDTO } from '@pedi-ai/shared/types';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 
-import type { RestaurantDTO, UserDTO } from '@pedi-ai/shared/types';
-
+import { type UserRole } from '@/application/services/userService';
 import { TeamManagement } from '@/components/admin/TeamManagement';
 import { Restaurante, type RestauranteProps } from '@/domain/admin/entities/Restaurante';
-import { type UserRole } from '@/application/services/userService';
 import { useRestaurantStore } from '@/infrastructure/persistence/restaurantStore';
 import { getSession } from '@/lib/auth/client';
 

@@ -88,7 +88,7 @@ export function assertSecretStrength(
       logger.warn(msg);
     } else {
       // Fallback silencioso em produção sem logger (improvável mas seguro).
-      // eslint-disable-next-line no-console
+
       console.warn(msg);
     }
   }

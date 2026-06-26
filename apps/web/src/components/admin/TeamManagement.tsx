@@ -1,8 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-
 import type { UserDTO } from '@pedi-ai/shared/types';
+import { useState } from 'react';
 
 import { getRoleLabel, getRoleColor, type UserRole } from '@/application/services/userService';
 

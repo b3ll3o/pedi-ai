@@ -2,12 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { apiClient } from '@/lib/api-client';
 
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  timestamp: string;
-}
-
 interface ModifierValue {
   id: string;
   name: string;
@@ -44,15 +38,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'restaurant_id is required' }, { status: 400 });
     }
 
-    const result = await apiClient.get<ApiResponse<ProductResponse>>(
+    const result = await apiClient.get<ProductResponse>(
       `/menu/products/${id}?restaurantId=${restaurantId}`
     );
 
-    if (!result.data || result.data.error) {
+    if (!result || !result.id) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
 
-    return NextResponse.json(result.data);
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Unexpected error in /api/menu/products/[id]:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

@@ -1,6 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-
 import type { CategoryDTO, MenuResponse, RestaurantDTO } from '@pedi-ai/shared/types';
+import { useQuery } from '@tanstack/react-query';
 
 import { useMenuStore } from '@/infrastructure/persistence/menuStore';
 import { getCachedMenu } from '@/lib/offline/cache';

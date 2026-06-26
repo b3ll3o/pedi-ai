@@ -1,15 +1,13 @@
 /**
- * Cobertura: cliente HTTP com gestão de tokens (login, refresh, logout).
+ * Cobertura: cliente HTTP com gestão de tokens via cookies HttpOnly.
  *
- * O apiClient é usado pelo useAuth e demais hooks que falam com a API.
- * Estes testes garantem a cobertura dos branches de:
- *  - setTokens/clearTokens com/sem user
- *  - restoreTokens com/sem tokens no sessionStorage
- *  - isAuthenticated, getAccessToken, getUser
- *  - fetch com token anexado
- *  - refresh 401 → retry
- *  - login/register/logout
- *  - getMe com sucesso e com erro
+ * No novo modelo, os tokens vivem em cookies HttpOnly no servidor — o
+ * cliente só mantém o perfil do usuário em memória. Estes testes cobrem:
+ *  - login/register invocam API com `credentials: 'include'`
+ *  - fetch anexa `credentials: 'include'` em toda chamada
+ *  - 401 dispara refresh uma vez
+ *  - logout limpa estado local e chama API
+ *  - getMe/verifySession consultam /auth/me e populam o usuário
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -17,102 +15,33 @@ import { apiClient } from '@/lib/api-client';
 
 describe('apiClient (lib/api-client)', () => {
   beforeEach(() => {
-    sessionStorage.clear();
-    apiClient.clearTokens();
+    apiClient.clearUser();
+    // Reseta o mock global de fetch no início para evitar vazamento entre testes.
+    global.fetch = vi.fn() as unknown as typeof fetch;
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  describe('setTokens / clearTokens / restoreTokens', () => {
-    it('setTokens armazena tokens e persiste no sessionStorage', () => {
-      apiClient.setTokens('access-1', 'refresh-1', {
-        id: 'u1',
-        email: 'a@b.c',
-        name: 'Test',
-        role: 'dono',
-      });
+  describe('user state', () => {
+    it('clearUser zera usuário em memória', () => {
+      apiClient.setUser({ id: 'u', email: 'a', name: 'A', role: 'dono' });
+      apiClient.clearUser();
+      expect(apiClient.getUser()).toBeNull();
+    });
 
-      expect(apiClient.getAccessToken()).toBe('access-1');
-      expect(apiClient.getRefreshToken()).toBe('refresh-1');
+    it('setUser/getUser persistem em memória (não em sessionStorage)', () => {
+      apiClient.setUser({ id: 'u1', email: 'a@b.c', name: 'Test', role: 'dono' });
       expect(apiClient.getUser()).toMatchObject({ id: 'u1' });
-      expect(sessionStorage.getItem('access_token')).toBe('access-1');
-      expect(sessionStorage.getItem('refresh_token')).toBe('refresh-1');
-    });
-
-    it('setTokens sem user não persiste campo user', () => {
-      apiClient.setTokens('access-2', 'refresh-2');
-
-      expect(apiClient.getUser()).toBeNull();
-      expect(sessionStorage.getItem('user')).toBeNull();
-    });
-
-    it('clearTokens limpa estado interno e sessionStorage', () => {
-      apiClient.setTokens('access-3', 'refresh-3', {
-        id: 'u',
-        email: 'a',
-        name: 'a',
-        role: 'dono',
-      });
-      apiClient.clearTokens();
-
-      expect(apiClient.getAccessToken()).toBeNull();
-      expect(apiClient.getUser()).toBeNull();
+      // Garantia: sessionStorage não é mais usado para tokens/usuário.
       expect(sessionStorage.getItem('access_token')).toBeNull();
-      expect(sessionStorage.getItem('refresh_token')).toBeNull();
       expect(sessionStorage.getItem('user')).toBeNull();
-    });
-
-    it('restoreTokens retorna false se não há tokens no sessionStorage', () => {
-      expect(apiClient.restoreTokens()).toBe(false);
-    });
-
-    it('restoreTokens restaura tokens e user', () => {
-      sessionStorage.setItem('access_token', 'a-r');
-      sessionStorage.setItem('refresh_token', 'r-r');
-      sessionStorage.setItem(
-        'user',
-        JSON.stringify({ id: 'u2', email: 'a', name: 'a', role: 'dono' })
-      );
-
-      const result = apiClient.restoreTokens();
-
-      expect(result).toBe(true);
-      expect(apiClient.getAccessToken()).toBe('a-r');
-      expect(apiClient.getRefreshToken()).toBe('r-r');
-      expect(apiClient.getUser()).toMatchObject({ id: 'u2' });
-    });
-
-    it('restoreTokens ignora user corrompido e mantém tokens', () => {
-      sessionStorage.setItem('access_token', 'a-x');
-      sessionStorage.setItem('refresh_token', 'r-x');
-      sessionStorage.setItem('user', '{ inválido');
-
-      expect(apiClient.restoreTokens()).toBe(true);
-      expect(apiClient.getUser()).toBeNull();
-    });
-  });
-
-  describe('isAuthenticated', () => {
-    it('retorna false quando não há tokens', () => {
-      expect(apiClient.isAuthenticated()).toBe(false);
-    });
-
-    it('retorna true após setTokens', () => {
-      apiClient.setTokens('a', 'r');
-      expect(apiClient.isAuthenticated()).toBe(true);
-    });
-
-    it('retorna false após clearTokens', () => {
-      apiClient.setTokens('a', 'r');
-      apiClient.clearTokens();
-      expect(apiClient.isAuthenticated()).toBe(false);
     });
   });
 
   describe('login / register / logout', () => {
-    it('login armazena tokens e retorna auth response', async () => {
+    it('login envia credentials include e popula usuário', async () => {
       const fetchMock = vi.fn().mockResolvedValue({
         ok: true,
         json: () =>
@@ -128,10 +57,13 @@ describe('apiClient (lib/api-client)', () => {
 
       expect(fetchMock).toHaveBeenCalledWith(
         expect.stringContaining('/auth/login'),
-        expect.objectContaining({ method: 'POST' })
+        expect.objectContaining({
+          method: 'POST',
+          credentials: 'include',
+        })
       );
       expect(result.access_token).toBe('a');
-      expect(apiClient.getAccessToken()).toBe('a');
+      expect(apiClient.getUser()).toMatchObject({ id: 'u' });
     });
 
     it('login lança erro quando API retorna erro', async () => {
@@ -143,8 +75,8 @@ describe('apiClient (lib/api-client)', () => {
       await expect(apiClient.login('a@b.c', 'errada')).rejects.toThrow('credenciais inválidas');
     });
 
-    it('register armazena tokens e retorna auth response', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
+    it('register envia credentials include e popula usuário', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
         ok: true,
         json: () =>
           Promise.resolve({
@@ -153,10 +85,14 @@ describe('apiClient (lib/api-client)', () => {
             user: { id: 'u2', email: 'a@b.c', name: 'A', role: 'dono' },
           }),
       }) as unknown as typeof fetch;
+      global.fetch = fetchMock;
 
       const result = await apiClient.register('a@b.c', 'Senha@123', 'A');
+
+      const callInit = fetchMock.mock.calls[0][1] as RequestInit;
+      expect(callInit.credentials).toBe('include');
       expect(result.access_token).toBe('a2');
-      expect(apiClient.getAccessToken()).toBe('a2');
+      expect(apiClient.getUser()).toMatchObject({ id: 'u2' });
     });
 
     it('register lança erro genérico quando API não retorna mensagem', async () => {
@@ -170,8 +106,17 @@ describe('apiClient (lib/api-client)', () => {
       );
     });
 
-    it('logout chama endpoint e limpa tokens', async () => {
-      apiClient.setTokens('access-old', 'refresh-old');
+    it('logout chama endpoint e limpa usuário mesmo se API falhar', async () => {
+      apiClient.setUser({ id: 'u', email: 'a', name: 'A', role: 'dono' });
+      global.fetch = vi.fn().mockRejectedValue(new Error('fail')) as unknown as typeof fetch;
+
+      await apiClient.logout();
+
+      expect(apiClient.getUser()).toBeNull();
+    });
+
+    it('logout com sucesso chama /auth/logout', async () => {
+      apiClient.setUser({ id: 'u', email: 'a', name: 'A', role: 'dono' });
       const fetchMock = vi.fn().mockResolvedValue({ ok: true });
       global.fetch = fetchMock as unknown as typeof fetch;
 
@@ -179,24 +124,14 @@ describe('apiClient (lib/api-client)', () => {
 
       expect(fetchMock).toHaveBeenCalledWith(
         expect.stringContaining('/auth/logout'),
-        expect.any(Object)
+        expect.objectContaining({ credentials: 'include' })
       );
-      expect(apiClient.getAccessToken()).toBeNull();
-    });
-
-    it('logout limpa tokens mesmo se API falhar', async () => {
-      apiClient.setTokens('access-old', 'refresh-old');
-      global.fetch = vi.fn().mockRejectedValue(new Error('fail')) as unknown as typeof fetch;
-
-      await apiClient.logout();
-
-      expect(apiClient.getAccessToken()).toBeNull();
+      expect(apiClient.getUser()).toBeNull();
     });
   });
 
-  describe('fetch com token', () => {
-    it('anexa header Authorization quando há token', async () => {
-      apiClient.setTokens('my-token', 'my-refresh');
+  describe('fetch com credentials include', () => {
+    it('anexa credentials: include em toda requisição', async () => {
       const fetchMock = vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
@@ -204,11 +139,10 @@ describe('apiClient (lib/api-client)', () => {
       });
       global.fetch = fetchMock as unknown as typeof fetch;
 
-      const result = await apiClient.get('/test');
+      await apiClient.get('/test');
 
-      expect(result).toEqual({ data: 1 });
       const callInit = fetchMock.mock.calls[0][1] as RequestInit;
-      expect((callInit.headers as Record<string, string>).Authorization).toBe('Bearer my-token');
+      expect(callInit.credentials).toBe('include');
     });
 
     it('lança erro com mensagem da API', async () => {
@@ -275,11 +209,9 @@ describe('apiClient (lib/api-client)', () => {
     });
 
     it('retry após 401 com refresh bem-sucedido', async () => {
-      apiClient.setTokens('expired-access', 'good-refresh');
-
-      // Sequência real:
+      // Sequência:
       // 1) GET /test → 401
-      // 2) POST /auth/refresh → 200 com novo access_token
+      // 2) POST /auth/refresh (com cookie) → 200
       // 3) GET /test retry → 200
       const fetchMock = vi
         .fn()
@@ -291,7 +223,7 @@ describe('apiClient (lib/api-client)', () => {
         .mockResolvedValueOnce({
           ok: true,
           status: 200,
-          json: () => Promise.resolve({ access_token: 'new-access' }),
+          json: () => Promise.resolve({}),
         })
         .mockResolvedValueOnce({
           ok: true,
@@ -303,12 +235,10 @@ describe('apiClient (lib/api-client)', () => {
       const result = await apiClient.get('/test');
 
       expect(result).toEqual({ data: 'refreshed' });
-      expect(fetchMock).toHaveBeenCalledTimes(3); // 401 + refresh + retry
+      expect(fetchMock).toHaveBeenCalledTimes(3);
     });
 
     it('não retry se refresh falha', async () => {
-      apiClient.setTokens('expired-access', 'expired-refresh');
-
       const fetchMock = vi
         .fn()
         .mockResolvedValueOnce({
@@ -327,32 +257,35 @@ describe('apiClient (lib/api-client)', () => {
     });
   });
 
-  describe('getMe', () => {
-    it('retorna user quando API responde ok', async () => {
+  describe('verifySession / getMe', () => {
+    it('verifySession popula usuário quando /auth/me responde ok', async () => {
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
         json: () => Promise.resolve({ id: 'u-me', email: 'a@b.c', name: 'A', role: 'dono' }),
       }) as unknown as typeof fetch;
 
-      const user = await apiClient.getMe();
+      const user = await apiClient.verifySession();
       expect(user).toMatchObject({ id: 'u-me' });
+      expect(apiClient.getUser()).toMatchObject({ id: 'u-me' });
     });
 
-    it('retorna null quando API falha', async () => {
-      global.fetch = vi.fn().mockRejectedValue(new Error('boom')) as unknown as typeof fetch;
-      const user = await apiClient.getMe();
-      expect(user).toBeNull();
-    });
-
-    it('retorna null quando resposta não é ok', async () => {
+    it('verifySession retorna null e limpa user quando API falha', async () => {
+      apiClient.setUser({ id: 'stale', email: 'a', name: 'A', role: 'dono' });
       global.fetch = vi.fn().mockResolvedValue({
         ok: false,
-        status: 500,
-        json: () => Promise.reject(new Error('parse')),
+        status: 401,
+        json: () => Promise.resolve({}),
       }) as unknown as typeof fetch;
 
-      const user = await apiClient.getMe();
+      const user = await apiClient.verifySession();
+      expect(user).toBeNull();
+      expect(apiClient.getUser()).toBeNull();
+    });
+
+    it('verifySession retorna null em erro de rede', async () => {
+      global.fetch = vi.fn().mockRejectedValue(new Error('boom')) as unknown as typeof fetch;
+      const user = await apiClient.verifySession();
       expect(user).toBeNull();
     });
   });

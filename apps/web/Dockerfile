@@ -32,9 +32,11 @@ COPY apps/web/next.config.ts ./
 COPY apps/web/tsconfig.json ./
 COPY apps/web/package.json ./
 
-# Install dependencies (using --no-frozen-lockfile for compatibility)
-# NOTE: For strict reproducibility, ensure pnpm-lock.yaml matches package.json before build
-RUN pnpm install --no-frozen-lockfile --ignore-scripts
+# Install dependencies using the lockfile to guarantee reproducibility.
+# `--frozen-lockfile` falha o build se `pnpm-lock.yaml` estiver fora de
+# sync — força regenerar o lock localmente (e commit) em vez de resolver
+# versões divergentes em runtime.
+RUN pnpm install --frozen-lockfile --ignore-scripts
 
 # Build Next.js app
 RUN pnpm build
@@ -55,12 +57,14 @@ RUN addgroup --system --gid 1001 nodejs && \
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/pnpm-lock.yaml ./
+COPY --from=builder /app/pnpm-workspace.yaml ./
 
 # Copy packages for runtime resolution
 COPY --from=builder /app/packages ./packages
 
-# Install production dependencies only
-RUN pnpm install --no-frozen-lockfile --production --ignore-scripts
+# Install production dependencies only (lockfile-pinned).
+RUN pnpm install --frozen-lockfile --prod --ignore-scripts
 
 RUN chown -R nextjs:nodejs /app
 

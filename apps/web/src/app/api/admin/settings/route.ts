@@ -22,7 +22,7 @@ interface Restaurant {
   updatedAt: string;
 }
 
-interface RestaurantSettings {
+export interface RestaurantSettings {
   restaurant_id: string;
   config: Record<string, unknown>;
   restaurant_name?: string;

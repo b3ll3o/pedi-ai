@@ -3,16 +3,15 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useRef } from 'react';
 
-import { Categoria } from '@/domain/cardapio/entities/Categoria';
-import { ItemCardapio } from '@/domain/cardapio/entities/ItemCardapio';
-import { TipoItemCardapio } from '@/domain/cardapio/value-objects/TipoItemCardapio';
-import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
-
 import { CustomerHeader } from '@/components/customer/CustomerHeader';
 import { CategoryList } from '@/components/menu/CategoryList';
 import type { Category } from '@/components/menu/CategoryList';
 import { ProductList } from '@/components/menu/ProductList';
 import { SearchBar } from '@/components/menu/SearchBar';
+import { Categoria } from '@/domain/cardapio/entities/Categoria';
+import { ItemCardapio } from '@/domain/cardapio/entities/ItemCardapio';
+import { TipoItemCardapio } from '@/domain/cardapio/value-objects/TipoItemCardapio';
+import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
 import { useCardapio } from '@/hooks/useCardapio';
 import type { MenuResponse } from '@/hooks/useCardapio';
 import { useCartStore } from '@/infrastructure/persistence/cartStore';

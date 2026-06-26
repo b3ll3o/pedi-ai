@@ -75,9 +75,21 @@ export class MenuService {
     // Como `products` depende dos IDs de `categories`, mas modifierGroups
     // e combos são independentes, paralelizamos: 1ª query (categories)
     // sequencial, depois `Promise.all` para os 3 restantes.
+    //
+    // Auditoria ACHADO-N13 (Re-varredura 8): as queries paralelas não
+    // tinham `take`. Restaurante com 500+ produtos/modificadores/combos
+    // estouraria payload (mesmo problema do ACHADO-N3). Limites
+    // conservadores alinhados com findByRestaurant: 200 itens por
+    // categoria agregada, 100 modifier groups, 50 combos.
+    const MAX_CATEGORIES = 100;
+    const MAX_PRODUCTS = 500;
+    const MAX_MODIFIER_GROUPS = 100;
+    const MAX_COMBOS = 50;
+
     const categories = await this.prisma.category.findMany({
       where: { restaurantId, active: true },
       orderBy: { sortOrder: 'asc' },
+      take: MAX_CATEGORIES,
       select: {
         id: true,
         restaurantId: true,
@@ -96,6 +108,7 @@ export class MenuService {
         where:
           categoryIds.length > 0 ? { categoryId: { in: categoryIds }, available: true } : undefined,
         orderBy: { sortOrder: 'asc' },
+        take: MAX_PRODUCTS,
         select: {
           id: true,
           categoryId: true,
@@ -111,6 +124,7 @@ export class MenuService {
       // Modifier groups são por restaurantId (independente de categorias).
       this.prisma.modifierGroup.findMany({
         where: { restaurantId },
+        take: MAX_MODIFIER_GROUPS,
         select: {
           id: true,
           restaurantId: true,
@@ -132,6 +146,7 @@ export class MenuService {
       // Combos são por restaurantId (independente de categorias).
       this.prisma.combo.findMany({
         where: { restaurantId, available: true },
+        take: MAX_COMBOS,
         select: {
           id: true,
           restaurantId: true,

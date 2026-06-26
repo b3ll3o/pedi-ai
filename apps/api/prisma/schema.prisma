@@ -74,6 +74,14 @@ model Restaurant {
   subscriptions  Subscription[]
   modifierGroups ModifierGroup[]
   combos         Combo[]
+
+  // Auditoria ACHADO-N4 (Re-varredura 8): `slug` era String? sem
+  // @unique/@@index. Rota pública /restaurants/slug/:slug fazia
+  // findFirst em todos os restaurants a cada GET de cardápio.
+  // Com 1000+ tenants, latência degradava linearmente (sequential scan).
+  // @@index (não @unique) preserva slugs duplicados entre tenants
+  // diferentes — escopo da unicidade é opcional.
+  @@index([slug])
 }
 
 model Table {
@@ -251,6 +259,12 @@ model Order {
   @@index([restaurantId])
   @@index([tableId])
   @@index([customerId])
+  // Auditoria ACHADO-N14 (Re-varredura 8): lookup por `idempotencyKey`
+  // acontecia sem índice. Em produção com >100k pedidos, latência do
+  // findFirst degradava linearmente (sequential scan). Agora:
+  // @@index([restaurantId, idempotencyKey]) — composto porque a chave
+  // é única por restaurante (escopo multi-tenant).
+  @@index([restaurantId, idempotencyKey])
 }
 
 model OrderItem {
@@ -383,6 +397,10 @@ model Subscription {
 
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
 
+  // HIGH-011 (2ª varredura QA): @@unique garante que cada restaurante tem
+  // no máximo 1 Subscription, habilitando `upsert` seguro por `restaurantId`
+  // e evitando multi-tenant data leak (N assinaturas por restaurante).
+  @@unique([restaurantId])
   @@index([restaurantId])
 }
 

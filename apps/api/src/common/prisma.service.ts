@@ -6,6 +6,7 @@ import {
   createPiiPrismaExtension,
   detectRawQueryModel,
   PII_PROTECTED_MODELS,
+  PiiPrismaClient,
 } from './pii-prisma.extension';
 
 /**
@@ -103,19 +104,27 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
    * maioria dos call sites atuais, `$transaction` é usada para
    * operações não-PII (orders, payments) — o risco é residual.
    */
-  getExtendedClient(): PrismaClient {
-    return this.$extends(createPiiPrismaExtension(this.piiCrypto));
+  getExtendedClient(): PiiPrismaClient {
+    // CRIT-003 (2ª varredura QA): retorno de `$extends(...)` não é
+    // `PrismaClient` — é um tipo dinâmico. O tipo correto é exportado
+    // de `pii-prisma.extension.ts` como `PiiPrismaClient` e preserva
+    // os delegates tipados.
+    return this.$extends(createPiiPrismaExtension(this.piiCrypto)) as PiiPrismaClient;
   }
 
   /**
    * Auditoria L-NEW-04: bloqueia `$queryRaw` que toca models PII.
    * Heurística: regex no nome da tabela (FROM/UPDATE/JOIN/INTO).
    * Para PII_PROTECTED_MODELS, lançar antes de chegar ao banco.
+   *
+   * CRIT-004 (2ª varredura QA): o tipo de retorno DEVE ser `PrismaPromise<T>`
+   * (não `Promise<T>`) para preservar o contrato de `$transaction(array)`.
+   * PrismaPromise é o que habilita chain de transações com delegates tipados.
    */
   override $queryRaw<T = unknown>(
     query: TemplateStringsArray | Prisma.Sql,
     ...values: unknown[]
-  ): Promise<T> {
+  ): Prisma.PrismaPromise<T> {
     const sql = Array.isArray(query)
       ? query.join('')
       : ((query as Prisma.Sql).sql ?? String(query));
@@ -134,7 +143,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     return super.$queryRaw(query as TemplateStringsArray & Prisma.Sql, ...(values as never[]));
   }
 
-  override $executeRaw(query: TemplateStringsArray | Prisma.Sql): Promise<number> {
+  override $executeRaw(query: TemplateStringsArray | Prisma.Sql): Prisma.PrismaPromise<number> {
     const sql = Array.isArray(query)
       ? query.join('')
       : ((query as Prisma.Sql).sql ?? String(query));

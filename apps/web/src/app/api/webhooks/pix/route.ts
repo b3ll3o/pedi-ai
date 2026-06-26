@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Payload inválido' }, { status: 400 });
   }
 
-  const { id: eventId, type, data } = payload;
+  const { type, data } = payload;
 
   // Only process payment events
   if (type !== 'payment' || !data?.id) {

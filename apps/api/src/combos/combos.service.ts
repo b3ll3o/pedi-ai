@@ -24,7 +24,10 @@ export class CombosService {
         restaurant: { active: true },
         ...(options.includeUnavailable ? {} : { available: true }),
       },
-      include: { comboItems: true },
+      // Auditoria ACHADO-N22 (Re-varredura 9): `comboItems` sem `take` —
+      // combo com 200 itens (mega-combo) carregaria todos os items. Limite
+      // conservador alinhado com N3/N13/N25.
+      include: { comboItems: { take: 50 } },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
       take: limit + 1,
       ...(options.cursor ? { cursor: { id: options.cursor }, skip: 1 } : {}),

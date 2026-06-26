@@ -1,53 +1,94 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, Req, ForbiddenException } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+
+import { Roles } from '../auth/decorators/roles.decorator';
+import { AuthenticatedUser } from '../auth/types/auth.types';
 
 import { AnalyticsService } from './analytics.service';
 
+@ApiTags('analytics')
 @Controller('analytics')
 export class AnalyticsController {
   constructor(private readonly service: AnalyticsService) {}
 
+  /**
+   * ⚠️ TODAS as rotas de analytics exigem role `gerente` ou `dono`.
+   * `restaurantId` é SEMPRE extraído do JWT — query param é ignorado.
+   */
+  private buildQuery(req: { user: AuthenticatedUser }, startDate?: string, endDate?: string) {
+    if (!req.user.restaurantId) {
+      throw new ForbiddenException('Usuário sem restaurante vinculado');
+    }
+    return {
+      restaurantId: req.user.restaurantId,
+      startDate,
+      endDate,
+    };
+  }
+
   @Get('overview')
+  @Roles('gerente', 'dono')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Overview de pedidos' })
+  @ApiResponse({ status: 200, description: 'Overview' })
+  @ApiResponse({ status: 403, description: 'Acesso restrito a gerente/dono' })
   async getOverview(
-    @Query('restaurantId') restaurantId: string,
+    @Req() req: { user: AuthenticatedUser },
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string
   ) {
-    return this.service.getOverview({ restaurantId, startDate, endDate });
+    return this.service.getOverview(this.buildQuery(req, startDate, endDate));
   }
 
   @Get('overview-detailed')
+  @Roles('gerente', 'dono')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Overview detalhado' })
+  @ApiResponse({ status: 200, description: 'Overview detalhado' })
   async getOverviewDetailed(
-    @Query('restaurantId') restaurantId: string,
+    @Req() req: { user: AuthenticatedUser },
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string
   ) {
-    return this.service.getOverviewDetailed({ restaurantId, startDate, endDate });
+    return this.service.getOverviewDetailed(this.buildQuery(req, startDate, endDate));
   }
 
   @Get('daily-orders')
+  @Roles('gerente', 'dono')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Pedidos diários (últimos 30 dias)' })
+  @ApiResponse({ status: 200, description: 'Pedidos diários' })
   async getDailyOrders(
-    @Query('restaurantId') restaurantId: string,
+    @Req() req: { user: AuthenticatedUser },
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string
   ) {
-    return this.service.getDailyOrders({ restaurantId, startDate, endDate });
+    return this.service.getDailyOrders(this.buildQuery(req, startDate, endDate));
   }
 
   @Get('popular-items')
+  @Roles('gerente', 'dono')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Itens mais populares' })
+  @ApiResponse({ status: 200, description: 'Itens populares' })
   async getPopularItems(
-    @Query('restaurantId') restaurantId: string,
+    @Req() req: { user: AuthenticatedUser },
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string
   ) {
-    return this.service.getPopularItems({ restaurantId, startDate, endDate });
+    return this.service.getPopularItems(this.buildQuery(req, startDate, endDate));
   }
 
   @Get('orders-by-status')
+  @Roles('gerente', 'dono')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Pedidos agrupados por status' })
+  @ApiResponse({ status: 200, description: 'Pedidos por status' })
   async getOrdersByStatus(
-    @Query('restaurantId') restaurantId: string,
+    @Req() req: { user: AuthenticatedUser },
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string
   ) {
-    return this.service.getOrdersByStatus({ restaurantId, startDate, endDate });
+    return this.service.getOrdersByStatus(this.buildQuery(req, startDate, endDate));
   }
 }

@@ -1,5 +1,6 @@
-import type { NextConfig } from 'next';
 import { randomBytes } from 'crypto';
+
+import type { NextConfig } from 'next';
 
 /**
  * Configuração Next.js com headers de segurança obrigatórios.

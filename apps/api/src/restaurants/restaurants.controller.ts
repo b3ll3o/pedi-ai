@@ -9,7 +9,6 @@ import {
   Query,
   Req,
   ForbiddenException,
-  NotFoundException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 
@@ -17,7 +16,6 @@ import { Public } from '../auth/decorators/public.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { AuthenticatedUser } from '../auth/types/auth.types';
 import { PageQueryDto } from '../common/dto/pagination.dto';
-import { PrismaService } from '../common/prisma.service';
 
 import { CreateRestaurantDto, UpdateRestaurantDto } from './dto/restaurants.dto';
 import { RestaurantsService } from './restaurants.service';
@@ -25,10 +23,13 @@ import { RestaurantsService } from './restaurants.service';
 @ApiTags('restaurants')
 @Controller('restaurants')
 export class RestaurantsController {
-  constructor(
-    private readonly restaurantsService: RestaurantsService,
-    private readonly prisma: PrismaService
-  ) {}
+  // Auditoria ACHADO-N15 (Re-varredura 9): controller NÃO injeta PrismaService.
+  // Antes, `findByUser` executava `prisma.usersProfile.findMany` +
+  // `prisma.usersProfile.groupBy` direto no controller (DDD leak, lógica
+  // de acesso a dados no presentation). Toda a query está agora em
+  // `RestaurantsService.findByUserWithTeamCount()`. Controllers orquestram
+  // (HTTP → service), nunca acessam Prisma diretamente.
+  constructor(private readonly restaurantsService: RestaurantsService) {}
 
   @Get()
   @Public()
@@ -65,49 +66,12 @@ export class RestaurantsController {
   @ApiOperation({ summary: 'Listar restaurantes do usuário autenticado' })
   @ApiResponse({ status: 200, description: 'Lista de restaurantes' })
   async findByUser(@Req() req: { user: AuthenticatedUser }) {
-    // Auditoria M1: antes 3 queries (profiles + restaurants + groupBy), agora 2 paralelas.
-    // profiles.findMany serve como fonte única para `role` (vínculo) e para
-    // construir o IN(...) usado em restaurants.findMany e groupBy(team_count).
-    //
-    // Auditoria ACHADO-35 (Re-varredura 7): filtra restaurantes DESATIVADOS
-    // (`active: false`) ANTES de retornar. Antes, donos viam restaurantes
-    // desativados pelo admin (ex: por inadimplência) na lista — vazamento
-    // de informação desnecessário e inconsistência com rotas públicas
-    // (que já filtram `active: true`).
-    const profiles = await this.prisma.usersProfile.findMany({
-      where: { userId: req.user.id, restaurantId: { not: null } },
-      select: { restaurantId: true, role: true },
-    });
-    const restaurantIds = Array.from(new Set(profiles.map((p) => p.restaurantId as string)));
-    if (restaurantIds.length === 0) return [];
-
-    const [restaurants, profilesCount] = await Promise.all([
-      // Apenas restaurantes ativos. Restaurante desativado pelo admin não
-      // aparece na lista do dono — admin/staff continuam acessando via
-      // rota autenticada de staff com escopo admin.
-      this.restaurantsService.findByIds(restaurantIds, { activeOnly: true }),
-      this.prisma.usersProfile.groupBy({
-        by: ['restaurantId'],
-        where: { restaurantId: { in: restaurantIds } },
-        _count: true,
-      }),
-    ]);
-
-    const roleMap: Record<string, string> = {};
-    for (const p of profiles) {
-      if (p.restaurantId) roleMap[p.restaurantId] = p.role;
-    }
-    const teamCountMap: Record<string, number> = {};
-    for (const p of profilesCount) {
-      if (p.restaurantId) teamCountMap[p.restaurantId] = p._count;
-    }
-
-    return restaurants.map((r) => ({
+    const items = await this.restaurantsService.findByUserWithTeamCount(req.user.id);
+    // B1: camelCase canônico + alias snake_case para compatibilidade com
+    // frontends legados. Conversão aplicada no presentation (não no service).
+    return items.map((r) => ({
       ...r,
-      role: roleMap[r.id] || 'cliente',
-      // B1: camelCase canônico + alias snake_case para compatibilidade.
-      teamCount: teamCountMap[r.id] || 0,
-      team_count: teamCountMap[r.id] || 0,
+      team_count: r.teamCount,
     }));
   }
 
@@ -121,9 +85,11 @@ export class RestaurantsController {
   }
 
   @Post()
+  @Roles('dono')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Criar novo restaurante (vínculo automático ao usuário)' })
   @ApiResponse({ status: 201, description: 'Restaurante criado' })
+  @ApiResponse({ status: 403, description: 'Apenas dono pode criar restaurantes' })
   async create(@Req() req: { user: AuthenticatedUser }, @Body() data: CreateRestaurantDto) {
     return this.restaurantsService.createWithOwner({
       ...data,

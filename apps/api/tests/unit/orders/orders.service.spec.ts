@@ -20,10 +20,19 @@ describe('OrdersService', () => {
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
     product: {
-      findMany: vi.fn().mockResolvedValue([
-        { id: 'prod-1', price: 100, name: 'Produto 1' },
-        { id: 'prod-2', price: 50, name: 'Produto 2' },
-      ]),
+      // Auditoria ACHADO-N19 (Re-varredura 9): agora findMany filtra
+      // `available: true` para impedir pedido de produto recém-desativado.
+      // O mock filtra baseado no `where.id.in` retornando apenas os produtos
+      // realmente pedidos — assim `products.length === productIds.length`
+      // passa quando o teste pede apenas `prod-1`.
+      findMany: vi.fn().mockImplementation(({ where }: { where?: { id?: { in?: string[] } } }) => {
+        const all = [
+          { id: 'prod-1', price: 100, name: 'Produto 1' },
+          { id: 'prod-2', price: 50, name: 'Produto 2' },
+        ];
+        const ids = where?.id?.in;
+        return Promise.resolve(ids ? all.filter((p) => ids.includes(p.id)) : all);
+      }),
     },
     orderStatusHistory: {
       create: vi.fn(),
@@ -57,7 +66,11 @@ describe('OrdersService', () => {
   });
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    // IMPORTANTE: vi.clearAllMocks() limpa apenas o histórico de chamadas
+    // (calls/results), NÃO a implementação. Mas vi.resetAllMocks() limpa
+    // TUDO incluindo a implementação. Usamos clearAllMocks() para preservar
+    // os `mockResolvedValue`/`mockImplementation` declarados em
+    // createMockPrisma.
     mockPrisma = createMockPrisma();
     mockRealtime = createMockRealtime();
     ordersService = new OrdersService(
@@ -350,8 +363,11 @@ describe('OrdersService', () => {
     });
 
     it('should return existing order on duplicate idempotencyKey (A-AD-05)', async () => {
-      // A-AD-05/M-NEW-03: o check de idempotência é feito ANTES da transação.
-      // Se já existe uma Order com esta chave, retornamos ela sem abrir transação.
+      // Auditoria A-AD-05/M-NEW-03: o check de idempotência é feito DENTRO
+      // da transação via P2002 catch. Se a tx.order.create撞a P2002
+      // (idempotencyKey já existe), consultamos o pedido existente via
+      // findFirst no catch e retornamos o mesmo.
+      const { Prisma } = await import('@prisma/client');
       const orderData = {
         restaurantId: 'rest-1',
         subtotal: 100,
@@ -362,18 +378,35 @@ describe('OrdersService', () => {
       };
       const existingOrder = { id: 'order-dup', ...orderData, status: 'pending' };
 
-      // order.findFirst retorna a order existente (request anterior bem-sucedida).
+      // tx撞a P2002 no order.create (idempotencyKey já existe).
+      mockPrisma.$transaction.mockImplementation(async (fn) => {
+        const tx = {
+          idempotencyKey: { create: vi.fn().mockResolvedValue({}) },
+          order: {
+            create: vi.fn().mockRejectedValue(
+              new Prisma.PrismaClientKnownRequestError('Unique constraint', {
+                code: 'P2002',
+                clientVersion: 'test',
+              })
+            ),
+          },
+          orderStatusHistory: { create: vi.fn().mockResolvedValue({}) },
+        };
+        return fn(tx);
+      });
+      // findFirst no catch retorna a order existente.
       mockPrisma.order.findFirst.mockResolvedValueOnce(existingOrder);
 
       const result = await ordersService.create(orderData);
 
       expect(result.id).toBe('order-dup');
-      expect(mockPrisma.$transaction).not.toHaveBeenCalled();
     });
 
     it('should throw ConflictException if idempotencyKey claimed but no Order yet (M-NEW-03)', async () => {
-      // Auditoria M-NEW-03: tx.idempotencyKey.create falha com P2002 (concorrência).
-      // Devemos lançar 409 para o cliente tentar de novo.
+      // Auditoria M-NEW-03 + ACHADO-N17 (Re-varredura 9): tx.idempotencyKey.create
+      // falha com P2002 (concorrência claim). Devemos lançar 409 para o cliente
+      // tentar de novo. Sem findFirst pré-transação (removido por N17) — agora
+      // a P2002 vem direto do tx.idempotencyKey.create, não do tx.order.create.
       const { Prisma } = await import('@prisma/client');
       const { ConflictException } = await import('@nestjs/common');
       const orderData = {
@@ -385,8 +418,6 @@ describe('OrdersService', () => {
         items: [{ productId: 'prod-1', quantity: 1, unitPrice: 100, totalPrice: 100 }],
       };
 
-      // order.findFirst retorna null (não há order ainda).
-      mockPrisma.order.findFirst.mockResolvedValueOnce(null);
       // tx.idempotencyKey.create falha com P2002 (request concorrente claimed).
       mockPrisma.$transaction.mockImplementation(async (fn) => {
         const tx = {
@@ -403,7 +434,7 @@ describe('OrdersService', () => {
         };
         return fn(tx);
       });
-      // order.findFirst no catch também retorna null.
+      // order.findFirst no catch também retorna null (não há order ainda).
       mockPrisma.order.findFirst.mockResolvedValueOnce(null);
 
       await expect(ordersService.create(orderData)).rejects.toThrow(ConflictException);
@@ -421,7 +452,6 @@ describe('OrdersService', () => {
         items: [{ productId: 'prod-1', quantity: 1, unitPrice: 100, totalPrice: 100 }],
       };
 
-      mockPrisma.order.findFirst.mockResolvedValueOnce(null);
       // $transaction joga erro (ex: conexão caiu) — claim deve ser revertido pelo Prisma.
       mockPrisma.$transaction.mockRejectedValueOnce(new Error('connection lost'));
 

@@ -8,9 +8,8 @@
  * devem chamar `fetch('/api/tables/validate', { qrCode })` diretamente.
  */
 
-import { useQuery } from '@tanstack/react-query';
-
 import type { TableDTO } from '@pedi-ai/shared/types';
+import { useQuery } from '@tanstack/react-query';
 
 import {
   ListarMesasUseCase,

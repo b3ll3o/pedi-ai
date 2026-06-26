@@ -92,7 +92,7 @@ export class AppModule implements NestModule, OnApplicationShutdown {
    * Encerrar o OTel **depois** dos módulos garante que os últimos spans
    * (em flush pendente) sejam exportados antes do processo sair.
    */
-  async onApplicationShutdown(signal?: string) {
+  async onApplicationShutdown(_signal?: string) {
     await shutdownOtel();
   }
 }

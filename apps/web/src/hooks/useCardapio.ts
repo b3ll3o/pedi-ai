@@ -9,9 +9,8 @@
  * 3. Lê do IndexedDB via ListarCardapioUseCase
  */
 
-import { useQuery } from '@tanstack/react-query';
-
 import type { CategoryDTO, MenuResponse, RestaurantDTO } from '@pedi-ai/shared/types';
+import { useQuery } from '@tanstack/react-query';
 
 import {
   ListarCardapioUseCase,

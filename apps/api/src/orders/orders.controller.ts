@@ -12,15 +12,14 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-import { OrderStatus } from '@prisma/client';
 import { Throttle } from '@nestjs/throttler';
+import { OrderStatus } from '@prisma/client';
 
 import { Public } from '../auth/decorators/public.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AuthenticatedUser } from '../auth/types/auth.types';
 import { PageQueryDto } from '../common/dto/pagination.dto';
-import { PrismaService } from '../common/prisma.service';
 
 import { CreateOrderDto, UpdateOrderStatusDto } from './dto/orders.dto';
 import { OrdersService } from './orders.service';
@@ -28,10 +27,12 @@ import { OrdersService } from './orders.service';
 @ApiTags('orders')
 @Controller('orders')
 export class OrdersController {
-  constructor(
-    private readonly ordersService: OrdersService,
-    private readonly prisma: PrismaService
-  ) {}
+  // Auditoria ACHADO-N10 (Re-varredura 8): controller NÃO injeta PrismaService
+  // — antes, fazia `prisma.table.findUnique` inline (DDD leak, lógica de
+  // validação de tenant no controller). Toda a checagem de mesa agora vive
+  // no `OrdersService.assertTableOwnership()`. Controllers devem orquestrar
+  // (HTTP → service), nunca acessar infra (Prisma) diretamente.
+  constructor(private readonly ordersService: OrdersService) {}
 
   /**
    * Lista pedidos do restaurante do usuário autenticado.
@@ -116,7 +117,10 @@ export class OrdersController {
   // Auditoria M-NEW-05: cria pedido é rota PÚBLICA (QR de mesa), vulnerável
   // a flood/spam sem rate-limit. Limite: 30 req/min por IP — o suficiente para
   // 1 pedido a cada 2s em cenário legítimo (cliente adicionando itens).
-  @Throttle({ default: { ttl: 60_000, limit: 30 } })
+  // Auditoria ACHADO-N12 (Re-varredura 8): tier 'default' não existe no
+  // AppModule (tiers reais: short/medium/long). Decorator era no-op.
+  // Agora usa tier 'medium' (30/min) explícito.
+  @Throttle({ medium: { ttl: 60_000, limit: 30 } })
   @ApiOperation({ summary: 'Criar novo pedido' })
   @ApiResponse({ status: 201, description: 'Pedido criado' })
   async create(@Req() req: { user?: AuthenticatedUser }, @Body() data: CreateOrderDto) {
@@ -129,26 +133,13 @@ export class OrdersController {
       if (req.user.restaurantId && sanitized.restaurantId !== req.user.restaurantId) {
         throw new ForbiddenException('Restaurante não corresponde ao usuário autenticado');
       }
-      // Auditoria ACHADO-26 (Re-varredura 6): se o body trouxer `tableId`,
-      // precisamos validar que a mesa pertence ao `restaurantId` do JWT
-      // (não apenas do body). Antes, esse check só era feito no caminho
-      // anônimo (linhas abaixo). Cliente autenticado no restaurante A
-      // podia injetar `tableId` de restaurante B — IDOR cross-tenant que
-      // resultava em pedido registrado sob mesa de outro tenant.
-      if (sanitized.tableId) {
-        const table = await this.prisma.table.findUnique({
-          where: { id: sanitized.tableId },
-          select: { restaurantId: true, active: true },
-        });
-        if (!table || !table.active) {
-          throw new BadRequestException('Mesa inválida ou inativa');
-        }
-        if (table.restaurantId !== req.user.restaurantId) {
-          throw new ForbiddenException('Mesa não pertence ao seu restaurante');
-        }
-        // Sobrescreve com o valor server-side (autoritativo).
-        sanitized.restaurantId = table.restaurantId;
-      }
+      // Auditoria ACHADO-N10 (Re-varredura 8): validação de mesa delegada
+      // ao service — antes fazia prisma.table.findUnique inline (DDD leak).
+      sanitized.restaurantId = await this.ordersService.assertTableOwnership(
+        sanitized.tableId,
+        sanitized.restaurantId,
+        req.user.restaurantId
+      );
       // Força customerId do JWT, ignora o do body.
       sanitized.customerId = req.user.id;
     } else {
@@ -156,24 +147,13 @@ export class OrdersController {
       // O pedido fica sem customer vinculado — staff associa depois.
       delete sanitized.customerId;
 
-      // Auditoria M-01: cliente anônimo não pode injetar `restaurantId`
-      // arbitrário. Derivar do `tableId` server-side: a mesa pertence
-      // a um único restaurante. Se cliente enviar `restaurantId` no body
-      // e ele não bater com o da mesa, rejeitar (IDOR entre tenants).
-      if (sanitized.tableId) {
-        const table = await this.prisma.table.findUnique({
-          where: { id: sanitized.tableId },
-          select: { restaurantId: true, active: true },
-        });
-        if (!table || !table.active) {
-          throw new BadRequestException('Mesa inválida ou inativa');
-        }
-        if (sanitized.restaurantId && sanitized.restaurantId !== table.restaurantId) {
-          throw new ForbiddenException('Mesa não pertence ao restaurante informado');
-        }
-        // Sobrescreve com o valor server-side (autoritativo).
-        sanitized.restaurantId = table.restaurantId;
-      }
+      // Auditoria M-01 + ACHADO-N10: cliente anônimo não pode injetar
+      // `restaurantId` arbitrário. Derivar do `tableId` server-side.
+      sanitized.restaurantId = await this.ordersService.assertTableOwnership(
+        sanitized.tableId,
+        sanitized.restaurantId,
+        null // sem JWT — derivar do tableId
+      );
     }
 
     if (!sanitized.items || sanitized.items.length === 0) {

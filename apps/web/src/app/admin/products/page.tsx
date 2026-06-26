@@ -1,9 +1,8 @@
 'use client';
 
+import type { CategoryDTO, ProductDTO } from '@pedi-ai/shared/types';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
-
-import type { CategoryDTO, ProductDTO } from '@pedi-ai/shared/types';
 
 import { ProductForm, type ProductInput } from '@/components/admin/ProductForm';
 import { ProductList } from '@/components/admin/ProductList';

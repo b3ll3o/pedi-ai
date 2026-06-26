@@ -1,3 +1,5 @@
+import 'server-only';
+
 import crypto from 'crypto';
 
 import { IQRCodeValidationService } from '@/domain/mesa/services/QRCodeValidationService';

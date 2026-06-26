@@ -2,6 +2,34 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+/**
+ * Esconde o `<input>` real mantendo-o focado/anunciável por leitores
+ * de tela. Padrão clássico de acessibilidade para checkboxes/radios
+ * estilizados como cards: o `<label>` carrega o visual, o input fica
+ * disponível para teclado e AT.
+ */
+.visuallyHiddenInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Estado focado visível: o input real está focado, mas o visual é o label. */
+.option:focus-within {
+  outline: 2px solid var(--primary-color, var(--color-primary));
+  outline-offset: 2px;
 }
 
 .header {

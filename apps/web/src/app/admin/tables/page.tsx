@@ -1,9 +1,8 @@
 'use client';
 
+import type { TableDTO } from '@pedi-ai/shared/types';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
-
-import type { TableDTO } from '@pedi-ai/shared/types';
 
 import { TableManagement } from '@/components/admin/TableManagement';
 import { TableQRCode } from '@/components/admin/TableQRCode';

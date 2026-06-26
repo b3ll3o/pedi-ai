@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PaymentStatus, Prisma } from '@prisma/client';
 
+import { PIX_INTENT_TTL_MS } from '../common/constants/time';
 import { PrismaService } from '../common/prisma.service';
 import { isValidWebhookTransition } from '../orders/order-state-machine';
 
@@ -97,7 +98,7 @@ export class PaymentsService {
       }
     }
 
-    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + PIX_INTENT_TTL_MS);
 
     // Cria o intent primeiro para obter o ID (será usado como txid no payload).
     // Auditoria A-02: create + update do qrCode dentro de `$transaction` —
@@ -299,9 +300,16 @@ export class PaymentsService {
           };
           const newStatus = statusMap[data.status];
           if (!newStatus) {
+            // Auditoria ACHADO-N20 (Re-varredura 9): marcador estruturado
+            // `metric=webhook.unknown_status` para agregadores (Loki/Datadog)
+            // filtrarem e gerarem alerta quando a taxa subir — antes era só
+            // log warn, invisível para o time de SRE. O MP pode introduzir
+            // novos status (ex: "in_mediation" tardio) sem aviso; queremos
+            // detectar drift de schema rapidamente.
             this.logger.warn(
-              `Webhook MP com status desconhecido: ${data.status} (eventId=${data.eventId}, ` +
-                `paymentId=${data.paymentId}). Será reprocessado pelo MP.`
+              `metric=webhook.unknown_status received=${data.status} ` +
+                `eventId=${data.eventId} paymentId=${data.paymentId}. ` +
+                `Será reprocessado pelo MP.`
             );
             return { status: 'unknown_status', receivedStatus: data.status };
           }
@@ -320,9 +328,10 @@ export class PaymentsService {
           // mascarando bugs e divergências de schema entre MP e nosso banco.
           const orderStatus = orderStatusMap[data.status];
           if (!orderStatus) {
+            // Auditoria ACHADO-N20: mesmo padrão de marcador estruturado.
             this.logger.warn(
-              `Webhook MP: status '${data.status}' sem mapeamento em orderStatusMap ` +
-                `(paymentId=${data.paymentId}). Mantendo order.status atual sem alterar.`
+              `metric=webhook.unknown_order_status received=${data.status} ` +
+                `paymentId=${data.paymentId}. Mantendo order.status atual sem alterar.`
             );
             // Não mexe no order.status; só atualiza o intent (já feito acima).
             // O intent fica com `unknown_status` e o webhook retorna sem alterar pedido.

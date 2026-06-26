@@ -101,21 +101,23 @@ export default function CategoryPageClient({ categoryId, restaurantId }: Categor
 
     // Only filter by category if NOT searching
     if (searchQuery.trim() === '') {
-      filtered = filtered.filter((p) => p.category_id === categoryId);
+      filtered = filtered.filter((p) => p.categoriaId === categoryId);
     }
 
     // Filter by dietary labels (AND logic)
     if (storeDietaryFilters.length > 0) {
       filtered = filtered.filter((p) => {
-        const productLabels = p.dietary_labels ?? [];
-        return storeDietaryFilters.every((label) => productLabels.includes(label));
+        const productLabels = p.labelsDieteticos ?? [];
+        return storeDietaryFilters.every((label) =>
+          productLabels.some((l) => l.toString() === label)
+        );
       });
     }
 
     // Filter by search query (case-insensitive, includes)
     if (searchQuery.trim() !== '') {
       const query = searchQuery.toLowerCase().trim();
-      filtered = filtered.filter((p) => p.name.toLowerCase().includes(query));
+      filtered = filtered.filter((p) => p.nome.toLowerCase().includes(query));
     }
 
     return filtered;
@@ -174,7 +176,7 @@ export default function CategoryPageClient({ categoryId, restaurantId }: Categor
           <li className={styles.breadcrumbSeparator} aria-hidden="true">
             /
           </li>
-          <li className={styles.breadcrumbCurrent}>{category.name}</li>
+          <li className={styles.breadcrumbCurrent}>{category.nome}</li>
         </ol>
       </nav>
 
@@ -185,11 +187,11 @@ export default function CategoryPageClient({ categoryId, restaurantId }: Categor
 
       {/* Category Header */}
       <header className={styles.header}>
-        {category.image_url ? (
+        {category.imagemUrl ? (
           <div className={styles.headerImage}>
             <Image
-              src={category.image_url}
-              alt={category.name}
+              src={category.imagemUrl}
+              alt={category.nome}
               fill
               className={styles.image}
               sizes="100vw"
@@ -198,14 +200,12 @@ export default function CategoryPageClient({ categoryId, restaurantId }: Categor
           </div>
         ) : (
           <div className={styles.headerPlaceholder}>
-            <span className={styles.headerInitial}>{category.name.charAt(0).toUpperCase()}</span>
+            <span className={styles.headerInitial}>{category.nome.charAt(0).toUpperCase()}</span>
           </div>
         )}
         <div className={styles.headerContent}>
-          <h1 className={styles.categoryName}>{category.name}</h1>
-          {category.description && (
-            <p className={styles.categoryDescription}>{category.description}</p>
-          )}
+          <h1 className={styles.categoryName}>{category.nome}</h1>
+          {category.descricao && <p className={styles.categoryDescription}>{category.descricao}</p>}
         </div>
       </header>
 

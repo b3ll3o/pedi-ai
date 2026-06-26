@@ -65,6 +65,10 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './apps/web/src'),
+      // Mock do pacote `server-only` em testes: o pacote não está instalado
+      // (é um marker do Next.js para erros de build em client components).
+      // Apontamos para um stub local que exporta vazio.
+      'server-only': path.resolve(__dirname, './apps/web/tests/__mocks__/server-only.ts'),
     },
   },
 });

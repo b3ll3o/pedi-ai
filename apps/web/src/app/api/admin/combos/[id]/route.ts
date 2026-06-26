@@ -50,7 +50,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     const body = await request.json();
-    const { name, description, price_cents, active, items } = body;
+    const { name, description, price_cents, active } = body;
 
     const result = await apiClient.patch<ApiResponse<Combo>>(`/combos/${comboId}`, {
       name: name?.trim(),

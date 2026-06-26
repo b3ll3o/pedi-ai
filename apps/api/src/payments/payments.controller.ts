@@ -21,6 +21,7 @@ import { Public } from '../auth/decorators/public.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AuthenticatedUser } from '../auth/types/auth.types';
+import { MP_WEBHOOK_SKEW_TOLERANCE_MS } from '../common/constants/time';
 
 import { CreatePixPaymentDto } from './dto/payments.dto';
 import { PaymentsService } from './payments.service';
@@ -116,6 +117,10 @@ function normalizeIp(ip: string): string {
  *
  * Auditoria ACHADO-34 (Re-varredura 7): fail-closed em qualquer input inválido
  * (octetos >255, bits >32 ou <0, NaN, IPv4-mapped com IPv6 wrapper).
+ *
+ * Refatorado (2ª varredura QA): complexidade ciclomática era 19 (> limite
+ * 15 do ESLint). Extraído em helpers privados (`ipv6InCidr` / `ipv4InCidr`)
+ * para manter cada função dentro do limite sem perder a cobertura de testes.
  */
 function ipInCidr(ip: string, cidr: string): boolean {
   if (!cidr) return false;
@@ -125,33 +130,44 @@ function ipInCidr(ip: string, cidr: string): boolean {
 
   // IPv6: heurística simples — comparação por prefixo até o `/`.
   if (normalizedIp.includes(':') || normalizedCidr.includes(':')) {
-    if (!normalizedCidr.includes('/')) {
-      return normalizedIp === normalizedCidr;
-    }
-    const [rangeV6, bitsV6] = normalizedCidr.split('/');
-    const bits = Number(bitsV6);
-    if (!Number.isInteger(bits) || bits < 0 || bits > 128) return false;
-    if (bits === 0) return true;
-    // Compara apenas o prefixo textual (sem expandir `::`).
-    const prefixLen = Math.floor(bits / 4);
-    if (prefixLen === 0) return true;
-    return (
-      normalizedIp.slice(0, prefixLen).toLowerCase() === rangeV6.slice(0, prefixLen).toLowerCase()
-    );
+    return ipv6InCidr(normalizedIp, normalizedCidr);
   }
 
-  // IPv4
-  const ipNum = ipv4ToInt(normalizedIp);
+  return ipv4InCidr(normalizedIp, normalizedCidr);
+}
+
+/**
+ * Compara IPv6 por prefixo textual (sem expandir `::`). Suficiente para
+ * ranges conhecidos do MP; ranges com `::` precisam de expansão (não tratados).
+ */
+function ipv6InCidr(ip: string, cidr: string): boolean {
+  if (!cidr.includes('/')) {
+    return ip === cidr;
+  }
+  const [range, bitsStr] = cidr.split('/');
+  const bits = Number(bitsStr);
+  if (!Number.isInteger(bits) || bits < 0 || bits > 128) return false;
+  if (bits === 0) return true;
+  const prefixLen = Math.floor(bits / 4);
+  if (prefixLen === 0) return true;
+  return ip.slice(0, prefixLen).toLowerCase() === range.slice(0, prefixLen).toLowerCase();
+}
+
+/**
+ * Compara IPv4 contra CIDR ou endereço exato.
+ * Fail-closed: qualquer input inválido (octetos >255, bits fora de 0-32, NaN) ⇒ `false`.
+ */
+function ipv4InCidr(ip: string, cidr: string): boolean {
+  const ipNum = ipv4ToInt(ip);
   if (ipNum === null) return false;
 
-  if (!normalizedCidr.includes('/')) {
-    // Comparação exata (sem CIDR)
-    const rangeNum = ipv4ToInt(normalizedCidr);
+  if (!cidr.includes('/')) {
+    const rangeNum = ipv4ToInt(cidr);
     if (rangeNum === null) return false;
     return ipNum === rangeNum;
   }
 
-  const [range, bitsStr] = normalizedCidr.split('/');
+  const [range, bitsStr] = cidr.split('/');
   const bits = Number(bitsStr);
   if (!Number.isInteger(bits) || bits < 0 || bits > 32) return false;
 
@@ -351,10 +367,17 @@ export class PaymentsController {
       throw new UnauthorizedException('Signature malformada');
     }
 
-    // Tolerância de skew: 5 min.
+    // Tolerância de skew: 2 min (auditoria ACHADO-N21 + N34 Re-varredura 9).
+    // Antes era 5 min — janela generosa demais para replay: atacante com
+    // um único webhook válido capturado poderia reusá-lo a cada 5 min.
+    // 2 min é o sweet spot entre tolerar drift legítimo do MP (seus servidores
+    // reportam skew < 90s em condições normais) e minimizar a janela de
+    // replay. Aceita timestamps levemente no futuro OU no passado.
     const tsNum = Number(ts);
-    const skewMs = 5 * 60 * 1000;
-    if (!Number.isFinite(tsNum) || Math.abs(Date.now() - tsNum * 1000) > skewMs) {
+    const skewMs = MP_WEBHOOK_SKEW_TOLERANCE_MS;
+    const now = Date.now();
+    const tsMs = tsNum * 1000;
+    if (!Number.isFinite(tsNum) || tsMs > now + skewMs || tsMs < now - skewMs) {
       this.logger.warn(`Webhook PIX com timestamp fora da janela (ts=${ts}, event=${eventId})`);
       throw new UnauthorizedException('Timestamp inválido');
     }

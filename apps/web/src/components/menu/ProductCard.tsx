@@ -1,8 +1,7 @@
 'use client';
 
-import Image from 'next/image';
-
 import type { ProductDTO } from '@pedi-ai/shared/types';
+import Image from 'next/image';
 
 import { useCartStore } from '@/infrastructure/persistence/cartStore';
 

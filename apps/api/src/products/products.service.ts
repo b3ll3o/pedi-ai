@@ -43,6 +43,15 @@ export class ProductsService {
     // Auditoria ACHADO-1 (Re-varredura 5): rota pública `/products/restaurant/:restaurantId`
     // exige `restaurant.active: true` para evitar enumeração de cardápio
     // de restaurantes desativados.
+    //
+    // Auditoria ACHADO-N3 (Re-varredura 8): sem `take`, a query carregava
+    // TODAS as categorias e produtos do restaurante de uma vez. Em produção
+    // com restaurante de 500+ produtos e 50+ categorias, payload > 5MB e
+    // latência P99 > 800ms. Agora: limite conservador de 100 categorias
+    // e 200 produtos por categoria (somatório > 20k itens). Restaurantes
+    // maiores devem usar a rota paginada `/products/category/:id`.
+    const MAX_CATEGORIES = 100;
+    const MAX_PRODUCTS_PER_CATEGORY = 200;
     const categories = await this.prisma.category.findMany({
       where: {
         restaurantId,
@@ -54,9 +63,11 @@ export class ProductsService {
         products: {
           where: { available: true },
           orderBy: { sortOrder: 'asc' },
+          take: MAX_PRODUCTS_PER_CATEGORY,
         },
       },
       orderBy: { sortOrder: 'asc' },
+      take: MAX_CATEGORIES,
     });
     return {
       restaurantId,

@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { OrderStatus, PaymentMethod, Prisma } from '@prisma/client';
 
+import { IDEMPOTENCY_KEY_TTL_MS } from '../common/constants/time';
 import { PageDto, PAGINATION_DEFAULT_LIMIT } from '../common/dto/pagination.dto';
 import { PrismaService } from '../common/prisma.service';
 import { RealtimeService } from '../realtime/realtime.service';
@@ -52,6 +53,54 @@ export class OrdersService {
     const data = hasNext ? items.slice(0, limit) : items;
     const nextCursor = hasNext ? data[data.length - 1].id : null;
     return PageDto.create(data, nextCursor, data.length);
+  }
+
+  /**
+   * Auditoria ACHADO-N10 (Re-varredura 8): consolidação da validação de
+   * ownership de mesa no service (antes era inline no controller com
+   * `prisma.table.findUnique` direto — DDD leak).
+   *
+   * Comportamento:
+   * - Se `tableId` for fornecido: carrega mesa, valida que está ativa e que
+   *   pertence ao restaurante esperado (do JWT se `requesterRestaurantId`
+   *   for informado, ou do `body.restaurantId` se anônimo). Retorna o
+   *   `restaurantId` AUTORITATIVO (sempre o da mesa, nunca o do body).
+   * - Se `tableId` for undefined/null: retorna `bodyRestaurantId` ou
+   *   `requesterRestaurantId` na ordem de prioridade. Anônimo sem
+   *   tableId fica com `bodyRestaurantId` (staff passa restaurantId).
+   *
+   * @throws BadRequestException se mesa inválida/inativa.
+   * @throws ForbiddenException se mesa não pertence ao restaurante.
+   */
+  async assertTableOwnership(
+    tableId: string | undefined,
+    bodyRestaurantId: string | undefined,
+    requesterRestaurantId: string | null | undefined
+  ): Promise<string | undefined> {
+    if (!tableId) {
+      // Sem mesa: usa a prioridade (requester > body).
+      return requesterRestaurantId ?? bodyRestaurantId;
+    }
+
+    const table = await this.prisma.table.findUnique({
+      where: { id: tableId },
+      select: { restaurantId: true, active: true },
+    });
+    if (!table || !table.active) {
+      throw new BadRequestException('Mesa inválida ou inativa');
+    }
+
+    // Cross-tenant check: mesa deve bater com o tenant do requester (se
+    // autenticado) ou do body (se anônimo).
+    if (requesterRestaurantId && table.restaurantId !== requesterRestaurantId) {
+      throw new ForbiddenException('Mesa não pertence ao seu restaurante');
+    }
+    if (!requesterRestaurantId && bodyRestaurantId && bodyRestaurantId !== table.restaurantId) {
+      throw new ForbiddenException('Mesa não pertence ao restaurante informado');
+    }
+
+    // SEMPRE retorna o restaurantId da mesa (autoritativo, ignorando o body).
+    return table.restaurantId;
   }
 
   /**
@@ -163,16 +212,14 @@ export class OrdersService {
     // mesma `$transaction` que cria a Order. Se o INSERT da Order falhar,
     // o claim é revertido automaticamente — não há chave-órfã que bloqueie
     // retry do cliente.
+    //
+    // Auditoria ACHADO-N17 (Re-varredura 9): o `findFirst` PRÉ-transação
+    // era janela TOCTOU — duas requests simultâneas com mesma key passavam
+    // ambas no findFirst, depois撞avam P2002 no claim atômico. Agora
+    // removido: confiamos apenas no claim dentro do `$transaction`. P2002
+    // é mapeado para "request duplicada — retornar pedido existente"
+    // (catches no bloco try abaixo).
     const idempotencyScope = 'order:create';
-    if (data.idempotencyKey) {
-      // Verifica se já existe claim de uma request anterior bem-sucedida.
-      const existing = await this.prisma.order.findFirst({
-        where: { idempotencyKey: data.idempotencyKey },
-      });
-      if (existing) {
-        return existing;
-      }
-    }
 
     // 2. Buscar produtos reais para validar e usar preço do banco.
     const productIds = data.items.map((i) => i.productId).filter((id): id is string => !!id);
@@ -180,10 +227,23 @@ export class OrdersService {
       throw new BadRequestException('Pedido deve ter ao menos um produto');
     }
 
+    // Auditoria ACHADO-N19 (Re-varredura 9): cliente com cardápio cacheado
+    // offline podia enviar pedido com produto recém-desativado pelo staff.
+    // Sem o filtro `available: true`, o pedido entrava na fila de produção
+    // com produto indisponível — quebrava o contrato "produto no cardápio
+    // = pode pedir". Agora: query filtra disponíveis; qualquer ID não
+    // retornado é reportado como "indisponível" no 400.
     const products = await this.prisma.product.findMany({
-      where: { id: { in: productIds } },
+      where: { id: { in: productIds }, available: true },
       select: { id: true, price: true, name: true },
     });
+    if (products.length !== productIds.length) {
+      const foundIds = new Set(products.map((p) => p.id));
+      const unavailable = productIds.filter((id) => !foundIds.has(id));
+      throw new BadRequestException(
+        `Produtos indisponíveis ou inexistentes: ${unavailable.join(', ')}`
+      );
+    }
     const productMap = new Map(products.map((p) => [p.id, p]));
 
     // 3. Recalcular itens com preços do servidor.
@@ -219,7 +279,10 @@ export class OrdersService {
             data: {
               scope: idempotencyScope,
               key: data.idempotencyKey,
-              expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+              // Auditoria ACHADO-N33 (Re-varredura 9): constante nomeada para
+              // o TTL do claim — alinha com `cleanup.queue.ts` que também
+              // remove chaves expiradas.
+              expiresAt: new Date(Date.now() + IDEMPOTENCY_KEY_TTL_MS),
             },
           });
         }

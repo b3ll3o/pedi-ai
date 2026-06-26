@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useId, useRef } from 'react';
 
 import { useCartStore, getTotalItems, getTotalPrice } from '@/infrastructure/persistence/cartStore';
 
@@ -8,6 +8,16 @@ import styles from './CartDrawer.module.css';
 import { CartSummary } from './CartSummary';
 
 const SERVICE_TAX_RATE = 0.1;
+
+/** Seletores de elementos focáveis dentro do drawer. */
+const FOCUSABLE_SELECTOR = [
+  'button:not([disabled])',
+  'a[href]',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',');
 
 const formatPrice = (value: number): string => {
   return new Intl.NumberFormat('pt-BR', {
@@ -24,32 +34,92 @@ export function CartDrawer() {
   const updateQuantity = useCartStore((state) => state.updateQuantity);
   const clearCart = useCartStore((state) => state.clearCart);
 
+  const titleId = useId();
+
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
   const totalItems = getTotalItems(useCartStore.getState());
   const subtotal = getTotalPrice(useCartStore.getState());
   const tax = subtotal * SERVICE_TAX_RATE;
   const total = subtotal + tax;
 
-  // Prevent body scroll when drawer is open
+  // Impede scroll do body quando o drawer está aberto. Restaura o valor
+  // original no cleanup para não interferir com outros componentes.
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
+    if (!isOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = previousOverflow;
     };
   }, [isOpen]);
 
-  // Close on Escape key
+  // Fecha com ESC e gerencia focus trap (WCAG 2.4.3 + 2.1.2).
+  //
+  // Por que manual em vez de `<dialog>` nativo? `<dialog>` no React 19
+  // funciona, mas o componente já existia com `<div role="dialog">` —
+  // migrar agora expande o diff sem mudar comportamento observável. O
+  // trap manual aqui cobre o requisito e fica isolado.
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
+    if (!isOpen) return;
+
+    // 1. Salva o elemento focado antes de abrir para devolver o foco
+    //    ao fechar (não deixar o foco "preso" no body).
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+
+    // 2. Move foco inicial para o botão Fechar (sempre presente).
+    const drawer = drawerRef.current;
+    const closeButton = drawer?.querySelector<HTMLButtonElement>('button[data-drawer-close]');
+    closeButton?.focus();
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
         closeCart();
+        return;
       }
+      if (e.key !== 'Tab' || !drawer) return;
+
+      const focusables = Array.from(
+        drawer.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
+      ).filter((el) => !el.hasAttribute('disabled') && el.offsetParent !== null);
+
+      if (focusables.length === 0) {
+        e.preventDefault();
+        return;
+      }
+
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+
+      // Shift+Tab no primeiro → vai para o último (wrap).
+      if (e.shiftKey && active === first) {
+        e.preventDefault();
+        last.focus();
+        return;
+      }
+      // Tab no último → vai para o primeiro (wrap).
+      if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+        return;
+      }
+      // Foco escapou do drawer (clique no overlay, devtools, etc.) →
+      // devolve ao primeiro elemento focável.
+      if (active && !drawer.contains(active)) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      // Devolve foco ao trigger original (ex.: botão do header que abriu o drawer).
+      previousFocusRef.current?.focus?.();
+      previousFocusRef.current = null;
     };
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, closeCart]);
 
   const handleCheckout = () => {
@@ -66,12 +136,14 @@ export function CartDrawer() {
       onClick={closeCart}
       role="dialog"
       aria-modal="true"
-      aria-label="Carrinho de compras"
+      aria-labelledby={titleId}
     >
-      <div className={styles.drawer} onClick={(e) => e.stopPropagation()}>
+      <div className={styles.drawer} onClick={(e) => e.stopPropagation()} ref={drawerRef}>
         <header className={styles.header}>
           <div className={styles.headerContent}>
-            <h2 className={styles.title}>Seu Pedido</h2>
+            <h2 id={titleId} className={styles.title}>
+              Seu Pedido
+            </h2>
             <span className={styles.itemCount}>
               {totalItems} ite{totalItems !== 1 ? 'ns' : 'm'}
             </span>
@@ -81,6 +153,7 @@ export function CartDrawer() {
             onClick={closeCart}
             aria-label="Fechar carrinho"
             type="button"
+            data-drawer-close
           >
             <svg
               viewBox="0 0 24 24"
