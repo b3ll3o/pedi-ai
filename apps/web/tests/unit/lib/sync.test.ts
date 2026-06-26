@@ -86,8 +86,12 @@ describe('sync queue', () => {
 
   describe('queueOrderForSync', () => {
     it('adds order to pending_sync table', async () => {
-      const orderData = { tableId: 't1', items: [{ productId: 'p1', quantity: 2 }] };
-      const id = await queueOrderForSync(orderData);
+      const orderData = {
+        tableId: 't1',
+        items: [{ productId: 'p1', quantity: 2 }],
+        idempotency_key: 'uuid-test-123',
+      };
+      const id = await queueOrderForSync(orderData, 'rest-1');
       expect(typeof id).toBe('number');
 
       const entries = await db.pending_sync.toArray();
@@ -96,6 +100,23 @@ describe('sync queue', () => {
       expect(entries[0].status).toBe('pending');
       expect(entries[0].retryCount).toBe(0);
       expect(entries[0].maxRetries).toBe(3);
+    });
+
+    it('rejects payload sem idempotency_key (S3#5)', async () => {
+      const orderData = { tableId: 't1', items: [{ productId: 'p1', quantity: 2 }] } as never;
+      await expect(queueOrderForSync(orderData, 'rest-1')).rejects.toThrow(/idempotency_key/);
+
+      const entries = await db.pending_sync.toArray();
+      expect(entries).toHaveLength(0);
+    });
+
+    it('rejects idempotency_key vazio (S3#5)', async () => {
+      const orderData = {
+        tableId: 't1',
+        items: [{ productId: 'p1', quantity: 2 }],
+        idempotency_key: '   ',
+      };
+      await expect(queueOrderForSync(orderData, 'rest-1')).rejects.toThrow(/idempotency_key/);
     });
   });
 

@@ -144,7 +144,10 @@ describe('Exponential Backoff', () => {
           .fn()
           .mockRejectedValue(new Error('network error')) as unknown as typeof fetch;
 
-        await queueOrderForSync({ orderId: 'test-1' }, 'restaurant-1');
+        await queueOrderForSync(
+          { orderId: 'test-1', idempotency_key: 'uuid-test-1' },
+          'restaurant-1'
+        );
 
         // First attempt - fails, retryCount becomes 1
         let result = await processQueue();
@@ -196,7 +199,10 @@ describe('Exponential Backoff', () => {
           .fn()
           .mockRejectedValue(new Error('network error')) as unknown as typeof fetch;
 
-        await queueOrderForSync({ orderId: 'retry-track' }, 'restaurant-1');
+        await queueOrderForSync(
+          { orderId: 'retry-track', idempotency_key: 'uuid-retry-track' },
+          'restaurant-1'
+        );
 
         for (let expectedRetryCount = 1; expectedRetryCount <= 3; expectedRetryCount++) {
           await processQueue();
@@ -221,7 +227,10 @@ describe('Exponential Backoff', () => {
           .fn()
           .mockRejectedValue(new Error('Erro de conexão')) as unknown as typeof fetch;
 
-        await queueOrderForSync({ orderId: 'display-error' }, 'restaurant-1');
+        await queueOrderForSync(
+          { orderId: 'display-error', idempotency_key: 'uuid-display-error' },
+          'restaurant-1'
+        );
 
         // Process until failure
         for (let i = 0; i < 3; i++) {
@@ -243,8 +252,14 @@ describe('Exponential Backoff', () => {
           .fn()
           .mockRejectedValue(new Error('Servidor indisponível')) as unknown as typeof fetch;
 
-        await queueOrderForSync({ orderId: 'ui-error-1' }, 'restaurant-1');
-        await queueOrderForSync({ orderId: 'ui-error-2' }, 'restaurant-1');
+        await queueOrderForSync(
+          { orderId: 'ui-error-1', idempotency_key: 'uuid-ui-error-1' },
+          'restaurant-1'
+        );
+        await queueOrderForSync(
+          { orderId: 'ui-error-2', idempotency_key: 'uuid-ui-error-2' },
+          'restaurant-1'
+        );
 
         // Process all until failed
         for (let i = 0; i < 3; i++) {
@@ -270,7 +285,10 @@ describe('Exponential Backoff', () => {
           .fn()
           .mockRejectedValue(new Error('network error')) as unknown as typeof fetch;
 
-        await queueOrderForSync({ orderId: 'delay-test' }, 'restaurant-1');
+        await queueOrderForSync(
+          { orderId: 'delay-test', idempotency_key: 'uuid-delay-test' },
+          'restaurant-1'
+        );
 
         // Three failed attempts
         await processQueue(); // 1st fail - retryCount becomes 1

@@ -23,6 +23,17 @@ export async function queueOrderForSync(
   orderData: OrderData,
   restaurantId: string
 ): Promise<number> {
+  // S3#5: idempotency_key é a única defesa contra pedidos duplicados quando
+  // `processQueue` reentrega após um timeout onde a resposta se perdeu.
+  // Sem ela, o backend não consegue deduplicar → PIX/pedido duplicados.
+  // Bloqueamos cedo (em vez de deixar a fila ser envenenada) para que o
+  // caller saiba do erro no momento do `queueOrderForSync`, não três
+  // tentativas depois quando o pedido já seria criado pela 2ª vez.
+  if (!orderData.idempotency_key || orderData.idempotency_key.trim() === '') {
+    throw new Error(
+      'queueOrderForSync: idempotency_key é obrigatório — gere um UUID antes de enfileirar.'
+    );
+  }
   const entry: PendingSync = {
     restaurantId,
     orderData,
