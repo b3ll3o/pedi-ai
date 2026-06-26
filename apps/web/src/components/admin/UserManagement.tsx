@@ -1,15 +1,15 @@
 'use client';
 
-import { getRoleLabel, getRoleColor } from '@/application/services/userService';
+import type { UserDTO } from '@pedi-ai/shared/types';
+
+import { getRoleLabel, getRoleColor, type UserRole } from '@/application/services/userService';
 
 import styles from './UserManagement.module.css';
 
-type UserRole = 'dono' | 'gerente' | 'atendente' | 'cliente';
-
 interface UserManagementProps {
-  users: any[];
+  users: UserDTO[];
   currentUserRole: UserRole;
-  onEdit: (user: any) => void;
+  onEdit: (user: UserDTO) => void;
   onDelete: (userId: string) => void;
   onInvite: () => void;
 }
@@ -21,14 +21,15 @@ export function UserManagement({
   onDelete,
   onInvite,
 }: UserManagementProps) {
-  const canManage = (userRole: UserRole) => {
-    const hierarchy: Record<'dono' | 'gerente' | 'atendente' | 'cliente', number> = {
+  const canManage = (userRole: string) => {
+    const hierarchy: Record<UserRole, number> = {
       cliente: 0,
       atendente: 1,
       gerente: 2,
       dono: 3,
     };
-    return hierarchy[currentUserRole] > hierarchy[userRole];
+    if (!(currentUserRole in hierarchy) || !(userRole in hierarchy)) return false;
+    return hierarchy[currentUserRole] > hierarchy[userRole as UserRole];
   };
 
   const formatDate = (dateString: string) => {

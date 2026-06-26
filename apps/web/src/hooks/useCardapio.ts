@@ -11,6 +11,8 @@
 
 import { useQuery } from '@tanstack/react-query';
 
+import type { CategoryDTO, MenuResponse, RestaurantDTO } from '@pedi-ai/shared/types';
+
 import {
   ListarCardapioUseCase,
   type CardapioCompleto,
@@ -21,9 +23,12 @@ import {
   ItemCardapioRepository,
   CardapioSyncService,
 } from '@/infrastructure/persistence/repositories';
+
+export type { MenuResponse };
+
 // Transformação de domain entities para tipos da interface existente
-function transformarCardapio(cardapio: CardapioCompleto, restauranteId: string) {
-  const categoriesTransformadas: any[] = cardapio.categorias.map((cat) => ({
+function transformarCardapio(cardapio: CardapioCompleto, restauranteId: string): MenuResponse {
+  const categoriesTransformadas: CategoryDTO[] = cardapio.categorias.map((cat) => ({
     id: cat.categoria.id,
     restaurant_id: cat.categoria.restauranteId,
     name: cat.categoria.nome,
@@ -48,36 +53,20 @@ function transformarCardapio(cardapio: CardapioCompleto, restauranteId: string) 
     })),
   }));
 
-  return {
-    restaurant: {
-      id: restauranteId,
-      name: '',
-      description: null,
-      address: null,
-      phone: null,
-      logo_url: null,
-      settings: null,
-      created_at: '',
-      updated_at: '',
-    },
-    categories: categoriesTransformadas,
+  const restaurant: RestaurantDTO = {
+    id: restauranteId,
+    name: '',
+    description: null,
+    address: null,
+    phone: null,
+    logo_url: null,
+    settings: null,
+    created_at: '',
+    updated_at: '',
   };
-}
 
-export type MenuResponse = {
-  restaurant: {
-    id: string;
-    name: string;
-    description: string | null;
-    address: string | null;
-    phone: string | null;
-    logo_url: string | null;
-    settings: Record<string, unknown> | null;
-    created_at: string;
-    updated_at: string;
-  };
-  categories: any[];
-};
+  return { restaurant, categories: categoriesTransformadas };
+}
 
 /**
  * Hook para buscar cardápio completo do restaurante.

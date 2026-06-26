@@ -2,14 +2,16 @@
 
 import { useState, useCallback } from 'react';
 
+import type { TableDTO } from '@pedi-ai/shared/types';
+
 import styles from './TableManagement.module.css';
 
 interface TableManagementProps {
-  tables: any[];
-  onEdit: (table: any) => void;
+  tables: TableDTO[];
+  onEdit: (table: TableDTO) => void;
   onDelete: (id: string) => void;
-  onGenerateQR: (table: any) => void;
-  onToggleActive: (table: any) => void;
+  onGenerateQR: (table: TableDTO) => void;
+  onToggleActive: (table: TableDTO) => void;
 }
 
 export function TableManagement({
@@ -37,7 +39,7 @@ export function TableManagement({
   });
 
   const handleDelete = useCallback(
-    (table: any) => {
+    (table: TableDTO) => {
       if (confirm(`Tem certeza que deseja excluir a Mesa ${table.number}?`)) {
         onDelete(table.id);
       }

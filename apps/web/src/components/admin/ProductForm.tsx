@@ -20,8 +20,18 @@ export interface ProductInput {
   sort_order?: number;
 }
 
+export interface ProductFormInitial {
+  name?: string;
+  description?: string | null;
+  category_id?: string;
+  price?: number;
+  dietary_labels?: string[];
+  available?: boolean;
+  image_url?: string | null;
+}
+
 interface ProductFormProps {
-  product?: any;
+  product?: ProductFormInitial;
   categories: { id: string; name: string }[];
   onSubmit: (data: ProductInput) => void;
   onCancel: () => void;
@@ -45,7 +55,15 @@ export function ProductForm({ product, categories, onSubmit, onCancel }: Product
     setAvailable,
     toggleDietaryLabel,
     validateForm,
-  } = useProductFormState(product, categories[0]?.id);
+  } = useProductFormState(
+    product
+      ? {
+          ...product,
+          description: product.description ?? undefined,
+        }
+      : undefined,
+    categories[0]?.id
+  );
 
   const {
     imageUrl,
@@ -55,7 +73,7 @@ export function ProductForm({ product, categories, onSubmit, onCancel }: Product
     fileInputRef,
     handleImageChange,
     handleRemoveImage,
-  } = useImageUpload(product?.image_url);
+  } = useImageUpload(product?.image_url ?? undefined);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 

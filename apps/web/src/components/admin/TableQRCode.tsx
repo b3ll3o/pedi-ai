@@ -2,10 +2,12 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 
+import type { TableDTO } from '@pedi-ai/shared/types';
+
 import styles from './TableQRCode.module.css';
 
 interface TableQRCodeProps {
-  table: any;
+  table: TableDTO;
   qrData?: string;
   onClose: () => void;
   onDownload?: () => void;

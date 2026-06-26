@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 
+import type { CategoryDTO, ProductDTO } from '@pedi-ai/shared/types';
+
 import { ProductForm, type ProductInput } from '@/components/admin/ProductForm';
 import { getSession } from '@/lib/auth/client';
 
@@ -16,8 +18,8 @@ interface PageProps {
 export default function ProductEditPage({ params }: PageProps) {
   const router = useRouter();
   const [productId, setProductId] = useState<string | null>(null);
-  const [product, setProduct] = useState<any | null>(null);
-  const [categoriesList, setCategoriesList] = useState<any[]>([]);
+  const [product, setProduct] = useState<ProductDTO | null>(null);
+  const [categoriesList, setCategoriesList] = useState<CategoryDTO[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);

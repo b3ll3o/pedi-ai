@@ -8,7 +8,7 @@ export interface ModifierValueInput {
   id?: string;
   tempId?: string;
   name: string;
-  price_adjustment: number;
+  price_adjustment?: number;
 }
 
 export interface ModifierGroupInput {
@@ -19,9 +19,23 @@ export interface ModifierGroupInput {
   values?: ModifierValueInput[];
 }
 
+export interface ModifierGroupDTO_Input {
+  id?: string;
+  name?: string;
+  required?: boolean;
+  min_selections?: number;
+  max_selections?: number;
+}
+
+export interface ModifierValueDTO_Input {
+  id?: string;
+  name: string;
+  price_adjustment?: number;
+}
+
 interface ModifierGroupFormProps {
-  modifierGroup?: any;
-  modifierValues?: any[];
+  modifierGroup?: ModifierGroupDTO_Input;
+  modifierValues?: ModifierValueDTO_Input[];
   onSubmit: (data: ModifierGroupInput) => void;
   onCancel: () => void;
 }
@@ -81,8 +95,8 @@ function validateModifierGroup(
 }
 
 function useModifierGroupForm(
-  modifierGroup: any,
-  modifierValues: any[],
+  modifierGroup: ModifierGroupDTO_Input | undefined,
+  modifierValues: ModifierValueDTO_Input[],
   onSubmitProp: (data: ModifierGroupInput) => void
 ) {
   const isEditMode = Boolean(modifierGroup);
@@ -92,10 +106,10 @@ function useModifierGroupForm(
   const [maxSelections, setMaxSelections] = useState(modifierGroup?.max_selections ?? 1);
   const [values, setValues] = useState<ValueEntry[]>(
     modifierValues.length > 0
-      ? modifierValues.map((v: { id: string; name: string; price_adjustment: number }) => ({
-          id: v.id,
+      ? modifierValues.map((v) => ({
+          id: v.id ?? '',
           name: v.name,
-          price_adjustment: v.price_adjustment,
+          price_adjustment: v.price_adjustment ?? 0,
         }))
       : []
   );

@@ -3,6 +3,8 @@
 import { CheckCircle, Clock, ChefHat, Bell, Truck, XCircle } from 'lucide-react';
 import { useEffect, useState, useCallback, useRef } from 'react';
 
+import type { OrderStatusHistoryRow } from '@/application/services/adminOrderService';
+
 type Enum_order_status =
   | 'pending_payment'
   | 'paid'
@@ -37,18 +39,17 @@ const STATUS_ORDER: Enum_order_status[] = [
 
 export function OrderStatus({ orderId }: OrderStatusProps) {
   const [currentStatus, setCurrentStatus] = useState<Enum_order_status | null>(null);
-  const [history, setHistory] = useState<any[]>([]);
+  const [history, setHistory] = useState<OrderStatusHistoryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const loadHistory = useCallback(async () => {
-    // Use API route to fetch history
     try {
       const response = await fetch(`/api/orders/${orderId}/status`);
       if (response.ok) {
-        const data = await response.json();
+        const data = (await response.json()) as { history?: OrderStatusHistoryRow[] };
         if (data.history) {
-          setHistory(data.history as any[]);
+          setHistory(data.history);
         }
       }
     } catch {
@@ -57,12 +58,11 @@ export function OrderStatus({ orderId }: OrderStatusProps) {
   }, [orderId]);
 
   const loadCurrentStatus = useCallback(async () => {
-    // Use API route to bypass RLS
     try {
       const response = await fetch(`/api/orders/${orderId}/status`);
       if (response.ok) {
-        const data = await response.json();
-        setCurrentStatus(data.status as Enum_order_status);
+        const data = (await response.json()) as { status: Enum_order_status };
+        setCurrentStatus(data.status);
         return true;
       }
     } catch (error) {

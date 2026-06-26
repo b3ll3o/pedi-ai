@@ -2,12 +2,14 @@
 
 import Image from 'next/image';
 
+import type { ProductDTO } from '@pedi-ai/shared/types';
+
 import { useCartStore } from '@/infrastructure/persistence/cartStore';
 
 import styles from './ProductCard.module.css';
 
 interface ProductCardProps {
-  product: any;
+  product: ProductDTO;
   onClick?: (productId: string) => void;
 }
 

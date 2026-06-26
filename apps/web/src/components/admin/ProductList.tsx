@@ -2,23 +2,17 @@
 
 import { useState, useMemo } from 'react';
 
+import type { ProductDTO } from '@pedi-ai/shared/types';
+
 import styles from './ProductList.module.css';
 
-export interface ProductListProduct {
-  id: string;
-  name: string;
-  description?: string | null;
-  price: number;
-  available: boolean;
-  dietary_labels?: string[];
-  [key: string]: any;
-}
+export type ProductListProduct = ProductDTO;
 
 interface ProductListProps {
   products: ProductListProduct[];
-  onEdit: (product: any) => void;
+  onEdit: (product: ProductListProduct) => void;
   onDelete: (id: string) => void;
-  onToggleAvailability: (product: any) => void;
+  onToggleAvailability: (product: ProductListProduct) => void;
 }
 
 export function ProductList({
@@ -100,7 +94,7 @@ export function ProductList({
                 <span className={styles.price}>{formatPrice(product.price)}</span>
                 {product.dietary_labels && product.dietary_labels.length > 0 && (
                   <div className={styles.labels}>
-                    {product.dietary_labels.map((label: string) => (
+                    {product.dietary_labels.map((label) => (
                       <span key={label} className={styles.label}>
                         {label}
                       </span>

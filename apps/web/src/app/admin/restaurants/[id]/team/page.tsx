@@ -4,14 +4,24 @@ import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 
+import type { RestaurantDTO, UserDTO } from '@pedi-ai/shared/types';
+
 import { TeamManagement } from '@/components/admin/TeamManagement';
 import { Restaurante, type RestauranteProps } from '@/domain/admin/entities/Restaurante';
+import { type UserRole } from '@/application/services/userService';
 import { useRestaurantStore } from '@/infrastructure/persistence/restaurantStore';
 import { getSession } from '@/lib/auth/client';
 
 import styles from './page.module.css';
 
 type ToastType = 'success' | 'error' | null;
+
+interface TeamMembershipDTO {
+  id: string;
+  user_id: string;
+  role: UserRole;
+  user: UserDTO;
+}
 
 export default function TeamPage() {
   const router = useRouter();
@@ -21,10 +31,10 @@ export default function TeamPage() {
   const { setRestaurante } = useRestaurantStore();
 
   const [loading, setLoading] = useState(true);
-  const [restaurant, setRestaurant] = useState<any | null>(null);
-  const [users, setUsers] = useState<any[]>([]);
+  const [restaurant, setRestaurant] = useState<RestaurantDTO | null>(null);
+  const [users, setUsers] = useState<UserDTO[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>('');
-  const [currentUserRole, setCurrentUserRole] = useState<any>('atendente');
+  const [currentUserRole, setCurrentUserRole] = useState<UserRole>('atendente');
   const [notFound, setNotFound] = useState(false);
   const [toast, setToast] = useState<{ type: ToastType; message: string }>({
     type: null,
@@ -41,7 +51,6 @@ export default function TeamPage() {
   const fetchData = useCallback(
     async (sessionUserId: string) => {
       try {
-        // Fetch restaurant
         const restaurantRes = await fetch(`/api/admin/restaurants/${restaurantId}`);
         if (restaurantRes.status === 404) {
           setNotFound(true);
@@ -50,28 +59,28 @@ export default function TeamPage() {
         if (!restaurantRes.ok) {
           throw new Error('Erro ao carregar restaurante');
         }
-        const restaurantData = await restaurantRes.json();
+        const restaurantData = (await restaurantRes.json()) as { restaurant: RestaurantDTO };
         setRestaurant(restaurantData.restaurant);
 
-        // Set restaurant in store
         const restaurantEntity = Restaurante.reconstruir(
           restaurantData.restaurant as unknown as RestauranteProps
         );
         setRestaurante(restaurantEntity);
 
-        // Fetch users for this restaurant
         const usersRes = await fetch(`/api/admin/users?restaurant_id=${restaurantId}`);
         if (!usersRes.ok) {
           throw new Error('Erro ao carregar equipe');
         }
-        const usersData = await usersRes.json();
-        setUsers(usersData.users || []);
+        const usersData = (await usersRes.json()) as {
+          users?: Array<TeamMembershipDTO & { user: UserDTO }>;
+        };
+        const userList: UserDTO[] = (usersData.users ?? []).map((m) => m.user);
+        setUsers(userList);
 
-        // Find current user's role
-        const currentUser = usersData.users?.find((u: any) => u.user_id === sessionUserId);
-        if (currentUser) {
-          setCurrentUserId(currentUser.id);
-          setCurrentUserRole(currentUser.role);
+        const currentMembership = (usersData.users ?? []).find((u) => u.user_id === sessionUserId);
+        if (currentMembership) {
+          setCurrentUserId(currentMembership.user_id);
+          setCurrentUserRole(currentMembership.role);
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Erro ao carregar dados';
@@ -100,7 +109,7 @@ export default function TeamPage() {
     checkAuth();
   }, [router, fetchData]);
 
-  const handleInvite = async (email: string, name: string, role: any) => {
+  const handleInvite = async (email: string, name: string, role: UserRole) => {
     const res = await fetch('/api/admin/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -121,7 +130,7 @@ export default function TeamPage() {
     await fetchData(currentUserId);
   };
 
-  const handleUpdateRole = async (userId: string, newRole: any) => {
+  const handleUpdateRole = async (userId: string, newRole: UserRole) => {
     const res = await fetch(`/api/admin/users/${userId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },

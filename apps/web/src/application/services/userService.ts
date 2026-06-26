@@ -3,6 +3,8 @@
  * Handles staff user management operations.
  */
 
+import type { UserDTO } from '@pedi-ai/shared/types';
+
 export type UserRole = 'dono' | 'gerente' | 'atendente' | 'cliente';
 
 export interface UserInput {
@@ -20,7 +22,7 @@ export interface UserUpdate {
 
 // ── Fetch Users ─────────────────────────────────────────────
 
-export async function getUsers(restaurantId: string): Promise<any[]> {
+export async function getUsers(restaurantId: string): Promise<UserDTO[]> {
   const response = await fetch(`/api/admin/users?restaurant_id=${restaurantId}`);
 
   if (!response.ok) {
@@ -28,11 +30,11 @@ export async function getUsers(restaurantId: string): Promise<any[]> {
     throw new Error(error.error || 'Failed to fetch users');
   }
 
-  const { users } = await response.json();
-  return users as any[];
+  const { users } = (await response.json()) as { users: UserDTO[] };
+  return users;
 }
 
-export async function getUser(userId: string): Promise<any> {
+export async function getUser(userId: string): Promise<UserDTO> {
   const response = await fetch(`/api/admin/users/${userId}`);
 
   if (!response.ok) {
@@ -40,8 +42,8 @@ export async function getUser(userId: string): Promise<any> {
     throw new Error(error.error || 'Failed to fetch user');
   }
 
-  const { user } = await response.json();
-  return user as any;
+  const { user } = (await response.json()) as { user: UserDTO };
+  return user;
 }
 
 // ── Invite User ─────────────────────────────────────────────
@@ -75,7 +77,7 @@ export async function inviteUser(input: UserInput): Promise<InviteUserResult> {
 
 // ── Update User ─────────────────────────────────────────────
 
-export async function updateUser(userId: string, updates: UserUpdate): Promise<any> {
+export async function updateUser(userId: string, updates: UserUpdate): Promise<UserDTO> {
   const response = await fetch(`/api/admin/users/${userId}`, {
     method: 'PUT',
     headers: {
@@ -89,8 +91,8 @@ export async function updateUser(userId: string, updates: UserUpdate): Promise<a
     throw new Error(error.error || 'Failed to update user');
   }
 
-  const { user } = await response.json();
-  return user as any;
+  const { user } = (await response.json()) as { user: UserDTO };
+  return user;
 }
 
 // ── Delete User ─────────────────────────────────────────────
@@ -108,6 +110,10 @@ export async function deleteUser(userId: string): Promise<void> {
 
 // ── Role Helpers ────────────────────────────────────────────
 
+function isKnownRole(value: string): value is UserRole {
+  return value === 'dono' || value === 'gerente' || value === 'atendente' || value === 'cliente';
+}
+
 export function canManageRole(currentRole: UserRole, targetRole: UserRole): boolean {
   const roleHierarchy: Record<UserRole, number> = {
     cliente: 0,
@@ -118,17 +124,19 @@ export function canManageRole(currentRole: UserRole, targetRole: UserRole): bool
   return roleHierarchy[currentRole] > roleHierarchy[targetRole];
 }
 
-export function getRoleLabel(role: UserRole): string {
+export function getRoleLabel(role: string): string {
+  if (!isKnownRole(role)) return role;
   const labels: Record<UserRole, string> = {
     dono: 'Proprietário',
     gerente: 'Gerente',
     atendente: 'Funcionário',
     cliente: 'Cliente',
   };
-  return labels[role] || role;
+  return labels[role];
 }
 
-export function getRoleColor(role: UserRole): string {
+export function getRoleColor(role: string): string {
+  if (!isKnownRole(role)) return '#6b7280';
   const colors: Record<UserRole, string> = {
     dono: '#dc2626',
     gerente: '#d97706',

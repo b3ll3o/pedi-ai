@@ -3,6 +3,11 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useRef } from 'react';
 
+import { Categoria } from '@/domain/cardapio/entities/Categoria';
+import { ItemCardapio } from '@/domain/cardapio/entities/ItemCardapio';
+import { TipoItemCardapio } from '@/domain/cardapio/value-objects/TipoItemCardapio';
+import { Dinheiro } from '@/domain/shared/value-objects/Dinheiro';
+
 import { CustomerHeader } from '@/components/customer/CustomerHeader';
 import { CategoryList } from '@/components/menu/CategoryList';
 import type { Category } from '@/components/menu/CategoryList';
@@ -27,6 +32,56 @@ function transformCategories(categoriesFromHook: MenuResponse['categories']): Ca
     description: c.description ?? undefined,
     imageUrl: c.image_url ?? undefined,
   }));
+}
+
+// Converte DTOs de cardápio (transporte HTTP) em entidades de domínio
+// (Categoria/ItemCardapio) para alimentar o store Zustand, que mantém
+// invariantes do domínio.
+function categoriasDtoParaEntidade(dto: MenuResponse['categories']): Categoria[] {
+  const now = new Date();
+  return dto.map((c) =>
+    Categoria.reconstruir({
+      id: c.id,
+      restauranteId: c.restaurant_id,
+      nome: c.name,
+      descricao: c.description,
+      imagemUrl: c.image_url,
+      ordemExibicao: c.sort_order,
+      ativo: c.active,
+      criadoEm: now,
+      atualizadoEm: now,
+      deletedAt: null,
+      version: 1,
+    })
+  );
+}
+
+function produtosDtoParaEntidade(categorias: MenuResponse['categories']): ItemCardapio[] {
+  const now = new Date();
+  return categorias.flatMap((c) =>
+    c.products.map((p) =>
+      ItemCardapio.reconstruir({
+        id: p.id,
+        categoriaId: p.category_id,
+        restauranteId: c.restaurant_id,
+        nome: p.name,
+        descricao: p.description,
+        imagemUrl: p.image_url,
+        preco: Dinheiro.criar(p.price),
+        // Cast justificado: DTO carrega strings livres; o domínio narrow em
+        // tempo de uso via `temLabel`. Aceitamos o ruído por ora.
+        labelsDieteticos: p.dietary_labels as unknown as Parameters<
+          typeof ItemCardapio.reconstruir
+        >[0]['labelsDieteticos'],
+        tipo: TipoItemCardapio.fromValue('produto'),
+        ativo: p.available,
+        criadoEm: now,
+        atualizadoEm: now,
+        deletedAt: null,
+        version: 1,
+      })
+    )
+  );
 }
 
 export default function MenuPageClient({ restaurantId }: MenuPageClientProps) {
@@ -74,14 +129,13 @@ export default function MenuPageClient({ restaurantId }: MenuPageClientProps) {
   // Sync fetched data to store
   useEffect(() => {
     if (data?.categories) {
-      setCategories(data.categories);
+      setCategories(categoriasDtoParaEntidade(data.categories));
     }
   }, [data?.categories, setCategories]);
 
   useEffect(() => {
     if (data?.categories) {
-      const allProducts = data.categories.flatMap((cat) => cat.products);
-      setProducts(allProducts);
+      setProducts(produtosDtoParaEntidade(data.categories));
     }
   }, [data?.categories, setProducts]);
 
@@ -91,7 +145,7 @@ export default function MenuPageClient({ restaurantId }: MenuPageClientProps) {
       return [];
     }
     const query = searchQuery.toLowerCase().trim();
-    return products.filter((p) => p.name.toLowerCase().includes(query));
+    return products.filter((p) => p.nome.toLowerCase().includes(query));
   }, [products, searchQuery]);
 
   const handleCategoryClick = (categoryId: string) => {

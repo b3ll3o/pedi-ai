@@ -11,6 +11,48 @@ export type OrderStatus =
   | 'delivered'
   | 'cancelled';
 export type PaymentStatus = 'pending' | 'paid' | 'refunded' | 'failed';
+export type PaymentMethod = 'pix' | 'credit_card' | 'debit_card' | 'cash';
+
+export interface OrderItemRow {
+  id: string;
+  product_id: string;
+  quantity: number;
+  unit_price: number;
+  notes?: string | null;
+  modifiers?: Array<{ id: string; name: string; price_delta: number }>;
+}
+
+export interface OrderStatusHistoryRow {
+  id: string;
+  status: OrderStatus;
+  changed_by?: string | null;
+  created_at: string;
+  notes?: string | null;
+}
+
+export interface OrderTableRef {
+  id: string;
+  name?: string | null;
+  number?: number;
+}
+
+export interface OrderWithItems {
+  id: string;
+  restaurant_id: string;
+  table_id: string | null;
+  table?: OrderTableRef | null;
+  status: OrderStatus;
+  payment_method?: PaymentMethod | null;
+  payment_status?: PaymentStatus | null;
+  subtotal: number;
+  tax: number;
+  total: number;
+  notes?: string | null;
+  items: OrderItemRow[];
+  status_history: OrderStatusHistoryRow[];
+  created_at: string;
+  updated_at: string;
+}
 
 export interface OrderFilters {
   restaurant_id: string;
@@ -21,8 +63,6 @@ export interface OrderFilters {
   limit?: number;
   offset?: number;
 }
-
-export type OrderWithItems = Record<string, any>;
 
 // ── Fetch Orders ─────────────────────────────────────────────
 

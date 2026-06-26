@@ -1,36 +1,39 @@
 /**
  * useMesa Hook
  * Hook para operações de mesa usando use cases do application layer.
+ *
+ * NOTA: Validação de QR code foi movida para a Route Handler
+ * `/api/tables/validate` (server-only) por motivo de segurança — o
+ * segredo HMAC não pode vazar no bundle do cliente. Consumidores
+ * devem chamar `fetch('/api/tables/validate', { qrCode })` diretamente.
  */
 
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
+
+import type { TableDTO } from '@pedi-ai/shared/types';
 
 import {
   ListarMesasUseCase,
   type ListarMesasInput,
 } from '@/application/mesa/services/ListarMesasUseCase';
-import {
-  ValidarQRCodeUseCase,
-  type ValidarQRCodeInput,
-  type MesaValidada,
-} from '@/application/mesa/services/ValidarQRCodeUseCase';
 import { db } from '@/infrastructure/persistence/database';
-import { MesaRepository } from '@/infrastructure/persistence/mesa';
-import { QRCodeCryptoService } from '@/infrastructure/services/QRCodeCryptoService';
+import { MesaRepository } from '@/infrastructure/persistence/mesa/MesaRepository';
 
-// Transformação de domain Mesa para formato da interface existente
-function _transformarMesa(mesa: {
+/**
+ * Transformação de domain Mesa para TableDTO (formato de transporte).
+ */
+function transformarMesa(mesa: {
   id: string;
   restauranteId: string;
   label: string;
   ativo: boolean;
-}): any {
+}): TableDTO {
   return {
     id: mesa.id,
     restaurant_id: mesa.restauranteId,
+    name: mesa.label,
     number: parseInt(mesa.label, 10) || 0,
     qr_code: null,
-    name: mesa.label,
     capacity: null,
     active: mesa.ativo,
     created_at: '',
@@ -42,31 +45,17 @@ function _transformarMesa(mesa: {
  * Usa ListarMesasUseCase do application layer.
  *
  * @param restauranteId - ID do restaurante
- * @returns UseQueryResult com mesas transformadas para formato compatível
+ * @returns UseQueryResult com mesas transformadas para TableDTO
  */
 export function useListarMesas(restauranteId: string) {
-  return useQuery<any[]>({
+  return useQuery<TableDTO[]>({
     queryKey: ['mesas', restauranteId],
     queryFn: async () => {
-      // Instanciar repository com o banco de dados
       const mesaRepo = new MesaRepository(db);
-
-      // Instanciar e executar use case
       const listarMesasUseCase = new ListarMesasUseCase(mesaRepo);
       const input: ListarMesasInput = { restauranteId };
       const mesas = await listarMesasUseCase.execute(input);
-
-      // Transformar para formato compatível com a interface existente
-      return mesas.map((m) => ({
-        id: m.id,
-        restaurant_id: m.restauranteId,
-        number: parseInt(m.label, 10) || 0,
-        qr_code: null,
-        name: m.label,
-        capacity: null,
-        active: m.ativo,
-        created_at: '',
-      }));
+      return mesas.map(transformarMesa);
     },
     enabled: !!restauranteId,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -74,43 +63,22 @@ export function useListarMesas(restauranteId: string) {
 }
 
 /**
- * Hook para validar QR code de mesa.
- * Usa ValidarQRCodeUseCase do application layer.
- */
-export function useValidarQRCode() {
-  return useMutation<MesaValidada, Error, ValidarQRCodeInput>({
-    mutationFn: async (input) => {
-      // Instanciar repository e serviço de validação QR code (infraestrutura)
-      const mesaRepo = new MesaRepository(db);
-      const qrCodeCryptoService = new QRCodeCryptoService();
-      // Instanciar e executar use case com dependências
-      const validarQRCodeUseCase = new ValidarQRCodeUseCase(qrCodeCryptoService, mesaRepo);
-      return validarQRCodeUseCase.execute(input);
-    },
-  });
-}
-
-/**
  * Hook para buscar uma mesa por ID.
  */
 export function useMesa(mesaId: string | null) {
-  return useQuery<any | null>({
+  return useQuery<TableDTO | null>({
     queryKey: ['mesa', mesaId],
     queryFn: async () => {
       if (!mesaId) return null;
       const mesaRepo = new MesaRepository(db);
       const mesa = await mesaRepo.findById(mesaId);
       if (!mesa) return null;
-      return {
+      return transformarMesa({
         id: mesa.id,
-        restaurant_id: mesa.restauranteId,
-        number: parseInt(mesa.label, 10) || 0,
-        qr_code: null,
-        name: mesa.label,
-        capacity: null,
-        active: mesa.ativo,
-        created_at: '',
-      };
+        restauranteId: mesa.restauranteId,
+        label: mesa.label,
+        ativo: mesa.ativo,
+      });
     },
     enabled: !!mesaId,
     staleTime: 1000,

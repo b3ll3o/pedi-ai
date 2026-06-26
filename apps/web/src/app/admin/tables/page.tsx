@@ -3,6 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 
+import type { TableDTO } from '@pedi-ai/shared/types';
+
 import { TableManagement } from '@/components/admin/TableManagement';
 import { TableQRCode } from '@/components/admin/TableQRCode';
 import { useRestaurantStore } from '@/infrastructure/persistence/restaurantStore';
@@ -17,13 +19,7 @@ interface TableFormData {
   generateQr: boolean;
 }
 
-interface Table {
-  id: string;
-  number: number;
-  name?: string | null;
-  capacity?: number | null;
-  active: boolean;
-}
+type Table = TableDTO;
 
 async function reactivateTable(tableId: string): Promise<{ table: Table }> {
   const response = await fetch(`/api/admin/tables/${tableId}/reactivate`, {

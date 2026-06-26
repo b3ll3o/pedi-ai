@@ -3,8 +3,10 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 
+import type { CategoryDTO, ProductDTO } from '@pedi-ai/shared/types';
+
 import { ProductForm, type ProductInput } from '@/components/admin/ProductForm';
-import { ProductList, type ProductListProduct } from '@/components/admin/ProductList';
+import { ProductList } from '@/components/admin/ProductList';
 import { useRestaurantStore } from '@/infrastructure/persistence/restaurantStore';
 import { getSession } from '@/lib/auth/client';
 
@@ -12,15 +14,8 @@ import styles from './page.module.css';
 
 type ToastType = 'success' | 'error' | null;
 
-interface Product extends ProductListProduct {
-  categoryId: string;
-  imageUrl?: string | null;
-}
-
-interface Category {
-  id: string;
-  name: string;
-}
+type Product = ProductDTO;
+type Category = Pick<CategoryDTO, 'id' | 'name'>;
 
 export default function ProductsPage() {
   const router = useRouter();

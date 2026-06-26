@@ -4,13 +4,12 @@ import { useRouter } from 'next/navigation';
 import { type ReactNode, useEffect, useState } from 'react';
 
 import { getSession } from '@/lib/auth/client';
+import type { UserRole } from '@/application/services/userService';
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  allowedRoles?: any[];
+  allowedRoles?: UserRole[];
 }
-
-type UserRole = any;
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -46,7 +45,7 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
         isAuthenticated: true,
         isLoading: false,
         userId: session.user.id,
-        userRole: session.user.role as any | null,
+        userRole: (session.user.role as UserRole | null) ?? null,
       });
     }
 
@@ -88,13 +87,14 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
   return <>{children}</>;
 }
 
-function getRedirectPath(role: UserRole | null): string {
+function getRedirectPath(role: UserRole | null | string): string {
   switch (role) {
     case 'dono':
       return '/admin/owner';
     case 'gerente':
       return '/admin/manager';
     case 'atendente':
+    case 'staff':
       return '/admin/staff';
     default:
       return '/';

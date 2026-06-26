@@ -93,7 +93,7 @@ function OrderItemsList({ items }: { items: OrderWithItems['items'] }) {
 
   return (
     <div className={styles.itemsList}>
-      {items.map((item: any) => (
+      {items.map((item) => (
         <div key={item.id} className={styles.item}>
           <div className={styles.itemInfo}>
             <span className={styles.itemQuantity}>{item.quantity}x</span>
@@ -130,7 +130,7 @@ function StatusHistoryList({ history }: { history: OrderWithItems['status_histor
 
   return (
     <div className={styles.historyList}>
-      {history.map((entry: any) => (
+      {history.map((entry) => (
         <div key={entry.id} className={styles.historyItem}>
           <span
             className={styles.historyStatus}

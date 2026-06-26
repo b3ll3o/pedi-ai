@@ -2,14 +2,14 @@
 
 import { useState } from 'react';
 
-import { getRoleLabel, getRoleColor } from '@/application/services/userService';
+import type { UserDTO } from '@pedi-ai/shared/types';
+
+import { getRoleLabel, getRoleColor, type UserRole } from '@/application/services/userService';
 
 import styles from './TeamManagement.module.css';
 
-type UserRole = 'dono' | 'gerente' | 'atendente' | 'cliente';
-
 interface TeamManagementProps {
-  users: any[];
+  users: UserDTO[];
   currentUserId: string;
   currentUserRole: UserRole;
   restaurantId: string;
@@ -40,18 +40,18 @@ export function TeamManagement({
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editingRole, setEditingRole] = useState<UserRole | null>(null);
 
-  const canManage = (userRole: UserRole): boolean => {
-    const hierarchy: Record<'dono' | 'gerente' | 'atendente' | 'cliente', number> = {
+  const canManage = (userRole: string): boolean => {
+    const hierarchy: Record<UserRole, number> = {
       cliente: 0,
       atendente: 1,
       gerente: 2,
       dono: 3,
     };
-    return hierarchy[currentUserRole] > hierarchy[userRole];
+    if (!(currentUserRole in hierarchy) || !(userRole in hierarchy)) return false;
+    return hierarchy[currentUserRole] > hierarchy[userRole as UserRole];
   };
 
-  const canEditRole = (userRole: UserRole): boolean => {
-    // Can't change owner role, and can only change roles lower than current user
+  const canEditRole = (userRole: string): boolean => {
     return userRole !== 'dono' && canManage(userRole);
   };
 
@@ -228,7 +228,7 @@ export function TeamManagement({
                         className={styles.editButton}
                         onClick={() => {
                           setEditingUserId(user.id);
-                          setEditingRole(user.role);
+                          setEditingRole(user.role as UserRole);
                         }}
                         title="Editar função"
                       >

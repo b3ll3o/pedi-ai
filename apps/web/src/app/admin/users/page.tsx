@@ -3,6 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 
+import type { UserDTO } from '@pedi-ai/shared/types';
+
 import {
   getUsers,
   inviteUser,
@@ -17,11 +19,11 @@ import { getSession } from '@/lib/auth/client';
 
 export default function UsersPage() {
   const router = useRouter();
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<UserDTO[]>([]);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole>('dono');
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [editingUser, setEditingUser] = useState<any | null>(null);
+  const [editingUser, setEditingUser] = useState<UserDTO | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [authUser, setAuthUser] = useState<{
@@ -108,7 +110,7 @@ export default function UsersPage() {
     [editingUser, authUser]
   );
 
-  const handleEdit = useCallback((user: any) => {
+  const handleEdit = useCallback((user: UserDTO) => {
     setEditingUser(user);
     setShowForm(true);
   }, []);
