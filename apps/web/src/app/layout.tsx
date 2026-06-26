@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from 'next/font/google';
 
 import { CartBadge } from '@/components/cart/CartBadge';
 import { CartDrawer } from '@/components/cart/CartDrawer';
-import { AppInitializer } from '@/components/providers/AppInitializer';
 import { OfflineIndicator } from '@/components/providers/OfflineIndicator';
 import { ReactQueryProvider } from '@/components/providers/ReactQueryProvider';
 import { ServiceWorkerRegistration } from '@/components/providers/ServiceWorkerRegistration';
@@ -111,6 +110,11 @@ export default function RootLayout({
       <head>
         <script
           type="application/ld+json"
+          // JSON.stringify escapa caracteres de controle automaticamente, mas
+          // para mitigar o risco de um valor futuro terminar com "</script>"
+          // (XSS via quebra de bloco script), serializamos com escape explícito
+          // do "<". Os valores abaixo são CONSTANTES do código — nunca input
+          // do usuário — então o risco é teórico, mas a defesa é barata.
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               '@context': 'https://schema.org',
@@ -202,7 +206,6 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <ReactQueryProvider>
           <StoreProvider>
-            <AppInitializer />
             <ServiceWorkerRegistration />
             <OfflineIndicator />
             <CartDrawer />

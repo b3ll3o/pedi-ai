@@ -15,17 +15,32 @@ export function OfflineIndicator() {
     }
     initOnlineState();
 
+    // Ref para o timer do toast "Conexão restaurada" — precisa ser
+    // cancelado no cleanup se o componente desmontar antes dos 3s,
+    // caso contrário o setState pós-unmount dispara warning do React.
+    let restoredTimer: ReturnType<typeof setTimeout> | null = null;
+
     function onOnline() {
       setIsOnline(true);
       setShowRestored(true);
-      setTimeout(() => setShowRestored(false), 3000);
-      // Sincronizar pedidos pendentes ao reconectar
+      if (restoredTimer) clearTimeout(restoredTimer);
+      restoredTimer = setTimeout(() => {
+        setShowRestored(false);
+        restoredTimer = null;
+      }, 3000);
+      // Sincronizar pedidos pendentes ao reconectar. O `processQueue`
+      // é idempotente (mutex singleton) — se o `StoreProvider` no
+      // mount já disparou, esta chamada resolve para a mesma promise.
       processQueue();
     }
 
     function onOffline() {
       setIsOnline(false);
       setShowRestored(false);
+      if (restoredTimer) {
+        clearTimeout(restoredTimer);
+        restoredTimer = null;
+      }
     }
 
     window.addEventListener('online', onOnline);
@@ -34,6 +49,10 @@ export function OfflineIndicator() {
     return () => {
       window.removeEventListener('online', onOnline);
       window.removeEventListener('offline', onOffline);
+      if (restoredTimer) {
+        clearTimeout(restoredTimer);
+        restoredTimer = null;
+      }
     };
   }, []);
 

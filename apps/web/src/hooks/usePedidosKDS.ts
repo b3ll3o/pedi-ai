@@ -131,7 +131,16 @@ export function usePedidosKDS({
     [queryClient, restauranteId]
   );
 
-  // Handle new orders via Socket.io and play sound
+  // Handle order events via Socket.io and play sound on new ones
+  //
+  // Eventos ouvidos:
+  // - `newOrder`: novo pedido acabou de entrar (toca som, atualiza lista).
+  // - `orderUpdate`: pedido existente mudou (status, items, etc). Só
+  //   invalida o cache — sem som, para não alarmar a cozinha com
+  //   alterações que não são "novo pedido" (e.g. waiter editou uma
+  //   observação). Era o gap do H13: o KDS só ficava em sync quando o
+  //   polling de 5s batia, porque a API emite `orderUpdate` ao
+  //   transicionar status mas o hook ignorava o evento.
   useEffect(() => {
     const handleNewOrder = (payload: { id: string }) => {
       if (somAtivado && !soundPlayedRef.current.has(payload.id)) {
@@ -141,12 +150,20 @@ export function usePedidosKDS({
       queryClient.invalidateQueries({ queryKey: ['kds-pedidos', restauranteId] });
     };
 
+    const handleOrderUpdate = () => {
+      // Sem payload esperado: o backend emite este evento para sinalizar
+      // "algo mudou nesta lista, refetch". Não toca som.
+      queryClient.invalidateQueries({ queryKey: ['kds-pedidos', restauranteId] });
+    };
+
     if (socketConnected) {
       on('newOrder', handleNewOrder as (...args: unknown[]) => void);
+      on('orderUpdate', handleOrderUpdate as (...args: unknown[]) => void);
     }
 
     return () => {
       off('newOrder', handleNewOrder as (...args: unknown[]) => void);
+      off('orderUpdate', handleOrderUpdate as (...args: unknown[]) => void);
     };
   }, [socketConnected, restauranteId, queryClient, somAtivado, on, off]);
 
@@ -158,7 +175,7 @@ export function usePedidosKDS({
         pollingRef.current = null;
       }
       // Necessário para resetar estado quando enabled=false ou restauranteId muda
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+
       setIsConnected(false);
       return;
     }
