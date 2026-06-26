@@ -107,7 +107,7 @@ export function useRealtimeOrders({
   useEffect(() => {
     if (!enabled || !restaurantId) {
       stopPolling();
-      /* eslint-disable react-hooks/set-state-in-effect */
+
       setIsConnected(false);
       return;
     }
@@ -142,12 +142,21 @@ export function useRealtimeConnection() {
   const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
+    // AbortController compartilhado para todos os fetches de ping deste
+    // effect — quando o componente desmontar (cleanup) ou a cada nova
+    // medição, cancela o anterior para evitar setState após unmount.
+    const abortController = new AbortController();
+
     const measureLatency = async () => {
       const start = Date.now();
       try {
         const response = await fetch('/api/health', {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
+          // Timeout: 5s. Sem isso, em captive portal / DNS lento, o fetch
+          // fica pendurado e `isConnected` permanece `true` enquanto a UI
+          // mostra "online" para o usuário.
+          signal: abortController.signal,
         });
         if (response.ok) {
           setLatency(Date.now() - start);
@@ -156,22 +165,56 @@ export function useRealtimeConnection() {
           setIsConnected(false);
           setLatency(null);
         }
-      } catch {
+      } catch (err) {
+        // AbortError é esperado no cleanup; não marcar como offline.
+        if (err instanceof DOMException && err.name === 'AbortError') return;
         setIsConnected(false);
         setLatency(null);
       }
     };
 
+    // Source-of-truth: o browser dispara `online`/`offline` *no momento
+    // exato* em que a conectividade muda (sem esperar 30s de ping).
+    // Usamos como acelerador — quando o browser diz que voltou, medimos
+    // latência imediatamente em vez de esperar o próximo tick. Quando
+    // diz que caiu, marcamos offline já.
+    //
+    // Importante: o browser ainda pode mentir (`navigator.onLine === true`
+    // em captive portal sem internet real), por isso o ping HTTP continua
+    // sendo a fonte autoritativa. Aqui só reagimos mais rápido.
+    const handleOnline = () => {
+      void measureLatency();
+    };
+    const handleOffline = () => {
+      setIsConnected(false);
+      setLatency(null);
+    };
+
+    // Estado inicial — espelha `navigator.onLine` para evitar flash de
+    // "online" antes da primeira medição. Como `setState` em effect é
+    // proibido pela regra `react-hooks/set-state-in-effect`, agendamos
+    // a atualização para o próximo microtask (sincronamente após o
+    // effect rodar, mas fora do corpo do effect).
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      queueMicrotask(() => setIsConnected(false));
+    }
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
     // Measure initial latency
-    measureLatency();
+    void measureLatency();
 
     // Measure latency every 30 seconds
     pingIntervalRef.current = setInterval(measureLatency, 30000);
 
     return () => {
-      /* istanbul ignore if */ if (pingIntervalRef.current) {
+      if (pingIntervalRef.current) {
         clearInterval(pingIntervalRef.current);
       }
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      abortController.abort();
     };
   }, []);
 
