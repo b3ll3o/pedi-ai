@@ -87,15 +87,21 @@ pedi-ai/
 
 Cada bounded context DDD possui seu próprio codemap:
 
-| Bounded Context | Codemap                                            | Status |
-| --------------- | -------------------------------------------------- | ------ |
-| `admin/`        | [Ver](apps/web/src/domain/admin/codemap.md)        | ✅     |
-| `autenticacao/` | [Ver](apps/web/src/domain/autenticacao/codemap.md) | ✅     |
-| `cardapio/`     | [Ver](apps/web/src/domain/cardapio/codemap.md)     | ✅     |
-| `mesa/`         | [Ver](apps/web/src/domain/mesa/codemap.md)         | ✅     |
-| `pagamento/`    | [Ver](apps/web/src/domain/pagamento/codemap.md)    | ✅     |
-| `pedido/`       | [Ver](apps/web/src/domain/pedido/codemap.md)       | ✅     |
-| `shared/`       | [Ver](apps/web/src/domain/shared/codemap.md)       | ✅     |
+| Bounded Context         | Codemap                                              | Status          |
+| ----------------------- | ---------------------------------------------------- | --------------- |
+| `admin/`                | [Ver](apps/web/src/domain/admin/codemap.md)          | ✅              |
+| `admin/feature-flags/`  | [Ver](apps/api/src/domain/admin/feature-flags/)      | ✅               |
+| `autenticacao/`         | [Ver](apps/web/src/domain/autenticacao/codemap.md)   | ✅              |
+| `cardapio/`             | [Ver](apps/web/src/domain/cardapio/codemap.md)       | ✅              |
+| `mesa/`                 | [Ver](apps/web/src/domain/mesa/codemap.md)           | ✅              |
+| `pagamento/`            | [Ver](apps/web/src/domain/pagamento/codemap.md)      | ✅              |
+| `pedido/`               | [Ver](apps/web/src/domain/pedido/codemap.md)         | ✅              |
+| `shared/`               | [Ver](apps/web/src/domain/shared/codemap.md)         | ✅              |
+
+> Subdomínio **Feature Flags Runtime** (DB-backed) está hospedado em `admin/`
+> por decisão de escopo (vide `.openspec/specs/admin/design.md §2.1`). SDK
+> compartilhado em [`packages/feature-flags/`](packages/feature-flags/);
+> guia operacional em [`docs/guides/FEATURE_FLAGS.md`](docs/guides/FEATURE_FLAGS.md).
 
 ---
 

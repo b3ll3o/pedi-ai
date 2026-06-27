@@ -27,21 +27,22 @@
 
 ## 📚 Guias Técnicos
 
-| Documento                 | Localização                         | Descrição                                                                             | Quando Consultar                                   |
-| ------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------- | -------------------------------------------------- |
-| **ARCHITECTURE**          | `./guides/ARCHITECTURE.md`          | Arquitetura DDD em 4 camadas (domain/application/infrastructure/presentation)         | Entender a estrutura DDD e regras de dependência   |
-| **OFFLINE**               | `./guides/OFFLINE.md`               | Service Worker (Workbox), Dexie (IndexedDB), BackgroundSync, BroadcastChannel         | Implementar/modificar funcionalidade offline-first |
-| **REALTIME**              | `./guides/REALTIME.md`              | Socket.io para updates realtime com polling fallback                                  | Implementar atualizações em tempo real de pedidos  |
-| **PAYMENTS**              | `./guides/PAYMENTS.md`              | PIX (Mercado Pago), webhooks, idempotência, modo demo                                 | Implementar/modificar fluxos de pagamento          |
-| **QR_CODE**               | `./guides/QR_CODE.md`               | Segurança HMAC-SHA256, validação de QR codes, timestamp expiry                        | Implementar/modificar sistema de mesas e QR codes  |
-| **ROLES**                 | `./guides/ROLES.md`                 | RBAC, multi-tenant, Row Level Security (RLS), autenticação admin/cliente              | Implementar/modificar controle de acesso           |
-| **MOBILE_PWA**            | `./guides/MOBILE_PWA.md`            | Mobile-first, PWA, safe areas iOS, CSS responsive, touch targets                      | Desenvolver UI responsiva e PWA                    |
-| **LIGHTHOUSE**            | `./guides/LIGHTHOUSE.md`            | Auditoria de performance manual (FCP, LCP, CLS, TTI, PWA, A11y)                       | Verificar performance e PWA                        |
-| **CI_CD**                 | `./guides/CI_CD.md`                 | GitHub Actions, docker-compose, deploy VPS, testes E2E em CI                          | Configurar/modificar pipeline de CI/CD             |
-| **SOFT_DELETE**           | `./guides/SOFT_DELETE.md`           | Implementação de soft delete (deletedAt, archived status)                             | Implementar/modificar exclusão reversível          |
-| **DDD_MIGRACAO_API**      | `./guides/DDD_MIGRACAO_API.md`      | Plano de migração da API NestJS para arquitetura DDD (bounded contexts, status atual) | Migrar módulos da API para DDD                     |
-| **ESLINT_BEST_PRACTICES** | `./guides/ESLINT_BEST_PRACTICES.md` | Regras ESLint, complexity threshold, patterns e anti-patterns                         | Manter qualidade de código                         |
-| **PUBLIC_NAVIGATION**     | `./guides/PUBLIC_NAVIGATION.md`     | Navegação pública vs protegida, middleware de autenticação,redirects                  | Implementar rotas públicas e auth middleware       |
+| Documento                 | Localização                         | Descrição                                                                               | Quando Consultar                                   |
+| ------------------------- | ----------------------------------- | --------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| **ARCHITECTURE**          | `./guides/ARCHITECTURE.md`          | Arquitetura DDD em 4 camadas (domain/application/infrastructure/presentation)          | Entender a estrutura DDD e regras de dependência   |
+| **OFFLINE**               | `./guides/OFFLINE.md`               | Service Worker (Workbox), Dexie (IndexedDB), BackgroundSync, BroadcastChannel          | Implementar/modificar funcionalidade offline-first |
+| **REALTIME**              | `./guides/REALTIME.md`              | Socket.io para updates realtime com polling fallback                                   | Implementar atualizações em tempo real de pedidos  |
+| **PAYMENTS**              | `./guides/PAYMENTS.md`              | PIX (Mercado Pago), webhooks, idempotência, modo demo                                  | Implementar/modificar fluxos de pagamento          |
+| **QR_CODE**               | `./guides/QR_CODE.md`               | Segurança HMAC-SHA256, validação de QR codes, timestamp expiry                         | Implementar/modificar sistema de mesas e QR codes  |
+| **ROLES**                 | `./guides/ROLES.md`                 | RBAC, multi-tenant, Row Level Security (RLS), autenticação admin/cliente               | Implementar/modificar controle de acesso           |
+| **MOBILE_PWA**            | `./guides/MOBILE_PWA.md`            | Mobile-first, PWA, safe areas iOS, CSS responsive, touch targets                       | Desenvolver UI responsiva e PWA                    |
+| **LIGHTHOUSE**            | `./guides/LIGHTHOUSE.md`            | Auditoria de performance manual (FCP, LCP, CLS, TTI, PWA, A11y)                        | Verificar performance e PWA                        |
+| **CI_CD**                 | `./guides/CI_CD.md`                 | GitHub Actions, docker-compose, deploy VPS, testes E2E em CI                           | Configurar/modificar pipeline de CI/CD             |
+| **SOFT_DELETE**           | `./guides/SOFT_DELETE.md`           | Implementação de soft delete (deletedAt, archived status)                              | Implementar/modificar exclusão reversível          |
+| **DDD_MIGRACAO_API**      | `./guides/DDD_MIGRACAO_API.md`      | Plano de migração da API NestJS para arquitetura DDD (bounded contexts, status atual)  | Migrar módulos da API para DDD                     |
+| **ESLINT_BEST_PRACTICES** | `./guides/ESLINT_BEST_PRACTICES.md` | Regras ESLint, complexity threshold, patterns e anti-patterns                          | Manter qualidade de código                         |
+| **PUBLIC_NAVIGATION**     | `./guides/PUBLIC_NAVIGATION.md`     | Navegação pública vs protegida, middleware de autenticação,redirects                   | Implementar rotas públicas e auth middleware       |
+| **FEATURE_FLAGS**         | `./guides/FEATURE_FLAGS.md`         | Feature flags runtime DB-backed, precedência, rollout %, RBAC, SDK, audit log           | Operar painel admin ou consumir flag no front/back |
 
 ---
 

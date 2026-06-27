@@ -37,6 +37,7 @@
 | [ESLINT_BEST_PRACTICES.md](guides/ESLINT_BEST_PRACTICES.md) | Regras ESLint, complexity threshold                     | Manter qualidade de código                           |
 |                                                             | [SOFT_DELETE.md](guides/SOFT_DELETE.md)                 | Soft delete pattern (deletedAt, archived)            | Implementar exclusão reversível |
 | [PUBLIC_NAVIGATION.md](guides/PUBLIC_NAVIGATION.md)         | Navegação pública vs protegida, middleware              | Implementar rotas públicas e auth                    |
+| [FEATURE_FLAGS.md](guides/FEATURE_FLAGS.md)                 | Feature flags runtime DB-backed, precedência, RBAC      | Operar painel admin ou consumir flag no front/back  |
 
 ### Fluxos Detalhados
 
@@ -87,6 +88,7 @@ docs/
     ├── REALTIME.md
     ├── ROLES.md
     └── SOFT_DELETE.md
+    └── FEATURE_FLAGS.md
 ```
 
 ---
