@@ -112,6 +112,10 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
+  // Pacotes workspace transpilados pelo Next para garantir que JSX/TSX
+  // sejam processados (alguns bundlers não processam sources em
+  // workspaces sem essa diretiva).
+  transpilePackages: ['@pedi-ai/feature-flags', '@pedi-ai/shared'],
   serverExternalPackages: ['postgres'],
   allowedDevOrigins: ['192.168.0.181', '192.168.1.0/24', '10.0.0.0/8', '172.16.0.0/12'],
   images: {

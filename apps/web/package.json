@@ -27,6 +27,7 @@
     "test:e2e:codegen": "playwright codegen"
   },
   "dependencies": {
+    "@pedi-ai/feature-flags": "workspace:*",
     "@tanstack/react-query": "^5.100.11",
     "dexie": "^4.4.2",
     "immer": "^11.1.8",
@@ -52,6 +53,7 @@
     "@playwright/test": "^1.60.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^22",
     "@types/pdfkit": "^0.17.6",
     "@types/pngjs": "^6.0.5",
@@ -62,7 +64,7 @@
     "eslint-config-next": "16.2.6",
     "fake-indexeddb": "^6.2.5",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.9",
-    "vite": "^8.0.16"
+    "vite": "^8.0.16",
+    "vitest": "^4.1.9"
   }
 }
