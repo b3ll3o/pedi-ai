@@ -50,7 +50,7 @@ Veja [design.md](./design.md).
 
 - **Múltiplos meios de pagamento** (cartão de crédito, débito) — fora de roadmap 2026.
 - **Split de pagamento** (marketplace) — backlog.
-- **CASHBACK** — flag existe mas **sem RF**; ver [design.md de `admin`](../../admin/design.md).
+- **CASHBACK** — flag existe mas **sem RF**; ver [design.md de `admin`](../admin/design.md).
 
 ---
 

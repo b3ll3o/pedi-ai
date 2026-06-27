@@ -14,7 +14,7 @@
 ## [ ] Fase 1 — Fechar ciclo de reembolso
 
 - [ ] `RF-PAY-09` — Webhook de status de reembolso → atualiza `Pagamento.status`.
-- [ ] Atualizar `RF-ORDER-12` em [`../pedido/design.md`](../../pedido/design.md) quando `RF-PAY-09` for entregue.
+- [ ] Atualizar `RF-ORDER-12` em [`../pedido/design.md`](../pedido/design.md) quando `RF-PAY-09` for entregue.
 
 ---
 
