@@ -71,17 +71,17 @@ function walk(dir: string, exts: string[], out: string[] = []): string[] {
 
 // ─── Parsers ─────────────────────────────────────────────────────────────────
 
-const RF_HEADING = /^###\s+`?(RF-[A-Z]+-\d+)`?\s+[—\-]+\s*(.+)$/gm;
-const SPEC_COMMENT_RE = /@spec\(\s*(RF-[A-Z]+-\d+(?:\s*,\s*RF-[A-Z]+-\d+)*)\s*\)/g;
-const SPEC_TEST_RE = /RF-[A-Z]+-\d+/g;
+const RF_HEADING = /^###\s+`?(RF-[A-Z]+(?:-[A-Z]+)?-\d+)`?\s+[—\-]+\s*(.+)$/gm;
+const SPEC_COMMENT_RE = /@spec\(\s*((?:RF-[A-Z]+(?:-[A-Z]+)?-\d+|RNF-[A-Z]+(?:-[A-Z]+)?-\d+)(?:\s*,\s*(?:RF-[A-Z]+(?:-[A-Z]+)?-\d+|RNF-[A-Z]+(?:-[A-Z]+)?-\d+))*)\s*\)/g;
+const SPEC_TEST_RE = /RF-[A-Z]+(?:-[A-Z]+)?-\d+/g;
 
 function parseSpec(bc: string, designPath: string): RfRef[] {
   const content = readFileSync(designPath, 'utf-8');
   const refs: RfRef[] = [];
   // Formato 1: heading `### \`RF-XXX-NN\` — Descrição` (usado em `autenticacao`)
-  const headingRe = /^###\s+`?(RF-[A-Z]+-\d+)`?\s+[—\-]+\s*(.+)$/;
+  const headingRe = /^###\s+`?(RF-[A-Z]+(?:-[A-Z]+)?-\d+)`?\s+[—\-]+\s*(.+)$/;
   // Formato 2: linha de tabela `| \`RF-XXX-NN\` | Descrição | ...` (usado em admin, cardapio, mesa, pedido, pagamento)
-  const tableRe = /^\|\s*`?(RF-[A-Z]+-\d+)`?\s*\|\s*([^|]+?)\s*\|/;
+  const tableRe = /^\|\s*`?(RF-[A-Z]+(?:-[A-Z]+)?-\d+)`?\s*\|\s*([^|]+?)\s*\|/;
 
   for (const line of content.split('\n')) {
     let m = line.match(headingRe);
@@ -115,15 +115,17 @@ function collectSpecs(): RfRef[] {
 
 function collectCodeRefs(): CodeRef[] {
   const files = [
-    ...walk(join(ROOT, 'apps', 'web', 'src', 'domain'), ['.ts']),
-    ...walk(join(ROOT, 'apps', 'web', 'src', 'application'), ['.ts']),
-    ...walk(join(ROOT, 'apps', 'web', 'src', 'infrastructure'), ['.ts']),
-    ...walk(join(ROOT, 'apps', 'web', 'src', 'lib'), ['.ts']),
-    ...walk(join(ROOT, 'apps', 'web', 'src', 'hooks'), ['.ts']),
-    ...walk(join(ROOT, 'apps', 'web', 'src', 'app'), ['.ts']),
+    ...walk(join(ROOT, 'apps', 'web', 'src', 'domain'), ['.ts', '.tsx']),
+    ...walk(join(ROOT, 'apps', 'web', 'src', 'application'), ['.ts', '.tsx']),
+    ...walk(join(ROOT, 'apps', 'web', 'src', 'infrastructure'), ['.ts', '.tsx']),
+    ...walk(join(ROOT, 'apps', 'web', 'src', 'lib'), ['.ts', '.tsx']),
+    ...walk(join(ROOT, 'apps', 'web', 'src', 'hooks'), ['.ts', '.tsx']),
+    ...walk(join(ROOT, 'apps', 'web', 'src', 'app'), ['.ts', '.tsx']),
+    ...walk(join(ROOT, 'apps', 'web', 'src', 'components'), ['.ts', '.tsx']),
     ...walk(join(ROOT, 'apps', 'api', 'src', 'domain'), ['.ts']),
     ...walk(join(ROOT, 'apps', 'api', 'src', 'application'), ['.ts']),
     ...walk(join(ROOT, 'apps', 'api', 'src', 'infrastructure'), ['.ts']),
+    ...walk(join(ROOT, 'apps', 'api', 'src', 'presentation'), ['.ts']),
   ];
 
   const refs: CodeRef[] = [];
@@ -135,7 +137,10 @@ function collectCodeRefs(): CodeRef[] {
     while ((m = SPEC_COMMENT_RE.exec(content)) !== null) {
       const ids = m[1].split(',').map((s) => s.trim());
       for (const id of ids) {
-        refs.push({ rf: id, path: relative(ROOT, file).split(sep).join('/') });
+        // Apenas RFs são indexados na RTM; RNFs ficam em tabela própria
+        if (id.startsWith('RF-')) {
+          refs.push({ rf: id, path: relative(ROOT, file).split(sep).join('/') });
+        }
       }
     }
   }
