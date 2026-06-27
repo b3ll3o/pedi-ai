@@ -1,90 +1,60 @@
-# BDD — Behavior-Driven Development
+# BDD — Behavior-Driven Development (Legado)
 
-> **Status:** Estrutura inicial — **PoC não integradas ao runner ainda**
-> Veja [`.openspec/AGENTS.md`](../../../../.openspec/AGENTS.md) §7 para RTM.
+> **Status:** Estrutura legada, mantida apenas como referência histórica.
+> O runner BDD canônico do projeto é **cucumber-js** e vive na API.
+>
+> Veja também:
+>
+> - [Decisão de runner](../../../../docs/qa/bdd-runner-decision.md)
+> - Features canônicas: [`apps/api/test/features/`](../../../../apps/api/test/features/)
+> - Plano de testes: [`docs/qa/feature-flags-test-plan.md`](../../../../docs/qa/feature-flags-test-plan.md)
 
-Esta pasta contém **especificações executáveis** em formato Gherkin (`.feature`)
-para cada Bounded Context. Cada arquivo referencia os `RF-<CTX>-NN` declarados
-em [`.openspec/specs/`](../../../../.openspec/specs/).
+Os arquivos `.feature` deste diretório foram especificados durante a fase de
+discovery do DDD mas **não são executados pelo runner atual**. Para evitar
+duplicação, o esforço de BDD foi consolidado em `apps/api/test/features/`
+onde está integrado ao cucumber-js via `pnpm --filter @pedi-ai/api test:bdd`.
 
 ---
 
-## Estrutura
+## Estrutura (legado)
 
 ```
 apps/web/tests/bdd/
-├── README.md                       # Este arquivo
-├── steps/                          # Steps em pt-BR (a criar quando integrar runner)
-│   └── ...
-└── features/
-    ├── autenticacao/
-    │   └── autenticacao.feature
-    ├── admin/
-    │   └── admin-restaurante.feature
-    ├── cardapio/
-    │   └── cardapio-navegacao.feature
-    ├── mesa/
-    │   └── mesa-qr-code.feature
-    ├── pedido/
-    │   └── pedido-completo.feature
-    └── pagamento/
-        └── pagamento-pix.feature
+├── README.md                       # Este arquivo (legado)
+├── features/                       # ⚠️ NÃO usado pelo runner atual
+│   ├── autenticacao/
+│   │   └── autenticacao.feature
+│   ├── admin/
+│   │   └── admin-restaurante.feature
+│   ├── cardapio/
+│   │   └── cardapio-navegacao.feature
+│   ├── mesa/
+│   │   └── mesa-qr-code.feature
+│   ├── pedido/
+│   │   └── pedido-completo.feature
+│   └── pagamento/
+│       └── pagamento-pix.feature
+└── steps/                          # vazio (steps nunca foram criados)
 ```
 
----
+## Por que foi descontinuado
 
-## Como rodar (quando integrado)
+| Aspecto               | `apps/web/tests/bdd/` (legado)      | `apps/api/test/features/` (atual)     |
+| --------------------- | ----------------------------------- | ------------------------------------- |
+| Runner                | nenhum (apenas `.feature` escritos) | `@cucumber/cucumber@^13.0.0`          |
+| Local de step defs    | `apps/web/tests/bdd/steps/` (vazio) | `apps/api/test/step-definitions/`     |
+| Prisma/JWT/DB helpers | n/a                                 | `apps/api/test/support/world.ts`      |
+| Execução              | —                                   | `pnpm --filter @pedi-ai/api test:bdd` |
+| Cobertura hoje        | apenas `feature-flags/` na API      | em expansão para demais BCs           |
 
-```bash
-# 1. Instalar runner (Playwright BDD é a recomendação)
-pnpm add -D playwright-bdd @cucumber/cucumber
+## Migração
 
-# 2. Configurar vitest.config.ts (ou playwright.config.ts) para descobrir .feature
-# 3. Mapear steps para funções TypeScript
-pnpm test:bdd
-```
+Para portar cenários deste diretório para o runner canônico:
 
-**Recomendação**: usar [`playwright-bdd`](https://github.com/vitalets/playwright-bdd)
-para reaproveitar os Page Objects já existentes em `apps/web/tests/e2e/pages/`.
+1. Copie o `.feature` para `apps/api/test/features/<bc>/`.
+2. Crie step definitions em `apps/api/test/step-definitions/<bc>.steps.ts`.
+3. Use o `World` customizado de `apps/api/test/support/world.ts`.
+4. Atualize a RTM (`pnpm rtm`) para apontar para o novo path.
 
----
-
-## Convenção de Linguagem
-
-- **pt-BR** em todos os steps (Dado/Quando/Então/ E).
-- Tags `@RF-XXX-NN` para vincular a requisitos formais.
-- Tags `@smoke`, `@critical`, `@slow` (alinhadas com E2E).
-
-Exemplo:
-
-```gherkin
-# language: pt
-Funcionalidade: Autenticação de cliente
-  Como um cliente do restaurante
-  Eu quero me autenticar com e-mail e senha
-  Para poder fazer pedidos
-
-  @RF-AUTH-02 @smoke @critical
-  Cenário: Login com credenciais válidas
-    Dado que estou na página de login
-    Quando eu preencho "email@example.com" e "senha123"
-    E clico em "Entrar"
-    Então devo ser redirecionado para "/cardapio"
-    E devo ver "Olá, usuário"
-```
-
----
-
-## Status por BC
-
-| BC             | Feature                                   | Status          |
-| -------------- | ----------------------------------------- | --------------- |
-| `autenticacao` | `autenticacao.feature` (3 cenários)       | ✅ Spec escrita |
-| `admin`        | `admin-restaurante.feature` (2 cenários)  | ✅ Spec escrita |
-| `cardapio`     | `cardapio-navegacao.feature` (2 cenários) | ✅ Spec escrita |
-| `mesa`         | `mesa-qr-code.feature` (2 cenários)       | ✅ Spec escrita |
-| `pedido`       | `pedido-completo.feature` (2 cenários)    | ✅ Spec escrita |
-| `pagamento`    | `pagamento-pix.feature` (2 cenários)      | ✅ Spec escrita |
-
-**Próximo passo (a coordenar com Time Plataforma)**: integrar `playwright-bdd`
-e mapear os steps para os Page Objects existentes.
+Veja [`docs/qa/bdd-runner-decision.md`](../../../../docs/qa/bdd-runner-decision.md)
+para contexto completo da decisão.

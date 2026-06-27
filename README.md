@@ -19,7 +19,7 @@ Aplicação de **Cardápio Digital** para restaurantes com foco em **mobile-firs
 - **Backend**: NestJS + Fastify + Prisma ORM + PostgreSQL
 - **Offline**: Service Worker (Workbox) + IndexedDB (Dexie)
 - **Estado**: Zustand + React Query
-- **Testes Unitários**: Vitest (154 test files, 1852 tests)
+- **Testes Unitários**: Vitest (205 test files, 2388 testes)
 - **Testes E2E**: Playwright (43 specs)
 - **Pagamentos**: Mercado Pago (PIX)
 - **Autenticação**: JWT com bcrypt

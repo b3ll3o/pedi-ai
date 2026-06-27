@@ -2,7 +2,7 @@
 
 > Cardápio Digital para Restaurantes (offline-first, multi-tenant)
 >
-| **Versão:** 1.4.0 | **Atualizado em:** 2026-05-25 | **Monorepo:** pnpm workspaces
+| **Versão:** 1.5.0 | **Atualizado em:** 2026-06-27 | **Monorepo:** pnpm workspaces
 
 ## Project Responsibility
 
@@ -10,13 +10,13 @@ Pedi-AI é uma plataforma de cardápio digital que permite restaurantes gerencia
 
 ### Tech Stack
 
-| Camada   | Tecnologia                                                       |
-| -------- | ---------------------------------------------------------------- |
-| Frontend | Next.js 16 + TypeScript + React 19                               |
-| Backend  | NestJS + Fastify + Prisma ORM + PostgreSQL                       |
-| Offline  | Service Worker (Workbox) + IndexedDB (Dexie)                     |
-| Estado   | Zustand + React Query                                            |
-| Testes   | Vitest (154 test files, 1852 testes) + Playwright (43 specs E2E) |
+| Camada   | Tecnologia                                                          |
+| -------- | ------------------------------------------------------------------- |
+| Frontend | Next.js 16 + TypeScript + React 19                                  |
+| Backend  | NestJS + Fastify + Prisma ORM + PostgreSQL                          |
+| Offline  | Service Worker (Workbox) + IndexedDB (Dexie)                        |
+| Estado   | Zustand + React Query                                               |
+| Testes   | Vitest (205 test files, 2388 testes) + Playwright (43 specs E2E)    |
 
 ---
 

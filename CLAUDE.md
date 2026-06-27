@@ -18,7 +18,7 @@ pnpm dev              # Next.js :3000 + API :3001
 pnpm build            # Production build
 pnpm lint             # ESLint
 
-# Unit tests (apps/web: 154 files, 1852 tests)
+# Unit tests (apps/web: 205 files, 2388 testes)
 pnpm test             # All unit tests
 pnpm test:watch       # Watch mode
 pnpm test:coverage     # With coverage report
@@ -130,7 +130,15 @@ Validação usa **HMAC-SHA256**. Implementação em `apps/web/src/lib/qr/validat
 
 ## Feature Flags
 
-Flags configuradas via variáveis de ambiente em `.env.local`:
+Sistema de feature flags **runtime, DB-backed** com overrides por escopo
+(GLOBAL/RESTAURANT/USER) e propagação por polling 30 s no front. Hospedado
+no BC `admin`. Guia operacional em
+[`docs/guides/FEATURE_FLAGS.md`](./docs/guides/FEATURE_FLAGS.md). Spec em
+[`.openspec/specs/admin/design.md §2.1`](./.openspec/specs/admin/design.md).
+
+**Compatibilidade legada:** as variáveis abaixo em `.env.local` ainda são
+lidas por `apps/web/src/lib/feature-flags.ts` como fallback quando o SDK
+não consegue consultar o DB (`RNF-AVAIL-FF-01`).
 
 | Flag                                    | Descrição                                    |
 | --------------------------------------- | -------------------------------------------- |
@@ -142,6 +150,14 @@ Flags configuradas via variáveis de ambiente em `.env.local`:
 | `NEXT_PUBLIC_FEATURE_WAITER_MODE`       | Sistema de chamada garçom                    |
 | `NEXT_PUBLIC_FEATURE_ANALYTICS_ENABLED` | Dashboard de analytics                       |
 | `NEXT_PUBLIC_FEATURE_CASHBACK_ENABLED`  | Cashback (planejado, sem RF atual)           |
+
+**Como consumir no front (Next.js + React):**
+
+```tsx
+import { useFeatureFlag } from '@/infrastructure/feature-flags';
+
+const pixHabilitado = useFeatureFlag<boolean>('pix_enabled', false);
+```
 
 ---
 
