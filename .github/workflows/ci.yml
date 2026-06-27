@@ -43,8 +43,11 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
 
-      - name: Executar testes unitários
+      - name: Executar testes unitários (web + api)
         run: pnpm test:unit
+
+      - name: Executar testes do pacote @pedi-ai/feature-flags
+        run: pnpm --filter @pedi-ai/feature-flags test
 
   integration-tests:
     name: Testes de Integração
