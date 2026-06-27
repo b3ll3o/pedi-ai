@@ -14,6 +14,7 @@ export default defineConfig({
       'apps/web/tests/integration/**/*.test.{ts,tsx}',
       'apps/api/tests/**/*.test.{ts,tsx}',
       'apps/api/tests/**/*.spec.ts',
+      'packages/feature-flags/tests/unit/**/*.test.{ts,tsx}',
     ],
     exclude: ['apps/web/tests/unit/**/*.loading.test.tsx'],
     testTimeout: 10_000,
@@ -65,6 +66,10 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './apps/web/src'),
+      // Pacotes workspace — apontam para as fontes diretas (sem build step).
+      // O `pnpm install` cria symlinks em node_modules, mas o alias garante
+      // resolução direta também em ambientes sem workspace configurado.
+      '@pedi-ai/feature-flags': path.resolve(__dirname, './packages/feature-flags/src'),
       // Mock do pacote `server-only` em testes: o pacote não está instalado
       // (é um marker do Next.js para erros de build em client components).
       // Apontamos para um stub local que exporta vazio.
