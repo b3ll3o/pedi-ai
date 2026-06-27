@@ -202,3 +202,35 @@ A RTM **MUST** ser regenerada antes de fechar um PR que toque `.openspec/`.
 | **RTM**      | Requirements Traceability Matrix                |
 | **Baseline** | Estado aprovado de uma spec                     |
 | **Change**   | Proposta de mudança em `.openspec/changes/`     |
+
+---
+
+## 11. Workflow Pós-Merge (Changes → Specs)
+
+Quando uma `Change` em `.openspec/changes/<id>/` é mergeada no `master`:
+
+1. **Atualizar a spec baseline** — migrar conteúdo relevante (novos RF/RNF
+   declarados, decisões de design, links para código) para o
+   `design.md` / `proposal.md` da pasta `.openspec/specs/<bc>/`
+   correspondente. Marcar a nova entrada como `✅ Done` com referência ao
+   merge commit.
+
+2. **Marcar a `Change` como aplicada** — adicionar cabeçalho
+   `> **Status:** ✅ Aplicada · **Data:** YYYY-MM-DD · **Merge:** master@<sha>`
+   em `.openspec/changes/<id>/proposal.md` para preservar rastreabilidade
+   histórica (a pasta **NÃO** deve ser deletada — é o registro de decisão).
+
+3. **Regenerar a RTM** — executar `pnpm rtm` e commitar
+   `docs/requirements/RTM.md` no mesmo PR de merge (ou em um PR de
+   "chore(rtm)" subsequente imediato).
+
+4. **Atualizar docs cruzadas** — verificar se o novo agregado precisa de
+   entrada em `codemap.md`, `docs/INDICE.md`, `docs/README.md` e (se for
+   guia de operação) em `docs/guides/`.
+
+5. **Não arquivar nem deletar** a pasta `.openspec/changes/<id>/` após o
+   merge. Ela permanece como histórico da decisão (RFC-style).
+
+> **Exceção:** se a `Change` foi rejeitada/abandonada, ela **DEVE** ser
+> marcada com `> **Status:** ❌ Rejeitada · **Motivo:** ...` no topo do
+> `proposal.md`. Também não deve ser deletada.

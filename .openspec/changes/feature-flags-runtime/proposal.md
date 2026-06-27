@@ -1,7 +1,8 @@
 # Proposal — Feature Flags Runtime (DB-backed)
 
-> **Status:** Proposta (não-aprovada) · **Data:** 2026-06-26 · **Owner:** Time Admin · **BC destino:** `admin`
+> **Status:** ✅ Aplicada · **Data:** 2026-06-26 · **Owner:** Time Admin · **BC destino:** `admin`
 > **Slug:** `feature-flags-runtime` · **Mudança de baseline:** sim, novo agregado no BC `admin`.
+> **Merge:** `master@33e5259` (F1 + F2 + F3 + F4 entregues; F5 observabilidade parcial em produção).
 
 ---
 
