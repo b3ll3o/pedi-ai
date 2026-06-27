@@ -5,6 +5,8 @@ on:
   push:
     branches:
       - master
+      - fix/ci-prisma-generate
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
