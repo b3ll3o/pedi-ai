@@ -36,6 +36,11 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
 
+      - name: Gerar Prisma Client
+        # Necessário antes do tsc --noEmit: imports como `UserRole`/`OrderStatus`
+        # vêm de .prisma/client/index.d.ts (gerado, não versionado).
+        run: pnpm --filter @pedi-ai/api exec prisma generate
+
       - name: Executar type-check
         run: |
           pnpm --filter @pedi-ai/web exec tsc --noEmit
@@ -154,6 +159,11 @@ jobs:
 
       - name: Setup
         uses: ./.github/actions/setup
+
+      - name: Gerar Prisma Client
+        # Necessário para que testes de cobertura do @pedi-ai/api consigam
+        # resolver imports do Prisma Client gerado.
+        run: pnpm --filter @pedi-ai/api exec prisma generate
 
       - name: Executar verificação de cobertura
         run: pnpm test:coverage
