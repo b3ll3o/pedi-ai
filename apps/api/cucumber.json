@@ -1,0 +1,10 @@
+{
+  "default": {
+    "paths": ["test/features/**/*.feature"],
+    "require": ["test/step-definitions/**/*.ts", "test/support/**/*.ts"],
+    "requireModule": ["ts-node/register"],
+    "format": ["progress-bar"],
+    "formatOptions": { "snippetInterface": "async-await" },
+    "parallel": 1
+  }
+}

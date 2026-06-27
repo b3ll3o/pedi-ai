@@ -4,6 +4,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 
 import { AnalyticsModule } from './analytics/analytics.module';
+import { FeatureFlagsModule } from './presentation/admin/feature-flags/module/feature-flags.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
@@ -50,6 +51,7 @@ import { UsersModule } from './users/users.module';
     DatabaseModule,
     QueueModule,
     AnalyticsModule,
+    FeatureFlagsModule,
     AuthModule,
     UsersModule,
     RestaurantsModule,

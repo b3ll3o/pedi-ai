@@ -51,6 +51,20 @@ enum SubscriptionStatus {
   expired
 }
 
+// Feature Flags — RF-ADM-FF-01..10 (apps/api/.openspec/changes/feature-flags-runtime/design.md §4)
+enum FlagScope {
+  GLOBAL
+  RESTAURANT
+  USER
+}
+
+enum FlagValueType {
+  BOOLEAN
+  STRING
+  NUMBER
+  JSON
+}
+
 // ── Tables ─────────────────────────────────────────────────────
 
 model Restaurant {
@@ -422,4 +436,62 @@ model WebhookEvent {
   id           String   @id @default(uuid())
   eventType    String
   processedAt  DateTime @default(now())
+}
+
+/// FeatureFlag (aggregate root) — RF-ADM-FF-01..04
+model FeatureFlag {
+  id           String        @id @default(cuid())
+  key          String        @unique
+  description  String?
+  valueType    FlagValueType @default(BOOLEAN)
+  defaultValue Json
+  enabled      Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  updatedBy    String?
+
+  overrides FeatureFlagOverride[]
+  audits    FeatureFlagAuditLog[]
+
+  @@map("feature_flags")
+}
+
+/// Override de flag por escopo (RF-ADM-FF-05..07)
+model FeatureFlagOverride {
+  id         String    @id @default(cuid())
+  flagId     String
+  scope      FlagScope
+  scopeId    String?
+  /// Porcentagem 0..100 para rollout determinístico (RF-ADM-FF-08)
+  rolloutPct Int?
+  value      Json
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+  createdBy  String?
+
+  flag FeatureFlag @relation(fields: [flagId], references: [id], onDelete: Cascade)
+
+  @@unique([flagId, scope, scopeId])
+  @@index([flagId, scope, scopeId])
+  @@index([expiresAt])
+  @@map("feature_flag_overrides")
+}
+
+/// Audit log imutável (RNF-RELI-FF-01) — gravado na mesma transação da mutação
+model FeatureFlagAuditLog {
+  id        String   @id @default(cuid())
+  flagId    String
+  actorId   String
+  /// CREATE | UPDATE | TOGGLE | OVERRIDE_ADD | OVERRIDE_REMOVE | ROLLOUT_CHANGE
+  action    String
+  before    Json?
+  after     Json?
+  reason    String?
+  createdAt DateTime @default(now())
+
+  flag FeatureFlag @relation(fields: [flagId], references: [id], onDelete: Cascade)
+
+  @@index([flagId, createdAt])
+  @@index([actorId, createdAt])
+  @@map("feature_flag_audit_logs")
 }

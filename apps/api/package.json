@@ -11,6 +11,9 @@
     "test": "vitest",
     "test:watch": "vitest --watch",
     "test:cov": "vitest --coverage",
+    "test:bdd": "TS_NODE_PROJECT=./tsconfig.bdd.json TS_NODE_TRANSPILE_ONLY=true cucumber-js",
+    "test:bdd:fast": "TS_NODE_PROJECT=./tsconfig.bdd.json TS_NODE_TRANSPILE_ONLY=true cucumber-js --tags 'not @slow and not @load-test'",
+    "test:bdd:gerenciar": "TS_NODE_PROJECT=./tsconfig.bdd.json TS_NODE_TRANSPILE_ONLY=true cucumber-js --tags '@gerenciar-flags' test/features/admin/feature-flags/gerenciar-flags.feature",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
@@ -55,6 +58,7 @@
     "socket.io": "^4.8.3"
   },
   "devDependencies": {
+    "@cucumber/cucumber": "^13.0.0",
     "@nestjs/cli": "^11.0.21",
     "@nestjs/schematics": "^11.1.0",
     "@nestjs/testing": "^11.1.27",
@@ -63,6 +67,7 @@
     "@types/passport-jwt": "^4.0.1",
     "eslint": "^9",
     "prisma": "^5.22.0",
+    "ts-node": "^10.9.2",
     "tsx": "^4.22.3",
     "typescript": "^6",
     "vite": "^8.0.16",
