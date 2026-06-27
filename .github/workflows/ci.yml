@@ -177,10 +177,20 @@ jobs:
     if: always()
     steps:
       - name: Verificar status final
+        # Passa o `result` de cada job como variável de ambiente. Não dá pra usar
+        # `${{ needs[job].result }}` em loop bash: o `${{ }}` é avaliado uma vez
+        # antes do shell rodar, com `job` literal, então sempre retornaria vazio.
+        env:
+          LINT: ${{ needs.lint.result }}
+          TYPE_CHECK: ${{ needs.type-check.result }}
+          UNIT_TESTS: ${{ needs.unit-tests.result }}
+          INTEGRATION: ${{ needs.integration-tests.result }}
+          COVERAGE: ${{ needs.coverage.result }}
+          COMPLEXITY: ${{ needs.complexity.result }}
         run: |
           FAILED=""
-          for job in lint type-check unit-tests integration-tests coverage complexity; do
-            if [ "${{ needs[job].result }}" != "success" ]; then
+          for job in LINT TYPE_CHECK UNIT_TESTS INTEGRATION COVERAGE COMPLEXITY; do
+            if [ "${!job}" != "success" ]; then
               FAILED="$FAILED $job"
             fi
           done
