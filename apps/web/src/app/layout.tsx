@@ -7,6 +7,7 @@ import { OfflineIndicator } from '@/components/providers/OfflineIndicator';
 import { ReactQueryProvider } from '@/components/providers/ReactQueryProvider';
 import { ServiceWorkerRegistration } from '@/components/providers/ServiceWorkerRegistration';
 import { StoreProvider } from '@/components/providers/StoreProvider';
+import { ToastProvider } from '@/lib/notification';
 import './globals.css';
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://pedi-ai.com';
@@ -205,13 +206,15 @@ export default function RootLayout({
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <ReactQueryProvider>
-          <StoreProvider>
-            <ServiceWorkerRegistration />
-            <OfflineIndicator />
-            <CartDrawer />
-            <CartBadge />
-            {children}
-          </StoreProvider>
+          <ToastProvider>
+            <StoreProvider>
+              <ServiceWorkerRegistration />
+              <OfflineIndicator />
+              <CartDrawer />
+              <CartBadge />
+              {children}
+            </StoreProvider>
+          </ToastProvider>
         </ReactQueryProvider>
       </body>
     </html>
