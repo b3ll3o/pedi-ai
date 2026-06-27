@@ -22,7 +22,7 @@ const SEED_RESULT_PATH =
 /**
  * User role types.
  */
-export type UserRole = 'customer' | 'admin' | 'waiter';
+export type UserRole = 'customer' | 'admin' | 'waiter' | 'manager';
 
 /**
  * Extended fixtures with authentication and seed data.
@@ -32,6 +32,7 @@ export interface Fixtures {
   authenticated: Page;
   admin: Page;
   waiter: Page;
+  manager: Page;
   cleanPage: Page;
   seedData: SeedData;
   api: APIRequestContext;
@@ -45,6 +46,7 @@ export interface SeedData {
   customer: { email: string; password: string; id: string };
   admin: { email: string; password: string; id: string };
   waiter: { email: string; password: string; id: string };
+  manager: { email: string; password: string; id: string };
   table: { id: string; code: string };
   categories: Array<{ id: string; name: string }>;
   products: Array<{ id: string; name: string; price: number }>;
@@ -86,6 +88,11 @@ async function loadSeedData(): Promise<SeedData> {
       id: raw.users.waiter.id,
       email: raw.users.waiter.email,
       password: raw.users.waiter.password,
+    },
+    manager: {
+      id: raw.users.manager.id,
+      email: raw.users.manager.email,
+      password: raw.users.manager.password,
     },
     table: {
       id: raw.tables[0]?.id ?? raw.table?.id ?? '',
@@ -265,6 +272,14 @@ export const test = base.extend<Fixtures>({
   waiter: async ({ page, seedData }, fixtureUse) => {
     const email = seedData.waiter.email;
     const password = seedData.waiter.password;
+
+    await performLogin(page, email, password, '/admin/login', /\/admin\/dashboard/);
+    await fixtureUse(page);
+  },
+
+  manager: async ({ page, seedData }, fixtureUse) => {
+    const email = seedData.manager.email;
+    const password = seedData.manager.password;
 
     await performLogin(page, email, password, '/admin/login', /\/admin\/dashboard/);
     await fixtureUse(page);

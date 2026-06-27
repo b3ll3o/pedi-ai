@@ -2,7 +2,7 @@
  * Script de seed para testes E2E usando PostgreSQL direto.
  *
  * Cria dados de teste no banco:
- * - Usuários (customer, admin, waiter)
+ * - Usuários (customer, admin, waiter, manager)
  * - Restaurant de teste
  * - Categories de teste
  * - Products de teste
@@ -71,6 +71,7 @@ interface SeedResult {
     customer: TestUser;
     admin: TestUser;
     waiter: TestUser;
+    manager: TestUser;
   };
   restaurant: {
     id: string;
@@ -180,6 +181,11 @@ async function createUsers(): Promise<SeedResult['users']> {
     waiter: {
       id: '',
       email: `${SEED_PREFIX}waiter${shardSuffix}@pedi-ai.test`,
+      password: TEST_PASSWORD,
+    },
+    manager: {
+      id: '',
+      email: `${SEED_PREFIX}manager${shardSuffix}@pedi-ai.test`,
       password: TEST_PASSWORD,
     },
   };
@@ -373,6 +379,12 @@ async function createUserProfiles(users: SeedResult['users'], restaurantId: stri
       name: 'Garçom Teste',
       role: 'atendente',
     },
+    {
+      user_id: users.manager.id,
+      email: users.manager.email,
+      name: 'Gerente Teste',
+      role: 'gerente',
+    },
   ].filter((p) => p.user_id);
 
   if (validProfiles.length === 0) {
@@ -400,7 +412,7 @@ async function createUserProfiles(users: SeedResult['users'], restaurantId: stri
     `;
   }
 
-  console.log('   Perfis criados para customer, admin e waiter\n');
+  console.log('   Perfis criados para customer, admin, waiter e manager\n');
 }
 
 async function createModifierGroups(restaurantId: string) {
@@ -462,6 +474,7 @@ async function cleanupExistingTestData() {
     `${SEED_PREFIX}customer${shardSuffix}@pedi-ai.test`,
     `${SEED_PREFIX}admin${shardSuffix}@pedi-ai.test`,
     `${SEED_PREFIX}waiter${shardSuffix}@pedi-ai.test`,
+    `${SEED_PREFIX}manager${shardSuffix}@pedi-ai.test`,
   ];
 
   for (const email of testEmails) {
@@ -524,6 +537,7 @@ export async function seed(): Promise<SeedResult> {
     console.log(`   Customer: ${users.customer.email} / ${TEST_PASSWORD}`);
     console.log(`   Admin: ${users.admin.email} / ${TEST_PASSWORD}`);
     console.log(`   Garçom: ${users.waiter.email} / ${TEST_PASSWORD}`);
+    console.log(`   Manager: ${users.manager.email} / ${TEST_PASSWORD}`);
     console.log(`\n📍 Restaurant ID: ${restaurant.id}`);
     console.log(`📍 Restaurant Name: ${restaurant.name}`);
     console.log('\n💾 Dados salvos em: tests/e2e/scripts/.seed-result.json');
