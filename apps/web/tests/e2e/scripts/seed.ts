@@ -111,10 +111,19 @@ interface TestUser {
 
 let _sql: ReturnType<typeof import('postgres').default> | null = null;
 
+// O DATABASE_URL configurado no GHA inclui `?schema=public` (convenção Prisma),
+// mas o cliente `postgres` não reconhece esse parâmetro e falha com
+// "unrecognized configuration parameter 'schema'". Descartamos o que vier
+// depois do `?` na URL antes de passar para o cliente.
+function sanitizeDatabaseUrl(url: string): string {
+  const queryIndex = url.indexOf('?');
+  return queryIndex === -1 ? url : url.slice(0, queryIndex);
+}
+
 async function getSql() {
   if (!_sql) {
     const postgres = (await import('postgres')).default;
-    _sql = postgres(DATABASE_URL!, { max: 10 });
+    _sql = postgres(sanitizeDatabaseUrl(DATABASE_URL!), { max: 10 });
   }
   return _sql;
 }
