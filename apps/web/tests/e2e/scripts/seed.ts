@@ -8,14 +8,21 @@
  * - Products de teste
  * - Tables de teste
  *
+ * IMPORTANTE: nomes de tabela aqui DEVEM bater com o `model X` do
+ * schema Prisma (apps/api/prisma/schema.prisma). Por padrão, Prisma usa
+ * o nome do model PascalCase como nome de tabela (a menos que exista
+ * `@@map(...)` explícito). Verifique `apps/api/prisma/schema.prisma`
+ * antes de adicionar novos `INSERT`s aqui.
+ *
  * Uso: pnpm test:e2e:seed
  * Requer: DATABASE_URL no .env.e2e
  */
 
-import { randomBytes, createHmac, randomUUID } from 'crypto';
+import { randomUUID } from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 
+import * as bcrypt from 'bcrypt';
 import * as dotenv from 'dotenv';
 
 // Carregar .env.e2e explicitamente (resolve relativo ao script, não ao cwd)
@@ -170,6 +177,10 @@ async function acquireLock(): Promise<() => Promise<void>> {
 // ============================================
 // Funções de criação
 // ============================================
+// IMPORTANTE: nomes de tabela seguem o model PascalCase do schema Prisma
+// (apps/api/prisma/schema.prisma). O model `UsersProfile` foi consolidado
+// em uma única tabela após a migração Supabase→Prisma — não há tabela
+// `users` separada.
 
 async function createUsers(): Promise<SeedResult['users']> {
   console.log('👥 Criando usuários de teste...');
@@ -199,32 +210,55 @@ async function createUsers(): Promise<SeedResult['users']> {
     },
   };
 
+  // bcrypt com cost 4 (mínimo aceitável para testes — acelera o seed
+  // sem comprometer a verificação via auth.service.ts que usa cost 12).
+  // auth.service.ts usa `bcrypt.compare` puro, que aceita qualquer hash
+  // bcrypt válido independente do cost.
+  const passwordHash = await bcrypt.hash(TEST_PASSWORD, 4);
+
+  const roleFor = (role: string): string => {
+    switch (role) {
+      case 'customer':
+        return 'cliente';
+      case 'admin':
+        return 'dono';
+      case 'waiter':
+        return 'atendente';
+      case 'manager':
+        return 'gerente';
+      default:
+        return 'cliente';
+    }
+  };
+
   for (const [role, user] of Object.entries(users)) {
     console.log(`   Processando ${role}: ${user.email}`);
     try {
-      // Check if user exists
       const existing = await sql`
-        SELECT id FROM users WHERE email = ${user.email}
+        SELECT id FROM "UsersProfile" WHERE email = ${user.email}
       `;
 
       if (existing.length > 0) {
         console.log(`   ${role}: usuário já existe, usando ID existente`);
         user.id = existing[0].id;
-      } else {
-        // Create user with password hash
-        const salt = randomBytes(16).toString('hex');
-        const hash = createHmac('sha256', salt).update(user.password).digest('hex');
-        const id = randomUUID();
-
+        // Atualiza passwordHash para garantir que o seed seja idempotente
+        // mesmo após rotação de credenciais em CI.
         await sql`
-          INSERT INTO users (id, email, password_hash, salt, created_at)
-          VALUES (${id}, ${user.email}, ${hash}, ${salt}, NOW())
+          UPDATE "UsersProfile"
+          SET "passwordHash" = ${passwordHash}
+          WHERE id = ${user.id}
+        `;
+      } else {
+        const id = randomUUID();
+        await sql`
+          INSERT INTO "UsersProfile" (id, email, name, role, "passwordHash", "createdAt")
+          VALUES (${id}, ${user.email}, ${`Usuário ${role}`}, ${roleFor(role)}::"UserRole", ${passwordHash}, NOW())
         `;
         user.id = id;
       }
     } catch (err) {
       console.log(`   ⚠️ Erro ao processar ${role}: ${err}`);
-      continue;
+      throw err;
     }
   }
 
@@ -243,12 +277,12 @@ async function createRestaurant(): Promise<{ id: string; name: string }> {
     : '00000000-0000-0000-0000-000000000001';
 
   await sql`
-    INSERT INTO restaurants (id, name, description, settings, created_at, updated_at)
+    INSERT INTO "Restaurant" (id, name, description, settings, "createdAt", "updatedAt")
     VALUES (
       ${DEMO_RESTAURANT_ID},
       ${`${shardPrefix}${RESTAURANT_NAME}`},
-      'Restaurant de testes E2E',
-      '{"currency": "BRL", "timezone": "America/Sao_Paulo", "tax_rate": 0.1}'::jsonb,
+      ${'Restaurant de testes E2E'},
+      ${'{"currency": "BRL", "timezone": "America/Sao_Paulo", "tax_rate": 0.1}'},
       NOW(),
       NOW()
     )
@@ -256,7 +290,7 @@ async function createRestaurant(): Promise<{ id: string; name: string }> {
       name = EXCLUDED.name,
       description = EXCLUDED.description,
       settings = EXCLUDED.settings,
-      updated_at = NOW()
+      "updatedAt" = NOW()
   `;
 
   console.log(`   Restaurant criado: ${DEMO_RESTAURANT_ID} (${shardPrefix}${RESTAURANT_NAME})\n`);
@@ -268,20 +302,20 @@ async function createCategories(restaurantId: string) {
 
   const sql = await getSql();
 
-  await sql`DELETE FROM categories WHERE restaurant_id = ${restaurantId}`;
+  await sql`DELETE FROM "Category" WHERE "restaurantId" = ${restaurantId}`;
 
   const categoriesData = [
-    { name: 'Bebidas', sort_order: 1 },
-    { name: 'Pratos Principais', sort_order: 2 },
-    { name: 'Sobremesas', sort_order: 3 },
+    { name: 'Bebidas', sortOrder: 1 },
+    { name: 'Pratos Principais', sortOrder: 2 },
+    { name: 'Sobremesas', sortOrder: 3 },
   ];
 
   const categories = [];
   for (const cat of categoriesData) {
     const id = randomUUID();
     await sql`
-      INSERT INTO categories (id, restaurant_id, name, active, sort_order, created_at)
-      VALUES (${id}, ${restaurantId}, ${cat.name}, true, ${cat.sort_order}, NOW())
+      INSERT INTO "Category" (id, "restaurantId", name, active, "sortOrder", "createdAt", "updatedAt")
+      VALUES (${id}, ${restaurantId}, ${cat.name}, true, ${cat.sortOrder}, NOW(), NOW())
     `;
     console.log(`   Categoria: ${cat.name} (${id})`);
     categories.push({ id, name: cat.name });
@@ -299,7 +333,7 @@ async function createProducts(
 
   const sql = await getSql();
 
-  await sql`DELETE FROM products WHERE restaurant_id = ${restaurantId}`;
+  await sql`DELETE FROM "Product" WHERE "categoryId" IN (SELECT id FROM "Category" WHERE "restaurantId" = ${restaurantId})`;
 
   const productsData = [
     { name: 'Coca-Cola', price: 5.99, category_idx: 0 },
@@ -317,17 +351,17 @@ async function createProducts(
   for (const p of productsData) {
     const id = randomUUID();
     await sql`
-      INSERT INTO products (id, restaurant_id, category_id, name, description, price, available, dietary_labels, sort_order, created_at)
+      INSERT INTO "Product" (id, "categoryId", name, description, price, available, "dietaryLabels", "sortOrder", "createdAt", "updatedAt")
       VALUES (
         ${id},
-        ${restaurantId},
         ${categories[p.category_idx].id},
         ${p.name},
         ${`Descrição do produto ${p.name}`},
         ${p.price},
         true,
-        ${'[]'}::jsonb,
+        ${'[]'},
         0,
+        NOW(),
         NOW()
       )
     `;
@@ -344,7 +378,7 @@ async function createTables(restaurantId: string) {
 
   const sql = await getSql();
 
-  await sql`DELETE FROM tables WHERE restaurant_id = ${restaurantId}`;
+  await sql`DELETE FROM "Table" WHERE "restaurantId" = ${restaurantId}`;
 
   const tablesData = [
     { number: 1, capacity: 4 },
@@ -358,8 +392,8 @@ async function createTables(restaurantId: string) {
     const id = randomUUID();
     const qrCode = `E2E-TABLE-${t.number.toString().padStart(3, '0')}`;
     await sql`
-      INSERT INTO tables (id, restaurant_id, number, name, capacity, qr_code, active, created_at)
-      VALUES (${id}, ${restaurantId}, ${t.number}, ${`Mesa ${t.number}`}, ${t.capacity}, ${qrCode}, true, NOW())
+      INSERT INTO "Table" (id, "restaurantId", number, name, capacity, "qrCode", active, "createdAt", "updatedAt")
+      VALUES (${id}, ${restaurantId}, ${t.number}, ${`Mesa ${t.number}`}, ${t.capacity}, ${qrCode}, true, NOW(), NOW())
     `;
     console.log(`   Mesa ${t.number}: ${qrCode} (${id})`);
     tables.push({ id, number: t.number, qr_code: qrCode });
@@ -369,59 +403,30 @@ async function createTables(restaurantId: string) {
   return tables;
 }
 
-async function createUserProfiles(users: SeedResult['users'], restaurantId: string) {
-  console.log('👤 Criando perfis de usuário...');
+async function linkUserProfiles(users: SeedResult['users'], restaurantId: string) {
+  console.log('🔗 Vinculando perfis de usuário ao restaurant...');
 
   const sql = await getSql();
 
-  const validProfiles = [
-    {
-      user_id: users.customer.id,
-      email: users.customer.email,
-      name: 'Cliente Teste',
-      role: 'cliente',
-    },
-    { user_id: users.admin.id, email: users.admin.email, name: 'Admin Teste', role: 'dono' },
-    {
-      user_id: users.waiter.id,
-      email: users.waiter.email,
-      name: 'Garçom Teste',
-      role: 'atendente',
-    },
-    {
-      user_id: users.manager.id,
-      email: users.manager.email,
-      name: 'Gerente Teste',
-      role: 'gerente',
-    },
-  ].filter((p) => p.user_id);
+  const profileUpdates = [
+    { id: users.customer.id, role: 'cliente' },
+    { id: users.admin.id, role: 'dono' },
+    { id: users.waiter.id, role: 'atendente' },
+    { id: users.manager.id, role: 'gerente' },
+  ];
 
-  if (validProfiles.length === 0) {
-    console.log('   ⚠️ Nenhum usuário válido para criar perfil\n');
-    return;
-  }
-
-  for (const p of validProfiles) {
+  for (const p of profileUpdates) {
+    if (!p.id) continue;
+    // Atualiza role e restaurantId do UsersProfile já criado em createUsers()
     await sql`
-      INSERT INTO users_profiles (id, user_id, email, name, role, restaurant_id, created_at)
-      VALUES (
-        ${randomUUID()},
-        ${p.user_id},
-        ${p.email},
-        ${p.name},
-        ${p.role},
-        ${restaurantId},
-        NOW()
-      )
-      ON CONFLICT (user_id) DO UPDATE SET
-        email = EXCLUDED.email,
-        name = EXCLUDED.name,
-        role = EXCLUDED.role,
-        restaurant_id = EXCLUDED.restaurant_id
+      UPDATE "UsersProfile"
+      SET role = ${p.role}::"UserRole",
+          "restaurantId" = ${restaurantId}
+      WHERE id = ${p.id}
     `;
   }
 
-  console.log('   Perfis criados para customer, admin, waiter e manager\n');
+  console.log('   Perfis vinculados ao restaurant\n');
 }
 
 async function createModifierGroups(restaurantId: string) {
@@ -433,7 +438,7 @@ async function createModifierGroups(restaurantId: string) {
   const extrasId = randomUUID();
 
   await sql`
-    INSERT INTO modifier_groups (id, restaurant_id, name, required, min_selections, max_selections, created_at)
+    INSERT INTO "ModifierGroup" (id, "restaurantId", name, required, "minSelections", "maxSelections", "createdAt")
     VALUES
       (${tamanhoId}, ${restaurantId}, 'Tamanho', true, 1, 1, NOW()),
       (${extrasId}, ${restaurantId}, 'Extras', false, 0, 3, NOW())
@@ -445,18 +450,18 @@ async function createModifierGroups(restaurantId: string) {
 
   // Create modifier values
   const modifierValuesData = [
-    { modifier_group_id: tamanhoId, name: 'Pequeno', price_adjustment: 0 },
-    { modifier_group_id: tamanhoId, name: 'Médio', price_adjustment: 3 },
-    { modifier_group_id: tamanhoId, name: 'Grande', price_adjustment: 6 },
-    { modifier_group_id: extrasId, name: 'Bacon', price_adjustment: 5 },
-    { modifier_group_id: extrasId, name: 'Queijo Extra', price_adjustment: 3 },
-    { modifier_group_id: extrasId, name: 'Cebola', price_adjustment: 2 },
+    { modifierGroupId: tamanhoId, name: 'Pequeno', priceAdjustment: 0 },
+    { modifierGroupId: tamanhoId, name: 'Médio', priceAdjustment: 3 },
+    { modifierGroupId: tamanhoId, name: 'Grande', priceAdjustment: 6 },
+    { modifierGroupId: extrasId, name: 'Bacon', priceAdjustment: 5 },
+    { modifierGroupId: extrasId, name: 'Queijo Extra', priceAdjustment: 3 },
+    { modifierGroupId: extrasId, name: 'Cebola', priceAdjustment: 2 },
   ];
 
   for (const mv of modifierValuesData) {
     await sql`
-      INSERT INTO modifier_values (id, modifier_group_id, name, price_adjustment, available, created_at)
-      VALUES (${randomUUID()}, ${mv.modifier_group_id}, ${mv.name}, ${mv.price_adjustment}, true, NOW())
+      INSERT INTO "ModifierValue" (id, "modifierGroupId", name, "priceAdjustment", available, "createdAt")
+      VALUES (${randomUUID()}, ${mv.modifierGroupId}, ${mv.name}, ${mv.priceAdjustment}, true, NOW())
       ON CONFLICT DO NOTHING
     `;
   }
@@ -478,7 +483,7 @@ async function cleanupExistingTestData() {
   const shardSuffix = getShardSuffix();
   const shardPrefix = getShardPrefix();
 
-  // Delete users
+  // Delete users (UsersProfile consolidado)
   const testEmails = [
     `${SEED_PREFIX}customer${shardSuffix}@pedi-ai.test`,
     `${SEED_PREFIX}admin${shardSuffix}@pedi-ai.test`,
@@ -487,13 +492,13 @@ async function cleanupExistingTestData() {
   ];
 
   for (const email of testEmails) {
-    await sql`DELETE FROM users WHERE email = ${email}`;
+    await sql`DELETE FROM "UsersProfile" WHERE email = ${email}`;
   }
 
   // Delete restaurant
   const restaurantNames = [`${shardPrefix}${RESTAURANT_NAME}`, RESTAURANT_NAME];
   for (const name of restaurantNames) {
-    await sql`DELETE FROM restaurants WHERE name = ${name}`;
+    await sql`DELETE FROM "Restaurant" WHERE name = ${name}`;
   }
 
   console.log('✅ Cleanup concluído\n');
@@ -517,11 +522,11 @@ export async function seed(): Promise<SeedResult> {
     // Phase 1: Users and Restaurant (independent)
     const [users, restaurant] = await Promise.all([createUsers(), createRestaurant()]);
 
-    // Phase 2: Categories, Tables, UserProfiles (depend on restaurantId)
+    // Phase 2: Categories, Tables, Profile linkage (depend on restaurantId)
     const [categories, tables] = await Promise.all([
       createCategories(restaurant.id),
       createTables(restaurant.id),
-      createUserProfiles(users, restaurant.id),
+      linkUserProfiles(users, restaurant.id),
     ]);
 
     // Phase 3: Products (depends on categories)
@@ -570,6 +575,6 @@ if (isMainModule) {
     })
     .catch((error) => {
       console.error('\n❌ Erro no seed:', error.message);
-      process.exit(0); // Sempre sai 0 para não bloquear CI
+      process.exit(1);
     });
 }
