@@ -100,7 +100,7 @@ jobs:
             sleep 2
           done
 
-          cd ../apps/web
+          cd "$GITHUB_WORKSPACE/apps/web"
           pnpm dev &
           WEB_PID=$!
           echo "$WEB_PID" > /tmp/pedi-ai-web.pid
