@@ -126,6 +126,21 @@ const nextConfig: NextConfig = {
     // de mostrarem placeholder silencioso.
     remotePatterns: buildImageRemotePatterns(),
   },
+  // Proxy transparente de `/api/v1/*` para o NestJS API.
+  // O BC `admin/feature-flags` expõe rotas versionadas em `/api/v1/admin/...`
+  // e a SDK cliente (FeatureFlagClient) chama esses endpoints pelo mesmo
+  // prefixo. Sem o rewrite, requisições do browser a `/api/v1/admin/...`
+  // bateriam no próprio Next.js (404). Esta camada unifica a URL pública
+  // para os clientes e mantém o API interno isolado em :3001.
+  async rewrites() {
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    return [
+      {
+        source: '/api/v1/:path*',
+        destination: `${apiBase}/api/v1/:path*`,
+      },
+    ];
+  },
   async headers() {
     // O nonce precisa ser estável POR REQUEST para que o mesmo valor
     // apareça na CSP e no atributo `nonce=` dos scripts gerados. Geramos

@@ -35,7 +35,8 @@ test.describe('Admin Analytics', () => {
     expect(buttonCount).toBe(5);
   });
 
-  test('should switch to products tab @skip', async ({ admin: _admin }) => {
+  // SKIP: Requires existing order data
+  test.skip('should switch to products tab', async ({ admin: _admin }) => {
     await analyticsPage.selectProductsTab();
     await expect(analyticsPage.popularItemsTable).toBeVisible();
   });
