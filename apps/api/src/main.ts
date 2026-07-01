@@ -5,8 +5,17 @@ import * as path from 'path';
 // Auto-instrumentations só capturam módulos carregados depois deste import.
 import './tracing/tracing';
 
-import fastifyCookie from '@fastify/cookie';
-import fastifyHelmet from '@fastify/helmet';
+// v11+ do @fastify/cookie e v13+ do @fastify/helmet exportam o plugin como
+// objeto com métodos auxiliares (.parse/.serialize) anexados, o que muda
+// a tipagem do default export. Em runtime continua sendo uma função
+// chamável; usamos cast para `any` para satisfazer a sobrecarga do `register()`.
+import fastifyCookieImport from '@fastify/cookie';
+import fastifyHelmetImport from '@fastify/helmet';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const fastifyCookie: any = fastifyCookieImport;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const fastifyHelmet: any = fastifyHelmetImport;
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
@@ -81,23 +90,21 @@ async function bootstrap() {
   // Necessário para validar a assinatura HMAC v1, que é calculada sobre
   // o body original (antes do parse JSON). Aplicamos em application/json
   // para que o controller de webhook possa acessar `req.rawBody`.
+  // Fastify v5+: overload exige `parseAs` e `bodyLimit` ambos com chaves
+  // próprias, mas a inferência do TS falha por causa de tipos condicionais
+  // internos. Migramos para a forma async/await (suportada nativamente em
+  // v5) para satisfazer a sobrecarga `(req, payload) => Promise<any>`.
+  // O `rawBody` é anexado via cast porque o tipo `FastifyRequest` é
+  // augmentado por plugins (cookie/jwt) e a intersecção manual conflita.
   adapter
     .getInstance()
     .addContentTypeParser(
       'application/json',
-      { parseAs: 'string' },
-      (
-        req: FastifyRequest & { rawBody?: Buffer },
-        body: string,
-        done: (err: Error | null, out?: unknown) => void
-      ) => {
-        try {
-          req.rawBody = Buffer.from(body, 'utf8');
-          const parsed = body.length > 0 ? JSON.parse(body) : {};
-          done(null, parsed);
-        } catch (err) {
-          done(err as Error);
-        }
+      { parseAs: 'string', bodyLimit: 1024 * 1024 },
+      async (req, payload): Promise<unknown> => {
+        const raw = typeof payload === 'string' ? payload : payload.toString('utf8');
+        (req as FastifyRequest & { rawBody?: Buffer }).rawBody = Buffer.from(raw, 'utf8');
+        return raw.length > 0 ? JSON.parse(raw) : {};
       }
     );
 
