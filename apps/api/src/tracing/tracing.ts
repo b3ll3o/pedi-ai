@@ -28,7 +28,7 @@
 import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
-import { Resource } from '@opentelemetry/resources';
+import { resourceFromAttributes } from '@opentelemetry/resources';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import {
   BatchSpanProcessor,
@@ -67,7 +67,7 @@ if (ENABLED) {
       : new SimpleSpanProcessor(exporter);
 
     sdk = new NodeSDK({
-      resource: new Resource({
+      resource: resourceFromAttributes({
         [SemanticResourceAttributes.SERVICE_NAME]: SERVICE_NAME,
         [SemanticResourceAttributes.SERVICE_VERSION]: process.env.npm_package_version ?? '1.0.0',
         [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]: process.env.NODE_ENV ?? 'development',
