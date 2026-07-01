@@ -30,7 +30,7 @@ import { TodasExcecoesFiltro } from './common/filters/TodasExcecoesFiltro';
  * Valores permitidos para `NODE_ENV`. Falha o boot se ausente para garantir
  * que `isProd` no filtro de exceções nunca caia em modo dev por acidente.
  */
-const ALLOWED_NODE_ENVS = ['production', 'staging', 'development'] as const;
+const ALLOWED_NODE_ENVS = ['production', 'staging', 'development', 'e2e'] as const;
 type AllowedNodeEnv = (typeof ALLOWED_NODE_ENVS)[number];
 
 function resolveNodeEnv(): AllowedNodeEnv {
