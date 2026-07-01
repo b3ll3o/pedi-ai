@@ -107,19 +107,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v6
-        with:
-          node-version: 20
-          cache: pnpm
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v6
-        with:
-          version: 9
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      # Mesmo problema do e2e.yml: setup-node com cache: pnpm falha porque
+      # pnpm não está instalado ainda. O composite action faz caching via
+      # actions/cache direto, sem invocar pnpm.
+      - name: Setup
+        uses: ./.github/actions/setup
 
       - name: Install Playwright browsers
         run: pnpm exec playwright install chromium --with-deps
