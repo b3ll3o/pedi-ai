@@ -4,7 +4,7 @@
  * Use case `ObterFeatureFlagUseCase` — obtém uma flag por chave, incluindo
  * seus overrides. Lança `NotFoundException` se não existir.
  */
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 
 import {
   IFeatureFlagRepository,
@@ -13,7 +13,7 @@ import {
 
 @Injectable()
 export class ObterFeatureFlagUseCase {
-  constructor(private readonly repo: IFeatureFlagRepository) {}
+  constructor(@Inject('IFeatureFlagRepository') private readonly repo: IFeatureFlagRepository) {}
 
   async executar(key: string): Promise<FeatureFlagCompleto> {
     const flag = await this.repo.findByKey(key);

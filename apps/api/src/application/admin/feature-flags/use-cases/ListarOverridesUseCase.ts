@@ -4,7 +4,7 @@
  * Use case `ListarOverridesUseCase` — lista overrides ativos (não-expirados)
  * de uma flag, ordenados por scope asc.
  */
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 
 import {
   IFeatureFlagRepository,
@@ -20,7 +20,7 @@ export interface ListarOverridesInput {
 
 @Injectable()
 export class ListarOverridesUseCase {
-  constructor(private readonly repo: IFeatureFlagRepository) {}
+  constructor(@Inject('IFeatureFlagRepository') private readonly repo: IFeatureFlagRepository) {}
 
   async executar(input: ListarOverridesInput): Promise<FeatureFlagOverrideData[]> {
     const now = input.now ?? new Date();

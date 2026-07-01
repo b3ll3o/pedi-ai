@@ -11,7 +11,7 @@
  * Validação de key e defaultValue é feita via VOs no domínio
  * (FlagKey.criar, FlagValue.criar).
  */
-import { ConflictException, BadRequestException, Injectable } from '@nestjs/common';
+import { ConflictException, BadRequestException, Injectable, Inject } from '@nestjs/common';
 
 import { FlagKey } from '../../../../domain/admin/feature-flags/value-objects/FlagKey';
 import {
@@ -36,7 +36,7 @@ export interface CriarFeatureFlagInput {
 @Injectable()
 export class CriarFeatureFlagUseCase {
   constructor(
-    private readonly repo: IFeatureFlagRepository,
+    @Inject('IFeatureFlagRepository') private readonly repo: IFeatureFlagRepository,
     private readonly auditLogger: AuditLoggerLike
   ) {}
 

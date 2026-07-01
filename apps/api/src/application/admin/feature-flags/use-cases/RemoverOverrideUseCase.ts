@@ -3,7 +3,7 @@
  *
  * Use case `RemoverOverrideUseCase` — remove override e registra audit log.
  */
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 
 import {
   IFeatureFlagRepository,
@@ -20,7 +20,7 @@ export interface RemoverOverrideInput {
 @Injectable()
 export class RemoverOverrideUseCase {
   constructor(
-    private readonly repo: IFeatureFlagRepository,
+    @Inject('IFeatureFlagRepository') private readonly repo: IFeatureFlagRepository,
     private readonly cache: { invalidate: (key: string) => Promise<void> | void },
     private readonly auditLogger: AuditLoggerLike
   ) {}

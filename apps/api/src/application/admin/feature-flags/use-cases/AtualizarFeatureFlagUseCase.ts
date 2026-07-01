@@ -7,7 +7,7 @@
  *
  * Cache invalidado em qualquer mutation bem-sucedida.
  */
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Inject } from '@nestjs/common';
 
 import { FlagValue } from '../../../../domain/admin/feature-flags/value-objects/FlagValue';
 import {
@@ -29,7 +29,7 @@ export interface AtualizarFeatureFlagInput {
 @Injectable()
 export class AtualizarFeatureFlagUseCase {
   constructor(
-    private readonly repo: IFeatureFlagRepository,
+    @Inject('IFeatureFlagRepository') private readonly repo: IFeatureFlagRepository,
     private readonly cache: { invalidate: (key: string) => Promise<void> | void },
     private readonly auditLogger: AuditLoggerLike
   ) {}

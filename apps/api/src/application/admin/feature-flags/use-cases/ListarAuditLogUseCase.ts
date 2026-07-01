@@ -4,7 +4,7 @@
  * Use case `ListarAuditLogUseCase` — lista o audit log de uma flag, ordenado
  * por `createdAt DESC` com paginação.
  */
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 
 import {
   IFeatureFlagRepository,
@@ -19,7 +19,7 @@ export interface ListarAuditLogInput {
 
 @Injectable()
 export class ListarAuditLogUseCase {
-  constructor(private readonly repo: IFeatureFlagRepository) {}
+  constructor(@Inject('IFeatureFlagRepository') private readonly repo: IFeatureFlagRepository) {}
 
   async executar(input: ListarAuditLogInput): Promise<FeatureFlagAuditEntry[]> {
     return this.repo.listarAuditoria({

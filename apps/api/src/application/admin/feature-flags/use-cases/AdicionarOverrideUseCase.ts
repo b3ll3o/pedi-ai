@@ -11,7 +11,7 @@
  *
  * Falha do repositório (ex.: constraint unique) é propagada.
  */
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Inject } from '@nestjs/common';
 
 import { TargetingRule } from '../../../../domain/admin/feature-flags/value-objects/TargetingRule';
 import {
@@ -33,7 +33,7 @@ export interface AdicionarOverrideInput {
 @Injectable()
 export class AdicionarOverrideUseCase {
   constructor(
-    private readonly repo: IFeatureFlagRepository,
+    @Inject('IFeatureFlagRepository') private readonly repo: IFeatureFlagRepository,
     private readonly cache: { invalidate: (key: string) => Promise<void> | void },
     private readonly auditLogger: AuditLoggerLike
   ) {}

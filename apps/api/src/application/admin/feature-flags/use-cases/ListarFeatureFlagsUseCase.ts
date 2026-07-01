@@ -4,7 +4,7 @@
  * Use case `ListarFeatureFlagsUseCase` — lista flags paginadas com
  * contagem de overrides ativos.
  */
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 
 import {
   IFeatureFlagRepository,
@@ -23,7 +23,7 @@ export interface ListarFeatureFlagsResult {
 
 @Injectable()
 export class ListarFeatureFlagsUseCase {
-  constructor(private readonly repo: IFeatureFlagRepository) {}
+  constructor(@Inject('IFeatureFlagRepository') private readonly repo: IFeatureFlagRepository) {}
 
   async executar(input: ListarFeatureFlagsInput): Promise<ListarFeatureFlagsResult> {
     return this.repo.listar({ limit: input.limit, offset: input.offset });
