@@ -5,8 +5,9 @@ import { defineConfig } from 'vitest/config';
  *
  * Cobre todo `apps/api/src/**` (incluindo módulos legados ainda não migrados para DDD).
  *
- * Threshold atual: **70%** (intermediário durante migração DDD).
- * Meta final: 80% — ver `.openspec/specs/<bc>/tasks.md` § Fase 2 (Migração DDD da api).
+ * Threshold atual: **80%** (mínimo de cobertura após bater 70% intermediário).
+ * Próximo alvo: aumentar para 90% com a migração DDD completa.
+ * Ver `.openspec/specs/<bc>/tasks.md` § Fase 2 (Migração DDD da api).
  * Referência: `docs/guides/DDD_MIGRACAO_API.md`.
  *
  * Rodar com:
@@ -23,13 +24,14 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
       reportsDirectory: './coverage',
-      // Threshold 70% — intermediário enquanto módulos legados não migram para DDD.
-      // Aumentar para 80% quando `apps/api/src/domain/**` estiver populado.
+      // Threshold 80% — mínimo contratual após migração DDD de módulos
+      // legados. Aumentar para 90% quando feature flags / realtime / payments
+      // atingirem cobertura unitária.
       thresholds: {
-        statements: 70,
-        branches: 70,
-        functions: 70,
-        lines: 70,
+        statements: 80,
+        branches: 80,
+        functions: 80,
+        lines: 80,
         perFile: false,
       },
       include: ['apps/api/src/**/*.ts'],

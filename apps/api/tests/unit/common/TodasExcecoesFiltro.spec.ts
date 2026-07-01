@@ -1,5 +1,5 @@
-import { BadRequestException } from '@nestjs/common';
-import { describe, expect, it, vi } from 'vitest';
+import { BadRequestException, HttpException, HttpStatus } from '@nestjs/common';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 
 import { TodasExcecoesFiltro } from '../../../src/common/filters/TodasExcecoesFiltro';
 
@@ -21,6 +21,18 @@ function makeHost(opts: { url?: string; body?: unknown } = {}) {
 }
 
 describe('TodasExcecoesFiltro (S3#12)', () => {
+  let originalNodeEnv: string | undefined;
+
+  beforeEach(() => {
+    originalNodeEnv = process.env.NODE_ENV;
+  });
+
+  afterEach(() => {
+    if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = originalNodeEnv;
+    vi.restoreAllMocks();
+  });
+
   it('mascara PII em BadRequestException.details', () => {
     const filter = new TodasExcecoesFiltro();
     const { host, response } = makeHost();
@@ -73,6 +85,66 @@ describe('TodasExcecoesFiltro (S3#12)', () => {
     expect(stackArg).not.toContain('99988-7766');
   });
 
+  it('em prod, NÃO vaza exception.message para o cliente', () => {
+    process.env.NODE_ENV = 'production';
+    const filter = new TodasExcecoesFiltro();
+    vi.spyOn(filter['logger'], 'error').mockImplementation(() => {});
+    const { host, response } = makeHost();
+    const send = vi.fn();
+    (response.status as ReturnType<typeof vi.fn>).mockReturnValue({ send });
+
+    filter.catch(new Error('postgres connection refused'), host as never);
+
+    expect(send).toHaveBeenCalledWith(
+      expect.objectContaining({ mensagem: 'Erro interno do servidor' })
+    );
+  });
+
+  it('em dev, devolve exception.message ao cliente para debug', () => {
+    process.env.NODE_ENV = 'development';
+    const filter = new TodasExcecoesFiltro();
+    vi.spyOn(filter['logger'], 'error').mockImplementation(() => {});
+    const { host, response } = makeHost();
+    const send = vi.fn();
+    (response.status as ReturnType<typeof vi.fn>).mockReturnValue({ send });
+
+    filter.catch(new Error('debug-me-please'), host as never);
+
+    expect(send).toHaveBeenCalledWith(expect.objectContaining({ mensagem: 'debug-me-please' }));
+  });
+
+  it('usa requestId do request ou fallback "unknown"', () => {
+    const filter = new TodasExcecoesFiltro();
+    vi.spyOn(filter['logger'], 'error').mockImplementation(() => {});
+    const req = { url: '/x', method: 'GET' }; // sem requestId
+    const send = vi.fn();
+    const status = vi.fn(() => ({ send }));
+    const host = {
+      switchToHttp: () => ({
+        getRequest: () => req,
+        getResponse: () => ({ status }),
+      }),
+    };
+
+    filter.catch(new Error('boom'), host as never);
+
+    expect(send).toHaveBeenCalledWith(expect.objectContaining({ requestId: 'unknown' }));
+  });
+
+  it('HttpException com response string repassa a mensagem', () => {
+    const filter = new TodasExcecoesFiltro();
+    const { host, response } = makeHost();
+    const send = vi.fn();
+    const statusMock = response.status as ReturnType<typeof vi.fn>;
+    statusMock.mockReturnValue({ send });
+
+    const exc = new HttpException('Forbidden custom', HttpStatus.FORBIDDEN);
+    filter.catch(exc, host as never);
+
+    expect(statusMock).toHaveBeenCalledWith(HttpStatus.FORBIDDEN);
+    expect(send).toHaveBeenCalledWith(expect.objectContaining({ mensagem: 'Forbidden custom' }));
+  });
+
   it('mascara IP em prod, mantém em dev', () => {
     const filter = new TodasExcecoesFiltro();
     const ipSpy = vi.spyOn(filter as never, 'mascararIp' as never);
@@ -83,6 +155,30 @@ describe('TodasExcecoesFiltro (S3#12)', () => {
     );
     expect(masked).toBe('203.0.113.0');
     expect(ipSpy).toBeDefined();
+  });
+
+  describe('mascararIp', () => {
+    const filter = new TodasExcecoesFiltro();
+    const mascararIp = (ip: string) =>
+      (filter as unknown as { mascararIp: (i: string) => string }).mascararIp(ip);
+
+    it('zera último octeto de IPv4', () => {
+      expect(mascararIp('203.0.113.42')).toBe('203.0.113.0');
+    });
+
+    it('retorna **** para IPv4 malformado', () => {
+      expect(mascararIp('203.0.113')).toBe('****');
+    });
+
+    it('mantém /64 de IPv6', () => {
+      expect(mascararIp('2001:db8:abcd:1234:5678:9abc:def0:1234')).toBe(
+        '2001:db8:abcd:1234:****:****:****:****'
+      );
+    });
+
+    it('retorna **** para IPv6 curto demais', () => {
+      expect(mascararIp('::1')).toBe('****');
+    });
   });
 
   // Auditoria ACHADO-39 (Re-varredura 7): a heurística anterior mascarava
