@@ -48,6 +48,25 @@ vi.mock('@prisma/client', async () => {
   };
 });
 
+// Mock do driver adapter — PrismaService usa `PrismaPg` para construir
+// o client. O adapter cria um socket; em testes unitários não queremos
+// abrir conexão de verdade. Substituímos por um stub que aceita qualquer
+// option e expõe `getConnectionString()` para asserts de garantia.
+vi.mock('@prisma/adapter-pg', () => {
+  return {
+    PrismaPg: class MockPrismaPg {
+      // Apenas aceita o option object — o construtor real tenta conectar.
+      constructor(_opts: unknown) {
+        /* no-op */
+      }
+      // Prisma 7 valida internamente; mantemos a interface mínima.
+      getConnectionString() {
+        return process.env.DATABASE_URL ?? '';
+      }
+    },
+  };
+});
+
 // Importação DEVE vir depois do vi.mock para usar o mock.
 const { PrismaService } = await import('../../../src/common/prisma.service');
 
@@ -59,6 +78,11 @@ describe('PrismaService', () => {
   beforeEach(() => {
     originalNodeEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'test';
+    // PrismaService valida DATABASE_URL no construtor (Prisma 7 exige
+    // driver adapter apontando para a connection string). Em testes
+    // unitários o adapter é mockado, mas a string precisa estar setada.
+    process.env.DATABASE_URL =
+      process.env.DATABASE_URL ?? 'postgresql://test:test@localhost:5432/test';
 
     piiCrypto = {
       isEnabled: () => false,
@@ -84,6 +108,7 @@ describe('PrismaService', () => {
     } else {
       process.env.NODE_ENV = originalNodeEnv;
     }
+    // DATABASE_URL não é restaurado (não havia valor original a preservar).
     vi.restoreAllMocks();
   });
 
