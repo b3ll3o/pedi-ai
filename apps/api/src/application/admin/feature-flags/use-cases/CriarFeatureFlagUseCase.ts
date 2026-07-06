@@ -22,7 +22,7 @@ import {
   IFeatureFlagRepository,
   FeatureFlagCompleto,
 } from '../../../../domain/admin/feature-flags/repositories/IFeatureFlagRepository';
-import type { AuditLoggerLike } from '../../../../infrastructure/admin/feature-flags/audit/FeatureFlagAuditLogger';
+import { FeatureFlagAuditLogger } from '../../../../infrastructure/admin/feature-flags/audit/FeatureFlagAuditLogger';
 
 export interface CriarFeatureFlagInput {
   key: string;
@@ -37,7 +37,7 @@ export interface CriarFeatureFlagInput {
 export class CriarFeatureFlagUseCase {
   constructor(
     @Inject('IFeatureFlagRepository') private readonly repo: IFeatureFlagRepository,
-    private readonly auditLogger: AuditLoggerLike
+    private readonly auditLogger: FeatureFlagAuditLogger
   ) {}
 
   async executar(input: CriarFeatureFlagInput): Promise<FeatureFlagCompleto> {

@@ -6,6 +6,7 @@ import type { StringValue } from 'ms';
 
 import { DatabaseModule } from '../common/database.module';
 import { UsersModule } from '../users/users.module';
+import { QueueModule } from '../queues/queue.module';
 
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -39,6 +40,13 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     }),
     DatabaseModule,
     UsersModule,
+    // QueueModule expõe QueueService; EmailQueue é registrado em AppModule.
+    // AuthService injeta EmailQueue diretamente — AuthModule é @Global(), então
+    // providers globais (incluindo EmailQueue de AppModule) ficam disponíveis,
+    // mas Trae ordem: AppModule precisa carregar AuthModule antes de iniciar
+    // resolvers que dependem de EmailQueue. Garantido pela ordem de imports
+    // em `AppModule.imports` (QueueModule antes de AuthModule).
+    QueueModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, RefreshTokenService, JwtStrategy],

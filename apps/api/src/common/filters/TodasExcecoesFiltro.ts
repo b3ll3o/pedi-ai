@@ -6,7 +6,6 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
-import { FastifyReply } from 'fastify';
 
 import { maskPii } from '../logger/pii-mask';
 
@@ -41,7 +40,19 @@ export class TodasExcecoesFiltro implements ExceptionFilter {
 
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
-    const response = ctx.getResponse<FastifyReply>();
+    // Em @nestjs/platform-fastify + @fastify/middie, o `response` que o
+    // host expõe depende do ponto do call chain. Após o middleware
+    // middie já ter rodado (req.raw/reply.raw), o objeto aqui é o raw
+    // `http.ServerResponse` — sem `.code()`/`.status()` da FastifyReply.
+    // Para cobrir TODOS os caminhos sem tentar adivinhar a forma, usamos
+    // a API nativa `http.ServerResponse.statusCode + .end(JSON)`, que
+    // funciona tanto para ServerResponse cru quanto para FastifyReply
+    // (FastifyReply estende/replica essa interface básica).
+    const response = ctx.getResponse<{
+      statusCode: number;
+      setHeader(name: string, value: string): void;
+      end(chunk?: string | Uint8Array): void;
+    }>();
     const request = ctx.getRequest();
 
     // Auditoria A15: inclui o requestId no log para correlação
@@ -100,7 +111,37 @@ export class TodasExcecoesFiltro implements ExceptionFilter {
       requestId,
     };
 
-    response.status(status).send(erro);
+    // Estratégia defensiva para `@nestjs/platform-fastify` + `@fastify/middie`:
+// o objeto `response` que chega aqui é tipicamente a FastifyReply
+// (não http.ServerResponse nativo). O profile verificado em runtime:
+//   ✓ `statusCode = ...`           (propriedade em FastifyReply)
+//   ✓ `getHeader(k)`               (FastifyReply)
+//   ✓ `header(k, v)`               (FastifyReply)
+//   ✗ `setHeader(k, v)`            (NÃO existe — método é Express/native)
+//   ✗ `end(payload)`               (NÃO existe — método é nativo http)
+//
+// Por isso usamos SOMENTE a API Fastify: `statusCode` + `header` + `send`.
+// `send(body)` é a forma idiomática Fastify de terminar o reply.
+const responseReply = response as unknown as {
+  statusCode: number;
+  header?: (k: string, v: string) => void;
+  getHeader?: (k: string) => unknown;
+  send?: (body: unknown) => unknown;
+};
+responseReply.statusCode = status;
+const existingContentType =
+  typeof responseReply.getHeader === 'function'
+    ? responseReply.getHeader('content-type')
+    : undefined;
+if (!existingContentType && typeof responseReply.header === 'function') {
+  responseReply.header('content-type', 'application/json; charset=utf-8');
+}
+if (typeof responseReply.send === 'function') {
+  responseReply.send(erro);
+} else {
+  // Fallback improvável: se `send` não existir, usamos raw response.
+  response.end(JSON.stringify(erro));
+}
   }
 
   /**

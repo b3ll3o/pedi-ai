@@ -20,7 +20,6 @@ import { OrdersModule } from './orders/orders.module';
 import { PaymentsModule } from './payments/payments.module';
 import { ProductsModule } from './products/products.module';
 import { CleanupQueue } from './queues/cleanup.queue';
-import { EmailQueue } from './queues/email.queue';
 import { QueueModule } from './queues/queue.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { RestaurantsModule } from './restaurants/restaurants.module';
@@ -73,8 +72,8 @@ import { UsersModule } from './users/users.module';
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     // Guard de papéis global — só atua onde há @Roles().
     { provide: APP_GUARD, useClass: RolesGuard },
-    EmailQueue,
-    // Auditoria ACHADO-7 (Re-varredura 5): cleanup diário de tokens/keys
+    // EmailQueue é fornecido por QueueModule (@Global()). Auditoria
+    // ACHADO-7 (Re-varredura 5): cleanup diário de tokens/keys
     // expirados (IdempotencyKey, PasswordResetToken, RefreshToken, WebhookEvent).
     CleanupQueue,
   ],

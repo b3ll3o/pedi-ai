@@ -192,43 +192,12 @@ import { FeatureFlagAdminGuard } from '../guards/FeatureFlagAdminGuard';
     // Guard
     FeatureFlagAdminGuard,
 
-    // Controller — recebe o bundle canônico de 9 use cases
-    {
-      provide: FeatureFlagsController,
-      useFactory: (
-        listar: ListarFeatureFlagsUseCase,
-        obter: ObterFeatureFlagUseCase,
-        criar: CriarFeatureFlagUseCase,
-        atualizar: AtualizarFeatureFlagUseCase,
-        adicionarOverride: AdicionarOverrideUseCase,
-        removerOverride: RemoverOverrideUseCase,
-        listarOverrides: ListarOverridesUseCase,
-        listarAudit: ListarAuditLogUseCase,
-        avaliar: AvaliarFeatureFlagsUseCase
-      ) =>
-        new FeatureFlagsController(
-          listar,
-          obter,
-          criar,
-          atualizar,
-          adicionarOverride,
-          removerOverride,
-          listarOverrides,
-          listarAudit,
-          avaliar
-        ),
-      inject: [
-        ListarFeatureFlagsUseCase,
-        ObterFeatureFlagUseCase,
-        CriarFeatureFlagUseCase,
-        AtualizarFeatureFlagUseCase,
-        AdicionarOverrideUseCase,
-        RemoverOverrideUseCase,
-        ListarOverridesUseCase,
-        ListarAuditLogUseCase,
-        AvaliarFeatureFlagsUseCase,
-      ],
-    },
+    // Controller — recebe os 9 use cases diretamente via construtor.
+    // Como o construtor do controller aceita `any` para todos os parâmetros
+    // (forma bundle/POJO), precisamos explicitamente listar o tipo de cada
+    // dependência via `inject` — TS não emite metadata útil quando tudo é
+    // `any`. Para tipos concretos nos slots, alteramos o controller abaixo.
+    FeatureFlagsController,
   ],
   exports: ['IFeatureFlagRepository', FeatureFlagCache, FeatureFlagMetrics],
 })

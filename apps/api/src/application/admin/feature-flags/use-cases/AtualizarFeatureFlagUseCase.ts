@@ -14,7 +14,8 @@ import {
   IFeatureFlagRepository,
   FeatureFlagCompleto,
 } from '../../../../domain/admin/feature-flags/repositories/IFeatureFlagRepository';
-import type { AuditLoggerLike } from '../../../../infrastructure/admin/feature-flags/audit/FeatureFlagAuditLogger';
+import { FeatureFlagAuditLogger } from '../../../../infrastructure/admin/feature-flags/audit/FeatureFlagAuditLogger';
+import { FeatureFlagCache } from '../../../../infrastructure/admin/feature-flags/cache/FeatureFlagCache';
 
 export interface AtualizarFeatureFlagInput {
   key: string;
@@ -30,8 +31,8 @@ export interface AtualizarFeatureFlagInput {
 export class AtualizarFeatureFlagUseCase {
   constructor(
     @Inject('IFeatureFlagRepository') private readonly repo: IFeatureFlagRepository,
-    private readonly cache: { invalidate: (key: string) => Promise<void> | void },
-    private readonly auditLogger: AuditLoggerLike
+    @Inject(FeatureFlagCache) private readonly cache: FeatureFlagCache,
+    private readonly auditLogger: FeatureFlagAuditLogger
   ) {}
 
   async executar(input: AtualizarFeatureFlagInput): Promise<FeatureFlagCompleto> {

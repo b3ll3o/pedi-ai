@@ -2,7 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 
 import { PrismaService } from '../common/prisma.service';
 
-import { QueueService } from './queue.module';
+import { QueueService } from './queue.service';
 
 /**
  * Auditoria ACHADO-7 (Re-varredura 5): cleanup de tokens/keys expirados.

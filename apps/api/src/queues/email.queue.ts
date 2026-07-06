@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 
-import { QueueService } from './queue.module';
+import { QueueService } from './queue.service';
 
 /**
  * Fila de envio de e-mails (reset de senha, etc).

@@ -4,7 +4,7 @@ import { SkipThrottle } from '@nestjs/throttler';
 
 import { Public } from '../auth/decorators/public.decorator';
 import { PrismaService } from '../common/prisma.service';
-import { QueueService } from '../queues/queue.module';
+import { QueueService } from '../queues/queue.service';
 
 interface HealthComponent {
   name: string;

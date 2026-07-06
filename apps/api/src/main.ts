@@ -86,6 +86,15 @@ async function bootstrap() {
     trustProxy: true, // Necessário para `req.ip` correto atrás de Nginx/proxy
   });
 
+  // `bodyParser: false` desabilita o registro automático do parser
+  // `application/json` que o Nest faria internamente — caso contrário
+  // nosso parser customizado (registrado abaixo) colide e o Fastify
+  // lança `FastifyError: Content type parser 'application/json' already present`
+  // durante o init do NestApplication.
+  const app = await NestFactory.create<NestFastifyApplication>(AppModule, adapter, {
+    bodyParser: false,
+  });
+
   // Captura o raw body para a rota de webhook do Mercado Pago.
   // Necessário para validar a assinatura HMAC v1, que é calculada sobre
   // o body original (antes do parse JSON). Aplicamos em application/json
@@ -96,7 +105,12 @@ async function bootstrap() {
   // v5) para satisfazer a sobrecarga `(req, payload) => Promise<any>`.
   // O `rawBody` é anexado via cast porque o tipo `FastifyRequest` é
   // augmentado por plugins (cookie/jwt) e a intersecção manual conflita.
-  adapter
+  //
+  // IMPORTANTE: registrado APÓS NestFactory.create + bodyParser:false,
+  // caso contrário o Nest já terá registrado um parser JSON padrão e o
+  // Fastify lança o erro acima.
+  app
+    .getHttpAdapter()
     .getInstance()
     .addContentTypeParser(
       'application/json',
@@ -107,8 +121,6 @@ async function bootstrap() {
         return raw.length > 0 ? JSON.parse(raw) : {};
       }
     );
-
-  const app = await NestFactory.create<NestFastifyApplication>(AppModule, adapter);
 
   // ─── Cookies (necessário para o fluxo de auth com tokens HttpOnly) ───
   await app.register(fastifyCookie, {});

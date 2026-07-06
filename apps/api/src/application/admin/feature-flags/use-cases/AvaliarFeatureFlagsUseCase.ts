@@ -25,7 +25,7 @@ const MAX_KEYS = 32;
 @Injectable()
 export class AvaliarFeatureFlagsUseCase {
   constructor(
-    private readonly evaluator: Pick<FeatureFlagEvaluator, 'evaluate'>,
+    private readonly evaluator: FeatureFlagEvaluator,
     private readonly metrics: FeatureFlagMetrics
   ) {}
 

@@ -18,7 +18,8 @@ import {
   IFeatureFlagRepository,
   FeatureFlagOverrideData,
 } from '../../../../domain/admin/feature-flags/repositories/IFeatureFlagRepository';
-import type { AuditLoggerLike } from '../../../../infrastructure/admin/feature-flags/audit/FeatureFlagAuditLogger';
+import { FeatureFlagAuditLogger } from '../../../../infrastructure/admin/feature-flags/audit/FeatureFlagAuditLogger';
+import { FeatureFlagCache } from '../../../../infrastructure/admin/feature-flags/cache/FeatureFlagCache';
 
 export interface AdicionarOverrideInput {
   flagKey: string;
@@ -34,8 +35,8 @@ export interface AdicionarOverrideInput {
 export class AdicionarOverrideUseCase {
   constructor(
     @Inject('IFeatureFlagRepository') private readonly repo: IFeatureFlagRepository,
-    private readonly cache: { invalidate: (key: string) => Promise<void> | void },
-    private readonly auditLogger: AuditLoggerLike
+    @Inject(FeatureFlagCache) private readonly cache: FeatureFlagCache,
+    private readonly auditLogger: FeatureFlagAuditLogger
   ) {}
 
   async executar(input: AdicionarOverrideInput): Promise<FeatureFlagOverrideData> {
