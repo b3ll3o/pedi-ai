@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 
+import { CookieBanner } from '@/components/lgpd/CookieBanner';
+import { PlausibleAnalytics } from '@/components/analytics/PlausibleAnalytics';
+import { SentryErrorBoundary } from '@/components/analytics/SentryErrorBoundary';
 import { CartBadge } from '@/components/cart/CartBadge';
 import { CartDrawer } from '@/components/cart/CartDrawer';
 import { OfflineIndicator } from '@/components/providers/OfflineIndicator';
@@ -205,17 +208,24 @@ export default function RootLayout({
         />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        <ReactQueryProvider>
-          <ToastProvider>
-            <StoreProvider>
-              <ServiceWorkerRegistration />
-              <OfflineIndicator />
-              <CartDrawer />
-              <CartBadge />
-              {children}
-            </StoreProvider>
-          </ToastProvider>
-        </ReactQueryProvider>
+        {/* Analytics (LGPD-friendly). No-op em dev. */}
+        <PlausibleAnalytics />
+        {/* Sentry global error handler (auditoria P1-1). */}
+        <SentryErrorBoundary>
+          <ReactQueryProvider>
+            <ToastProvider>
+              <StoreProvider>
+                <ServiceWorkerRegistration />
+                <OfflineIndicator />
+                <CartDrawer />
+                <CartBadge />
+                {children}
+                {/* LGPD — banner informativo de cookies (auditoria P1-3). */}
+                <CookieBanner />
+              </StoreProvider>
+            </ToastProvider>
+          </ReactQueryProvider>
+        </SentryErrorBoundary>
       </body>
     </html>
   );
