@@ -117,6 +117,13 @@ const nextConfig: NextConfig = {
   // workspaces sem essa diretiva).
   transpilePackages: ['@pedi-ai/feature-flags', '@pedi-ai/shared'],
   serverExternalPackages: ['postgres'],
+  // Sentry Instrumentation Hooks (auditoria P1-1):
+  // - Sentry.server.config.ts → captura erros Node.js (Route Handlers, Server Components)
+  // - Sentry.edge.config.ts → captura erros Edge (Middleware, proxy.ts)
+  // - Sentry.client.config.ts → carregado automaticamente via <script> injetado pelo SDK
+  experimental: {
+    instrumentationHook: true,
+  },
   allowedDevOrigins: ['192.168.0.181', '192.168.1.0/24', '10.0.0.0/8', '172.16.0.0/12'],
   images: {
     unoptimized: false,
