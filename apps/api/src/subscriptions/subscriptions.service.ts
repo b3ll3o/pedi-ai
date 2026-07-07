@@ -1,17 +1,19 @@
 import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../common/prisma.service';
+import { PRICING_PLANS, isValidPlanType, getPlanPriceCents, type PlanType } from '@pedi-ai/shared/constants';
 
 /**
- * Catálogo de preços server-side (auditoria M-03).
- * Dono **não** pode mais definir `priceCents` no body — o preço é
- * derivado do plano via este mapa, eliminando o bypass de billing.
+ * Service de assinaturas (billing SaaS).
+ *
+ * Catálogo de preços server-side (auditoria M-03):
+ * - Preços SEMPRE derivados de `PRICING_PLANS` em `@pedi-ai/shared/constants`.
+ * - Dono NÃO pode definir `priceCents` no body — é ignorado, eliminando bypass de billing.
+ *
+ * TODO (auditoria P0-2): integrar com Asaas pra cobrar de verdade.
+ * Por enquanto, este service só gerencia o `status` (trial/active/expired/cancelled).
+ * A integração com gateway de pagamento está em stub até a feature ser implementada.
  */
-const PLAN_PRICING_CENTS: Record<string, number> = {
-  monthly: 4990, // R$ 49,90
-  annual: 47900, // R$ 479,00 (~20% desconto)
-};
-
 @Injectable()
 export class SubscriptionsService {
   constructor(private prisma: PrismaService) {}
@@ -28,9 +30,10 @@ export class SubscriptionsService {
     // restaurantId resultam em 1 update + 1 no-op (não em P2002 + 500).
     // Auditoria M-03: `priceCents` é SEMPRE derivado do catálogo server-side.
     // Qualquer valor do body é IGNORADO para evitar bypass de billing.
-    const serverPriceCents = PLAN_PRICING_CENTS[data.planType] ?? PLAN_PRICING_CENTS.monthly;
+    const planType: PlanType = isValidPlanType(data.planType) ? data.planType : 'monthly';
+    const serverPriceCents = getPlanPriceCents(planType);
+    const trialDays = PRICING_PLANS[planType].trialDays;
 
-    const trialDays = 14;
     const trialEndsAt = new Date();
     trialEndsAt.setDate(trialEndsAt.getDate() + trialDays);
 
@@ -39,7 +42,7 @@ export class SubscriptionsService {
       create: {
         restaurantId: data.restaurantId,
         status: 'trialing',
-        planType: data.planType,
+        planType,
         priceCents: serverPriceCents,
         currency: 'BRL',
         trialDays,
@@ -48,7 +51,7 @@ export class SubscriptionsService {
         version: 1,
       },
       update: {
-        planType: data.planType,
+        planType,
         priceCents: serverPriceCents,
         status: 'active',
       },

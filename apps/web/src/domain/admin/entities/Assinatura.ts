@@ -1,14 +1,18 @@
 import { EntityClass } from '@/domain/shared';
 
+import { PRICING_PLANS, formatPrice, getTrialEndDate } from '@pedi-ai/shared/constants';
+
 /**
  * Status possíveis de uma assinatura
  */
 export type StatusAssinatura = 'trial' | 'active' | 'expired' | 'cancelled';
 
 /**
- * Tipo de plano de assinatura
+ * Tipo de plano de assinatura (auditoria P0-3: unificado com backend).
+ * Era 'monthly' | 'yearly', agora 'monthly' | 'annual' pra casar com
+ * `@pedi-ai/shared/constants/pricing`.
  */
-export type TipoPlano = 'monthly' | 'yearly';
+export type TipoPlano = 'monthly' | 'annual';
 
 /**
  * Props da entidade Assinatura
@@ -38,7 +42,7 @@ export interface AssinaturaProps {
  * Regras de negócio:
  * - Todo restaurante começa com trial de 14 dias
  * - Trial expira 14 dias após criação do primeiro restaurante
- * - Após trial, restaurante precisa assinar (R$19.99/mês) ou é bloqueado
+ * - Após trial, restaurante precisa assinar (R$ 49,90/mês) ou é bloqueado
  * - Operações de escrita são bloqueadas se assinatura expirada
  */
 export class Assinatura extends EntityClass<AssinaturaProps> {
@@ -82,8 +86,7 @@ export class Assinatura extends EntityClass<AssinaturaProps> {
    * Preço formatado em reais
    */
   get preçoFormatado(): string {
-    const reais = this.props.preçoCentavos / 100;
-    return `R$ ${reais.toFixed(2).replace('.', ',')}`;
+    return formatPrice(this.props.preçoCentavos);
   }
 
   /**
@@ -155,6 +158,7 @@ export class Assinatura extends EntityClass<AssinaturaProps> {
     if (tipoPlano === 'monthly') {
       expira = new Date(agora.getTime() + 30 * 24 * 60 * 60 * 1000);
     } else {
+      // 'annual' — 365 dias.
       expira = new Date(agora.getTime() + 365 * 24 * 60 * 60 * 1000);
     }
 
@@ -198,22 +202,23 @@ export class Assinatura extends EntityClass<AssinaturaProps> {
   }
 
   /**
-   * Cria uma nova assinatura com trial de 14 dias
+   * Cria uma nova assinatura com trial (auditoria P0-3: unificado).
+   * Preço e trialDays vêm de `@pedi-ai/shared/constants/pricing`.
    */
-  static criar(restauranteId: string, diasTrial: number = 14): Assinatura {
+  static criar(restauranteId: string, tipoPlano: TipoPlano = 'monthly'): Assinatura {
     const agora = new Date();
-    const trialExpira = new Date(agora.getTime() + diasTrial * 24 * 60 * 60 * 1000);
+    const trialExpira = getTrialEndDate(agora, tipoPlano);
 
     return new Assinatura({
       id: crypto.randomUUID(),
       restauranteId,
       status: 'trial',
-      tipoPlano: 'monthly',
-      preçoCentavos: 1999, // R$19.99
-      moeda: 'BRL',
+      tipoPlano,
+      preçoCentavos: PRICING_PLANS[tipoPlano].priceCents, // Era 1999 (R$ 19,99), agora unificado
+      moeda: PRICING_PLANS[tipoPlano].currency,
       trialIniciadoEm: agora,
       trialExpiraEm: trialExpira,
-      trialDias: diasTrial,
+      trialDias: PRICING_PLANS[tipoPlano].trialDays,
       assinaturaIniciadaEm: null,
       assinaturaExpiraEm: null,
       canceladaEm: null,
