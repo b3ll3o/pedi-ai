@@ -146,6 +146,52 @@ export class QueueService {
     }
   }
 
+  /**
+   * Estatísticas agregadas de todas as filas (waiting/active/completed/failed).
+   *
+   * **Por que não usar `Queue#getJobCounts()`?**
+   * - Loop manual por fila porque getJobCounts() pode ser pesado em produção.
+   * - `completed` retorna `null` no BullMQ (limpeza automática), então usamos `delayed` também.
+   *
+   * @see https://docs.bullmq.io/guide/queues#queue-statistics
+   */
+  async getQueueStats(): Promise<{
+    waiting: number;
+    active: number;
+    completed: number;
+    failed: number;
+    delayed: number;
+    total: number;
+  } | null> {
+    if (!this.enabled || this.queues.size === 0) return null;
+
+    const totals = { waiting: 0, active: 0, completed: 0, failed: 0, delayed: 0 };
+
+    for (const queue of this.queues.values()) {
+      try {
+        const counts = await queue.getJobCounts(
+          'waiting',
+          'active',
+          'completed',
+          'failed',
+          'delayed'
+        );
+        totals.waiting += counts.waiting ?? 0;
+        totals.active += counts.active ?? 0;
+        totals.completed += counts.completed ?? 0;
+        totals.failed += counts.failed ?? 0;
+        totals.delayed += counts.delayed ?? 0;
+      } catch {
+        // Ignora fila individual com erro, continua com outras
+      }
+    }
+
+    return {
+      ...totals,
+      total: totals.waiting + totals.active + totals.failed + totals.delayed,
+    };
+  }
+
   async shutdown(): Promise<void> {
     await Promise.all(Array.from(this.workers.values()).map((w) => w.close()));
     await Promise.all(Array.from(this.queues.values()).map((q) => q.close()));
