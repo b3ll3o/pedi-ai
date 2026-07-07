@@ -28,6 +28,8 @@
   },
   "dependencies": {
     "@pedi-ai/feature-flags": "workspace:*",
+    "@pedi-ai/shared": "workspace:*",
+    "@sentry/nextjs": "^10.0.0",
     "@tanstack/react-query": "^5.101.2",
     "dexie": "^4.4.4",
     "immer": "^11.1.9",
