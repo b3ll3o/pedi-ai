@@ -1,109 +1,124 @@
-import { Page, Locator } from '@playwright/test';
+/**
+ * Page Object: Admin Products (CRUD)
+ *
+ * Gerenciamento de produtos no painel admin:
+ * - Listar produtos por categoria
+ * - Criar produto (com variações e adicionais)
+ * - Editar produto
+ * - Desativar/excluir produto
+ *
+ * Uso:
+ * ```ts
+ * const products = new AdminProductsPage(page);
+ * await products.goto();
+ * await products.createProduct({
+ *   name: 'Pizza Margherita',
+ *   priceCents: 4500,
+ *   categoryId: 'cat-1',
+ * });
+ * ```
+ */
+
+import type { Page, Locator } from '@playwright/test';
+
+export interface CreateProductInput {
+  name: string;
+  description?: string;
+  priceCents: number;
+  categoryId: string;
+  hasVariations?: boolean;
+  variations?: { name: string; priceCents: number }[];
+}
 
 export class AdminProductsPage {
   readonly page: Page;
-  readonly productsList: Locator;
-  readonly addProductButton: Locator;
+  readonly newProductButton: Locator;
   readonly productNameInput: Locator;
+  readonly productDescriptionInput: Locator;
   readonly productPriceInput: Locator;
   readonly productCategorySelect: Locator;
-  readonly productDescriptionInput: Locator;
-  readonly productImageInput: Locator;
-  readonly saveButton: Locator;
-  readonly deleteButton: Locator;
-  readonly editButton: Locator;
+  readonly saveProductButton: Locator;
+  readonly productList: Locator;
+  readonly productRows: Locator;
+  readonly editProductButtons: Locator;
+  readonly deleteProductButtons: Locator;
   readonly searchInput: Locator;
-  readonly filterCategorySelect: Locator;
-  readonly successMessage: Locator;
-  readonly errorMessage: Locator;
+  readonly successToast: Locator;
+  readonly errorToast: Locator;
+  readonly variationsSection: Locator;
+  readonly addVariationButton: Locator;
+  readonly variationNameInputs: Locator;
+  readonly variationPriceInputs: Locator;
 
   constructor(page: Page) {
     this.page = page;
-    this.productsList = page.locator('[data-testid="product-item"]');
-    this.addProductButton = page.locator('[data-testid="add-product-button"]');
-    this.productNameInput = page.locator('[data-testid="product-name-input"]');
-    this.productPriceInput = page.locator('[data-testid="product-price-input"]');
-    this.productCategorySelect = page.locator('[data-testid="product-category-select"]');
-    this.productDescriptionInput = page.locator('[data-testid="product-description-input"]');
-    this.productImageInput = page.locator('[data-testid="product-image-input"]');
-    this.saveButton = page.locator('[data-testid="save-button"]');
-    this.deleteButton = page.locator('[data-testid="delete-button"]');
-    this.editButton = page.locator('[data-testid="edit-button"]');
-    this.searchInput = page.locator('[data-testid="search-input"]');
-    this.filterCategorySelect = page.locator('[data-testid="filter-category-select"]');
-    this.successMessage = page.locator('[data-testid="success-message"]');
-    this.errorMessage = page.locator('[data-testid="error-message"]');
+    this.newProductButton = page.locator('[data-testid="new-product-button"]');
+    this.productNameInput = page.locator('[data-testid="product-name"]');
+    this.productDescriptionInput = page.locator('[data-testid="product-description"]');
+    this.productPriceInput = page.locator('[data-testid="product-price"]');
+    this.productCategorySelect = page.locator('[data-testid="product-category"]');
+    this.saveProductButton = page.locator('[data-testid="save-product"]');
+    this.productList = page.locator('[data-testid="products-list"]');
+    this.productRows = page.locator('[data-testid="product-row"]');
+    this.editProductButtons = page.locator('[data-testid="edit-product"]');
+    this.deleteProductButtons = page.locator('[data-testid="delete-product"]');
+    this.searchInput = page.locator('[data-testid="products-search"]');
+    this.successToast = page.locator('[data-testid="success-toast"]');
+    this.errorToast = page.locator('[data-testid="error-toast"]');
+    this.variationsSection = page.locator('[data-testid="variations-section"]');
+    this.addVariationButton = page.locator('[data-testid="add-variation"]');
+    this.variationNameInputs = page.locator('[data-testid="variation-name"]');
+    this.variationPriceInputs = page.locator('[data-testid="variation-price"]');
   }
 
   async goto(): Promise<void> {
-    await this.page.goto('/admin/products');
+    await this.page.goto('/admin/produtos');
   }
 
-  async getProductsCount(): Promise<number> {
-    return this.productsList.count();
+  async createProduct(input: CreateProductInput): Promise<void> {
+    await this.newProductButton.click();
+    await this.productNameInput.fill(input.name);
+    if (input.description) {
+      await this.productDescriptionInput.fill(input.description);
+    }
+    await this.productPriceInput.fill((input.priceCents / 100).toFixed(2));
+    await this.productCategorySelect.selectOption(input.categoryId);
+
+    if (input.hasVariations && input.variations) {
+      await this.variationsSection.waitFor({ state: 'visible' });
+      for (let i = 0; i < input.variations.length; i++) {
+        if (i > 0) await this.addVariationButton.click();
+        await this.variationNameInputs.nth(i).fill(input.variations[i].name);
+        await this.variationPriceInputs.nth(i).fill((input.variations[i].priceCents / 100).toFixed(2));
+      }
+    }
+
+    await this.saveProductButton.click();
+    await this.successToast.waitFor({ state: 'visible', timeout: 10_000 });
   }
 
-  async searchProducts(query: string): Promise<number> {
+  async searchProduct(query: string): Promise<void> {
     await this.searchInput.fill(query);
-    await this.page.waitForResponse(/\/api\/admin\/products/);
-    return this.productsList.count();
+    await this.page.waitForTimeout(500); // debounce
   }
 
-  async filterByCategory(categoryName: string): Promise<number> {
-    await this.filterCategorySelect.selectOption({ label: categoryName });
-    await this.page.waitForResponse(/\/api\/admin\/products/);
-    return this.productsList.count();
-  }
-
-  async addProduct(product: {
-    name: string;
-    price: number;
-    categoryId: string;
-    description?: string;
-    imageUrl?: string;
-  }): Promise<void> {
-    await this.addProductButton.click();
-    await this.productNameInput.fill(product.name);
-    await this.productPriceInput.fill(product.price.toString());
-    await this.productCategorySelect.selectOption(product.categoryId);
-    if (product.description) {
-      await this.productDescriptionInput.fill(product.description);
-    }
-    if (product.imageUrl) {
-      await this.productImageInput.fill(product.imageUrl);
-    }
-    await this.saveButton.click();
-    await this.successMessage.waitFor({ state: 'visible' });
-  }
-
-  async editProduct(oldName: string, newData: { name?: string; price?: number }): Promise<void> {
-    const product = this.productsList.filter({ hasText: oldName });
-    await product.locator('[data-testid="edit-button"]').click();
-    if (newData.name) {
-      await this.productNameInput.clear();
-      await this.productNameInput.fill(newData.name);
-    }
-    if (newData.price) {
-      await this.productPriceInput.clear();
-      await this.productPriceInput.fill(newData.price.toString());
-    }
-    await this.saveButton.click();
-    await this.successMessage.waitFor({ state: 'visible' });
+  async clickProductByName(name: string): Promise<void> {
+    await this.productRows.filter({ hasText: name }).first().click();
   }
 
   async deleteProduct(name: string): Promise<void> {
-    const product = this.productsList.filter({ hasText: name });
-    await product.locator('[data-testid="delete-button"]').click();
-    await this.page.locator('[data-testid="confirm-delete-button"]').click();
-    await this.successMessage.waitFor({ state: 'visible' });
+    const row = this.productRows.filter({ hasText: name }).first();
+    await row.locator('[data-testid="delete-product"]').click();
+    // Confirma modal de exclusão
+    await this.page.locator('[data-testid="confirm-delete"]').click();
+    await this.successToast.waitFor({ state: 'visible' });
   }
 
-  async toggleProductAvailability(name: string): Promise<void> {
-    const product = this.productsList.filter({ hasText: name });
-    await product.locator('[data-testid="toggle-availability"]').click();
+  async countProducts(): Promise<number> {
+    return await this.productRows.count();
   }
 
-  async getError(): Promise<string> {
-    return (await this.errorMessage.textContent()) ?? '';
+  async expectProductVisible(name: string): Promise<void> {
+    await this.productRows.filter({ hasText: name }).first().waitFor({ state: 'visible' });
   }
 }

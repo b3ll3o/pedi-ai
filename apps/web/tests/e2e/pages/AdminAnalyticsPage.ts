@@ -1,126 +1,83 @@
-import { Page, Locator } from '@playwright/test';
+/**
+ * Page Object: Admin Analytics
+ *
+ * Dashboard de analytics do dono do restaurante:
+ * - Faturamento (hoje, semana, mês)
+ * - Pedidos por status
+ * - Produtos mais vendidos
+ * - Ticket médio
+ * - Horários de pico
+ *
+ * Uso:
+ * ```ts
+ * const analytics = new AdminAnalyticsPage(page);
+ * await analytics.goto();
+ * const todayRevenue = await analytics.getTodayRevenue();
+ * ```
+ */
+
+import type { Page, Locator } from '@playwright/test';
 
 export class AdminAnalyticsPage {
   readonly page: Page;
-  readonly pageTitle: Locator;
-  readonly loadingIndicator: Locator;
-  readonly errorMessage: Locator;
-  readonly summaryCards: Locator;
-  readonly tabs: Locator;
-  readonly productsTab: Locator;
-  readonly overviewTab: Locator;
-  readonly tablesTab: Locator;
-  readonly dateRangeButtons: Locator;
-  readonly ordersByDayChart: Locator;
-  readonly revenueByDayChart: Locator;
-  readonly popularItemsTable: Locator;
-  readonly topTablesTable: Locator;
+  readonly todayRevenueCard: Locator;
+  readonly weekRevenueCard: Locator;
+  readonly monthRevenueCard: Locator;
+  readonly totalOrdersCard: Locator;
+  readonly avgTicketCard: Locator;
+  readonly topProductsList: Locator;
+  readonly ordersByStatusChart: Locator;
+  readonly peakHoursChart: Locator;
+  readonly dateRangeSelector: Locator;
 
   constructor(page: Page) {
     this.page = page;
-    this.pageTitle = page.locator('h1').filter({ hasText: /analytics/i });
-    this.loadingIndicator = page.locator('text=Carregando analytics');
-    this.errorMessage = page.locator('h2').filter({ hasText: /erro ao carregar/i });
-    this.summaryCards = page.locator('[data-testid="summary-card"]');
-    this.tabs = page.locator('button').filter({ hasText: /visão geral|produtos|mesas/i });
-    this.productsTab = page.locator('button').filter({ hasText: /^produtos$/i });
-    this.overviewTab = page.locator('button').filter({ hasText: /^visão geral$/i });
-    this.tablesTab = page.locator('button').filter({ hasText: /^mesas$/i });
-    this.dateRangeButtons = page
-      .locator('button')
-      .filter({ hasText: /7 dias|30 dias|90 dias|este mês|este ano/i });
-    this.ordersByDayChart = page.locator('text=Pedidos por Dia').locator('..');
-    this.revenueByDayChart = page.locator('text=Receita por Dia').locator('..');
-    this.popularItemsTable = page
-      .locator('table')
-      .filter({ has: page.locator('thead th').filter({ hasText: 'Produto' }) });
-    this.topTablesTable = page
-      .locator('table')
-      .filter({ has: page.locator('thead th').filter({ hasText: 'Mesa' }) });
+    this.todayRevenueCard = page.locator('[data-testid="analytics-today-revenue"]');
+    this.weekRevenueCard = page.locator('[data-testid="analytics-week-revenue"]');
+    this.monthRevenueCard = page.locator('[data-testid="analytics-month-revenue"]');
+    this.totalOrdersCard = page.locator('[data-testid="analytics-total-orders"]');
+    this.avgTicketCard = page.locator('[data-testid="analytics-avg-ticket"]');
+    this.topProductsList = page.locator('[data-testid="top-products-list"]');
+    this.ordersByStatusChart = page.locator('[data-testid="orders-by-status-chart"]');
+    this.peakHoursChart = page.locator('[data-testid="peak-hours-chart"]');
+    this.dateRangeSelector = page.locator('[data-testid="date-range-selector"]');
   }
 
   async goto(): Promise<void> {
     await this.page.goto('/admin/analytics');
-    await this.page.waitForLoadState('networkidle');
   }
 
-  async waitForLoading(): Promise<void> {
-    await this.loadingIndicator.waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
+  async getTodayRevenue(): Promise<number> {
+    const text = (await this.todayRevenueCard.textContent()) ?? '';
+    return this.parseCurrency(text);
   }
 
-  async selectProductsTab(): Promise<void> {
-    await this.productsTab.click();
+  async getMonthRevenue(): Promise<number> {
+    const text = (await this.monthRevenueCard.textContent()) ?? '';
+    return this.parseCurrency(text);
   }
 
-  async selectOverviewTab(): Promise<void> {
-    await this.overviewTab.click();
+  async getTotalOrders(): Promise<number> {
+    const text = (await this.totalOrdersCard.textContent()) ?? '';
+    const match = text.match(/(\d+)/);
+    return match ? Number(match[1]) : 0;
   }
 
-  async selectTablesTab(): Promise<void> {
-    await this.tablesTab.click();
+  async getAvgTicket(): Promise<number> {
+    const text = (await this.avgTicketCard.textContent()) ?? '';
+    return this.parseCurrency(text);
   }
 
-  async selectDateRange(preset: '7d' | '30d' | '90d' | 'month' | 'year'): Promise<void> {
-    const buttonMap = {
-      '7d': '7 dias',
-      '30d': '30 dias',
-      '90d': '90 dias',
-      month: 'Este mês',
-      year: 'Este ano',
-    };
-    await this.page.locator('button').filter({ hasText: buttonMap[preset] }).click();
+  async getTopProductName(index: number = 0): Promise<string> {
+    const items = this.topProductsList.locator('[data-testid="top-product-item"]');
+    return (await items.nth(index).textContent()) ?? '';
   }
 
-  async getPopularItemsCount(): Promise<number> {
-    return this.popularItemsTable.locator('tbody tr').count();
-  }
-
-  async getTopProductsList(): Promise<string[]> {
-    const rows = this.popularItemsTable.locator('tbody tr');
-    const count = await rows.count();
-    const products: string[] = [];
-    for (let i = 0; i < count; i++) {
-      const name = await rows.nth(i).locator('td').first().textContent();
-      if (name) products.push(name);
-    }
-    return products;
-  }
-
-  async getSummaryTotalOrders(): Promise<string> {
-    return (
-      this.page
-        .locator('text=Total de Pedidos')
-        .locator('..')
-        .locator('span')
-        .last()
-        .textContent() ?? ''
-    );
-  }
-
-  async getSummaryTotalRevenue(): Promise<string> {
-    return (
-      this.page.locator('text=Receita Total').locator('..').locator('span').last().textContent() ??
-      ''
-    );
-  }
-
-  async getSummaryAverageTicket(): Promise<string> {
-    return (
-      this.page.locator('text=Ticket Médio').locator('..').locator('span').last().textContent() ??
-      ''
-    );
-  }
-
-  async getOrdersByDayCount(): Promise<number> {
-    const chartSection = this.page.locator('text=Pedidos por Dia').locator('..');
-    const bars = await chartSection.locator('rect').count();
-    return bars > 0 ? bars : 0;
-  }
-
-  async isChartDisplayed(chartName: 'orders' | 'revenue'): Promise<boolean> {
-    if (chartName === 'orders') {
-      return this.ordersByDayChart.isVisible();
-    }
-    return this.revenueByDayChart.isVisible();
+  /**
+   * Helper: converte "R$ 1.234,56" em 1234.56 (number).
+   */
+  private parseCurrency(text: string): number {
+    const cleaned = text.replace(/[^\d,]/g, '').replace(',', '.');
+    return Number(cleaned) || 0;
   }
 }
