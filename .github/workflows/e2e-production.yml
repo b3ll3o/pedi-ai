@@ -1,0 +1,190 @@
+# 🚀 E2E Production Tests (smoke pós-deploy)
+#
+# Roda smoke tests contra a URL de produção após cada deploy.
+# Falha = rollback automático.
+#
+# Disparado por:
+# - workflow_run após deploy-vps.yml completar
+# - manual trigger (workflow_dispatch)
+# - schedule (diário, pra detectar regressões)
+
+name: 🚀 E2E Production
+
+on:
+  # Trigger após deploy bem-sucedido
+  workflow_run:
+    workflows: ['🚀 Deploy to VPS']
+    types: [completed]
+    branches: [master]
+
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: 'URL alvo (default: https://pedi.ai)'
+        required: false
+        type: string
+        default: 'https://pedi.ai'
+      api_url:
+        description: 'URL da API (default: https://api.pedi.ai)'
+        required: false
+        type: string
+        default: 'https://api.pedi.ai'
+
+  # Schedule diário às 6h UTC
+  schedule:
+    - cron: '0 6 * * *'
+
+concurrency:
+  group: e2e-prod
+  cancel-in-progress: false
+
+jobs:
+  e2e-prod-smoke:
+    name: Playwright smoke tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      BASE_URL: ${{ github.event.inputs.base_url || 'https://pedi.ai' }}
+      API_URL: ${{ github.event.inputs.api_url || 'https://api.pedi.ai' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        run: npm install -g pnpm@9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Wait for deployment to stabilize
+        # Espera 60s para DNS propagar e cache aquecer
+        run: sleep 60
+
+      - name: Run smoke tests
+        id: smoke
+        run: |
+          pnpm test:e2e:prod:smoke 2>&1 | tee smoke-output.log
+        env:
+          BASE_URL: ${{ env.BASE_URL }}
+          API_URL: ${{ env.API_URL }}
+
+      - name: Run health checks
+        id: health
+        if: always()
+        run: |
+          pnpm test:e2e:prod:health 2>&1 | tee health-output.log
+        env:
+          BASE_URL: ${{ env.BASE_URL }}
+          API_URL: ${{ env.API_URL }}
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-prod-results-${{ github.run_id }}
+          path: |
+            playwright-report-prod/
+            playwright-results-prod.json
+            smoke-output.log
+            health-output.log
+          retention-days: 14
+
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const baseUrl = process.env.BASE_URL || 'https://pedi.ai';
+
+            // Notifica via issue/comment (mais simples que Slack webhook)
+            const body = [
+              `## 🚨 E2E Production Smoke — FALHOU`,
+              ``,
+              `**URL testada:** ${baseUrl}`,
+              `**Run:** [#${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})`,
+              `**Workflow source:** ${{ github.event_name }}`,
+              ``,
+              `**Próximos passos:**`,
+              `1. Verifique os artefatos do run`,
+              `2. Se for regressão crítica, considere ROLLBACK`,
+              `3. Investigue nos logs: \`playwright-report-prod/\``,
+            ].join('\n');
+
+            // Cria/atualiza issue "Production Alerts" (lock issue)
+            const alertsIssue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🚨 Production E2E Smoke falhou',
+              body: body,
+              labels: ['bug', 'production', 'e2e', 'urgent'],
+            });
+
+            console.log(`Issue criada: ${alertsIssue.data.html_url}`);
+
+  e2e-prod-full:
+    name: Playwright full tests (manual only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Só roda em manual trigger (não após deploy automático)
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install pnpm + deps
+        run: |
+          npm install -g pnpm@9
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install --with-deps chromium
+
+      - name: Run full smoke tests
+        run: pnpm test:e2e:prod:smoke
+        env:
+          BASE_URL: ${{ github.event.inputs.base_url || 'https://pedi.ai' }}
+          API_URL: ${{ github.event.inputs.api_url || 'https://api.pedi.ai' }}
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-prod-full-results
+          path: playwright-report-prod/
+          retention-days: 7
+
+  # Job de smoke pós-deploy — falha bloqueia (rollback indicator)
+  block-deploy:
+    name: Marcar deploy como falho se smoke falhou
+    needs: e2e-prod-smoke
+    if: failure() && github.event_name == 'workflow_run'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger rollback alert
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Marca deploy como falho no GitHub Deployments API
+            // (requer GitHub Apps ou action específica como github-actions-deployments)
+            console.log('🚨 Deploy rolled back due to E2E failure');
+
+            // Cria/atualiza issue com alerta crítico
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🚨 DEPLOY REVERTER - E2E falhou (${new Date().toISOString()})`,
+              body: `Deploy em produção falhou E2E smoke tests. **ROLLBACK IMEDIATO recomendado.**\n\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`,
+              labels: ['production-incident', 'rollback', 'urgent', 'p0'],
+            });

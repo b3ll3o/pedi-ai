@@ -1,0 +1,260 @@
+# 🧪 Load Tests (k6)
+#
+# Roda testes de carga SEMANALMENTE (domingo 2h da manhã) pra detectar
+# regressões de performance antes de afetar usuários em produção.
+#
+# Pode ser disparado manualmente via GitHub Actions UI com seleção de tipo
+# (smoke/landing/api/stress) e ambiente (staging/prod).
+
+name: 🧪 Load Tests
+
+on:
+  # Schedule semanal — domingo 2h UTC
+  schedule:
+    - cron: '0 2 * * 0'
+
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Tipo de teste'
+        required: true
+        type: choice
+        default: 'smoke'
+        options:
+          - smoke
+          - landing
+          - api
+          - stress
+      environment:
+        description: 'Ambiente alvo'
+        required: true
+        type: choice
+        default: 'staging'
+        options:
+          - staging
+          - production
+      base_url:
+        description: 'BASE_URL (opcional, usa defaults)'
+        required: false
+        type: string
+
+  # Trigger após deploy em prod
+  workflow_run:
+    workflows: ['🚀 Deploy to VPS']
+    types: [completed]
+    branches: [master]
+
+# Cancelar runs concorrentes do mesmo branch (evita rate limit)
+concurrency:
+  group: load-tests
+  cancel-in-progress: false
+
+# Variáveis padrão (podem ser sobrescritas via inputs/workflow_dispatch)
+env:
+  SMOKE_VUS: '10'
+  LANDING_VUS: '100'
+  API_VUS: '50'
+  STRESS_VUS: '300'
+
+jobs:
+  # ────────────────────────────────────────────────────────────
+  # JOB 1: Determina tipo de teste + ambiente
+  # ────────────────────────────────────────────────────────────
+  prepare:
+    name: Preparar variáveis
+    runs-on: ubuntu-latest
+    outputs:
+      test_type: ${{ steps.set.outputs.test_type }}
+      base_url: ${{ steps.set.outputs.base_url }}
+      api_url: ${{ steps.set.outputs.api_url }}
+    steps:
+      - name: Set defaults
+        id: set
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TEST_TYPE="${{ github.event.inputs.test_type }}"
+            ENVIRONMENT="${{ github.event.inputs.environment }}"
+            CUSTOM_URL="${{ github.event.inputs.base_url }}"
+          else
+            # Schedule ou workflow_run — sempre staging (não stress prod automaticamente)
+            TEST_TYPE="${LOAD_TEST_TYPE:-smoke}"
+            ENVIRONMENT="staging"
+            CUSTOM_URL=""
+          fi
+
+          # Define URLs baseado no ambiente
+          if [ -n "$CUSTOM_URL" ]; then
+            BASE_URL="$CUSTOM_URL"
+          elif [ "$ENVIRONMENT" = "production" ]; then
+            BASE_URL="https://pedi.ai"
+          else
+            BASE_URL="https://staging.pedi.ai"
+          fi
+
+          # API URL (assume subdomain api.)
+          API_URL="${BASE_URL/pedi.ai/api.pedi.ai}"
+
+          echo "test_type=$TEST_TYPE" >> $GITHUB_OUTPUT
+          echo "base_url=$BASE_URL" >> $GITHUB_OUTPUT
+          echo "api_url=$API_URL" >> $GITHUB_OUTPUT
+
+          echo "▶️ Test: $TEST_TYPE | Env: $ENVIRONMENT | URL: $BASE_URL"
+
+  # ────────────────────────────────────────────────────────────
+  # JOB 2: Roda k6 (load test)
+  # ────────────────────────────────────────────────────────────
+  k6-smoke:
+    name: k6 smoke (${{ needs.prepare.outputs.test_type }})
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install k6
+        run: |
+          sudo gpg --no-default-keyring \
+            --keyring /usr/share/keyrings/k6-archive-keyring.gpg \
+            --keyserver hkp://keyserver.ubuntu.com:80 \
+            --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" \
+            | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: Determinar script
+        id: script
+        run: |
+          case "${{ needs.prepare.outputs.test_type }}" in
+            smoke)   SCRIPT="tests/load/smoke.js" ;;
+            landing) SCRIPT="tests/load/landing.js" ;;
+            api)     SCRIPT="tests/load/api.js" ;;
+            stress)  SCRIPT="tests/load/stress.js" ;;
+            *)       SCRIPT="tests/load/smoke.js" ;;
+          esac
+          echo "script=$SCRIPT" >> $GITHUB_OUTPUT
+
+      - name: Run k6 smoke
+        if: needs.prepare.outputs.test_type == 'smoke'
+        run: |
+          k6 run \
+            --env BASE_URL=${{ needs.prepare.outputs.base_url }} \
+            tests/load/smoke.js
+        env:
+          K6_WEB_DASHBOARD: true
+          K6_WEB_DASHBOARD_EXPORT: 'tests/load/results/smoke-report.html'
+
+      - name: Run k6 landing
+        if: needs.prepare.outputs.test_type == 'landing'
+        run: |
+          k6 run \
+            --env BASE_URL=${{ needs.prepare.outputs.base_url }} \
+            tests/load/landing.js
+        env:
+          K6_WEB_DASHBOARD: true
+
+      - name: Run k6 api
+        if: needs.prepare.outputs.test_type == 'api'
+        run: |
+          k6 run \
+            --env API_URL=${{ needs.prepare.outputs.api_url }} \
+            tests/load/api.js
+        env:
+          K6_WEB_DASHBOARD: true
+
+      - name: Run k6 stress
+        if: needs.prepare.outputs.test_type == 'stress'
+        run: |
+          k6 run \
+            --out json=tests/load/results/stress-results.json \
+            --env BASE_URL=${{ needs.prepare.outputs.base_url }} \
+            --env API_URL=${{ needs.prepare.outputs.api_url }} \
+            tests/load/stress.js
+        env:
+          K6_WEB_DASHBOARD: true
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-${{ needs.prepare.outputs.test_type }}-results
+          path: tests/load/results/
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Comentar no PR (se for manual trigger em PR)
+        if: github.event_name == 'workflow_dispatch' && github.event.pull_request
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const testType = '${{ needs.prepare.outputs.test_type }}';
+            const baseUrl = '${{ needs.prepare.outputs.base_url }}';
+
+            const comment = [
+              `### 🧪 Load Test Results — \`${testType}\``,
+              ``,
+              `**Ambiente:** ${baseUrl}`,
+              `**Resultado:** ${{ job.status }}`,
+              ``,
+              `Veja os artefatos completos em "Artifacts" no rodapé deste run.`,
+            ].join('\n');
+
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: comment,
+            });
+
+  # ────────────────────────────────────────────────────────────
+  # JOB 3: Compara com baseline (após smoke/landing)
+  # ────────────────────────────────────────────────────────────
+  compare-baseline:
+    name: Comparar com baseline
+    needs: [prepare, k6-smoke]
+    runs-on: ubuntu-latest
+    if: |
+      always() &&
+      needs.k6-smoke.result == 'success' &&
+      (needs.prepare.outputs.test_type == 'smoke' || needs.prepare.outputs.test_type == 'landing')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download latest results
+        uses: actions/download-artifact@v4
+        with:
+          name: k6-${{ needs.prepare.outputs.test_type }}-results
+          path: tests/load/results/
+
+      - name: Comparar com baseline (regression check)
+        run: |
+          echo "📊 Comparando resultados atuais com baseline..."
+
+          # Script simples de comparação (substitui por um mais robusto se necessário)
+          if [ -f "tests/load/results/summary.json" ]; then
+            CURRENT_P95=$(jq '.metrics.http_req_duration.values["p(95)"]' tests/load/results/summary.json)
+            BASELINE_P95=1000  # ms
+
+            if [ "$(echo "$CURRENT_P95 > $BASELINE_P95 * 1.5" | bc)" -eq 1 ]; then
+              echo "❌ REGRESSÃO DETECTADA: p95 = ${CURRENT_P95}ms (baseline: ${BASELINE_P95}ms)"
+              echo "Regressão > 50% — investigando..."
+              exit 1
+            else
+              echo "✅ Sem regressão: p95 = ${CURRENT_P95}ms"
+            fi
+          else
+            echo "⚠️ summary.json não encontrado, pulando comparação"
+          fi
+
+      - name: Post regression summary
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '⚠️ **Regressão de performance detectada!** Veja os artefatos para detalhes.'
+            });
