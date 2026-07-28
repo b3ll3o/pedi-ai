@@ -1,0 +1,26 @@
+[Unit]
+Description=Pedi-AI API (NestJS — monorepo)
+Documentation=https://github.com/b3ll3o/pedi-ai
+After=network.target docker.service
+Wants=docker.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/pedi-ai/apps/api
+# API escuta em PORT=3001 (definido em .env).
+ExecStart=/usr/bin/node dist/main.js
+Restart=always
+RestartSec=5
+TimeoutStopSec=10
+
+Environment=NODE_ENV=production
+EnvironmentFile=/root/pedi-ai/.env
+
+# Hardening mínimo.
+NoNewPrivileges=false
+ProtectSystem=full
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
