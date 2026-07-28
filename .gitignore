@@ -49,10 +49,15 @@ next-env.d.ts
 
 # E2E Test Artifacts
 apps/web/tests/e2e/test-results/
+apps/web/tests/e2e/test-results-*/
 apps/web/tests/e2e/playwright-report/
+apps/web/tests/e2e/playwright-report-*/
 apps/web/tests/e2e/playwright-results.json
+apps/web/tests/e2e/playwright-results-*.json
 apps/web/tests/e2e/.playwright/
 apps/web/tests/e2e/scripts/.seed-result.json
+apps/web/tests/e2e/scripts/.seed-result-*.json
+apps/web/tests/e2e/scripts/.cleanup.lock
 apps/web/tests/e2e/node_modules
 
 # Playwright
