@@ -31,7 +31,14 @@ export interface EmailRecipient {
 }
 
 export interface SendEmailOptions {
-  to: EmailRecipient | EmailRecipient[];
+  /**
+   * Destinatário. Opcional na assinatura porque templates (em
+   * `lib/email/templates.ts`) são reutilizados para múltiplos recipients e o
+   * `to` é resolvido pelo caller (ex.: `sendTemplate(template, recipients)`).
+   * `sendEmail` valida internamente que está presente antes de chamar o
+   * Resend.
+   */
+  to?: EmailRecipient | EmailRecipient[];
   subject: string;
   /** HTML body. Se ambos `html` e `text` forem fornecidos, `text` é o fallback. */
   html: string;
@@ -58,6 +65,13 @@ export interface SendEmailResult {
  * Documentação: https://resend.com/docs/api-reference/emails/send-email
  */
 export async function sendEmail(options: SendEmailOptions): Promise<SendEmailResult> {
+  // `to` é opcional no tipo para que templates puros (em `templates.ts`)
+  // sejam reutilizáveis, mas é obrigatório na hora de enviar. Templates
+  // sem `to` devem usar `sendTemplate(template, recipients)`.
+  if (!options.to) {
+    return { success: false, error: 'sendEmail: campo `to` é obrigatório' };
+  }
+
   // No-op silencioso em dev/test sem API key.
   if (!RESEND_API_KEY) {
     if (NODE_ENV === 'production') {
@@ -66,9 +80,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
           `Assunto: "${options.subject}", Para: ${JSON.stringify(options.to)}`
       );
     } else {
-      console.log(
-        `[email:dev] Para: ${JSON.stringify(options.to)} | Assunto: ${options.subject}`
-      );
+      console.log(`[email:dev] Para: ${JSON.stringify(options.to)} | Assunto: ${options.subject}`);
     }
     return { success: false, error: 'RESEND_API_KEY not configured' };
   }
@@ -81,7 +93,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
 
   const body = {
     from: `${RESEND_FROM_NAME} <${RESEND_FROM_EMAIL}>`,
-    to: recipients.map((r) => (r.name ? `${r.name} <${r.email}>` : r.email)),
+    to: recipients.map((r) => (r?.name ? `${r.name} <${r.email}>` : (r?.email ?? ''))),
     subject: options.subject,
     html: options.html,
     text: options.text,
