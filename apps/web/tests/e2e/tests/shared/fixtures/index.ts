@@ -164,6 +164,32 @@ async function clearClientState(page: Page): Promise<void> {
 }
 
 /**
+ * Constrói URL absoluta para navegação em fixtures. O `page` herdado do
+ * fixture padrão do Playwright carrega `baseURL` do `playwright.config.ts`
+ * (projeto). Porém, ao rodar testes manualmente fora do runner (ex.: via
+ * `playwright test` em projetos que não setam `use.baseURL`, ou quando o
+ * config é carregado por uma versão que ignora `use.baseURL`), `page.goto`
+ * recebe URL relativa e falha com `Cannot navigate to invalid URL`.
+ *
+ * Esta função detecta se `loginUrl` é relativa e, se for, prefixa com
+ * `BASE_URL`/`process.env.PLAYWRIGHT_BASE_URL` para garantir navegação
+ * válida em qualquer contexto.
+ */
+function resolveAbsoluteUrl(loginUrl: string): string {
+  if (/^https?:\/\//i.test(loginUrl)) {
+    return loginUrl;
+  }
+  const base =
+    process.env.BASE_URL ||
+    process.env.PLAYWRIGHT_BASE_URL ||
+    process.env.NEXT_PUBLIC_BASE_URL ||
+    'http://localhost:3000';
+  // Garante que `loginUrl` começa com `/`
+  const path = loginUrl.startsWith('/') ? loginUrl : `/${loginUrl}`;
+  return `${base.replace(/\/$/, '')}${path}`;
+}
+
+/**
  * Performs login and saves storage state.
  * Auth caching disabled by default to avoid stale session issues in full suite.
  * Each test gets fresh authentication.
@@ -178,8 +204,12 @@ async function performLogin(
   // Clear state before login to ensure clean slate
   await clearClientState(page);
 
-  // Fresh login each time to avoid stale session issues
-  await page.goto(loginUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+  // Fresh login each time to avoid stale session issues.
+  // Usamos URL absoluta via `resolveAbsoluteUrl` para sobreviver a
+  // cenários onde o `baseURL` do projeto não é propagado ao `page`
+  // (ex.: quando testes são invocados por outros runners).
+  const targetUrl = resolveAbsoluteUrl(loginUrl);
+  await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 });
   await page.fill('[data-testid="email-input"]', email);
   await page.fill('[data-testid="password-input"]', password);
   await page.click('[data-testid="login-button"]');
