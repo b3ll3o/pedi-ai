@@ -40,14 +40,6 @@ export class TodasExcecoesFiltro implements ExceptionFilter {
 
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
-    // Em @nestjs/platform-fastify + @fastify/middie, o `response` que o
-    // host expõe depende do ponto do call chain. Após o middleware
-    // middie já ter rodado (req.raw/reply.raw), o objeto aqui é o raw
-    // `http.ServerResponse` — sem `.code()`/`.status()` da FastifyReply.
-    // Para cobrir TODOS os caminhos sem tentar adivinhar a forma, usamos
-    // a API nativa `http.ServerResponse.statusCode + .end(JSON)`, que
-    // funciona tanto para ServerResponse cru quanto para FastifyReply
-    // (FastifyReply estende/replica essa interface básica).
     const response = ctx.getResponse<{
       statusCode: number;
       setHeader(name: string, value: string): void;
@@ -59,89 +51,149 @@ export class TodasExcecoesFiltro implements ExceptionFilter {
     // com o header `x-request-id` retornado ao cliente.
     const requestId = (request as { requestId?: string }).requestId ?? 'unknown';
 
-    let status = HttpStatus.INTERNAL_SERVER_ERROR;
-    let mensagem = 'Erro interno do servidor';
-    let codigo: string | undefined;
-    let detalhes: unknown;
-
-    if (exception instanceof HttpException) {
-      status = exception.getStatus();
-      const responseBody = exception.getResponse();
-
-      if (typeof responseBody === 'string') {
-        mensagem = responseBody;
-      } else if (typeof responseBody === 'object') {
-        // S3#12: detalhes do BadRequestException podem carregar o body
-        // original (ex.: `[{ field: 'email', message: 'invalid email' }]`).
-        // Mascaramos PII antes de persistir em log/response.
-        const body = maskPii(responseBody as Record<string, unknown>);
-        mensagem = (body.message as string) || exception.message;
-        codigo = body.error as string;
-        detalhes = body.message;
-      }
-    } else if (exception instanceof Error) {
-      // Erro genérico — loga o stack completo server-side, mas NÃO vaza
-      // a mensagem em produção. Em dev, ainda devolvemos para facilitar
-      // o trabalho do desenvolvedor.
-      // Auditoria B3/M12: IP do cliente é **mascarado** no log em prod
-      // e staging (compliance LGPD/GDPR). Em dev puro mantemos IP
-      // completo para facilitar debug.
-      const ip = (request as { ip?: string }).ip ?? 'unknown';
-      const ipMascarado = this.isDev ? ip : this.mascararIp(ip);
-      // S3#12: stack trace pode incluir `exception.message` que, em erros
-      // do Prisma/BullMQ, frequentemente carrega valores lidos de colunas
-      // PII (ex.: erro de constraint em `usersProfile.email`). Mascaramos
-      // o stack inteiro para reduzir superfície de leak.
-      const safeStack = this.maskStackTrace(exception.stack ?? String(exception));
-      this.logger.error(
-        `[${requestId}] Unhandled exception on ${request.method ?? 'UNKNOWN'} ${request.url} ` +
-          `(ip=${ipMascarado})`,
-        safeStack
-      );
-      mensagem = this.isProd ? 'Erro interno do servidor' : exception.message;
-    }
+    const resolved = this.resolveError(exception, request, requestId);
 
     const erro: RespostaErroPadrao = {
-      statusCode: status,
-      mensagem,
-      codigo,
-      detalhes,
+      statusCode: resolved.status,
+      mensagem: resolved.mensagem,
+      codigo: resolved.codigo,
+      detalhes: resolved.detalhes,
       timestamp: new Date().toISOString(),
       caminho: request.url,
       requestId,
     };
 
-    // Estratégia defensiva para `@nestjs/platform-fastify` + `@fastify/middie`:
-// o objeto `response` que chega aqui é tipicamente a FastifyReply
-// (não http.ServerResponse nativo). O profile verificado em runtime:
-//   ✓ `statusCode = ...`           (propriedade em FastifyReply)
-//   ✓ `getHeader(k)`               (FastifyReply)
-//   ✓ `header(k, v)`               (FastifyReply)
-//   ✗ `setHeader(k, v)`            (NÃO existe — método é Express/native)
-//   ✗ `end(payload)`               (NÃO existe — método é nativo http)
-//
-// Por isso usamos SOMENTE a API Fastify: `statusCode` + `header` + `send`.
-// `send(body)` é a forma idiomática Fastify de terminar o reply.
-const responseReply = response as unknown as {
-  statusCode: number;
-  header?: (k: string, v: string) => void;
-  getHeader?: (k: string) => unknown;
-  send?: (body: unknown) => unknown;
-};
-responseReply.statusCode = status;
-const existingContentType =
-  typeof responseReply.getHeader === 'function'
-    ? responseReply.getHeader('content-type')
-    : undefined;
-if (!existingContentType && typeof responseReply.header === 'function') {
-  responseReply.header('content-type', 'application/json; charset=utf-8');
-}
-if (typeof responseReply.send === 'function') {
-  responseReply.send(erro);
-} else {
-  // Fallback improvável: se `send` não existir, usamos raw response.
-  response.end(JSON.stringify(erro));
-}
+    this.sendResponse(response, erro);
+  }
+
+  /**
+   * Determina status, mensagem e detalhes a partir da exceção.
+   * Loga erros genéricos com stack mascarado (LGPD).
+   */
+  private resolveError(
+    exception: unknown,
+    request: { ip?: string; method?: string; url?: string },
+    requestId: string
+  ): {
+    status: number;
+    mensagem: string;
+    codigo: string | undefined;
+    detalhes: unknown;
+  } {
+    if (exception instanceof HttpException) {
+      return this.resolveHttpException(exception);
+    }
+
+    if (exception instanceof Error) {
+      this.logGenericError(exception, request, requestId);
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        mensagem: this.isProd ? 'Erro interno do servidor' : exception.message,
+        codigo: undefined,
+        detalhes: undefined,
+      };
+    }
+
+    return {
+      status: HttpStatus.INTERNAL_SERVER_ERROR,
+      mensagem: 'Erro interno do servidor',
+      codigo: undefined,
+      detalhes: undefined,
+    };
+  }
+
+  private resolveHttpException(exception: HttpException): {
+    status: number;
+    mensagem: string;
+    codigo: string | undefined;
+    detalhes: unknown;
+  } {
+    const status = exception.getStatus();
+    const responseBody = exception.getResponse();
+
+    if (typeof responseBody === 'string') {
+      return { status, mensagem: responseBody, codigo: undefined, detalhes: undefined };
+    }
+
+    if (typeof responseBody === 'object' && responseBody !== null) {
+      // S3#12: detalhes do BadRequestException podem carregar o body
+      // original (ex.: `[{ field: 'email', message: 'invalid email' }]`).
+      // Mascaramos PII antes de persistir em log/response.
+      const body = maskPii(responseBody as Record<string, unknown>);
+      return {
+        status,
+        mensagem: (body.message as string) || exception.message,
+        codigo: body.error as string,
+        detalhes: body.message,
+      };
+    }
+
+    return { status, mensagem: exception.message, codigo: undefined, detalhes: undefined };
+  }
+
+  /**
+   * Loga erro genérico com stack mascarado (LGPD/GDPR).
+   * IP do cliente é mascarado em prod e staging, completo só em dev puro.
+   */
+  private logGenericError(
+    exception: Error,
+    request: { ip?: string; method?: string; url?: string },
+    requestId: string
+  ): void {
+    const ip = request.ip ?? 'unknown';
+    const ipMascarado = this.isDev ? ip : this.mascararIp(ip);
+    // S3#12: stack trace pode incluir `exception.message` que, em erros
+    // do Prisma/BullMQ, frequentemente carrega valores lidos de colunas
+    // PII. Mascaramos o stack inteiro para reduzir superfície de leak.
+    const safeStack = this.maskStackTrace(exception.stack ?? String(exception));
+    this.logger.error(
+      `[${requestId}] Unhandled exception on ${request.method ?? 'UNKNOWN'} ${request.url} ` +
+        `(ip=${ipMascarado})`,
+      safeStack
+    );
+  }
+
+  /**
+   * Estratégia defensiva para `@nestjs/platform-fastify` + `@fastify/middie`:
+   * o objeto `response` que chega aqui é tipicamente a FastifyReply
+   * (não http.ServerResponse nativo). O profile verificado em runtime:
+   *   ✓ `statusCode = ...`           (propriedade em FastifyReply)
+   *   ✓ `getHeader(k)`               (FastifyReply)
+   *   ✓ `header(k, v)`               (FastifyReply)
+   *   ✗ `setHeader(k, v)`            (NÃO existe — método é Express/native)
+   *   ✗ `end(payload)`               (NÃO existe — método é nativo http)
+   *
+   * Por isso usamos SOMENTE a API Fastify: `statusCode` + `header` + `send`.
+   * `send(body)` é a forma idiomática Fastify de terminar o reply.
+   */
+  private sendResponse(
+    response: {
+      statusCode: number;
+      setHeader(name: string, value: string): void;
+      end(chunk?: string | Uint8Array): void;
+    },
+    erro: RespostaErroPadrao
+  ): void {
+    const responseReply = response as unknown as {
+      statusCode: number;
+      header?: (k: string, v: string) => void;
+      getHeader?: (k: string) => unknown;
+      send?: (body: unknown) => unknown;
+    };
+    responseReply.statusCode = erro.statusCode;
+    const existingContentType =
+      typeof responseReply.getHeader === 'function'
+        ? responseReply.getHeader('content-type')
+        : undefined;
+    if (!existingContentType && typeof responseReply.header === 'function') {
+      responseReply.header('content-type', 'application/json; charset=utf-8');
+    }
+    if (typeof responseReply.send === 'function') {
+      responseReply.send(erro);
+    } else {
+      // Fallback improvável: se `send` não existir, usamos raw response.
+      response.end(JSON.stringify(erro));
+    }
   }
 
   /**
