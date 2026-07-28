@@ -1,4 +1,11 @@
-# Política de Privacidade — PediAI
+import styles from './page.module.css';
+
+export const metadata = {
+  title: 'Política de Privacidade — PediAI',
+  description: 'Política de Privacidade da PediAI conforme Lei nº 13.709/2018 (LGPD).',
+};
+
+const content = String.raw`# Política de Privacidade — PediAI
 
 > **Última atualização:** 06 de julho de 2026
 > **Versão:** 1.0.0
@@ -163,9 +170,9 @@ A PediAI utiliza **apenas cookies estritamente necessários**:
 
 | Cookie | Finalidade | Duração |
 |---|---|---|
-| `pedi_auth_refresh_token` | Manter sessão logada | 7 dias (httpOnly, secure) |
-| `pedi_auth_access_token` | Espelho para server-side gate | 15 min (httpOnly, secure) |
-| `pedi_cart_id` | Identificar carrinho offline | 30 dias |
+| \`pedi_auth_refresh_token\` | Manter sessão logada | 7 dias (httpOnly, secure) |
+| \`pedi_auth_access_token\` | Espelho para server-side gate | 15 min (httpOnly, secure) |
+| \`pedi_cart_id\` | Identificar carrinho offline | 30 dias |
 
 **Não usamos cookies de tracking, analytics ou publicidade de terceiros.**
 
@@ -216,4 +223,13 @@ A versão atual está sempre disponível em **https://pedi.ai/privacidade** com 
 
 ---
 
-**Você sempre pode revogar consentimentos, solicitar portabilidade ou eliminar seus dados. Basta enviar email para dpo@pedi.ai.**
+**Você sempre pode revogar consentimentos, solicitar portabilidade ou eliminar seus dados. Basta enviar email para dpo@pedi.ai.**`;
+
+export default function PrivacidadePage() {
+  return (
+    <main className={styles.container}>
+      <h1>Política de Privacidade</h1>
+      <pre className={styles.content}>{content}</pre>
+    </main>
+  );
+}

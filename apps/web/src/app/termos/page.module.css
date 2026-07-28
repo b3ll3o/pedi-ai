@@ -1,0 +1,25 @@
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  font-family: var(--font-geist-sans, system-ui);
+  color: #1a1a1a;
+  line-height: 1.6;
+}
+
+.container h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+}
+
+.content {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: var(--font-geist-mono, ui-monospace, monospace);
+  font-size: 0.875rem;
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+}

@@ -1,4 +1,11 @@
-# Termos de Uso — PediAI
+import styles from './page.module.css';
+
+export const metadata = {
+  title: 'Termos de Uso — PediAI',
+  description: 'Termos de Uso da plataforma PediAI de cardápio digital para restaurantes.',
+};
+
+const content = String.raw`# Termos de Uso — PediAI
 
 > **Última atualização:** 06 de julho de 2026
 > **Versão:** 1.0.0
@@ -66,7 +73,7 @@ Você concorda em **NÃO**:
 
 4.5. Revender, sublicenciar ou redistribuir a Plataforma sem autorização expressa.
 
-4.6. Usar a Plataforma para processar dados pessoais de forma inadequada (ver nossa [Política de Privacidade](/privacidade)).
+4.6. Usar a Plataforma para processar dados pessoais de forma inadequada (ver nossa Política de Privacidade em /privacidade).
 
 ---
 
@@ -84,7 +91,7 @@ Você concorda em **NÃO**:
 
 ## 6. Privacidade e Proteção de Dados (LGPD)
 
-6.1. A PediAI trata dados pessoais conforme a **Lei nº 13.709/2018 (LGPD)**. Detalhes em nossa [Política de Privacidade](/privacidade).
+6.1. A PediAI trata dados pessoais conforme a **Lei nº 13.709/2018 (LGPD)**. Detalhes em nossa Política de Privacidade.
 
 6.2. **Encarregado de Dados (DPO):** dpo@pedi.ai
 
@@ -148,4 +155,13 @@ Você concorda em **NÃO**:
 
 ---
 
-**Ao utilizar a Plataforma, você reconhece ter lido, compreendido e concordado com estes Termos.**
+**Ao utilizar a Plataforma, você reconhece ter lido, compreendido e concordado com estes Termos.**`;
+
+export default function TermosPage() {
+  return (
+    <main className={styles.container}>
+      <h1>Termos de Uso</h1>
+      <pre className={styles.content}>{content}</pre>
+    </main>
+  );
+}
