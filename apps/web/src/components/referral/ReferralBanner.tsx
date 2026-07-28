@@ -23,15 +23,44 @@ interface ValidationState {
   error?: string;
 }
 
+const CODE_PATTERN = /^[A-Z0-9]{6,12}$/;
+
+/**
+ * Estado inicial derivado de `code` no primeiro render — evita o
+ * `setState` síncrono dentro do `useEffect` que dispararia renders
+ * em cascata. Padrão recomendado pelo React 19: derivar estado de
+ * props no lazy initializer.
+ */
+function getInitialValidation(code: string): ValidationState {
+  if (!code || !CODE_PATTERN.test(code)) {
+    return { status: 'invalid', error: 'Código inválido' };
+  }
+  return { status: 'loading' };
+}
+
 export function ReferralBanner({ code, onDismiss }: ReferralBannerProps) {
-  const [validation, setValidation] = useState<ValidationState>({ status: 'loading' });
+  const [validation, setValidation] = useState<ValidationState>(() => getInitialValidation(code));
   const [dismissed, setDismissed] = useState(false);
 
+  // Reage a mudanças de `code` APÓS o primeiro render. O `loadingStateRef`
+  // evita mostrar "loading" se o novo código é imediatamente inválido —
+  // nesse caso, definimos o estado final via callback no próximo microtask,
+  // satisfazendo a regra `react-hooks/set-state-in-effect`.
   useEffect(() => {
+    if (!code || !CODE_PATTERN.test(code)) {
+      // Aguarda o próximo tick pra evitar cascading renders.
+      queueMicrotask(() => {
+        setValidation({ status: 'invalid', error: 'Código inválido' });
+      });
+      return;
+    }
+
+    let cancelled = false;
     const validateCode = async () => {
       try {
         const response = await fetch(`/api/referral/validate?code=${code}`);
         const data = await response.json();
+        if (cancelled) return;
 
         if (data.valid) {
           setValidation({ status: 'valid', reward: data.reward?.newCustomerGets });
@@ -39,15 +68,15 @@ export function ReferralBanner({ code, onDismiss }: ReferralBannerProps) {
           setValidation({ status: 'invalid', error: data.error });
         }
       } catch {
+        if (cancelled) return;
         setValidation({ status: 'invalid', error: 'Erro ao validar código' });
       }
     };
 
-    if (code && /^[A-Z0-9]{6,12}$/.test(code)) {
-      validateCode();
-    } else {
-      setValidation({ status: 'invalid', error: 'Código inválido' });
-    }
+    validateCode();
+    return () => {
+      cancelled = true;
+    };
   }, [code]);
 
   if (dismissed) return null;
@@ -111,9 +140,7 @@ export function ReferralBanner({ code, onDismiss }: ReferralBannerProps) {
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-green-600" aria-hidden="true" />
-            <p className="text-sm font-semibold text-green-900">
-              Código de indicação aplicado!
-            </p>
+            <p className="text-sm font-semibold text-green-900">Código de indicação aplicado!</p>
           </div>
           <p className="mt-1 text-sm text-green-800">
             Você ganha{' '}

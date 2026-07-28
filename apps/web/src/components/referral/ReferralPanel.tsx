@@ -31,20 +31,30 @@ export function ReferralPanel() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    fetchReferral();
-  }, []);
+    let cancelled = false;
+    const fetchReferral = async () => {
+      try {
+        const response = await fetch('/api/referral/me');
+        const data = await response.json();
+        if (!cancelled) {
+          setReferral(data.referral);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Erro ao carregar referral:', error);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
 
-  const fetchReferral = async () => {
-    try {
-      const response = await fetch('/api/referral/me');
-      const data = await response.json();
-      setReferral(data.referral);
-    } catch (error) {
-      console.error('Erro ao carregar referral:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchReferral();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleCopy = async () => {
     if (!referral) return;
@@ -96,9 +106,8 @@ export function ReferralPanel() {
           <div className="flex-1">
             <h2 className="text-2xl font-bold text-gray-900">Indique e ganhe</h2>
             <p className="mt-1 text-sm text-gray-600">
-              Para cada amigo que assinar o PediAI, você ganha até{' '}
-              <strong>3 meses grátis</strong>. Eles ganham{' '}
-              <strong>1 mês grátis</strong> também.
+              Para cada amigo que assinar o PediAI, você ganha até <strong>3 meses grátis</strong>.
+              Eles ganham <strong>1 mês grátis</strong> também.
             </p>
           </div>
         </div>
@@ -200,9 +209,7 @@ export function ReferralPanel() {
             </span>
           </p>
           <p className="mt-1 text-xs text-gray-500">
-            {referral.availableCreditMonths > 0
-              ? 'Disponível pra usar'
-              : 'Ganhe mais indicando'}
+            {referral.availableCreditMonths > 0 ? 'Disponível pra usar' : 'Ganhe mais indicando'}
           </p>
         </div>
       </div>
@@ -229,8 +236,7 @@ export function ReferralPanel() {
             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
               3
             </span>
-            Quando assinam o primeiro mês, você ganha{' '}
-            <strong>até 3 meses grátis</strong> acumulados
+            Quando assinam o primeiro mês, você ganha <strong>até 3 meses grátis</strong> acumulados
           </li>
           <li className="flex gap-3">
             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">

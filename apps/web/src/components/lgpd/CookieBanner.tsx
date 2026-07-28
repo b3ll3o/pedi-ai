@@ -23,16 +23,16 @@
  * Referência LGPD: https://www.gov.br/anpd/pt-br
  */
 
-import { useEffect, useState } from 'react';
+import { useLocalStorageState } from '@/hooks/useLocalStorageState';
 
 import styles from './CookieBanner.module.css';
 
-const STORAGE_KEY = 'pedi_cookie_banner_dismissed';
 const STORAGE_VERSION = '1'; // Incrementar se mudar copy/material
 
 interface CookieBannerState {
   dismissed: boolean;
   version: string | null;
+  dismissedAt?: string;
 }
 
 /**
@@ -42,56 +42,31 @@ interface CookieBannerState {
  * Não é bloqueante — usuário pode fechar a qualquer momento.
  */
 export function CookieBanner() {
-  const [visible, setVisible] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [stored, setStored] = useLocalStorageState<CookieBannerState | null>(
+    'cookie_banner_dismissed',
+    null,
+    STORAGE_VERSION
+  );
 
-  useEffect(() => {
-    setMounted(true);
-
-    // Verifica se já foi dismissed na versão atual.
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed: CookieBannerState = JSON.parse(raw);
-        if (parsed.dismissed && parsed.version === STORAGE_VERSION) {
-          setVisible(false);
-          return;
-        }
-      }
-    } catch {
-      // localStorage pode falhar em modo privado ou se bloqueado.
-      // Em caso de erro, mostra o banner (fail-safe).
-    }
-    setVisible(true);
-  }, []);
+  const isDismissed = stored?.dismissed === true && stored?.version === STORAGE_VERSION;
 
   const handleDismiss = () => {
-    try {
-      window.localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ dismissed: true, version: STORAGE_VERSION, dismissedAt: new Date().toISOString() })
-      );
-    } catch {
-      // Ignora erro de localStorage.
-    }
-    setVisible(false);
+    setStored({
+      dismissed: true,
+      version: STORAGE_VERSION,
+      dismissedAt: new Date().toISOString(),
+    });
   };
 
-  // Não renderiza no SSR (evita hydration mismatch).
-  if (!mounted || !visible) return null;
+  // Não renderiza se já dismissed.
+  if (isDismissed) return null;
 
   return (
-    <div
-      role="dialog"
-      aria-live="polite"
-      aria-label="Aviso de cookies"
-      className={styles.banner}
-    >
+    <div role="dialog" aria-live="polite" aria-label="Aviso de cookies" className={styles.banner}>
       <div className={styles.content}>
         <p className={styles.text}>
           🍪 Usamos apenas cookies essenciais para login e carrinho.{' '}
-          <strong>Não usamos cookies de marketing ou rastreamento.</strong>{' '}
-          Saiba mais em nossa{' '}
+          <strong>Não usamos cookies de marketing ou rastreamento.</strong> Saiba mais em nossa{' '}
           <a href="/privacidade" className={styles.link}>
             Política de Privacidade
           </a>

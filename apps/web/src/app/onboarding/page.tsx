@@ -20,15 +20,14 @@
  * Cada step dispara evento Plausible pra analytics de funil.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
 import { PlausibleEvents } from '@/types/plausible';
 import { trackEvent } from '@/components/analytics/PlausibleAnalytics';
 import { getVerticaisMetadata, type VerticalSlug } from '@/lib/onboarding/templates';
+import { useLocalStorageState } from '@/hooks/useLocalStorageState';
 
 import { VerticalStep } from '@/components/onboarding/VerticalStep';
-
-const STORAGE_KEY = 'pedi_onboarding_state_v1';
 
 interface OnboardingState {
   step: 1 | 2 | 3 | 4;
@@ -49,35 +48,20 @@ const INITIAL_STATE: OnboardingState = {
 };
 
 export default function OnboardingPage() {
-  const [state, setState] = useState<OnboardingState>(INITIAL_STATE);
-  const [mounted, setMounted] = useState(false);
+  // Estado persistido em localStorage — gerenciado por `useLocalStorageState`
+  // (SSR-safe via `useSyncExternalStore`). No servidor retorna INITIAL_STATE.
+  const [state, setState] = useLocalStorageState<OnboardingState>(
+    'onboarding_state',
+    INITIAL_STATE,
+    '1'
+  );
 
-  // Hidratação: carrega estado persistido.
+  // Tracking de início do wizard (disparado uma vez no mount).
   useEffect(() => {
-    setMounted(true);
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        setState({ ...INITIAL_STATE, ...parsed });
-      }
-    } catch {
-      // Ignora erro de localStorage.
-    }
     trackEvent(PlausibleEvents.onboardingStep.name, {
       onboardingStep: 'wizard_started',
     });
   }, []);
-
-  // Persiste estado a cada mudança.
-  useEffect(() => {
-    if (!mounted) return;
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch {
-      // Ignora.
-    }
-  }, [state, mounted]);
 
   const handleVerticalSelect = (slug: VerticalSlug) => {
     setState((s) => ({ ...s, vertical: slug }));
@@ -93,14 +77,6 @@ export default function OnboardingPage() {
   const handleBack = () => {
     setState((s) => ({ ...s, step: Math.max(1, s.step - 1) as 1 | 2 | 3 | 4 }));
   };
-
-  if (!mounted) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="animate-pulse text-gray-400">Carregando...</div>
-      </div>
-    );
-  }
 
   return (
     <main

@@ -71,26 +71,68 @@ const ASAAS_WEBHOOK_IPS = new Set([
 
 const isProd = () => process.env.NODE_ENV === 'production';
 
+/**
+ * Valida assinatura HMAC + IP allowlist.
+ * Retorna null se OK, ou uma Response com o erro apropriado.
+ */
+function validateRequestSecurity(request: NextRequest, rawBody: string): NextResponse | null {
+  const signature = request.headers.get('asaas-access-token');
+
+  // Valida assinatura HMAC
+  if (!validateSignature(signature, rawBody)) {
+    console.warn('[webhook/asaas] Assinatura inválida');
+    return NextResponse.json({ error: 'invalid_signature' }, { status: 401 });
+  }
+
+  // Valida IP (em prod)
+  const clientIp = (request.headers.get('x-forwarded-for') ?? '127.0.0.1').split(',')[0].trim();
+  if (isProd() && !isAsaasIp(clientIp)) {
+    console.warn(`[webhook/asaas] IP não autorizado: ${maskIp(clientIp)}`);
+    return NextResponse.json({ error: 'unauthorized_ip' }, { status: 403 });
+  }
+
+  return null;
+}
+
+/**
+ * Roteia o evento para o handler correspondente.
+ */
+async function routeEvent(event: AsaasWebhookPayload): Promise<void> {
+  switch (event.event) {
+    case 'PAYMENT_RECEIVED':
+    case 'PAYMENT_CONFIRMED':
+      await handlePaymentReceived(event.payment!);
+      break;
+
+    case 'PAYMENT_OVERDUE':
+      await handlePaymentOverdue(event.payment!);
+      break;
+
+    case 'PAYMENT_DELETED':
+    case 'PAYMENT_REFUNDED':
+      await handlePaymentCancelled(event.payment!);
+      break;
+
+    case 'PAYMENT_CREATED':
+    case 'PAYMENT_UPDATED':
+    case 'PAYMENT_RESTORED':
+      // Apenas loga (não faz mutação)
+      console.log(`[webhook/asaas] Evento ${event.event} recebido (no-op)`);
+      break;
+
+    default:
+      console.log(`[webhook/asaas] Evento desconhecido: ${event.event}`);
+  }
+}
+
 export async function POST(request: NextRequest) {
   const start = Date.now();
 
   try {
     // ─── 1. Validação de segurança ─────────────────────────────────
-    const signature = request.headers.get('asaas-access-token');
     const rawBody = await request.text();
-
-    // Valida assinatura HMAC
-    if (!validateSignature(signature, rawBody)) {
-      console.warn('[webhook/asaas] Assinatura inválida');
-      return NextResponse.json({ error: 'invalid_signature' }, { status: 401 });
-    }
-
-    // Valida IP (em prod)
-    const clientIp = (request.headers.get('x-forwarded-for') ?? '127.0.0.1').split(',')[0].trim();
-    if (isProd() && !isAsaasIp(clientIp)) {
-      console.warn(`[webhook/asaas] IP não autorizado: ${maskIp(clientIp)}`);
-      return NextResponse.json({ error: 'unauthorized_ip' }, { status: 403 });
-    }
+    const securityError = validateRequestSecurity(request, rawBody);
+    if (securityError) return securityError;
 
     // ─── 2. Parse do payload ───────────────────────────────────────
     const payload: AsaasWebhookPayload = JSON.parse(rawBody);
@@ -105,31 +147,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ─── 4. Roteamento por evento ──────────────────────────────────
-    switch (payload.event) {
-      case 'PAYMENT_RECEIVED':
-      case 'PAYMENT_CONFIRMED':
-        await handlePaymentReceived(payload.payment!);
-        break;
-
-      case 'PAYMENT_OVERDUE':
-        await handlePaymentOverdue(payload.payment!);
-        break;
-
-      case 'PAYMENT_DELETED':
-      case 'PAYMENT_REFUNDED':
-        await handlePaymentCancelled(payload.payment!);
-        break;
-
-      case 'PAYMENT_CREATED':
-      case 'PAYMENT_UPDATED':
-      case 'PAYMENT_RESTORED':
-        // Apenas loga (não faz mutação)
-        console.log(`[webhook/asaas] Evento ${payload.event} recebido (no-op)`);
-        break;
-
-      default:
-        console.log(`[webhook/asaas] Evento desconhecido: ${payload.event}`);
-    }
+    await routeEvent(payload);
 
     return NextResponse.json({
       status: 'processed',
@@ -186,16 +204,22 @@ async function handlePaymentReceived(payment: NonNullable<AsaasWebhookPayload['p
     Date.now() - subscription.subscriptionStartedAt.getTime() < 5 * 60 * 1000;
 
   if (!isFirstPaidSubscription) {
-    console.log(`[webhook/asaas] Subscription ${subscription.id} já era ativa — não é 1ª conversão`);
+    console.log(
+      `[webhook/asaas] Subscription ${subscription.id} já era ativa — não é 1ª conversão`
+    );
     return;
   }
 
   // 3. Busca ReferralConversion pendente para este restaurante
   const referralRepo = new PrismaReferralRepository(prisma);
-  const conversion = await referralRepo.findConversionByReferredRestaurant(subscription.restaurantId);
+  const conversion = await referralRepo.findConversionByReferredRestaurant(
+    subscription.restaurantId
+  );
 
   if (!conversion) {
-    console.log(`[webhook/asaas] Restaurante ${subscription.restaurantId} não tem conversion pendente`);
+    console.log(
+      `[webhook/asaas] Restaurante ${subscription.restaurantId} não tem conversion pendente`
+    );
     return;
   }
 

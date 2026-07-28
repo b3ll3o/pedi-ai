@@ -28,144 +28,215 @@ const VALID_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const VALID_REFERRAL_CODE = /^[A-Z0-9]{6,12}$/;
 const MAX_CONVERSIONS = 100; // anti-abuse
 
+interface ReferralValidation {
+  valid: boolean;
+  referralId?: string;
+  referrerRestaurantId?: string;
+}
+
+interface RegisterBody {
+  email?: unknown;
+  nome?: unknown;
+  senha?: unknown;
+  intent?: unknown;
+  referralCode?: unknown;
+}
+
+/**
+ * Validação dos campos básicos (email, nome, senha, intent).
+ * Retorna null se OK, ou uma Response 400 com a mensagem de erro.
+ */
+function validateBasicFields(body: RegisterBody): NextResponse | null {
+  const { email, nome, senha, intent } = body;
+
+  if (!email || typeof email !== 'string' || !VALID_EMAIL.test(email)) {
+    return NextResponse.json({ error: 'Email inválido' }, { status: 400 });
+  }
+
+  if (!nome || typeof nome !== 'string' || nome.length < 3) {
+    return NextResponse.json({ error: 'Nome muito curto' }, { status: 400 });
+  }
+
+  if (!senha || typeof senha !== 'string' || senha.length < 8) {
+    return NextResponse.json({ error: 'Senha deve ter no mínimo 8 caracteres' }, { status: 400 });
+  }
+
+  if (intent !== 'gerenciar_restaurante' && intent !== 'fazer_pedidos') {
+    return NextResponse.json({ error: 'Intent inválido' }, { status: 400 });
+  }
+
+  return null;
+}
+
+/**
+ * Valida o código de referral (opcional). Retorna null se OK ou
+ * se não foi fornecido. Retorna a ReferralValidation populate se válido,
+ * ou uma Response de erro.
+ */
+async function validateReferralCode(
+  referralCode: string | undefined
+): Promise<{ ok: true; validation: ReferralValidation } | { ok: false; response: NextResponse }> {
+  if (!referralCode) {
+    return { ok: true, validation: { valid: false } };
+  }
+
+  if (!VALID_REFERRAL_CODE.test(referralCode)) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: 'Código de referral inválido' }, { status: 400 }),
+    };
+  }
+
+  const referralRepo = new PrismaReferralRepository(prisma);
+  const referral = await referralRepo.findByCode(referralCode);
+
+  if (!referral) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: 'Código de referral não encontrado' }, { status: 404 }),
+    };
+  }
+
+  if (referral['props'].status !== 'pending') {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: 'Programa de referral não está ativo' },
+        { status: 410 }
+      ),
+    };
+  }
+
+  if (referral.totalConversions >= MAX_CONVERSIONS) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: 'Programa de referral atingiu limite' },
+        { status: 410 }
+      ),
+    };
+  }
+
+  return {
+    ok: true,
+    validation: {
+      valid: true,
+      referralId: referral.id,
+      referrerRestaurantId: referral.referrerRestaurantId,
+    },
+  };
+}
+
+/**
+ * Cria ReferralConversion dentro de uma transação Prisma.
+ * Idempotente via optimistic locking no campo `version`.
+ */
+async function createReferralConversion(
+  tx: Prisma.TransactionClient,
+  referralValidation: ReferralValidation,
+  restaurantId: string
+): Promise<void> {
+  // ANTI-ABUSE: não pode indicar a si mesmo
+  if (
+    !referralValidation.valid ||
+    !referralValidation.referralId ||
+    referralValidation.referrerRestaurantId === restaurantId
+  ) {
+    return;
+  }
+
+  await tx.referralConversion.create({
+    data: {
+      id: crypto.randomUUID(),
+      referralId: referralValidation.referralId,
+      referredRestaurantId: restaurantId,
+      status: 'pending',
+      rewardMonths: 1,
+    },
+  });
+
+  // Incrementa totalSignups do Referral com optimistic locking
+  const currentReferral = await tx.referral.findUniqueOrThrow({
+    where: { id: referralValidation.referralId },
+    select: { version: true, totalSignups: true },
+  });
+
+  const updateResult = await tx.referral.updateMany({
+    where: {
+      id: referralValidation.referralId,
+      version: currentReferral.version,
+    },
+    data: {
+      totalSignups: { increment: 1 },
+      version: { increment: 1 },
+      updatedAt: new Date(),
+    },
+  });
+
+  if (updateResult.count === 0) {
+    throw new Error('Conflito de versão no Referral — tente novamente');
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = (await request.json()) as RegisterBody;
     const { email, nome, senha, intent, referralCode } = body;
 
-    // ── 1. Validação ──────────────────────────────────────────────
-    if (!email || !VALID_EMAIL.test(email)) {
-      return NextResponse.json({ error: 'Email inválido' }, { status: 400 });
-    }
+    // ── 1. Validação ─────────────────────────────────────────
+    const basicError = validateBasicFields(body);
+    if (basicError) return basicError;
 
-    if (!nome || nome.length < 3) {
-      return NextResponse.json({ error: 'Nome muito curto' }, { status: 400 });
-    }
+    const referralResult = await validateReferralCode(
+      typeof referralCode === 'string' ? referralCode : undefined
+    );
+    if (!referralResult.ok) return referralResult.response;
+    const referralValidation = referralResult.validation;
 
-    if (!senha || senha.length < 8) {
-      return NextResponse.json({ error: 'Senha deve ter no mínimo 8 caracteres' }, { status: 400 });
-    }
-
-    if (!['gerenciar_restaurante', 'fazer_pedidos'].includes(intent)) {
-      return NextResponse.json({ error: 'Intent inválido' }, { status: 400 });
-    }
-
-    // Validação opcional do referralCode
-    let referralValidation: {
-      valid: boolean;
-      referralId?: string;
-      referrerRestaurantId?: string;
-      error?: string;
-    } = { valid: false };
-
-    if (referralCode) {
-      if (!VALID_REFERRAL_CODE.test(referralCode)) {
-        return NextResponse.json({ error: 'Código de referral inválido' }, { status: 400 });
-      }
-
-      const referralRepo = new PrismaReferralRepository(prisma);
-      const referral = await referralRepo.findByCode(referralCode);
-
-      if (!referral) {
-        return NextResponse.json({ error: 'Código de referral não encontrado' }, { status: 404 });
-      }
-
-      if (referral['props'].status !== 'pending') {
-        return NextResponse.json({ error: 'Programa de referral não está ativo' }, { status: 410 });
-      }
-
-      if (referral.totalConversions >= MAX_CONVERSIONS) {
-        return NextResponse.json({ error: 'Programa de referral atingiu limite' }, { status: 410 });
-      }
-
-      referralValidation = {
-        valid: true,
-        referralId: referral.id,
-        referrerRestaurantId: referral.referrerRestaurantId,
-      };
-    }
-
-    // ── 2. Verifica email duplicado ───────────────────────────────
+    // ── 2. Verifica email duplicado ───────────────────────────
     const existingUser = await prisma.usersProfile.findUnique({
-      where: { email },
+      where: { email: email as string },
     });
-
     if (existingUser) {
       return NextResponse.json({ error: 'Email já cadastrado' }, { status: 409 });
     }
 
-    // ── 3. Cria User + Restaurant (transação) ───────────────────
-    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      // Hash de senha (em produção: bcrypt)
-      const passwordHash = await hashPassword(senha);
+    // ── 3. Cria User + Restaurant (transação) ────────────────
+    const typedIntent = intent as 'gerenciar_restaurante' | 'fazer_pedidos';
+    const typedEmail = email as string;
+    const typedNome = nome as string;
+    const typedSenha = senha as string;
 
-      // Cria User
+    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const passwordHash = await hashPassword(typedSenha);
+
       const user = await tx.usersProfile.create({
         data: {
-          email,
-          name: nome,
-          role: intent === 'gerenciar_restaurante' ? 'dono' : 'cliente',
+          email: typedEmail,
+          name: typedNome,
+          role: typedIntent === 'gerenciar_restaurante' ? 'dono' : 'cliente',
           passwordHash,
         },
       });
 
-      // Cria Restaurant (apenas se intent é gerenciar)
       let restaurant = null;
-      if (intent === 'gerenciar_restaurante') {
+      if (typedIntent === 'gerenciar_restaurante') {
         restaurant = await tx.restaurant.create({
           data: {
-            name: `${nome}'s Restaurant`,
-            // Slug gerado a partir do nome (único)
-            slug: await generateUniqueSlug(nome, tx),
+            name: `${typedNome}'s Restaurant`,
+            slug: await generateUniqueSlug(typedNome, tx),
           },
         });
 
-        // Associa User ao Restaurant
         await tx.usersProfile.update({
           where: { id: user.id },
           data: { restaurantId: restaurant.id },
         });
       }
 
-      // ── 4. Cria ReferralConversion (se referral válido) ────────
-      if (
-        referralValidation.valid &&
-        restaurant &&
-        referralValidation.referrerRestaurantId !== restaurant.id // ANTI-ABUSE: não pode indicar a si mesmo
-      ) {
-        await tx.referralConversion.create({
-          data: {
-            id: crypto.randomUUID(),
-            referralId: referralValidation.referralId!,
-            referredRestaurantId: restaurant.id,
-            status: 'pending',
-            rewardMonths: 1,
-          },
-        });
-
-        // Incrementa totalSignups do Referral com optimistic locking
-        // Lê a versão atual, depois atualiza com WHERE version = $current
-        const currentReferral = await tx.referral.findUniqueOrThrow({
-          where: { id: referralValidation.referralId! },
-          select: { version: true, totalSignups: true },
-        });
-
-        const updateResult = await tx.referral.updateMany({
-          where: {
-            id: referralValidation.referralId!,
-            version: currentReferral.version, // optimistic lock
-          },
-          data: {
-            totalSignups: { increment: 1 },
-            version: { increment: 1 },
-            updatedAt: new Date(),
-          },
-        });
-
-        if (updateResult.count === 0) {
-          // Versão mudou entre leituras (race condition) — falha segura
-          throw new Error('Conflito de versão no Referral — tente novamente');
-        }
+      // ── 4. Cria ReferralConversion (se referral válido) ────
+      if (restaurant) {
+        await createReferralConversion(tx, referralValidation, restaurant.id);
       }
 
       return { user, restaurant };
@@ -230,7 +301,7 @@ async function generateUniqueSlug(baseName: string, tx: Prisma.TransactionClient
   const slug = baseName
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[̀-ͯ]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 50);
