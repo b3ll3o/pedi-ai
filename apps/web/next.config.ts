@@ -153,40 +153,43 @@ const nextConfig: NextConfig = {
     // apareça na CSP e no atributo `nonce=` dos scripts gerados. Geramos
     // uma vez aqui e reusamos em todos os headers abaixo.
     const nonce = generateNonce();
+    const isDev = process.env.NODE_ENV !== 'production';
+
+    // Em dev, Next.js (Turbopack) injeta chunks sem nonce e HMR usa eval
+    // inline + scripts dinâmicos. `'nonce-...'` ou `'strict-dynamic'`
+    // quebram a hidratação em dev — qualquer um dos dois faz o browser
+    // bloquear scripts inline (RSC boot) que não carregam o atributo
+    // `nonce`. Em prod, mantemos nonce + strict-dynamic (H11). Em dev,
+    // usamos `'unsafe-inline' + 'unsafe-eval'` sem nonce.
+    const scriptSrc = isDev
+      ? `script-src 'self' 'unsafe-inline' 'unsafe-eval'`
+      : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`;
+    const xNonce = isDev ? '' : nonce;
 
     return [
       {
         source: '/(.*)',
         headers: [
           ...securityHeaders,
+          ...(xNonce
+            ? [
+                {
+                  key: 'x-nonce',
+                  value: xNonce,
+                },
+              ]
+            : []),
           {
-            // Header consumido pelo App Router do Next.js. Quando setado,
-            // o runtime aplica o atributo `nonce="..."` nos scripts inline
-            // que ele injeta (boot, hidratação). Sem isso, o nonce na CSP
-            // não casa com nada e os scripts são bloqueados.
-            key: 'x-nonce',
-            value: nonce,
-          },
-          {
-            // CSP com nonce por request. Scripts inline gerados pelo Next
-            // (hidratação) só executam se carregarem o atributo
-            // `nonce="..."` correspondente — scripts injetados por XSS
-            // não conhecem o nonce e são bloqueados pelo browser.
-            //
-            // `'strict-dynamic'` permite que scripts confiáveis (carregados
-            // via nonce) adicionem novos scripts sem precisar de nonce
-            // também — útil para Next/React que injetam lazy chunks.
+            // CSP com nonce por request em produção. Em dev, sem nonce
+            // (Turbopack injeta inline sem nonce). Ver comentário acima.
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
               "img-src 'self' data: blob: https:",
-              // `unsafe-inline` removido de `script-src` (H11). Mantido
-              // apenas em `style-src` porque migrar estilos inline para
-              // nonces exige instrumentar cada <style> gerado por RSC.
-              `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
+              scriptSrc,
               "style-src 'self' 'unsafe-inline'",
               "font-src 'self' data:",
-              "connect-src 'self' wss://*.pedi-ai.com https://api.mercadopago.com",
+              "connect-src 'self' ws: wss: http: https:",
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",
