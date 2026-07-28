@@ -26,6 +26,6 @@
     "build": "tsc"
   },
   "devDependencies": {
-    "typescript": "^6"
+    "typescript": "^7"
   }
 }
