@@ -15,13 +15,15 @@
  * @see apps/web/src/domain/referral/
  */
 
-import type { PrismaClient, Referral as PrismaReferral, ReferralConversion as PrismaReferralConversion, Prisma } from '@prisma/client';
-
-import { Referral } from '@/domain/referral/Referral';
 import type {
-  ReferralRepository,
-  ReferralConversion,
-} from '@/domain/referral/ReferralRepository';
+  PrismaClient,
+  Referral as PrismaReferral,
+  ReferralConversion as PrismaReferralConversion,
+  Prisma,
+} from '@prisma/client';
+
+import { Referral, type ReferralConversion } from '@/domain/referral/Referral';
+import type { ReferralRepository } from '@/domain/referral/ReferralRepository';
 
 /**
  * Adapter Prisma para o repositório de Referral.
@@ -206,9 +208,7 @@ export class PrismaReferralRepository implements ReferralRepository {
    * - Admin analytics (top referrers do mês)
    * - Programa de embaixadores
    */
-  async listTopReferrers(
-    limit: number
-  ): Promise<
+  async listTopReferrers(limit: number): Promise<
     Array<{
       restaurantId: string;
       totalConversions: number;
@@ -255,8 +255,6 @@ export class PrismaReferralRepository implements ReferralRepository {
  */
 export const REFERRAL_REPOSITORY_TOKEN = 'REFERRAL_REPOSITORY';
 
-export function createPrismaReferralRepository(
-  prisma: PrismaClient
-): ReferralRepository {
+export function createPrismaReferralRepository(prisma: PrismaClient): ReferralRepository {
   return new PrismaReferralRepository(prisma);
 }

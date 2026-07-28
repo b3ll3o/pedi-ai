@@ -22,3 +22,5 @@ if (NODE_ENV === 'production' && SENTRY_DSN) {
     environment: NODE_ENV,
   });
 }
+
+export {};

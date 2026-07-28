@@ -47,7 +47,10 @@ if (NODE_ENV === 'production' && SENTRY_DSN) {
 
     // Filtra dados sensíveis antes de enviar pro Sentry.
     // LGPD compliance: remove PII automaticamente.
-    beforeSend(event) {
+    beforeSend(event: {
+      user?: { ip_address?: string; email?: string; [key: string]: unknown };
+      [key: string]: unknown;
+    }) {
       // Remove IP do cliente (LGPD Art. 46).
       if (event.user?.ip_address) {
         delete event.user.ip_address;
@@ -73,3 +76,5 @@ if (NODE_ENV === 'production' && SENTRY_DSN) {
   );
 }
 // Em dev/test: no-op (não polui console, não consome memória).
+
+export {};

@@ -40,7 +40,7 @@ if (NODE_ENV === 'production' && SENTRY_DSN) {
     replaysOnErrorSampleRate: 0,
 
     // Filtra console.log/breadcrumbs que possam ter PII.
-    beforeBreadcrumb(breadcrumb) {
+    beforeBreadcrumb(breadcrumb: { category?: string; message?: string; [key: string]: unknown }) {
       // Bloqueia console.log com conteúdo > 200 chars (potencial PII dump).
       if (
         breadcrumb.category === 'console' &&
