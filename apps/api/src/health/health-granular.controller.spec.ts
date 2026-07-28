@@ -6,24 +6,28 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { ServiceUnavailableException } from '@nestjs/common';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-import { PrismaService } from '../../../common/prisma.service';
-import { QueueService } from '../../../queues/queue.module';
+import { PrismaService } from '../common/prisma.service';
+import { QueueService } from '../queues/queue.service';
 import { HealthGranularController } from './health-granular.controller';
 
 describe('HealthGranularController @unit @health', () => {
   let controller: HealthGranularController;
-  let mockPrisma: jest.Mocked<Pick<PrismaService, '$queryRaw'>>;
-  let mockQueue: jest.Mocked<Pick<QueueService, 'pingRedis' | 'getQueueStats'>>;
+  let mockPrisma: { $queryRaw: ReturnType<typeof vi.fn> };
+  let mockQueue: {
+    pingRedis: ReturnType<typeof vi.fn>;
+    getQueueStats: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(async () => {
     mockPrisma = {
-      $queryRaw: jest.fn(),
+      $queryRaw: vi.fn(),
     };
 
     mockQueue = {
-      pingRedis: jest.fn(),
-      getQueueStats: jest.fn(),
+      pingRedis: vi.fn(),
+      getQueueStats: vi.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -168,9 +172,7 @@ describe('HealthGranularController @unit @health', () => {
 
   describe('full', () => {
     it('deve retornar "ok" quando TODOS componentes estão up', async () => {
-      mockPrisma.$queryRaw.mockResolvedValueOnce([
-        { version: 'PostgreSQL 16.2' },
-      ]);
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ version: 'PostgreSQL 16.2' }]);
       mockQueue.pingRedis.mockResolvedValueOnce({ status: 'up', latencyMs: 3 });
       mockQueue.getQueueStats.mockResolvedValueOnce({
         waiting: 0,
@@ -191,9 +193,7 @@ describe('HealthGranularController @unit @health', () => {
     });
 
     it('deve retornar "degraded" quando ALGUNS componentes estão down', async () => {
-      mockPrisma.$queryRaw.mockResolvedValueOnce([
-        { version: 'PostgreSQL 16.2' },
-      ]);
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ version: 'PostgreSQL 16.2' }]);
       mockQueue.pingRedis.mockResolvedValueOnce({
         status: 'down',
         latencyMs: 100,
@@ -226,19 +226,13 @@ describe('HealthGranularController @unit @health', () => {
       mockPrisma.$queryRaw.mockImplementationOnce(
         () =>
           new Promise((resolve) =>
-            setTimeout(
-              () => resolve([{ version: 'PostgreSQL 16.2' }]),
-              dbDelay
-            )
+            setTimeout(() => resolve([{ version: 'PostgreSQL 16.2' }]), dbDelay)
           )
       );
       mockQueue.pingRedis.mockImplementationOnce(
         () =>
           new Promise((resolve) =>
-            setTimeout(
-              () => resolve({ status: 'up' as const, latencyMs: redisDelay }),
-              redisDelay
-            )
+            setTimeout(() => resolve({ status: 'up' as const, latencyMs: redisDelay }), redisDelay)
           )
       );
 

@@ -20,18 +20,13 @@
  * @see .openspec/specs/admin/design.md (health checks)
  */
 
-import {
-  Controller,
-  Get,
-  ServiceUnavailableException,
-  Logger,
-} from '@nestjs/common';
+import { Controller, Get, ServiceUnavailableException, Logger } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
 
 import { Public } from '../auth/decorators/public.decorator';
 import { PrismaService } from '../common/prisma.service';
-import { QueueService } from '../queues/queue.module';
+import { QueueService } from '../queues/queue.service';
 
 interface ComponentHealth {
   name: string;
@@ -55,8 +50,7 @@ interface FullHealthResponse extends Omit<HealthResponse, 'component'> {
   components: ComponentHealth[];
 }
 
-const isProd = () =>
-  process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging';
+const isProd = () => process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging';
 
 /**
  * Sanitiza mensagem de erro para não vazar topologia interna (hostname/IP
@@ -131,9 +125,7 @@ export class HealthGranularController {
         error: sanitized,
       };
 
-      this.logger.error(
-        `[health/db] postgres indisponível: ${rawError}`
-      );
+      this.logger.error(`[health/db] postgres indisponível: ${rawError}`);
     }
 
     const response: HealthResponse = {
@@ -206,9 +198,7 @@ export class HealthGranularController {
           error: sanitizeError(pingResult.error ?? 'connection_failed'),
         };
 
-        this.logger.error(
-          `[health/redis] redis indisponível: ${pingResult.error}`
-        );
+        this.logger.error(`[health/redis] redis indisponível: ${pingResult.error}`);
       }
     } catch (err) {
       component = {
@@ -218,9 +208,7 @@ export class HealthGranularController {
         error: sanitizeError((err as Error).message),
       };
 
-      this.logger.error(
-        `[health/redis] erro inesperado: ${(err as Error).message}`
-      );
+      this.logger.error(`[health/redis] erro inesperado: ${(err as Error).message}`);
     }
 
     const response: HealthResponse = {
