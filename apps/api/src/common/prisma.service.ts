@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { Prisma, PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 
 import { PiiCryptoService } from './pii-crypto.service';
 import {
@@ -40,7 +41,16 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   private piiApplied = false;
 
   constructor(private readonly piiCrypto: PiiCryptoService) {
-    super();
+    // Prisma 7 não aceita mais `super()` sem options — exige um driver adapter
+    // (`@prisma/adapter-pg`, `@prisma/adapter-neon`, etc.). Usamos `PrismaPg`
+    // apontando para `DATABASE_URL` (mesmo env que o Prisma 6 lia via schema).
+    const connectionString = process.env.DATABASE_URL;
+    if (!connectionString) {
+      throw new Error('DATABASE_URL é obrigatório para inicializar PrismaClient');
+    }
+    super({
+      adapter: new PrismaPg({ connectionString }),
+    });
   }
 
   async onModuleInit() {

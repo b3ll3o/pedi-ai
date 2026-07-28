@@ -36,7 +36,7 @@ export default defineConfig({
   testDir: path.resolve(__dirname, 'tests'),
   fullyParallel: true,
   forbidOnly: isCI,
-  retries: isCI ? 2 : 0,
+  retries: isCI ? 1 : 0,
   // Local: 75% of CPU cores. CI: 1 worker (DB is shared between shards).
   workers: isCI ? 1 : Math.max(1, Math.floor(os.cpus().length * 0.75)),
   // NOTE: do NOT add 'shard' config here — CI matrix controls sharding via SHARD env var.
@@ -56,8 +56,12 @@ export default defineConfig({
     // NOTE: API runs on port 3001 (NestJS), not 3000 (Next.js)
     // Override via .env.e2e: NEXT_PUBLIC_API_URL=http://localhost:3001
     // Performance: use 'load' instead of 'networkidle'
-    navigationTimeout: 60_000,
-    actionTimeout: 30_000,
+    navigationTimeout: 30_000,
+    // 10s é suficiente para elementos pós-hidratação em testes E2E bem
+    // comportados. Elementos que demoram mais indicam regressão no app
+    // e devem falhar rápido para isolar o problema no log em vez de
+    // consumir todo o orçamento do job (~80 testes × 30s = 40+min).
+    actionTimeout: 10_000,
     contextOptions: {
       reducedMotion: 'reduce',
       viewport: { width: 1280, height: 720 },

@@ -5,9 +5,20 @@ import { TodasExcecoesFiltro } from '../../../src/common/filters/TodasExcecoesFi
 
 function makeHost(opts: { url?: string; body?: unknown } = {}) {
   const req = { url: opts.url ?? '/api/orders', method: 'POST', requestId: 'req-1' };
+  // Mock de FastifyReply — o filtro usa `statusCode` (prop), `header(k,v)`,
+  // `getHeader(k)`, e `send(body)` (auditoria M15: stack Fastify-only).
+  // Ver TodasExcecoesFiltro.catch — desde a migração para @nestjs/platform-fastify
+  // o filtro não usa mais `response.status(...).send(...)` (Express API).
   const send = vi.fn();
-  const status = vi.fn(() => ({ send }));
-  const response = { status };
+  const response = {
+    statusCode: 0,
+    headers: {} as Record<string, string>,
+    header: vi.fn((k: string, v: string) => {
+      response.headers[k] = v;
+    }),
+    getHeader: vi.fn((k: string) => response.headers[k]),
+    send,
+  };
   return {
     req,
     response,
@@ -36,8 +47,6 @@ describe('TodasExcecoesFiltro (S3#12)', () => {
   it('mascara PII em BadRequestException.details', () => {
     const filter = new TodasExcecoesFiltro();
     const { host, response } = makeHost();
-    const send = vi.fn();
-    (response.status as ReturnType<typeof vi.fn>).mockReturnValue({ send });
 
     const exc = new BadRequestException({
       error: 'Bad Request',
@@ -50,7 +59,8 @@ describe('TodasExcecoesFiltro (S3#12)', () => {
     // — só os detalhes que viriam para log/response_body.
     // Aqui o filtro só envia `statusCode/mensagem/codigo/detalhes`,
     // então verificamos que a chamada foi feita sem throw.
-    expect(send).toHaveBeenCalledTimes(1);
+    expect(response.send).toHaveBeenCalledTimes(1);
+    expect(response.statusCode).toBe(HttpStatus.BAD_REQUEST);
   });
 
   it('mascara emails no stack trace de Error genérico', () => {
@@ -90,14 +100,13 @@ describe('TodasExcecoesFiltro (S3#12)', () => {
     const filter = new TodasExcecoesFiltro();
     vi.spyOn(filter['logger'], 'error').mockImplementation(() => {});
     const { host, response } = makeHost();
-    const send = vi.fn();
-    (response.status as ReturnType<typeof vi.fn>).mockReturnValue({ send });
 
     filter.catch(new Error('postgres connection refused'), host as never);
 
-    expect(send).toHaveBeenCalledWith(
+    expect(response.send).toHaveBeenCalledWith(
       expect.objectContaining({ mensagem: 'Erro interno do servidor' })
     );
+    expect(response.statusCode).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
   });
 
   it('em dev, devolve exception.message ao cliente para debug', () => {
@@ -105,44 +114,50 @@ describe('TodasExcecoesFiltro (S3#12)', () => {
     const filter = new TodasExcecoesFiltro();
     vi.spyOn(filter['logger'], 'error').mockImplementation(() => {});
     const { host, response } = makeHost();
-    const send = vi.fn();
-    (response.status as ReturnType<typeof vi.fn>).mockReturnValue({ send });
 
     filter.catch(new Error('debug-me-please'), host as never);
 
-    expect(send).toHaveBeenCalledWith(expect.objectContaining({ mensagem: 'debug-me-please' }));
+    expect(response.send).toHaveBeenCalledWith(
+      expect.objectContaining({ mensagem: 'debug-me-please' })
+    );
   });
 
   it('usa requestId do request ou fallback "unknown"', () => {
     const filter = new TodasExcecoesFiltro();
     vi.spyOn(filter['logger'], 'error').mockImplementation(() => {});
     const req = { url: '/x', method: 'GET' }; // sem requestId
-    const send = vi.fn();
-    const status = vi.fn(() => ({ send }));
+    const response = {
+      statusCode: 0,
+      headers: {} as Record<string, string>,
+      header: vi.fn(),
+      getHeader: vi.fn(),
+      send: vi.fn(),
+    };
     const host = {
       switchToHttp: () => ({
         getRequest: () => req,
-        getResponse: () => ({ status }),
+        getResponse: () => response,
       }),
     };
 
     filter.catch(new Error('boom'), host as never);
 
-    expect(send).toHaveBeenCalledWith(expect.objectContaining({ requestId: 'unknown' }));
+    expect(response.send).toHaveBeenCalledWith(
+      expect.objectContaining({ requestId: 'unknown' })
+    );
   });
 
   it('HttpException com response string repassa a mensagem', () => {
     const filter = new TodasExcecoesFiltro();
     const { host, response } = makeHost();
-    const send = vi.fn();
-    const statusMock = response.status as ReturnType<typeof vi.fn>;
-    statusMock.mockReturnValue({ send });
 
     const exc = new HttpException('Forbidden custom', HttpStatus.FORBIDDEN);
     filter.catch(exc, host as never);
 
-    expect(statusMock).toHaveBeenCalledWith(HttpStatus.FORBIDDEN);
-    expect(send).toHaveBeenCalledWith(expect.objectContaining({ mensagem: 'Forbidden custom' }));
+    expect(response.statusCode).toBe(HttpStatus.FORBIDDEN);
+    expect(response.send).toHaveBeenCalledWith(
+      expect.objectContaining({ mensagem: 'Forbidden custom' })
+    );
   });
 
   it('mascara IP em prod, mantém em dev', () => {

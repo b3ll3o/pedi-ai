@@ -1,3 +1,2 @@
-#!/bin/sh
-export NODE_PATH="/home/leo/Documentos/projetos/pedi-ai/node_modules/.pnpm/lint-staged@17.0.5/node_modules"
-exec node /home/leo/Documentos/projetos/pedi-ai/node_modules/.pnpm/lint-staged@17.0.5/node_modules/lint-staged/bin/lint-staged.js
+#!/usr/bin/env sh
+pnpm exec lint-staged

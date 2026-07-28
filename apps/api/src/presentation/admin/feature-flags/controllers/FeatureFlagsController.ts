@@ -58,34 +58,53 @@ import {
 @ApiBearerAuth('JWT-auth')
 @Controller('admin/feature-flags')
 export class FeatureFlagsController {
-  private readonly listarUC: any;
-  private readonly obterUC: any;
-  private readonly criarUC: any;
-  private readonly atualizarUC: any;
-  private readonly adicionarOverrideUC: any;
-  private readonly removerOverrideUC: any;
-  private readonly listarOverridesUC: any;
-  private readonly listarAuditUC: any;
-  private readonly avaliarUC: any;
+  private readonly listarUC: ListarFeatureFlagsUseCase;
+  private readonly obterUC: ObterFeatureFlagUseCase;
+  private readonly criarUC: CriarFeatureFlagUseCase;
+  private readonly atualizarUC: AtualizarFeatureFlagUseCase;
+  private readonly adicionarOverrideUC: AdicionarOverrideUseCase;
+  private readonly removerOverrideUC: RemoverOverrideUseCase;
+  private readonly listarOverridesUC: ListarOverridesUseCase;
+  private readonly listarAuditUC: ListarAuditLogUseCase;
+  private readonly avaliarUC: AvaliarFeatureFlagsUseCase;
 
   /**
    * Aceita tanto o bundle canônico (9 use cases posicionais) quanto o POJO
    * compacto `{ listar, obter, criar, ... }` usado pelos testes.
+   *
+   * IMPORTANTE: tipamos os parâmetros como classes concretas (não `any`) para
+   * que `emitDecoratorMetadata` emita o tipo correto. Sem isso, Nest recebe
+   * `Object` em todos os slots e falha a resolução (vide erro
+   * "Nest can't resolve dependencies of the FeatureFlagsController (?, Object, ...)".
    */
   constructor(
-    listarUC: any,
-    obterUC?: any,
-    criarUC?: any,
-    atualizarUC?: any,
-    adicionarOverrideUC?: any,
-    removerOverrideUC?: any,
-    listarOverridesUC?: any,
-    listarAuditUC?: any,
-    avaliarUC?: any
+    listarUC: ListarFeatureFlagsUseCase,
+    obterUC: ObterFeatureFlagUseCase,
+    criarUC: CriarFeatureFlagUseCase,
+    atualizarUC: AtualizarFeatureFlagUseCase,
+    adicionarOverrideUC: AdicionarOverrideUseCase,
+    removerOverrideUC: RemoverOverrideUseCase,
+    listarOverridesUC: ListarOverridesUseCase,
+    listarAuditUC: ListarAuditLogUseCase,
+    avaliarUC: AvaliarFeatureFlagsUseCase
   ) {
-    // Forma bundle (1 argumento objeto)
-    if (typeof listarUC === 'object' && obterUC === undefined && listarUC.listar) {
-      const uc = listarUC;
+    // Forma bundle (1 argumento objeto) — usada pelos testes com mock POJO.
+    if (
+      typeof listarUC === 'object' &&
+      !('executar' in listarUC) &&
+      (listarUC as { listar?: unknown }).listar
+    ) {
+      const uc = listarUC as unknown as {
+        listar: ListarFeatureFlagsUseCase;
+        obter: ObterFeatureFlagUseCase;
+        criar: CriarFeatureFlagUseCase;
+        atualizar: AtualizarFeatureFlagUseCase;
+        adicionarOverride: AdicionarOverrideUseCase;
+        removerOverride: RemoverOverrideUseCase;
+        listarOverrides: ListarOverridesUseCase;
+        listarAudit: ListarAuditLogUseCase;
+        avaliar: AvaliarFeatureFlagsUseCase;
+      };
       this.listarUC = uc.listar;
       this.obterUC = uc.obter;
       this.criarUC = uc.criar;

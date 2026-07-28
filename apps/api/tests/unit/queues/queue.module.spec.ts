@@ -56,7 +56,7 @@ describe('QueueService', () => {
   describe('modo no-op (sem REDIS_URL)', () => {
     it('opera em modo no-op e loga warning ao instanciar', async () => {
       delete process.env.REDIS_URL;
-      const { QueueService } = await import('../../../src/queues/queue.module');
+      const { QueueService } = await import('../../../src/queues/queue.service');
       const svc = new QueueService();
 
       // register() retorna null quando desabilitado
@@ -66,7 +66,7 @@ describe('QueueService', () => {
 
     it('enqueue executa inline via setImmediate em modo no-op', async () => {
       delete process.env.REDIS_URL;
-      const { QueueService } = await import('../../../src/queues/queue.module');
+      const { QueueService } = await import('../../../src/queues/queue.service');
       const svc = new QueueService();
 
       // Não deve lançar, mesmo sem fila registrada.
@@ -75,7 +75,7 @@ describe('QueueService', () => {
 
     it('pingRedis retorna null quando Redis desabilitado', async () => {
       delete process.env.REDIS_URL;
-      const { QueueService } = await import('../../../src/queues/queue.module');
+      const { QueueService } = await import('../../../src/queues/queue.service');
       const svc = new QueueService();
       expect(await svc.pingRedis()).toBeNull();
     });
@@ -84,7 +84,7 @@ describe('QueueService', () => {
   describe('modo habilitado (com REDIS_URL)', () => {
     it('inicializa Redis e registra queue + worker', async () => {
       process.env.REDIS_URL = 'redis://localhost:6379';
-      const { QueueService } = await import('../../../src/queues/queue.module');
+      const { QueueService } = await import('../../../src/queues/queue.service');
       const svc = new QueueService();
 
       const handler = vi.fn().mockResolvedValue(undefined);
@@ -95,7 +95,7 @@ describe('QueueService', () => {
 
     it('register é idempotente: re-registrar retorna a mesma queue', async () => {
       process.env.REDIS_URL = 'redis://localhost:6379';
-      const { QueueService } = await import('../../../src/queues/queue.module');
+      const { QueueService } = await import('../../../src/queues/queue.service');
       const svc = new QueueService();
 
       const handler = vi.fn().mockResolvedValue(undefined);
@@ -107,7 +107,7 @@ describe('QueueService', () => {
 
     it('enqueue adiciona job à queue registrada', async () => {
       process.env.REDIS_URL = 'redis://localhost:6379';
-      const { QueueService } = await import('../../../src/queues/queue.module');
+      const { QueueService } = await import('../../../src/queues/queue.service');
       const svc = new QueueService();
 
       const handler = vi.fn().mockResolvedValue(undefined);
@@ -120,7 +120,7 @@ describe('QueueService', () => {
 
     it('enqueue aceita opts de delay', async () => {
       process.env.REDIS_URL = 'redis://localhost:6379';
-      const { QueueService } = await import('../../../src/queues/queue.module');
+      const { QueueService } = await import('../../../src/queues/queue.service');
       const svc = new QueueService();
 
       const handler = vi.fn().mockResolvedValue(undefined);
@@ -133,7 +133,7 @@ describe('QueueService', () => {
 
     it('enqueue de queue não registrada cai em no-op (fallback inline)', async () => {
       process.env.REDIS_URL = 'redis://localhost:6379';
-      const { QueueService } = await import('../../../src/queues/queue.module');
+      const { QueueService } = await import('../../../src/queues/queue.service');
       const svc = new QueueService();
 
       // Não lança mesmo sem registro.
@@ -142,7 +142,7 @@ describe('QueueService', () => {
 
     it('pingRedis retorna up com PONG', async () => {
       process.env.REDIS_URL = 'redis://localhost:6379';
-      const { QueueService } = await import('../../../src/queues/queue.module');
+      const { QueueService } = await import('../../../src/queues/queue.service');
       const svc = new QueueService();
       const result = await svc.pingRedis();
       expect(result?.status).toBe('up');
@@ -151,7 +151,7 @@ describe('QueueService', () => {
 
     it('pingRedis retorna down quando ping não devolve PONG', async () => {
       process.env.REDIS_URL = 'redis://localhost:6379';
-      const { QueueService } = await import('../../../src/queues/queue.module');
+      const { QueueService } = await import('../../../src/queues/queue.service');
       const svc = new QueueService();
 
       // Sobrescreve o método ping no redis mockado
@@ -165,7 +165,7 @@ describe('QueueService', () => {
 
     it('pingRedis captura erro de conexão', async () => {
       process.env.REDIS_URL = 'redis://localhost:6379';
-      const { QueueService } = await import('../../../src/queues/queue.module');
+      const { QueueService } = await import('../../../src/queues/queue.service');
       const svc = new QueueService();
 
       (svc as unknown as { redis: { ping: ReturnType<typeof vi.fn> } }).redis.ping = vi
@@ -179,7 +179,7 @@ describe('QueueService', () => {
 
     it('shutdown fecha workers, queues e redis', async () => {
       process.env.REDIS_URL = 'redis://localhost:6379';
-      const { QueueService } = await import('../../../src/queues/queue.module');
+      const { QueueService } = await import('../../../src/queues/queue.service');
       const svc = new QueueService();
 
       const handler = vi.fn().mockResolvedValue(undefined);
@@ -208,7 +208,7 @@ describe('EmailQueue', () => {
 
   it('registra handler no onModuleInit', async () => {
     process.env.REDIS_URL = 'redis://localhost:6379';
-    const { QueueService } = await import('../../../src/queues/queue.module');
+    const { QueueService } = await import('../../../src/queues/queue.service');
     const { EmailQueue } = await import('../../../src/queues/email.queue');
     const queueService = new QueueService();
     const registerSpy = vi.spyOn(queueService, 'register');
@@ -223,7 +223,7 @@ describe('EmailQueue', () => {
 
   it('sendPasswordReset enfileira email job', async () => {
     process.env.REDIS_URL = 'redis://localhost:6379';
-    const { QueueService } = await import('../../../src/queues/queue.module');
+    const { QueueService } = await import('../../../src/queues/queue.service');
     const { EmailQueue } = await import('../../../src/queues/email.queue');
     const queueService = new QueueService();
     queueService.register({ name: 'email' }, async () => {});
@@ -242,7 +242,7 @@ describe('EmailQueue', () => {
 
   it('handler de email mascara email no log (LGPD)', async () => {
     process.env.REDIS_URL = 'redis://localhost:6379';
-    const { QueueService } = await import('../../../src/queues/queue.module');
+    const { QueueService } = await import('../../../src/queues/queue.service');
     const { EmailQueue } = await import('../../../src/queues/email.queue');
     const queueService = new QueueService();
     let capturedHandler:

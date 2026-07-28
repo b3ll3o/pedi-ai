@@ -15,7 +15,7 @@ jobs:
   e2e-tests:
     name: E2E Shard ${{ matrix.shard }}/4
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
