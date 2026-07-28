@@ -13,21 +13,22 @@ describe('Assinatura', () => {
     });
 
     it('deve criar assinatura com trial customizado', () => {
-      const assinatura = Assinatura.criar('rest-1', 30);
+      const assinatura = Assinatura.criar('rest-1');
+      assinatura.iniciarTrial(30);
 
       expect(assinatura.diasRestantesTrial).toBe(30);
     });
 
-    it('deve ter preco de R$19.99', () => {
+    it('deve ter preco de R$49.90 (plano mensal)', () => {
       const assinatura = Assinatura.criar('rest-1');
 
-      expect(assinatura.preçoFormatado).toBe('R$ 19,99');
+      expect(assinatura.preçoFormatado).toBe('R$ 49,90');
     });
   });
 
   describe('trialAtivo', () => {
     it('deve retornar true para trial dentro do prazo', () => {
-      const assinatura = Assinatura.criar('rest-1', 14);
+      const assinatura = Assinatura.criar('rest-1');
 
       expect(assinatura.trialAtivo).toBe(true);
     });
@@ -137,7 +138,7 @@ describe('Assinatura', () => {
       expect(record.restaurant_id).toBe('rest-1');
       expect(record.status).toBe('trial');
       expect(record.plan_type).toBe('monthly');
-      expect(record.price_cents).toBe(1999);
+      expect(record.price_cents).toBe(4990);
     });
   });
 

@@ -65,7 +65,12 @@ export class GerenciarAssinaturaUseCase {
       throw new Error('Restaurante já possui uma assinatura');
     }
 
-    const assinatura = Assinatura.criar(input.restauranteId, input.diasTrial ?? 14);
+    // `Assinatura.criar` aceita (restauranteId, tipoPlano) — o trial inicial
+    // usa o plano padrão `monthly`. O número de dias de trial (default 14)
+    // é aplicado via `iniciarTrial(dias)` logo após, permitindo override
+    // custom sem conflitar com a tipagem de `tipoPlano`.
+    const assinatura = Assinatura.criar(input.restauranteId);
+    assinatura.iniciarTrial(input.diasTrial ?? 14);
     return this.assinaturaRepo.criar(assinatura);
   }
 
