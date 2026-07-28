@@ -7,7 +7,7 @@
  * @see apps/web/src/domain/referral/Referral.ts
  */
 
-import type { Referral, ReferralConversion, ReferralStatus } from '../Referral';
+import type { Referral, ReferralConversion, ReferralStatus } from './Referral';
 
 export interface ReferralRepository {
   /**
@@ -43,7 +43,9 @@ export interface ReferralRepository {
   /**
    * Lista conversões onde o restaurante foi o referred (pra dar reward).
    */
-  findConversionByReferredRestaurant(referredRestaurantId: string): Promise<ReferralConversion | null>;
+  findConversionByReferredRestaurant(
+    referredRestaurantId: string
+  ): Promise<ReferralConversion | null>;
 
   /**
    * Marca conversion como rewarded (já creditou meses grátis).

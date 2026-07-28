@@ -43,10 +43,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!senha || senha.length < 8) {
-      return NextResponse.json(
-        { error: 'Senha deve ter no mínimo 8 caracteres' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Senha deve ter no mínimo 8 caracteres' }, { status: 400 });
     }
 
     if (!['gerenciar_restaurante', 'fazer_pedidos'].includes(intent)) {
@@ -63,34 +60,22 @@ export async function POST(request: NextRequest) {
 
     if (referralCode) {
       if (!VALID_REFERRAL_CODE.test(referralCode)) {
-        return NextResponse.json(
-          { error: 'Código de referral inválido' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'Código de referral inválido' }, { status: 400 });
       }
 
       const referralRepo = new PrismaReferralRepository(prisma);
       const referral = await referralRepo.findByCode(referralCode);
 
       if (!referral) {
-        return NextResponse.json(
-          { error: 'Código de referral não encontrado' },
-          { status: 404 }
-        );
+        return NextResponse.json({ error: 'Código de referral não encontrado' }, { status: 404 });
       }
 
       if (referral['props'].status !== 'pending') {
-        return NextResponse.json(
-          { error: 'Programa de referral não está ativo' },
-          { status: 410 }
-        );
+        return NextResponse.json({ error: 'Programa de referral não está ativo' }, { status: 410 });
       }
 
       if (referral.totalConversions >= MAX_CONVERSIONS) {
-        return NextResponse.json(
-          { error: 'Programa de referral atingiu limite' },
-          { status: 410 }
-        );
+        return NextResponse.json({ error: 'Programa de referral atingiu limite' }, { status: 410 });
       }
 
       referralValidation = {
@@ -110,7 +95,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ── 3. Cria User + Restaurant (transação) ───────────────────
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Hash de senha (em produção: bcrypt)
       const passwordHash = await hashPassword(senha);
 
@@ -131,7 +116,7 @@ export async function POST(request: NextRequest) {
           data: {
             name: `${nome}'s Restaurant`,
             // Slug gerado a partir do nome (único)
-            slug: generateUniqueSlug(nome, tx),
+            slug: await generateUniqueSlug(nome, tx),
           },
         });
 
@@ -179,9 +164,7 @@ export async function POST(request: NextRequest) {
 
         if (updateResult.count === 0) {
           // Versão mudou entre leituras (race condition) — falha segura
-          throw new Error(
-            'Conflito de versão no Referral — tente novamente'
-          );
+          throw new Error('Conflito de versão no Referral — tente novamente');
         }
       }
 
@@ -197,10 +180,9 @@ export async function POST(request: NextRequest) {
         },
         restaurant: result.restaurant,
         referralApplied: referralValidation.valid,
-        message:
-          referralValidation.valid
-            ? 'Cadastro realizado! Você ganhou 1 mês grátis ao assinar.'
-            : 'Cadastro realizado com sucesso.',
+        message: referralValidation.valid
+          ? 'Cadastro realizado! Você ganhou 1 mês grátis ao assinar.'
+          : 'Cadastro realizado com sucesso.',
       },
       { status: 201 }
     );
@@ -244,10 +226,7 @@ async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, rounds);
 }
 
-async function generateUniqueSlug(
-  baseName: string,
-  tx: Prisma.TransactionClient
-): Promise<string> {
+async function generateUniqueSlug(baseName: string, tx: Prisma.TransactionClient): Promise<string> {
   const slug = baseName
     .toLowerCase()
     .normalize('NFD')
@@ -256,15 +235,16 @@ async function generateUniqueSlug(
     .replace(/^-+|-+$/g, '')
     .slice(0, 50);
 
-  // Verifica se já existe
-  const existing = await tx.restaurant.findUnique({ where: { slug } });
+  // Verifica se já existe. `slug` não é `@unique` no schema (constraint fica
+  // na camada de aplicação); usamos `findFirst` em vez de `findUnique`.
+  const existing = await tx.restaurant.findFirst({ where: { slug } });
   if (!existing) return slug;
 
   // Adiciona sufixo numérico
   let counter = 1;
   while (counter < 100) {
     const candidate = `${slug}-${counter}`;
-    const exists = await tx.restaurant.findUnique({ where: { slug: candidate } });
+    const exists = await tx.restaurant.findFirst({ where: { slug: candidate } });
     if (!exists) return candidate;
     counter++;
   }

@@ -77,37 +77,31 @@ function VerticalCard({
   );
 }
 
+export interface VerticalMetadata {
+  slug: VerticalSlug;
+  nome: string;
+  emoji: string;
+  descricao: string;
+  totalProdutos: number;
+  totalCategorias: number;
+}
+
 export interface VerticalStepProps {
   selected: VerticalSlug | null;
   onSelect: (slug: VerticalSlug) => void;
   onNext: () => void;
-  verticals: ReturnType<typeof getVerticaisMetadataType>;
-}
-
-// Re-export type para inferência
-function getVerticaisMetadataType() {
-  return Array<{
-    slug: VerticalSlug;
-    nome: string;
-    emoji: string;
-    descricao: string;
-    totalProdutos: number;
-    totalCategorias: number;
-  }>;
+  verticals: VerticalMetadata[];
 }
 
 export function VerticalStep({ selected, onSelect, onNext, verticals }: VerticalStepProps) {
   return (
-    <div
-      data-testid="pedi-onboarding-step-1"
-      className="mx-auto max-w-3xl space-y-6 p-6"
-    >
+    <div data-testid="pedi-onboarding-step-1" className="mx-auto max-w-3xl space-y-6 p-6">
       <header className="space-y-2 text-center">
         <ChefHat className="mx-auto h-12 w-12 text-blue-600" aria-hidden="true" />
         <h1 className="text-3xl font-bold text-gray-900">Qual o tipo do seu restaurante?</h1>
         <p className="text-gray-600">
-          Vamos pré-popular seu cardápio com produtos típicos da sua vertical.
-          Você pode editar, adicionar ou remover tudo depois.
+          Vamos pré-popular seu cardápio com produtos típicos da sua vertical. Você pode editar,
+          adicionar ou remover tudo depois.
         </p>
       </header>
 

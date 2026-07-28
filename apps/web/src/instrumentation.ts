@@ -11,8 +11,8 @@
  * - `src/instrumentation.ts` (apps com `src/` dir)
  * - `instrumentation.ts` (apps sem `src/`)
  *
- * Ativação: `next.config.ts` precisa ter `experimental.instrumentationHook: true`
- * (já configurado).
+ * No Next 15+ não é mais necessário `experimental.instrumentationHook: true`
+ * no `next.config.ts` — a detecção é automática.
  */
 
 export async function register() {

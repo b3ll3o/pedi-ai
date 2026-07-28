@@ -2,7 +2,7 @@
  * @spec(RF-ADM-11)
  * @see .openspec/specs/admin/design.md
  */
-import { Assinatura } from '@/domain/admin/entities/Assinatura';
+import { Assinatura, type TipoPlano } from '@/domain/admin/entities/Assinatura';
 import { IAssinaturaRepository } from '@/infrastructure/persistence/admin/AssinaturaRepository';
 
 export interface VerificarAssinaturaInput {
@@ -18,7 +18,7 @@ export interface VerificarAssinaturaOutput {
 
 export interface AtivarAssinaturaInput {
   restauranteId: string;
-  tipoPlano: 'monthly' | 'yearly';
+  tipoPlano: TipoPlano;
 }
 
 export interface CriarAssinaturaTrialInput {

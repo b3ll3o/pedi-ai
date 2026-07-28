@@ -21,7 +21,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getApiClient } from '@/lib/api-client';
-import { Referral } from '@/domain/referral/Referral';
+import { Referral, type ReferralProps } from '@/domain/referral/Referral';
+
+/** Converte ReferralDTO (formato cru vindo da API) em props de domínio. */
+function toReferralProps(dto: {
+  id: string;
+  referrerRestaurantId: string;
+  code: string;
+  totalSignups: number;
+  totalConversions: number;
+  rewardCreditMonths: number;
+  rewardCreditAppliedMonths: number;
+  status: 'pending' | 'converted' | 'expired' | 'cancelled';
+  createdAt: string;
+  updatedAt: string;
+  version: number;
+}): ReferralProps {
+  return {
+    id: dto.id,
+    referrerRestaurantId: dto.referrerRestaurantId,
+    code: dto.code,
+    totalSignups: dto.totalSignups,
+    totalConversions: dto.totalConversions,
+    rewardCreditMonths: dto.rewardCreditMonths,
+    rewardCreditAppliedMonths: dto.rewardCreditAppliedMonths,
+    status: dto.status,
+    createdAt: new Date(dto.createdAt),
+    updatedAt: new Date(dto.updatedAt),
+    version: dto.version,
+  };
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -33,23 +62,26 @@ export async function GET(request: NextRequest) {
     }
 
     // Busca referral existente
-    const referral = await apiClient.getReferralByRestaurant(restaurant.id);
+    const referralDto = await apiClient.getReferralByRestaurant(restaurant.id);
 
     // Se não existe, cria um novo
-    let referralData = referral;
-    if (!referralData) {
+    let finalDto = referralDto;
+    if (!finalDto) {
       const newReferral = Referral.create(restaurant.id);
-      referralData = await apiClient.createReferral(newReferral);
+      finalDto = await apiClient.createReferral(newReferral);
     }
+
+    // Rehidrata DTO em entidade de domínio (campos calculados + métodos).
+    const referral = Referral.reconstruct(toReferralProps(finalDto));
 
     return NextResponse.json({
       referral: {
-        code: referralData.code,
-        totalSignups: referralData.totalSignups,
-        totalConversions: referralData.totalConversions,
-        rewardCreditMonths: referralData.rewardCreditMonths,
-        availableCreditMonths: referralData.availableCreditMonths,
-        shareUrl: referralData.shareUrl(process.env.NEXT_PUBLIC_APP_URL || 'https://pedi.ai'),
+        code: referral.code,
+        totalSignups: referral.totalSignups,
+        totalConversions: referral.totalConversions,
+        rewardCreditMonths: referral.rewardCreditMonths,
+        availableCreditMonths: referral.availableCreditMonths,
+        shareUrl: referral.shareUrl(process.env.NEXT_PUBLIC_APP_URL || 'https://pedi.ai'),
       },
     });
   } catch (error) {
@@ -90,12 +122,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Atualiza
-    const updated = await apiClient.updateReferralCode(restaurant.id, code);
+    const updatedDto = await apiClient.updateReferralCode(restaurant.id, code);
+    const referral = Referral.reconstruct(toReferralProps(updatedDto));
 
     return NextResponse.json({
       referral: {
-        code: updated.code,
-        shareUrl: updated.shareUrl(process.env.NEXT_PUBLIC_APP_URL || 'https://pedi.ai'),
+        code: referral.code,
+        shareUrl: referral.shareUrl(process.env.NEXT_PUBLIC_APP_URL || 'https://pedi.ai'),
       },
     });
   } catch (error) {

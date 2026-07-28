@@ -27,7 +27,7 @@
 
 import Script from 'next/script';
 
-import type { PlausibleConfig } from '@/types/plausible';
+import type { PlausibleConfig, PlausibleProps } from '@/types/plausible';
 
 const PLAUSIBLE_DOMAIN = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN;
 const NODE_ENV = process.env.NODE_ENV ?? 'development';
@@ -85,9 +85,9 @@ export function PlausibleAnalytics({
  *
  * Funciona em client-side. Em SSR, é no-op.
  */
-export function trackEvent(eventName: string, props?: PlausibleConfig['props']) {
+export function trackEvent(eventName: string, props?: PlausibleProps) {
   if (typeof window === 'undefined') return;
-  const plausible = (window as unknown as { plausible?: PlausibleConfig }).plausible;
+  const plausible = (window as unknown as { plausible?: PlausibleConfig['plausible'] }).plausible;
   if (typeof plausible === 'function') {
     plausible(eventName, { props });
   }
