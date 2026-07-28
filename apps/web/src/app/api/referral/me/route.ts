@@ -28,17 +28,17 @@ export async function GET(request: NextRequest) {
     const apiClient = getApiClient(request);
     const restaurant = await apiClient.getCurrentRestaurant();
 
-    if (!restaurante) {
+    if (!restaurant) {
       return NextResponse.json({ error: 'Restaurante não encontrado' }, { status: 404 });
     }
 
     // Busca referral existente
-    const referral = await apiClient.getReferralByRestaurant(restaurante.id);
+    const referral = await apiClient.getReferralByRestaurant(restaurant.id);
 
     // Se não existe, cria um novo
     let referralData = referral;
     if (!referralData) {
-      const newReferral = Referral.create(restaurante.id);
+      const newReferral = Referral.create(restaurant.id);
       referralData = await apiClient.createReferral(newReferral);
     }
 
@@ -66,9 +66,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const apiClient = getApiClient(request);
-    const restaurante = await apiClient.getCurrentRestaurant();
+    const restaurant = await apiClient.getCurrentRestaurant();
 
-    if (!restaurante) {
+    if (!restaurant) {
       return NextResponse.json({ error: 'Restaurante não encontrado' }, { status: 404 });
     }
 
@@ -85,12 +85,12 @@ export async function POST(request: NextRequest) {
 
     // Verifica disponibilidade
     const existing = await apiClient.getReferralByCode(code);
-    if (existing && existing.referrerRestaurantId !== restaurante.id) {
+    if (existing && existing.referrerRestaurantId !== restaurant.id) {
       return NextResponse.json({ error: 'Código já em uso' }, { status: 409 });
     }
 
     // Atualiza
-    const updated = await apiClient.updateReferralCode(restaurante.id, code);
+    const updated = await apiClient.updateReferralCode(restaurant.id, code);
 
     return NextResponse.json({
       referral: {

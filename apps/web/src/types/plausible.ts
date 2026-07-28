@@ -72,7 +72,10 @@ export const PlausibleEvents = {
     name: 'subscription_activated',
     props: ['plan', 'value', 'currency'] as (keyof PlausibleProps)[],
   },
-  subscriptionCancelled: { name: 'subscription_cancelled', props: ['plan'] as (keyof PlausibleProps)[] },
+  subscriptionCancelled: {
+    name: 'subscription_cancelled',
+    props: ['plan'] as (keyof PlausibleProps)[],
+  },
 
   // ── Erros (cruzado com Sentry) ──────────────────────
   clientError: { name: 'client_error' },

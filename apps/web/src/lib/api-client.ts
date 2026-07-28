@@ -21,6 +21,36 @@ interface User {
   role: string;
 }
 
+/**
+ * Restaurant — DTO mínimo usado pelos Route Handlers que precisam
+ * do restaurante atual (referral, billing, etc). Backend devolve
+ * estrutura maior; aqui pegamos só os campos consumidos.
+ */
+interface Restaurant {
+  id: string;
+  name?: string;
+  referralCode?: string;
+}
+
+/**
+ * Referral DTO — shape retornado pelo backend (apps/api). Para os
+ * Route Handlers que rehidratan entidades via
+ * `Referral.reconstruct(props)`, a forma deve casar com `ReferralProps`.
+ */
+interface ReferralDTO {
+  id: string;
+  referrerRestaurantId: string;
+  code: string;
+  totalSignups: number;
+  totalConversions: number;
+  rewardCreditMonths: number;
+  rewardCreditAppliedMonths: number;
+  status: 'pending' | 'converted' | 'expired' | 'cancelled';
+  createdAt: string;
+  updatedAt: string;
+  version: number;
+}
+
 interface AuthResponse {
   access_token: string;
   refresh_token: string;
@@ -213,7 +243,108 @@ class ApiClientClass {
   async getMe(): Promise<User | null> {
     return this.verifySession();
   }
+
+  /**
+   * **Stub temporário** — Restaurante autenticado.
+   * Endpoint real deveria ser `/restaurants/me` no NestJS API. Por
+   * enquanto chama `/auth/me` que devolve o usuário; o restaurante é
+   * derivado do `restaurant_id` no JWT (servidor faz essa decodificação).
+   *
+   * TODO: substituir por chamada dedicada quando o endpoint
+   * `/restaurants/me` for implementado no apps/api.
+   */
+  async getCurrentRestaurant(): Promise<Restaurant | null> {
+    const user = await this.verifySession();
+    if (!user) return null;
+    // Stub: devolve um Restaurant mínimo com o id do user. Backend
+    // precisa resolver `restaurant_id` real a partir do token JWT.
+    return { id: user.id, name: user.name };
+  }
+
+  /**
+   * **Stub temporário** — Busca Referral por restaurantId.
+   */
+  async getReferralByRestaurant(_restaurantId: string): Promise<ReferralDTO | null> {
+    // TODO: chamar `/referrals/by-restaurant/${restaurantId}` no NestJS
+    return null;
+  }
+
+  /**
+   * **Stub temporário** — Busca Referral por código.
+   */
+  async getReferralByCode(code: string): Promise<ReferralDTO | null> {
+    // TODO: chamar `/referrals/by-code/${code}` no NestJS
+    // Retorna mock mínimo para satisfazer a forma esperada pelo caller.
+    return {
+      id: `ref-${code}`,
+      referrerRestaurantId: 'unknown',
+      code,
+      totalSignups: 0,
+      totalConversions: 0,
+      rewardCreditMonths: 0,
+      rewardCreditAppliedMonths: 0,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      version: 1,
+    };
+  }
+
+  /**
+   * **Stub temporário** — Cria Referral no backend.
+   */
+  async createReferral(referral: { id: string; code: string }): Promise<ReferralDTO> {
+    // TODO: chamar POST `/referrals` no NestJS
+    return {
+      id: referral.id,
+      referrerRestaurantId: 'unknown',
+      code: referral.code,
+      totalSignups: 0,
+      totalConversions: 0,
+      rewardCreditMonths: 0,
+      rewardCreditAppliedMonths: 0,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      version: 1,
+    };
+  }
+
+  /**
+   * **Stub temporário** — Atualiza código customizado.
+   */
+  async updateReferralCode(_restaurantId: string, code: string): Promise<ReferralDTO> {
+    // TODO: chamar PATCH `/referrals/me/code` no NestJS
+    return {
+      id: `ref-${code}`,
+      referrerRestaurantId: 'unknown',
+      code,
+      totalSignups: 0,
+      totalConversions: 0,
+      rewardCreditMonths: 0,
+      rewardCreditAppliedMonths: 0,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      version: 1,
+    };
+  }
 }
 
 // Singleton
 export const apiClient = new ApiClientClass();
+
+/**
+ * Factory para criar (ou reusar) um ApiClient com contexto de request.
+ * Alguns Route Handlers precisam propagar headers do request (cookies,
+ * Authorization) — o singleton puro não tem essa info. O factory
+ * aceita `NextRequest` opcional; quando passado, injeta o header
+ * `Cookie` no cliente para que o NestJS API reconheça a sessão.
+ *
+ * Por enquanto retorna o singleton (mesmo comportamento de antes) —
+ * rotas podem usar `getApiClient(request)` e evoluir para um cliente
+ * per-request sem precisar trocar imports.
+ */
+export function getApiClient(_request?: Request): ApiClientClass {
+  return apiClient;
+}

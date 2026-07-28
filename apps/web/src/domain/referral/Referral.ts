@@ -111,7 +111,13 @@ export class Referral {
     return this.props.rewardCreditMonths - this.props.rewardCreditAppliedMonths;
   }
 
-  get shareUrl(baseUrl: string): string {
+  /**
+   * URL de compartilhamento do código de referral. Recebe a base URL
+   * porque o domínio é configurável por ambiente (dev/staging/prod).
+   * Antes era `get shareUrl(baseUrl)` — inválido (getter TS não aceita
+   * parâmetros). É método normal agora; callers passam a base URL.
+   */
+  shareUrl(baseUrl: string): string {
     return `${baseUrl}/register?ref=${this.props.code}`;
   }
 

@@ -22,7 +22,8 @@
 
 import { useEffect, useState } from 'react';
 
-import { trackEvent, PlausibleEvents } from '@/types/plausible';
+import { PlausibleEvents } from '@/types/plausible';
+import { trackEvent } from '@/components/analytics/PlausibleAnalytics';
 import { getVerticaisMetadata, type VerticalSlug } from '@/lib/onboarding/templates';
 
 import { VerticalStep } from '@/components/onboarding/VerticalStep';
@@ -113,7 +114,11 @@ export default function OnboardingPage() {
             <div
               key={n}
               className={`flex items-center gap-2 ${
-                n === state.step ? 'font-semibold text-blue-600' : n < state.step ? 'text-green-600' : 'text-gray-400'
+                n === state.step
+                  ? 'font-semibold text-blue-600'
+                  : n < state.step
+                    ? 'text-green-600'
+                    : 'text-gray-400'
               }`}
             >
               <span
@@ -121,8 +126,8 @@ export default function OnboardingPage() {
                   n === state.step
                     ? 'bg-blue-600 text-white'
                     : n < state.step
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-200'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-gray-200'
                 }`}
               >
                 {n < state.step ? '✓' : n}
@@ -235,7 +240,8 @@ export default function OnboardingPage() {
         <div className="mx-auto max-w-2xl space-y-6 rounded-xl bg-white p-8 shadow-sm">
           <h1 className="text-2xl font-bold">Template de cardápio</h1>
           <p className="text-gray-600">
-            Vamos aplicar o template de <strong data-testid="pedi-template-vertical-name">{state.vertical}</strong> com produtos
+            Vamos aplicar o template de{' '}
+            <strong data-testid="pedi-template-vertical-name">{state.vertical}</strong> com produtos
             prontos. Você pode editar tudo depois no painel.
           </p>
           <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
@@ -275,8 +281,8 @@ export default function OnboardingPage() {
           </div>
           <h1 className="text-3xl font-bold text-gray-900">Tudo pronto!</h1>
           <p className="text-gray-600">
-            Seu restaurante <strong>{state.restaurantName}</strong> foi configurado.
-            Trial de 14 dias ativado.
+            Seu restaurante <strong>{state.restaurantName}</strong> foi configurado. Trial de 14
+            dias ativado.
           </p>
           <a
             href="/admin/dashboard"
