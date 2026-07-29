@@ -1,0 +1,26 @@
+[Unit]
+Description=Pedi-AI Web (Next.js — monorepo)
+Documentation=https://github.com/b3ll3o/pedi-ai
+After=network.target pedi-ai-api.service
+Wants=pedi-ai-api.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/pedi-ai/apps/web
+# Next 16 não honra PORT do env — passa via flag --port.
+# Web escuta em 3000; nginx faz proxy / → web:3000 e /api/* → api:3001.
+ExecStart=/usr/bin/pnpm exec next start --port 3000
+Restart=always
+RestartSec=5
+TimeoutStopSec=10
+
+Environment=NODE_ENV=production
+EnvironmentFile=/root/pedi-ai/.env
+
+NoNewPrivileges=false
+ProtectSystem=full
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

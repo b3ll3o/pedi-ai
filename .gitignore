@@ -20,6 +20,19 @@
 
 # production
 /build
+# Compilação NestJS (apps/api) — não versionar.
+/apps/api/dist/
+# Compilação de pacotes workspace (shared, feature-flags).
+/packages/*/dist/
+# Binários standalone do Next (caso futuro use output: 'standalone').
+/apps/web/.next/standalone/
+
+# secrets (NUNCA versionar .env, .env.local, .env.production etc.)
+.env
+.env.local
+.env.production
+.env.production.local
+.env.*.local
 
 # misc
 .DS_Store
