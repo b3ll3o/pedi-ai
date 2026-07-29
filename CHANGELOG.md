@@ -18,6 +18,18 @@ Tipos de mudança:
 
 ### Segurança
 
+- **P0-12 — Husky 9 + gitleaks ativos no pre-commit** (tipo: `feat(security)`).
+  O hook `.husky/pre-commit.sh` (legacy) tinha lógica de gitleaks que nunca
+  era invocada pelo Git. Migrado para Husky 9 (`.husky/pre-commit` já
+  ativo via `_/h` shim) com `pnpm exec lint-staged` + `pnpm exec
+gitleaks protect --staged --redact --no-banner --config .gitleaks.toml`.
+  Validação funcional: `git commit` com `AWS_ACCESS_KEY_ID=AKIA...`
+  é BLOQUEADO com exit 1 (`leaks found: 1`). Config `.gitleaks.toml`
+  migrada de v7 (`extend = "..."`) para v8 (`[extend].useDefault = true`).
+  CI atualizado com `gitleaks/gitleaks-action@v2` em `push` + `pull_request`.
+  `.husky/pre-commit.sh` (legacy) Removido. Instalar gitleaks via
+  `brew install gitleaks` (dev) ou usar a Action (CI).
+
 - **P0-10 — Política de senha NIST 800-63B** (tipo: `feat(security)`).
   Removida regex de composição (1 maiúscula + 1 número + 1 especial) que
   violava NIST 800-63B §5.1.1.2 e causava password fatigue (levava usuários a
