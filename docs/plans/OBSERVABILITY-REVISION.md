@@ -156,27 +156,32 @@
 
 Setup:
 
+### Setup
+
 ```bash
-# VPS Ubuntu 22.04
-docker run -d \
-  --name openobserve \
-  -p 5080:5080 \
-  -v /var/lib/openobserve:/data \
-  -e ZO_ROOT_USER_EMAIL=admin@pedi-ai.com \
-  -e ZO_ROOT_USER_PASSWORD='SENHA_FORTE' \
-  public.ecr.aws/zinclabs/openobserve:latest
+# VPS Ubuntu 22.04 — tudo num único docker-compose via profiles.
+# Subir stack base (postgres + api + web):
+docker compose up -d
+
+# Subir com observabilidade (OpenObserve + Prometheus):
+ENABLE_OBSERVABILITY=true OO_ADMIN_PASSWORD=$(openssl rand -hex 16) \
+  docker compose --profile observability up -d
+
+# Verificar que está tudo no ar:
+docker compose ps
+curl http://localhost:5080/healthz  # OpenObserve UI
+curl http://localhost:9091/targets  # Prometheus scraping da API
 ```
 
-Apontar a API:
+Apontar a API (já feito no `docker-compose.yml` consolidado):
 
 ```bash
 # .env (apps/api)
-OTEL_EXPORTER_OTLP_ENDPOINT=http://observability.pedi-ai.internal:5080/api/v1/otlp
+OTEL_EXPORTER_OTLP_ENDPOINT=http://openobserve:5080/api/v1/otlp
 OTEL_METRICS_EXPORTER=otlp
-LOKI_URL=  # não precisa — OpenObserve aceita OTel logs
 ```
 
-**Custo total: R$80/mês** (vs R$26 Sentry + Grafana Cloud Free = R$26 mas com vendor lock-in e 10k métricas limit).
+**Custo total: R$80/mês** (VPS 4vCPU/8GB) — vs R$26 Sentry + Grafana Cloud Free = R$26 mas com vendor lock-in e 10k métricas limit.
 
 ### Médio prazo (MRR R$5k-30k)
 

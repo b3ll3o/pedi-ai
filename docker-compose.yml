@@ -1,37 +1,75 @@
+# ============================================================
+# Pedi-AI — Docker Compose (single file, multi-environment)
+#
+# Subir tudo (produção):
+#   docker compose up -d
+#
+# Subir com observabilidade opcional (OpenObserve + Prometheus):
+#   ENABLE_OBSERVABILITY=true docker compose --profile observability up -d
+#
+# Subir com pgAdmin (apenas dev/staging):
+#   ENABLE_PGADMIN=true docker compose --profile tools up -d
+#
+# Subir tudo + dev (inclui mailpit + pgAdmin + observability):
+#   docker compose --profile dev --profile observability --profile tools up -d
+#
+# Profiles disponíveis:
+#   - (default)     → postgres, api, web
+#   - observability → openobserve, prometheus (opt-in, lightweight)
+#   - tools         → mailpit, pgadmin (dev/staging only)
+#   - dev           → variantes com hot-reload (override implícito via Dockerfile.dev)
+#
+# Ativação por variável de ambiente (alternativa ao --profile flag):
+#   ENABLE_OBSERVABILITY=true  habilita profile observability
+#   ENABLE_PGADMIN=true        habilita profile tools
+#   ENABLE_MAILPIT=true        habilita mailpit
+#
+# Auditoria origem: docs/plans/OBSERVABILITY.md + OBSERVABILITY-REVISION.md
+# ============================================================
+
 services:
-  # ── PostgreSQL Database ───────────────────────────────────
+  # ── PostgreSQL Database (sempre) ────────────────────────────
   postgres:
     image: postgres:16-alpine
     container_name: pedi_ai_postgres
     restart: unless-stopped
     ports:
-      - "127.0.0.1:5432:5432"
+      # 0.0.0.0 em dev (LAN); 127.0.0.1 em prod (acesso só via nginx/proxy).
+      # Trocar via variável POSTGRES_BIND.
+      - "${POSTGRES_BIND:-127.0.0.1}:5432:5432"
     environment:
-      POSTGRES_DB: pedi_ai
-      POSTGRES_USER: postgres
+      POSTGRES_DB: ${POSTGRES_DB:-pedi_ai}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD é obrigatório (veja .env.example)}
+      # Performance tuning para VPS pequeno (2 CPU, 8 GB RAM)
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    command: >-
+      postgres
+      -c shared_buffers=256MB
+      -c max_connections=100
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=128MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c work_mem=4MB
+      -c min_wal_size=1GB
+      -c max_wal_size=4GB
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./apps/api/prisma/docker-init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-pedi_ai}"]
       interval: 5s
       timeout: 5s
       retries: 5
       start_period: 10s
+    networks:
+      - pedi_ai_network
 
-  # ── SMTP Mock (Mailpit) ────────────────────────────────────
-  mailpit:
-    image: axllent/mailpit:latest
-    container_name: pedi_ai_mailpit
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:1025:1025"  # SMTP server
-      - "127.0.0.1:8025:8025"  # Web UI
-    environment:
-      MTX_DEBUG: "0"
-
-  # ── NestJS API ─────────────────────────────────────────────
+  # ── NestJS API (sempre) ────────────────────────────────────
   api:
     build:
       context: .
@@ -39,27 +77,65 @@ services:
     container_name: pedi_ai_api
     restart: unless-stopped
     ports:
-      - "127.0.0.1:3001:3001"
+      - "${API_BIND:-127.0.0.1}:${API_PORT:-3001}:3001"
     depends_on:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD é obrigatório}@postgres:5432/pedi_ai?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-pedi_ai}?schema=public
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET é obrigatório}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET é obrigatório}
-      JWT_EXPIRES_IN: 15m
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+      JWT_ISSUER: ${JWT_ISSUER:-pedi-ai-api}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-pedi-ai-clients}
       PORT: "3001"
       HOST: "0.0.0.0"
-      NODE_ENV: production
+      NODE_ENV: ${NODE_ENV:-production}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+      # PII encryption (LGPD)
+      PII_ENCRYPTION_KEY: ${PII_ENCRYPTION_KEY:?PII_ENCRYPTION_KEY é obrigatório (veja .env.example)}
+      PII_LOG_SALT: ${PII_LOG_SALT:-}
+      # Secrets infra
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET é obrigatório}
+      COOKIE_SECRET: ${COOKIE_SECRET:?COOKIE_SECRET é obrigatório}
+      CSRF_SECRET: ${CSRF_SECRET:?CSRF_SECRET é obrigatório}
+      QR_SECRET_KEY: ${QR_SECRET_KEY:?QR_SECRET_KEY é obrigatório}
+      # ── OpenTelemetry (apontam para observability stack se habilitada) ──
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://openobserve:5080/api/v1/otlp}
+      OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-pedi-ai-api}
+      OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-true}
+      OTEL_METRICS_ENABLED: ${OTEL_METRICS_ENABLED:-true}
+      OTEL_METRICS_EXPORTER: ${OTEL_METRICS_EXPORTER:-otlp}
+      OTEL_METRIC_EXPORT_INTERVAL: ${OTEL_METRIC_EXPORT_INTERVAL:-30000}
+      METRICS_PORT: "9090"  # Prometheus exporter (sempre sobe, scraping opcional)
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      # Sentry (opcional)
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0.1}
+      SENTRY_RELEASE: ${SENTRY_RELEASE:-}
+      # Mercado Pago / Asaas (opcional em dev)
+      MP_WEBHOOK_SECRET: ${MP_WEBHOOK_SECRET:-}
+      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN:-}
+      MERCADOPAGO_ACCESS_TOKEN: ${MERCADOPAGO_ACCESS_TOKEN:-}
+      ASAAS_API_KEY: ${ASAAS_API_KEY:-}
+      ASAAS_ENVIRONMENT: ${ASAAS_ENVIRONMENT:-sandbox}
+      ASAAS_WEBHOOK_SECRET: ${ASAAS_WEBHOOK_SECRET:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:3001/ || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:3001/livez || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
+    networks:
+      - pedi_ai_network
 
-  # ── Next.js Web App ────────────────────────────────────────
+  # ── Next.js Web App (sempre) ───────────────────────────────
   web:
     build:
       context: .
@@ -67,27 +143,186 @@ services:
     container_name: pedi_ai_web
     restart: unless-stopped
     ports:
-      - "127.0.0.1:3000:3000"
+      - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-3000}:3000"
     depends_on:
       api:
         condition: service_healthy
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://api:3001}
-      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://web:3000}
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD é obrigatório}@postgres:5432/pedi_ai
-      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-pedi_ai}
+      NODE_ENV: ${NODE_ENV:-production}
       PORT: "3000"
+      NEXT_TELEMETRY_DISABLED: "1"
+      # Sentry client
+      NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
+      NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE: ${NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE:-0.1}
+      NEXT_PUBLIC_SENTRY_RELEASE: ${NEXT_PUBLIC_SENTRY_RELEASE:-}
+      # Plausible
+      NEXT_PUBLIC_PLAUSIBLE_DOMAIN: ${NEXT_PUBLIC_PLAUSIBLE_DOMAIN:-}
+      NEXT_PUBLIC_PLAUSIBLE_API_HOST: ${NEXT_PUBLIC_PLAUSIBLE_API_HOST:-https://plausible.io}
+      # Feature flags públicas (build-time)
+      NEXT_PUBLIC_FEATURE_OFFLINE_ENABLED: ${NEXT_PUBLIC_FEATURE_OFFLINE_ENABLED:-true}
+      NEXT_PUBLIC_FEATURE_PIX_ENABLED: ${NEXT_PUBLIC_FEATURE_PIX_ENABLED:-true}
+      NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED: ${NEXT_PUBLIC_FEATURE_QR_CODE_ENABLED:-true}
+      NEXT_PUBLIC_FEATURE_COMBOS_ENABLED: ${NEXT_PUBLIC_FEATURE_COMBOS_ENABLED:-true}
+      NEXT_PUBLIC_FEATURE_WAITER_MODE: ${NEXT_PUBLIC_FEATURE_WAITER_MODE:-true}
+      NEXT_PUBLIC_FEATURE_ANALYTICS_ENABLED: ${NEXT_PUBLIC_FEATURE_ANALYTICS_ENABLED:-true}
+      NEXT_PUBLIC_FEATURE_CASHBACK_ENABLED: ${NEXT_PUBLIC_FEATURE_CASHBACK_ENABLED:-false}
+      NEXT_PUBLIC_ENABLE_MULTI_RESTAURANT: ${NEXT_PUBLIC_ENABLE_MULTI_RESTAURANT:-false}
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:3000/health || curl -sf http://localhost:3000 || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:3000/api/health || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
       start_period: 30s
+    networks:
+      - pedi_ai_network
+
+  # ═════════════════════════════════════════════════════════════
+  # PROFILE: tools (pgAdmin + mailpit — dev/staging only)
+  # Ativar: ENABLE_PGADMIN=true docker compose --profile tools up -d
+  # ═════════════════════════════════════════════════════════════
+  pgadmin:
+    profiles: ["tools"]
+    image: dpage/pgadmin4:latest
+    container_name: pedi_ai_pgadmin
+    restart: unless-stopped
+    ports:
+      - "${PGADMIN_BIND:-127.0.0.1}:${PGADMIN_PORT:-5050}:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@pedi-ai.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:?PGADMIN_PASSWORD é obrigatório (veja .env.example)}
+      PGADMIN_LISTEN_PORT: 80
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - pedi_ai_network
+
+  mailpit:
+    profiles: ["tools"]
+    image: axllent/mailpit:latest
+    container_name: pedi_ai_mailpit
+    restart: unless-stopped
+    ports:
+      - "${MAILPIT_BIND:-127.0.0.1}:${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "${MAILPIT_BIND:-127.0.0.1}:${MAILPIT_WEB_PORT:-8025}:8025"
+    environment:
+      MTX_DEBUG: "0"
+      # Bind em 0.0.0.0 só em dev — outros containers acessam via hostname mailpit
+    networks:
+      - pedi_ai_network
+
+  # ═════════════════════════════════════════════════════════════
+  # PROFILE: observability (OpenObserve + Prometheus — opt-in)
+  # RAM estimado: ~1.2 GB (OpenObserve 800MB + Prometheus 400MB)
+  # Ativar: ENABLE_OBSERVABILITY=true docker compose --profile observability up -d
+  #
+  # **Por que OpenObserve?**
+  # Stack all-in-one (logs + metrics + traces + dashboards + alerts)
+  # em single-binary Rust — cabe em VPS 2GB livres (vs Grafana stack
+  # 4.5GB). OTel-native (receiver OTLP/HTTP + gRPC).
+  # Substitui: Loki + Prometheus + Tempo + Grafana.
+  # Ver docs/plans/OBSERVABILITY-REVISION.md § OpenObserve.
+  # ═════════════════════════════════════════════════════════════
+  openobserve:
+    profiles: ["observability"]
+    image: public.ecr.aws/zinclabs/openobserve:latest
+    container_name: pedi_ai_openobserve
+    restart: unless-stopped
+    ports:
+      # 5080 = UI + API (OTLP receiver também). Bind em 127.0.0.1;
+      # expor via nginx se quiser UI pública.
+      - "${OO_BIND:-127.0.0.1}:${OO_PORT:-5080}:5080"
+    volumes:
+      - openobserve_data:/data
+    environment:
+      # Auth inicial — TROCAR em prod (via UI após primeiro login).
+      ZO_ROOT_USER_EMAIL: ${OO_ADMIN_EMAIL:-admin@pedi-ai.com}
+      ZO_ROOT_USER_PASSWORD: ${OO_ADMIN_PASSWORD:?OO_ADMIN_PASSWORD é obrigatório (veja .env.example)}
+      ZO_DATA_DIR: /data
+      # Retention: 30 dias logs, 90 dias métricas, 30 dias traces.
+      # Ajustar se disco ficar apertado (22GB livres no VPS).
+      ZO_LOGS_FILE_RETENTION: "${OO_LOGS_RETENTION:-720}"      # horas
+      ZO_METRICS_FILE_RETENTION: "${OO_METRICS_RETENTION:-2160}"
+      ZO_TRACES_FILE_RETENTION: "${OO_TRACES_RETENTION:-720}"
+      # Limites de ingest — protege contra OOM em burst acidental.
+      ZO_INGEST_ALLOWED_UPTO: "${OO_INGEST_LIMIT_MB:-50}"     # MB/s
+      ZO_MAX_FILE_SIZE_IN_MEM: "${OO_MEM_BUFFER_MB:-64}"      # MB
+      # Compactação dos dados em Parquet (reduz ~10× o footprint).
+      ZO_COMPACT_DATA: "true"
+      ZO_COMPACT_DATA_RETENTION: "${OO_COMPACT_RETENTION_DAYS:-30}"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # Memory limit crítico para VPS pequeno.
+    deploy:
+      resources:
+        limits:
+          memory: ${OO_MEMORY_LIMIT:-800M}
+        reservations:
+          memory: 256M
+    networks:
+      - pedi_ai_network
+
+  # Prometheus — opcional. Útil se quiser alertas estilo Grafana
+  # (Pushover/Slack) E não quiser usar só o alert engine do OpenObserve.
+  # Lightweight (~400MB RAM). OpenObserve já tem scraping próprio
+  # via `/api/v1/prometheus` — Prometheus aqui é redundante, mantido
+  # só se quiser alertas Alertmanager.
+  prometheus:
+    profiles: ["observability"]
+    image: prom/prometheus:latest
+    container_name: pedi_ai_prometheus
+    restart: unless-stopped
+    ports:
+      - "${PROM_BIND:-127.0.0.1}:${PROM_PORT:-9091}:9090"
+    volumes:
+      - ./infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=${PROM_RETENTION:-15d}"
+      - "--storage.tsdb.wal-compression"
+      - "--web.enable-lifecycle"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: ${PROM_MEMORY_LIMIT:-400M}
+        reservations:
+          memory: 128M
+    networks:
+      - pedi_ai_network
 
 volumes:
   postgres_data:
     driver: local
+  pgadmin_data:
+    driver: local
+  openobserve_data:
+    driver: local
+  prometheus_data:
+    driver: local
 
 networks:
-  default:
+  pedi_ai_network:
     name: pedi_ai_network
+    driver: bridge

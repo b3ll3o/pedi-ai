@@ -1,0 +1,40 @@
+# Prometheus config mínimo para a stack de observabilidade do pedi-ai.
+# Subir via: ENABLE_OBSERVABILITY=true docker compose --profile observability up -d
+#
+# Scrape único: API expõe `/metrics` na porta 9090 (Prometheus exporter).
+# OpenObserve NÃO precisa de scrape aqui — recebe OTLP direto da API.
+# Este Prometheus existe apenas para alertas Prometheus-style
+# (Alertmanager, multi-window burn-rate) via infrastructure/prometheus/alerts.yml.
+
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+  external_labels:
+    cluster: pedi-ai
+    env: production
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+scrape_configs:
+  - job_name: pedi-ai-api
+    metrics_path: /metrics
+    static_configs:
+      # Host `api` é o container Docker — Prometheus no mesmo network.
+      - targets:
+          - "api:9090"
+        labels:
+          service: pedi-ai-api
+          tier: backend
+
+  # Prometheus self-scrape (métricas internas).
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Postgres exporter (opcional, ver README).
+  # Para habilitar: descomentar bloco + adicionar `postgres-exporter` no
+  # docker-compose.yml sob profile observability.
+  # - job_name: postgres
+  #   static_configs:
+  #     - targets: ["postgres-exporter:9187"]
