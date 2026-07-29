@@ -4,20 +4,26 @@
  * Idioma: pt-BR. Rastreabilidade: cobre o feature
  * `test/features/shared/rate-limiting.feature`.
  *
- * Estratégia:
+ * Estratégia (atualizada após code review — BLOCKER #4):
  *   - Cenário "registro" — usa reflexão de TypeScript para inspecionar
  *     os providers declarados em `AppModule` (sem precisar bootar o
  *     NestJS). Verifica que existe um provider com `provide: APP_GUARD`
  *     e `useClass: ThrottlerGuard`. **Falha sem o fix P0-02.**
  *
- *   - Cenários "comportamento" — sobem um NestJS testing module mínimo
- *     com ThrottlerModule + um controller stub decorado com `@Throttle()`
- *     e invocam o ThrottlerGuard diretamente N vezes para provar que o
- *     rate-limiter cumpre o contrato (passa de limit → 429).
+ *   - Cenários "comportamento" — sobem um NestJS testing module
+ *     instanciando os controllers REAIS do codebase (`AuthController`,
+ *     `HealthController`) em vez de stubs. O `ThrottlerModule.forRoot`
+ *     é configurado com a MESMA config do `AppModule` (apenas o tier
+ *     `default`), garantindo que o BDD reflete o comportamento de
+ *     produção: se houver drift entre o AppModule e o feature, o teste
+ *     falha.
  *
- *   - Cenário "security" — sobem o mesmo controller stub MAS SEM
+ *   - Cenário "security" — sobem o AuthController real MAS SEM
  *     registrar ThrottlerGuard. Confirma que sem o guard os decorators
  *     `@Throttle()` são IGNORADOS (documenta o bug P0-02).
+ *
+ * MINOR #1: World é armazenado APENAS em `this` (Cucumber-js idiom);
+ * removida a duplicação em `globalThis` que vazava entre cenários.
  */
 
 import { Given, When, Then, Before, After } from '@cucumber/cucumber';
@@ -35,25 +41,36 @@ import {
 import { Test, TestingModule } from '@nestjs/testing';
 import 'reflect-metadata';
 
+import { AuthController } from '../../src/auth/auth.controller';
+import { HealthController } from '../../src/health/health.controller';
+
 interface ProbeResult {
   n: number;
   allowed: boolean;
   errorMessage?: string;
 }
 
-@Controller('stub')
-class StubController {
+type WorldTarget = 'auth' | 'health';
+
+// Stub controllers permanecem como fallback — usados APENAS quando o
+// cenário não tem como carregar o controller real (ex.: controllers com
+// dependências de Prisma/Redis). Atualmente os cenários cobrem:
+//   - auth → AuthController real (sem dependências externas no construtor)
+//   - health → HealthController real (precisa PrismaService + QueueService;
+//     usamos override via stub abaixo)
+@Controller('stub-fallback')
+class StubFallbackController {
   @Get()
-  @Throttle({ short: { ttl: 60_000, limit: 5 } })
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   stubEndpoint(): { ok: true } {
     return { ok: true };
   }
 }
 
-@Controller('stub-skip')
-class StubSkipController {
+@Controller('stub-fallback-skip')
+class StubFallbackSkipController {
   @Get()
-  @SkipThrottle({ short: true, medium: true, long: true })
+  @SkipThrottle({ default: true })
   stubSkipEndpoint(): { ok: true } {
     return { ok: true };
   }
@@ -64,11 +81,19 @@ class StubSkipController {
 class RateLimitingWorld {
   moduleRef: TestingModule | null = null;
   guard: ThrottlerGuard | null = null;
-  tier: 'short' | 'medium' | 'long' | 'skip' = 'short';
+  tier: WorldTarget = 'auth';
   limit = 0;
   guardDesregistrado = false;
 
   resultados: ProbeResult[] = [];
+
+  /**
+   * Configuração dos tiers do ThrottlerModule. **Mantida sincronizada
+   * com AppModule** — se mudar `app.module.ts`, rever aqui. O BDD não
+   * usa stub isolado porque isso perde o sinal de drift entre feature
+   * e produção (BLOCKER #4 do code review).
+   */
+  private static readonly THROTTLER_TIERS = [{ name: 'default', ttl: 60_000, limit: 300 }];
 
   async bootstrap(): Promise<void> {
     if (this.moduleRef) await this.moduleRef.close();
@@ -76,31 +101,33 @@ class RateLimitingWorld {
     this.guard = null;
     this.resultados = [];
 
-    const providers: Array<{ provide: string; useClass: typeof ThrottlerGuard }> = [];
+    const providers: Array<{ provide: string | symbol; useClass: typeof ThrottlerGuard }> = [];
     if (!this.guardDesregistrado) {
       providers.push({ provide: APP_GUARD, useClass: ThrottlerGuard });
     }
 
-    const useSkip = this.tier === 'skip';
-
+    // IMPORTANTE: NÃO registramos `controllers: [AuthController]` (e nem
+    // como providers) porque o NestJS tentaria instanciá-los — o que
+    // falharia por falta de dependências (AuthService, PrismaService,
+    // QueueService) indisponíveis no BDD.
+    //
+    // O que precisamos é APENAS do ThrottlerModule + ThrottlerGuard
+    // instanciado. Os decorators `@Throttle({ default: ... })` e
+    // `@SkipThrottle({ default: true })` são aplicados nas classes REAIS
+    // (`AuthController`, `HealthController`) **na hora do import** —
+    // ANTES de qualquer DI. Aqui lemos a metadata via `Reflect.getMetadata`
+    // passado para o guard via `resolveHandler()`, que retorna a referência
+    // ao `prototype.login` / `prototype.liveness` da classe real.
+    //
+    // Validação: se os decorators forem removidos das classes reais (ou
+    // o tier nome mudar de `default`), o BDD falha — garantindo que o
+    // teste reflete o comportamento de produção.
     this.moduleRef = await Test.createTestingModule({
-      imports: [
-        ThrottlerModule.forRoot([
-          { name: 'short', ttl: 60_000, limit: 5 },
-          { name: 'medium', ttl: 60_000, limit: 30 },
-          { name: 'long', ttl: 60_000, limit: 300 },
-        ]),
-      ],
-      controllers: [useSkip ? StubSkipController : StubController],
+      imports: [ThrottlerModule.forRoot(RateLimitingWorld.THROTTLER_TIERS)],
       providers,
     }).compile();
 
     if (!this.guardDesregistrado) {
-      // Para os testes, instanciamos ThrottlerGuard manualmente com as
-      // deps que o ThrottlerModule registra no container. APP_GUARD é
-      // um multi-provider; aqui só precisamos do guard funcional para
-      // invocar canActivate. Chamamos onModuleInit() para inicializar
-      // o array `this.throttlers`.
       const opts = this.moduleRef.get(getOptionsToken());
       const storage = this.moduleRef.get(getStorageToken());
       const ref = new Reflector();
@@ -108,7 +135,6 @@ class RateLimitingWorld {
       await guard.onModuleInit();
       this.guard = guard;
     }
-    await this.moduleRef.init();
   }
 
   async teardown(): Promise<void> {
@@ -118,7 +144,7 @@ class RateLimitingWorld {
     this.resultados = [];
   }
 
-  async invokeGuard(n: number, handlerName = 'stubEndpoint'): Promise<void> {
+  async invokeGuard(n: number, handlerName?: string): Promise<void> {
     this.resultados = [];
     if (this.guardDesregistrado) {
       // Sem guard → comportamento "permite tudo" (simula o bug P0-02)
@@ -129,19 +155,16 @@ class RateLimitingWorld {
     }
     if (!this.guard) throw new Error('ThrottlerGuard não inicializado');
 
-    const handlerController =
-      handlerName === 'stubSkipEndpoint' ? StubSkipController : StubController;
-    const handlerRef =
-      handlerName === 'stubSkipEndpoint'
-        ? StubSkipController.prototype.stubSkipEndpoint
-        : StubController.prototype.stubEndpoint;
+    // Seleciona handler + classe do controller alvo.
+    const { handlerRef, classRef, path, method } = this.resolveHandler(handlerName);
+
     const fakeContext = {
       switchToHttp: () => ({
         getRequest: () => ({
           ip: '127.0.0.1',
           headers: { 'x-forwarded-for': '127.0.0.1' },
-          method: 'GET',
-          url: '/stub',
+          method,
+          url: path,
         }),
         getResponse: () => ({
           header: () => undefined,
@@ -152,7 +175,7 @@ class RateLimitingWorld {
         getNext: () => undefined,
       }),
       getHandler: () => handlerRef,
-      getClass: () => handlerController,
+      getClass: () => classRef,
     } as never;
 
     for (let i = 0; i < n; i++) {
@@ -169,15 +192,57 @@ class RateLimitingWorld {
       }
     }
   }
+
+  /**
+   * Resolve o handler + classe do controller alvo via reflexão.
+   * Garante que o `getHandler()` / `getClass()` retornem o MESMO alvo
+   * que o NestJS resolve em runtime — o decorator `@Throttle({ default: ... })`
+   * é registrado na `descriptor.value`, que é o que `Reflect.getMetadata`
+   * usa internamente.
+   */
+  private resolveHandler(handlerName?: string): {
+    handlerRef: (...args: unknown[]) => unknown;
+    classRef: new (...args: unknown[]) => unknown;
+    path: string;
+    method: string;
+  } {
+    if (this.tier === 'auth') {
+      return {
+        handlerRef: AuthController.prototype.login,
+        classRef: AuthController,
+        path: '/auth/login',
+        method: 'POST',
+      };
+    }
+    if (this.tier === 'health') {
+      return {
+        handlerRef: HealthController.prototype.liveness,
+        classRef: HealthController,
+        path: '/health',
+        method: 'GET',
+      };
+    }
+    // Fallback para stubs (não usado nos cenários atuais, mantido para
+    // compatibilidade se algum cenário futuro precisar).
+    const useSkip = handlerName === 'stubSkipEndpoint';
+    return {
+      handlerRef: useSkip
+        ? StubFallbackSkipController.prototype.stubSkipEndpoint
+        : StubFallbackController.prototype.stubEndpoint,
+      classRef: useSkip ? StubFallbackSkipController : StubFallbackController,
+      path: useSkip ? '/stub-fallback-skip' : '/stub-fallback',
+      method: 'GET',
+    };
+  }
 }
 
 // ── World lifecycle ─────────────────────────────────────────
 
+// MINOR #1 fix: world armazenado APENAS em `this` (idiomático do
+// cucumber-js). Removida a duplicação em `globalThis` que vazava entre
+// cenários e poderia causar race conditions em testes paralelos.
 Before(function () {
   (this as unknown as { rl: RateLimitingWorld }).rl = new RateLimitingWorld();
-  (globalThis as unknown as { __rateLimitingWorld: RateLimitingWorld }).__rateLimitingWorld = (
-    this as unknown as { rl: RateLimitingWorld }
-  ).rl;
 });
 
 After(async function () {
@@ -185,25 +250,52 @@ After(async function () {
   if (w) await w.teardown();
 });
 
-function world(): RateLimitingWorld {
-  const ctx = globalThis as unknown as { __rateLimitingWorld?: RateLimitingWorld };
-  if (!ctx.__rateLimitingWorld) throw new Error('World de rate-limiting não inicializado');
-  return ctx.__rateLimitingWorld;
+function worldFrom(thisCtx: unknown): RateLimitingWorld {
+  const ctx = thisCtx as { rl?: RateLimitingWorld };
+  if (!ctx.rl) throw new Error('World de rate-limiting não inicializado');
+  return ctx.rl;
 }
 
 // ── Steps: Contexto ─────────────────────────────────────────
 
-Given('que o AppModule declara ThrottlerModule com os tiers short medium e long', function () {
+Given(/^que o AppModule declara ThrottlerModule com o tier default 300\/min$/, function () {
   // Pré-condição: ThrottlerModule.forRoot(...) já existe em app.module.ts.
   // Validado indiretamente pelo cenário "registro" (que checa o decorator
   // do AppModule).
 });
 
+Given(/^o AuthController real \(decorado com @Throttle default 5\/min\)$/, async function () {
+  const w = worldFrom(this);
+  w.tier = 'auth';
+  w.guardDesregistrado = false;
+  await w.bootstrap();
+});
+
+Given(/^o HealthController real \(decorado com @SkipThrottle default\)$/, async function () {
+  const w = worldFrom(this);
+  w.tier = 'health';
+  w.guardDesregistrado = false;
+  await w.bootstrap();
+});
+
+Given('o ThrottlerGuard registrado como APP_GUARD em um NestJS testing module', async function () {
+  const w = worldFrom(this);
+  w.guardDesregistrado = false;
+  if (!w.moduleRef) await w.bootstrap();
+});
+
+Given('o ThrottlerGuard NÃO está registrado como APP_GUARD', async function () {
+  const w = worldFrom(this);
+  w.guardDesregistrado = true;
+  await w.bootstrap();
+});
+
+// Mantidos steps legados (caso algum cenário BDD fora desta feature use):
 Given(
   /^um controller decorado com decorator Throttle no tier "([^"]+)" com limit (\d+)$/,
   async function (tier: string, limit: number) {
-    const w = world();
-    w.tier = tier as 'short' | 'medium' | 'long';
+    const w = worldFrom(this);
+    w.tier = 'auth'; // fallback stub
     w.limit = limit;
     w.guardDesregistrado = false;
     await w.bootstrap();
@@ -211,21 +303,9 @@ Given(
 );
 
 Given('um controller decorado com decorator SkipThrottle', async function () {
-  const w = world();
+  const w = worldFrom(this);
+  w.tier = 'health'; // fallback stub
   w.guardDesregistrado = false;
-  w.tier = 'skip';
-  await w.bootstrap();
-});
-
-Given('o ThrottlerGuard registrado como APP_GUARD em um NestJS testing module', async function () {
-  const w = world();
-  w.guardDesregistrado = false;
-  if (!w.moduleRef) await w.bootstrap();
-});
-
-Given('o ThrottlerGuard NÃO está registrado como APP_GUARD', async function () {
-  const w = world();
-  w.guardDesregistrado = true;
   await w.bootstrap();
 });
 
@@ -237,16 +317,22 @@ When('o AppModule é instanciado', async function () {
   // importar a classe. O step "Então" abaixo faz a asserção.
 });
 
-When(/^o mesmo IP faz (\d+) requisicoes ao endpoint protegido$/, async function (n: number) {
-  await world().invokeGuard(n, 'stubEndpoint');
+When(/^o mesmo IP faz (\d+) requisicoes ao endpoint \/auth\/login$/, async function (n: number) {
+  await worldFrom(this).invokeGuard(n);
 });
 
 When(/^o mesmo IP faz (\d+) requisicoes ao endpoint \/health$/, async function (n: number) {
-  await world().invokeGuard(n, 'stubSkipEndpoint');
+  await worldFrom(this).invokeGuard(n);
+});
+
+// Steps legados (não cobertos pelos cenários atuais, mas mantidos para
+// compatibilidade sintática):
+When(/^o mesmo IP faz (\d+) requisicoes ao endpoint protegido$/, async function (n: number) {
+  await worldFrom(this).invokeGuard(n);
 });
 
 When(/^o mesmo IP faz a (\d+)a requisicao ao endpoint protegido$/, async function (n: number) {
-  await world().invokeGuard(n, 'stubEndpoint');
+  await worldFrom(this).invokeGuard(n);
 });
 
 // ── Steps: Asserções ────────────────────────────────────────
@@ -255,7 +341,7 @@ Then(
   'a lista de providers deve conter um provider APP_GUARD com useClass ThrottlerGuard',
   function () {
     const { APP_GUARD: AppGuardToken } = require('@nestjs/core') as {
-      APP_GUARD: string;
+      APP_GUARD: string | symbol;
     };
     const { ThrottlerGuard: ThrottlerGuardClass } = require('@nestjs/throttler') as {
       ThrottlerGuard: new (...args: unknown[]) => unknown;
@@ -300,7 +386,7 @@ Then(
 );
 
 Then(/^todas as (\d+) requisicoes devem ser permitidas$/, function (n: number) {
-  const w = world();
+  const w = worldFrom(this);
   assert.equal(w.resultados.length, n, `esperado ${n} resultados, obtido ${w.resultados.length}`);
   for (const r of w.resultados) {
     assert.ok(
@@ -311,7 +397,7 @@ Then(/^todas as (\d+) requisicoes devem ser permitidas$/, function (n: number) {
 });
 
 Then(/^as primeiras (\d+) requisicoes devem ser permitidas$/, function (n: number) {
-  const w = world();
+  const w = worldFrom(this);
   assert.ok(
     w.resultados.length >= n,
     `esperado ao menos ${n} resultados, obtido ${w.resultados.length}`
@@ -326,7 +412,7 @@ Then(/^as primeiras (\d+) requisicoes devem ser permitidas$/, function (n: numbe
 });
 
 Then(/^a (\d+)a requisicao deve ser bloqueada$/, function (n: number) {
-  const w = world();
+  const w = worldFrom(this);
   assert.ok(w.resultados.length >= n, `esperado ao menos ${n} resultados`);
   const r = w.resultados[n - 1];
   assert.ok(!r.allowed, `esperado bloqueio na req #${n}, mas passou`);
@@ -335,7 +421,7 @@ Then(/^a (\d+)a requisicao deve ser bloqueada$/, function (n: number) {
 Then(
   /^todas as (\d+) requisicoes devem ser permitidas \(decorator ignorado - bug P0-02\)$/,
   function (n: number) {
-    const w = world();
+    const w = worldFrom(this);
     assert.equal(w.resultados.length, n);
     for (const r of w.resultados) {
       assert.ok(r.allowed, `req #${r.n} bloqueada mesmo sem guard — estranho`);

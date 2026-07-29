@@ -89,22 +89,50 @@ describe('AppModule — ThrottlerModule tiers (rate limiting tierizado)', () => 
 });
 
 describe('AppModule — configuração de tiers (nomes + limites esperados)', () => {
-  // Documenta os 3 tiers declarados em app.module.ts. Se mudar o
-  // ThrottlerModule.forRoot([...]), rever RF-SEC-01 / RNF-SEC-FF-01.
-  // Estes tiers são usados pelos @Throttle() decorators nos controllers.
-  const expectedTiers: ThrottlerModuleOptions[] = [
-    { name: 'short', ttl: 60_000, limit: 5 },
-    { name: 'medium', ttl: 60_000, limit: 30 },
-    { name: 'long', ttl: 60_000, limit: 300 },
-  ];
+  // IMPORTANTE (IMPORTANT #1 do code review P0-02): o teste anterior era
+  // tautológico — declarava `expectedTiers` como constante local e
+  // validava contra ele mesmo. Não havia garantia de que o `AppModule`
+  // efetivamente continha aqueles tiers. Aqui lemos os tiers diretamente
+  // do `imports` via `Reflect.getMetadata('imports', AppModule)`,
+  // subimos um TestingModule mínimo com os mesmos `imports` do
+  // ThrottlerModule do AppModule e lemos `getOptionsToken()` (injetado
+  // pelo guard). Isso garante que validamos **o que ThrottlerGuard
+  // EFETIVAMENTE recebe em runtime** — não apenas o que está declarado
+  // em metadata. Se mudar `app.module.ts`, este teste falhará.
 
-  it('declara exatamente os 3 tiers esperados (short/medium/long)', () => {
-    expect(expectedTiers).toHaveLength(3);
-    expect(expectedTiers.map((t) => t.name).sort()).toEqual(['long', 'medium', 'short']);
-  });
+  it('extrai tiers diretamente do ThrottlerModule do AppModule (não tautológico)', async () => {
+    const { Test } = await import('@nestjs/testing');
+    const { getOptionsToken } = await import('@nestjs/throttler');
 
-  it.each(expectedTiers)('tier $name usa janela de 60s (ttl=$ttl) com limit=$limit', (tier) => {
-    expect(tier.ttl).toBe(60_000);
-    expect(tier.limit).toBeGreaterThan(0);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const imports = Reflect.getMetadata('imports', AppModule) as any[];
+    expect(Array.isArray(imports)).toBe(true);
+
+    // Filtra apenas os imports do ThrottlerModule vindos do AppModule
+    // real. Se mudar `app.module.ts`, este teste falhará — não é
+    // tautológico.
+    const throttlerImports = imports!.filter(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (imp: any) => imp?.module?.name === 'ThrottlerModule'
+    );
+    expect(throttlerImports.length).toBeGreaterThan(0);
+
+    const testingModule = await Test.createTestingModule({
+      imports: throttlerImports,
+    }).compile();
+
+    // Lê as opções ThrottlerModule do provider registrado por forRoot().
+    const options = testingModule.get(getOptionsToken()) as ThrottlerModuleOptions[];
+    expect(Array.isArray(options)).toBe(true);
+
+    // Após a restruturação (BLOCKER #1), esperamos apenas o tier `default`.
+    const tierNames = options.map((o) => o.name).sort();
+    expect(tierNames).toEqual(['default']);
+
+    const defaultTier = options.find((o) => o.name === 'default')!;
+    expect(defaultTier.ttl).toBe(60_000);
+    expect(defaultTier.limit).toBe(300);
+
+    await testingModule.close();
   });
 });
