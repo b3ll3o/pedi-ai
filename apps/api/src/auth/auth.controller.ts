@@ -42,16 +42,27 @@ const REFRESH_TOKEN_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 dias
 @ApiTags('auth')
 @Controller('auth')
 @Public()
-// Auditoria P0-02 (2026-07-29): após restruturação dos tiers no AppModule
-// para apenas `default`, sobrescrevemos o tier `default` aqui para 5/min
-// em vez do 300/min global. O nome do tier nas chaves do decorator
-// (`{ default: ... }`) deve bater com o `name` registrado no
-// `ThrottlerModule.forRoot` — caso contrário, o decorator é no-op.
-@Throttle({ default: { ttl: 60_000, limit: 5 } })
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  // Auditoria P0-02 (2026-07-29): o decorator `@Throttle` foi movido do
+  // nível de classe para os métodos individuais que precisam de limite
+  // estrito. Antes, TODOS os endpoints do AuthController (incluindo
+  // `/me`, `/logout`) compartilhavam o budget de 5/min — um usuário que
+  // legitimamente fizesse polling de `/me` poderia esgotar o budget de
+  // `/login`, bloqueando brute-force legitimate refresh.
+  //
+  // O nome do tier nas chaves do decorator (`{ default: ... }`) deve
+  // bater com o `name` registrado no `ThrottlerModule.forRoot` — caso
+  // contrário, o decorator é no-op.
+  //
+  // Limites por método:
+  // - 5/min: register, login, refresh, request-reset, reset-password
+  //          (proteção contra brute-force e abuso de reset)
+  // - 300/min (global): me, logout (autenticados, baixo risco)
+
   @Post('register')
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @ApiOperation({ summary: 'Registrar novo usuário' })
   @ApiResponse({ status: 201, description: 'Usuário registrado com sucesso' })
   @ApiResponse({ status: 400, description: 'Dados inválidos' })
@@ -71,6 +82,7 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @ApiOperation({ summary: 'Login com email e senha' })
   @ApiResponse({ status: 200, description: 'Login realizado com sucesso' })
   @ApiResponse({ status: 401, description: 'Credenciais inválidas' })
@@ -90,6 +102,7 @@ export class AuthController {
 
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @ApiOperation({ summary: 'Renovar token de acesso' })
   @ApiResponse({ status: 200, description: 'Token renovado com sucesso' })
   @ApiResponse({ status: 401, description: 'Refresh token inválido' })
@@ -138,6 +151,7 @@ export class AuthController {
 
   @Post('request-reset')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @ApiOperation({ summary: 'Solicitar redefinição de senha' })
   @ApiResponse({ status: 200, description: 'Email de recuperação enviado se o email existir' })
   async requestReset(@Body() body: RequestResetDto) {
@@ -146,6 +160,7 @@ export class AuthController {
 
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @ApiOperation({ summary: 'Redefinir senha com token' })
   @ApiResponse({ status: 200, description: 'Senha redefinida com sucesso' })
   @ApiResponse({ status: 400, description: 'Token inválido ou expirado' })

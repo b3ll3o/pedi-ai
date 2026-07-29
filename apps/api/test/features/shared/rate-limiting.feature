@@ -9,13 +9,21 @@
 #
 # **Estratégia (atualizada após BLOCKER #4 — code review):**
 # Os cenários "comportamento" usam os controllers REAIS do codebase
-# (`AuthController`, `HealthController`, `PaymentsController`) em vez de
-# stubs. O `ThrottlerModule.forRoot([...])` é instanciado com a MESMA
-# config do `AppModule` (apenas o tier `default`), garantindo que os
-# decorators `@Throttle({ default: ... })` e `@SkipThrottle({ default: true })`
+# (`AuthController`, `HealthController`) em vez de stubs. O
+# `ThrottlerModule.forRoot([...])` é instanciado com a MESMA config do
+# `AppModule` (apenas o tier `default`), garantindo que os decorators
+# `@Throttle({ default: ... })` e `@SkipThrottle({ default: true })`
 # batem com os tiers registrados. Em outras palavras: o BDD agora reflete
 # a configuração de produção — se houver drift entre AppModule e feature,
 # o teste falha.
+#
+# **Nota:** O `@SkipThrottle({ default: true })` aplicado no webhook PIX
+# (`PaymentsController.handlePixWebhook`) é coberto pela auditoria manual
+# + pelo teste unitário `app.module.spec.ts` que valida o decorator via
+# `Reflect.getMetadata`. Não há cenário BDD dedicado para webhooks porque
+# o teste exigiria mockar HMAC + IP allowlist, custo alto para o sinal
+# marginal que traria (a regressão seria detectada em produção pelo
+# próprio MP reclamando 429s).
 #
 @shared @security @rate-limit @RF-SEC-01 @RNF-SEC-FF-01
 Funcionalidade: Rate limiting global com ThrottlerGuard

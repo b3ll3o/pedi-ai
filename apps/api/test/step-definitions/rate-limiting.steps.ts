@@ -28,13 +28,10 @@
 
 import { Given, When, Then, Before, After } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
-import { Controller, Get } from '@nestjs/common';
 import { APP_GUARD, Reflector } from '@nestjs/core';
 import {
-  Throttle,
   ThrottlerGuard,
   ThrottlerModule,
-  SkipThrottle,
   getOptionsToken,
   getStorageToken,
 } from '@nestjs/throttler';
@@ -51,30 +48,6 @@ interface ProbeResult {
 }
 
 type WorldTarget = 'auth' | 'health';
-
-// Stub controllers permanecem como fallback — usados APENAS quando o
-// cenário não tem como carregar o controller real (ex.: controllers com
-// dependências de Prisma/Redis). Atualmente os cenários cobrem:
-//   - auth → AuthController real (sem dependências externas no construtor)
-//   - health → HealthController real (precisa PrismaService + QueueService;
-//     usamos override via stub abaixo)
-@Controller('stub-fallback')
-class StubFallbackController {
-  @Get()
-  @Throttle({ default: { ttl: 60_000, limit: 5 } })
-  stubEndpoint(): { ok: true } {
-    return { ok: true };
-  }
-}
-
-@Controller('stub-fallback-skip')
-class StubFallbackSkipController {
-  @Get()
-  @SkipThrottle({ default: true })
-  stubSkipEndpoint(): { ok: true } {
-    return { ok: true };
-  }
-}
 
 // ── World: Rate Limiting ─────────────────────────────────────
 
@@ -222,17 +195,7 @@ class RateLimitingWorld {
         method: 'GET',
       };
     }
-    // Fallback para stubs (não usado nos cenários atuais, mantido para
-    // compatibilidade se algum cenário futuro precisar).
-    const useSkip = handlerName === 'stubSkipEndpoint';
-    return {
-      handlerRef: useSkip
-        ? StubFallbackSkipController.prototype.stubSkipEndpoint
-        : StubFallbackController.prototype.stubEndpoint,
-      classRef: useSkip ? StubFallbackSkipController : StubFallbackController,
-      path: useSkip ? '/stub-fallback-skip' : '/stub-fallback',
-      method: 'GET',
-    };
+    throw new Error(`Tier desconhecido: ${this.tier}. Cenários cobrem apenas 'auth' e 'health'.`);
   }
 }
 
