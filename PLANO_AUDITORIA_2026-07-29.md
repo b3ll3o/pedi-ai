@@ -497,6 +497,12 @@ reduz espaço de busca.
 
 **Validação:** BDD `password-policy.feature` + teste unitário cobrindo edge cases.
 
+**Status:** ✅ Corrigido em `chore/auditoria-completa-2026-07-29` (commits `a93e396`, `eeaffcf`, `d7850d2`).
+Detalhes em [CHANGELOG.md](./CHANGELOG.md). BDD `password-policy.feature` cobre 16
+cenários (sem-composição, limites min/max, vazia/espaços, HIBP cache miss/hit/fail-open,
+aplicação em `resetPassword`). Unit: 32 testes no `auth.service.spec.ts` (5 novos cobrindo
+a nova política). Cobertura `auth.service.ts` em **88.5% lines / 100% funções**.
+
 ---
 
 #### P0-11 — Deploy não gateia em CI
