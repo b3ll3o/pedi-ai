@@ -18,7 +18,7 @@ Tipos de mudança:
 
 ### Segurança
 
-- **P0-11 — Deploy gateia em CI verde** (`fix(ci)`). Substitui o gatilho
+- **P0-11 — Deploy gateia em CI verde** (tipo: `fix(ci)`). Substitui o gatilho
   `push: branches: [master]` do workflow `.github/workflows/deploy-vps.yml`
   por `workflow_run` que observa o workflow `CI` com `types: [completed]` em
   `branches: [master]`. O job `deploy` agora só roda se

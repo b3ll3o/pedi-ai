@@ -8,7 +8,7 @@ name: Deploy to VPS
 # valida CI localmente (a CI passa direto, este workflow é disparado à mão).
 on:
   workflow_run:
-    workflows: ['CI']
+    workflows: ["CI"]
     types: [completed]
     branches: [master]
   workflow_dispatch:
@@ -33,6 +33,8 @@ on:
           - critical
 
 concurrency:
+  # Group estático intencional: serializa TODOS os deploys (auto + manual)
+  # independente da ref, prevenindo deploys concorrentes na VPS.
   group: deploy-vps
   cancel-in-progress: false
 
@@ -44,6 +46,10 @@ jobs:
     # Gate: para o gatilho `workflow_run`, só roda se o CI fechou com sucesso.
     # Para `workflow_dispatch` (manual), sempre permite — o usuário assume
     # a responsabilidade de validar o CI antes de disparar.
+    #
+    # Short-circuit do `||`: em `workflow_dispatch`, `github.event.workflow_run`
+    # não existe, mas o operando esquerdo é truthy e o direito nunca é avaliado
+    # (curto-circuito documentado do GitHub Actions).
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     environment:
       name: production
