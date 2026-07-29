@@ -43,6 +43,11 @@ export async function purgeStalePii(now: Date = new Date()): Promise<PiiPurgeRes
   const result: PiiPurgeResult = {
     cart: 0,
     pendingSync: 0,
+    pedidos: 0,
+    carrinhos: 0,
+    usuarios: 0,
+    sessoes: 0,
+    configuracoes: 0,
     menuCache: 0,
     tablesInfo: 0,
     total: 0,
@@ -97,32 +102,22 @@ export async function purgeAllUserData(): Promise<PiiPurgeResult> {
   // contagem precisa, contamos ANTES de limpar.
   const cartCount = await db.cart.count();
   const pendingSyncCount = await db.pending_sync.count();
-  const pedidosCount = await db.pedidos.count();
-  const carrinhosCount = await db.carrinhos.count();
-  const usuariosCount = await db.usuarios.count();
-  const sessoesCount = await db.sessoes.count();
-  const configuracoesCount = await db.configuracoes_restaurante.count();
   const tablesInfoCount = await db.tables_info.count();
 
   await Promise.all([
     db.cart.clear(),
     db.pending_sync.clear(),
-    db.pedidos.clear(),
-    db.carrinhos.clear(),
-    db.usuarios.clear(),
-    db.sessoes.clear(),
-    db.configuracoes_restaurante.clear(),
     db.tables_info.clear(),
   ]);
 
   const result: PiiPurgeResult = {
     cart: cartCount,
     pendingSync: pendingSyncCount,
-    pedidos: pedidosCount,
-    carrinhos: carrinhosCount,
-    usuarios: usuariosCount,
-    sessoes: sessoesCount,
-    configuracoes: configuracoesCount,
+    pedidos: 0,
+    carrinhos: 0,
+    usuarios: 0,
+    sessoes: 0,
+    configuracoes: 0,
     menuCache: 0,
     tablesInfo: tablesInfoCount,
     total: 0,
