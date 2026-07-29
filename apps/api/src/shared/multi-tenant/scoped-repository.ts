@@ -36,7 +36,7 @@ type ScopedDelegate = {
  *
  * @example
  * ```ts
- * const productRepo = createRestaurantScopedRepository(
+ * const productRepo = scopedRepository(
  *   prisma.product,
  *   requester.restaurantId,
  * );
