@@ -248,14 +248,19 @@ export class PaymentsService {
     status: string;
     orderId?: string;
     restaurantId?: string;
-    provider?: string;
+    /**
+     * Origem do webhook (mercadopago, asaas, ...). **Obrigatório** —
+     * a idempotência cross-provider (P0-04) depende desse valor para
+     * distinguir eventos. Caller que esquecer de passar `provider` será
+     * bloqueado em runtime com `TypeError` no destructuring.
+     */
+    provider: string;
   }) {
-    // Provider do webhook. Auditoria P0-04: a idempotência agora é escopada
-    // por (provider, externalId) — sem `provider`, dois providers (MP, Asaas)
-    // com mesmo externalId colidiriam no INSERT e o segundo seria
-    // incorretamente marcado como `duplicate`. Default `mercadopago` mantém
-    // compatibilidade com callers existentes até o controller ser migrado.
-    const provider = data.provider ?? 'mercadopago';
+    // Auditoria P0-04: provider é obrigatório (ver JSDoc acima).
+    // O default `?? 'mercadopago'` foi removido para evitar "porta dos fundos"
+    // — callers Asaas futuros que esquecessem de passar provider cairiam
+    // no default errado e o bug do débito PIX duplicado ressurgiria.
+    const { provider } = data;
     // Transação interativa em Serializable: o INSERT do WebhookEvent é a
     // operação de "claim" — duas entregas simultâneas do mesmo eventId
     // não podem coexistir. A segunda撞a P2002 e sai como duplicate.

@@ -1,17 +1,19 @@
 -- Migration: add_webhook_event_unique (P0-04)
 -- Data: 2026-07-29
 -- Descrição: Adiciona `provider`, `externalId`, `payload`, `receivedAt`
--- em WebhookEvent + unique constraint composta `(provider, externalId)`.
+-- em WebhookEvent + unique constraint GLOBAL em `externalId`.
 --
 -- Idempotente — pode ser aplicada múltiplas vezes sem erro
 -- (uso de `ADD COLUMN IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`).
 --
 -- Backfill seguro:
---   - provider/externalId/payload ficam nullable na criação
---   - linhas existentes ficam NULL nesses campos
---   - NULL != NULL em unique index do PostgreSQL, então a unique
---     constraint não bloqueia múltiplas linhas com (provider, externalId) NULL
---   - novos INSERTs do código passam a popular provider/externalId
+--   - provider/externalId/payload adicionados como nullable para não
+--     quebrar linhas pré-existentes
+--   - linhas pré-existentes ficam NULL nesses campos após o deploy
+--   - No PostgreSQL, NULL != NULL em unique index — múltiplas linhas
+--     com externalId NULL são permitidas (não bloqueia)
+--   - Novos INSERTs do código passam a popular provider/externalId
+--     explicitamente, tornando a constraint efetiva em produção
 --
 -- Compatibilidade:
 --   - `processedAt` ganha `DEFAULT now()` para alinhar com schema Prisma
