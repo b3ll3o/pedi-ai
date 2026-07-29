@@ -23,7 +23,11 @@ function getClientKey(request: NextRequest, email: string): string {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, senha } = body;
+    // Aceita tanto `password` (enviado pelo LoginForm.tsx) quanto `senha`
+    // (mantido para compat com callers que ainda usem o nome PT-BR). O
+    // `??` faz fallback caso `password` esteja ausente.
+    const email: string | undefined = body?.email;
+    const senha: string | undefined = body?.password ?? body?.senha;
 
     if (!email || !senha) {
       return NextResponse.json({ error: 'Email e senha são obrigatórios' }, { status: 400 });
