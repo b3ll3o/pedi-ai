@@ -233,8 +233,23 @@ export class OrdersService {
     // com produto indisponível — quebrava o contrato "produto no cardápio
     // = pode pedir". Agora: query filtra disponíveis; qualquer ID não
     // retornado é reportado como "indisponível" no 400.
+    //
+    // Auditoria P0-01 (2026-07-29): adiciona filtro `restaurantId` à query
+    // de produtos. ANTES, o `findMany` aceitava IDs de produtos de QUALQUER
+    // tenant — um cliente malicioso com cardápio cacheado do restaurante A
+    // podia injetar `productId` do restaurante B (cross-tenant product
+    // injection). Sem o filtro, o sistema validava `available: true` mas
+    // não validava o tenant — vazando a existência de produtos cross-tenant
+    // (BOLA / OWASP API #1). Agora, a query escopa por `restaurantId` do
+    // pedido (vem do `assertTableOwnership` no controller ou do body
+    // validado). Produtos cross-tenant retornam na lista de "indisponíveis
+    // ou inexistentes" — mesma UX que produto desativado.
     const products = await this.prisma.product.findMany({
-      where: { id: { in: productIds }, available: true },
+      where: {
+        id: { in: productIds },
+        restaurantId: data.restaurantId,
+        available: true,
+      },
       select: { id: true, price: true, name: true },
     });
     if (products.length !== productIds.length) {
