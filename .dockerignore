@@ -12,6 +12,12 @@ apps/web/.next
 apps/web/out
 packages/shared/dist
 
+# TypeScript incremental cache — arquivos .tsbuildinfo ficam obsoletos
+# quando arquivos em src/ são adicionados/removidos (ex.: #120, módulo
+# `analytics/` foi criado mas não foi emitido porque o cache antigo não
+# tinha visto o arquivo). Sempre rebuildar do zero no container.
+**/*.tsbuildinfo
+
 # Git
 .git
 .gitignore

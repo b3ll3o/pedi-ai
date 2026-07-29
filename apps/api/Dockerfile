@@ -45,6 +45,14 @@ RUN pnpm --filter @pedi-ai/shared build
 # baixaria a latest 5.22.x do registry a cada build.
 RUN cd /app/apps/api && pnpm exec prisma generate
 
+# Defensiva contra cache obsoleto do TypeScript incremental: se algum
+# .tsbuildinfo entrou no build context (ex.: .dockerignore desatualizado),
+# removemos antes do build. Sem isso, `tsc --incremental` pode achar que
+# novos arquivos em src/ não existem e não emiti-los no dist/ — foi o que
+# aconteceu no deploy #120: src/analytics/ presente mas dist/analytics/
+# ausente, quebrando o runtime com "Cannot find module './analytics/...'".
+RUN rm -f /app/apps/api/tsconfig.tsbuildinfo
+
 # Build
 RUN cd /app/apps/api && pnpm build
 
