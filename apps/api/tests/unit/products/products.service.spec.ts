@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { NotFoundException, ForbiddenException } from '@nestjs/common';
+import { NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { ProductsService } from '../../../src/products/products.service';
 import { PrismaService } from '../../../src/common/prisma.service';
 
@@ -37,13 +37,16 @@ describe('ProductsService', () => {
       ];
       mockPrisma.product.findMany.mockResolvedValue(mockProducts);
 
-      const result = await productsService.findByCategory('cat-1');
+      // Auditoria P0-01 (2026-07-29): restaurantId agora é obrigatório.
+      const result = await productsService.findByCategory('cat-1', {
+        restaurantId: 'rest-1',
+      });
 
       expect(result.data).toEqual(mockProducts);
       expect(result.nextCursor).toBeNull();
       expect(mockPrisma.product.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { categoryId: 'cat-1', available: true },
+          where: { categoryId: 'cat-1', restaurantId: 'rest-1', available: true },
         })
       );
     });
@@ -51,7 +54,9 @@ describe('ProductsService', () => {
     it('should return empty page when no products found', async () => {
       mockPrisma.product.findMany.mockResolvedValue([]);
 
-      const result = await productsService.findByCategory('cat-empty');
+      const result = await productsService.findByCategory('cat-empty', {
+        restaurantId: 'rest-1',
+      });
 
       expect(result.data).toEqual([]);
       expect(result.nextCursor).toBeNull();
@@ -65,7 +70,10 @@ describe('ProductsService', () => {
       }));
       mockPrisma.product.findMany.mockResolvedValue(items);
 
-      const result = await productsService.findByCategory('cat-1', { limit: 20 });
+      const result = await productsService.findByCategory('cat-1', {
+        limit: 20,
+        restaurantId: 'rest-1',
+      });
 
       expect(result.data).toHaveLength(20);
       expect(result.nextCursor).toBe('p19');
@@ -73,10 +81,20 @@ describe('ProductsService', () => {
 
     it('inclui produtos indisponíveis quando includeUnavailable=true', async () => {
       mockPrisma.product.findMany.mockResolvedValue([]);
-      await productsService.findByCategory('cat-1', { includeUnavailable: true });
+      await productsService.findByCategory('cat-1', {
+        includeUnavailable: true,
+        restaurantId: 'rest-1',
+      });
       expect(mockPrisma.product.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { categoryId: 'cat-1' } })
+        expect.objectContaining({ where: { categoryId: 'cat-1', restaurantId: 'rest-1' } })
       );
+    });
+
+    // Auditoria P0-01 (2026-07-29): fail-closed — sem restaurantId lança
+    // BadRequestException antes de tocar no DB.
+    it('lança BadRequestException quando restaurantId ausente (fail-closed)', async () => {
+      await expect(productsService.findByCategory('cat-1')).rejects.toThrow(BadRequestException);
+      expect(mockPrisma.product.findMany).not.toHaveBeenCalled();
     });
   });
 
@@ -148,6 +166,12 @@ describe('ProductsService', () => {
         price: 2990,
         sortOrder: 5,
       };
+      // Auditoria P0-01 (2026-07-29): agora precisamos mockar o
+      // lookup de Category para obter o `restaurantId` autoritativo.
+      mockPrisma.category.findUnique.mockResolvedValue({
+        id: 'cat-1',
+        restaurantId: 'rest-1',
+      });
       const mockCreated = { id: 'p-new', ...createData };
       mockPrisma.product.create.mockResolvedValue(mockCreated);
 
@@ -157,6 +181,7 @@ describe('ProductsService', () => {
       expect(mockPrisma.product.create).toHaveBeenCalledWith({
         data: {
           categoryId: createData.categoryId,
+          restaurantId: 'rest-1',
           name: createData.name,
           description: createData.description,
           imageUrl: createData.imageUrl,
@@ -169,6 +194,10 @@ describe('ProductsService', () => {
 
     it('should create product with only required fields', async () => {
       const createData = { categoryId: 'cat-1', name: 'Minimal', price: 1000 };
+      mockPrisma.category.findUnique.mockResolvedValue({
+        id: 'cat-1',
+        restaurantId: 'rest-1',
+      });
       mockPrisma.product.create.mockResolvedValue({ id: 'p-min', ...createData });
 
       const result = await productsService.create(createData);
@@ -176,6 +205,7 @@ describe('ProductsService', () => {
       expect(mockPrisma.product.create).toHaveBeenCalledWith({
         data: {
           categoryId: createData.categoryId,
+          restaurantId: 'rest-1',
           name: createData.name,
           description: undefined,
           imageUrl: undefined,
@@ -199,7 +229,10 @@ describe('ProductsService', () => {
       ).rejects.toThrow(ForbiddenException);
     });
 
-    it('lança ForbiddenException se categoria não existe', async () => {
+    it('lança NotFoundException se categoria não existe', async () => {
+      // Auditoria P0-01 (2026-07-29): quando category não existe E
+      // requesterRestaurantId está presente, o caminho é via
+      // `validateCategoryOwnership` que lança ForbiddenException.
       mockPrisma.category.findUnique.mockResolvedValue(null);
 
       await expect(
@@ -212,18 +245,41 @@ describe('ProductsService', () => {
       ).rejects.toThrow(ForbiddenException);
     });
 
+    it('lança NotFoundException se categoria não existe e sem restaurantId', async () => {
+      // Auditoria P0-01 (2026-07-29): sem requesterRestaurantId, o
+      // validateCategoryOwnership é pulado, mas o lookup posterior
+      // (para obter restaurantId) detecta categoria inexistente.
+      mockPrisma.category.findUnique.mockResolvedValue(null);
+
+      await expect(
+        productsService.create({ categoryId: 'ghost', name: 'X', price: 1000 })
+      ).rejects.toThrow(NotFoundException);
+    });
+
     it('pula validação de ownership se requesterRestaurantId ausente', async () => {
+      mockPrisma.category.findUnique.mockResolvedValue({
+        id: 'cat-1',
+        restaurantId: 'rest-1',
+      });
       mockPrisma.product.create.mockResolvedValue({ id: 'p-new' });
 
       await productsService.create({ categoryId: 'cat-1', name: 'X', price: 1000 });
 
-      // Sem lookup de category para validar.
-      expect(mockPrisma.category.findUnique).not.toHaveBeenCalled();
+      // O lookup acontece mesmo sem restaurantId para derivar
+      // o `restaurantId` autoritativo.
+      expect(mockPrisma.category.findUnique).toHaveBeenCalledWith({
+        where: { id: 'cat-1' },
+        select: { restaurantId: true },
+      });
     });
   });
 
   describe('createWithRestaurant', () => {
     it('usa categoryId quando fornecido', async () => {
+      mockPrisma.category.findUnique.mockResolvedValue({
+        id: 'cat-1',
+        restaurantId: 'rest-1',
+      });
       mockPrisma.product.create.mockResolvedValue({ id: 'p-new' });
 
       await productsService.createWithRestaurant({
@@ -255,7 +311,12 @@ describe('ProductsService', () => {
         orderBy: { sortOrder: 'asc' },
       });
       expect(mockPrisma.product.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ categoryId: 'cat-default' }) })
+        expect.objectContaining({
+          data: expect.objectContaining({
+            categoryId: 'cat-default',
+            restaurantId: 'rest-1',
+          }),
+        })
       );
     });
 
@@ -282,7 +343,9 @@ describe('ProductsService', () => {
     it('should update product successfully', async () => {
       const updateData = { name: 'Updated Name', price: 3990 };
       const mockUpdated = { id: 'p1', ...updateData };
-      mockPrisma.product.findUnique.mockResolvedValue({
+      // Auditoria P0-01 (2026-07-29): `update` agora usa `findFirst`
+      // com filtro duplo (id + restaurantId) para defesa em profundidade.
+      mockPrisma.product.findFirst.mockResolvedValue({
         id: 'p1',
         category: { restaurantId: 'rest-1' },
       });
@@ -298,7 +361,7 @@ describe('ProductsService', () => {
     });
 
     it('should update product availability', async () => {
-      mockPrisma.product.findUnique.mockResolvedValue({
+      mockPrisma.product.findFirst.mockResolvedValue({
         id: 'p1',
         category: { restaurantId: 'rest-1' },
       });
@@ -313,7 +376,7 @@ describe('ProductsService', () => {
     });
 
     it('should allow partial updates with single field', async () => {
-      mockPrisma.product.findUnique.mockResolvedValue({
+      mockPrisma.product.findFirst.mockResolvedValue({
         id: 'p1',
         category: { restaurantId: 'rest-1' },
       });
@@ -325,7 +388,7 @@ describe('ProductsService', () => {
     });
 
     it('lança NotFoundException se produto não existe', async () => {
-      mockPrisma.product.findUnique.mockResolvedValue(null);
+      mockPrisma.product.findFirst.mockResolvedValue(null);
 
       await expect(productsService.update('ghost', { name: 'X' })).rejects.toThrow(
         NotFoundException
@@ -333,10 +396,11 @@ describe('ProductsService', () => {
     });
 
     it('lança ForbiddenException se produto pertence a outro restaurante', async () => {
-      mockPrisma.product.findUnique.mockResolvedValue({
-        id: 'p1',
-        category: { restaurantId: 'other-rest' },
-      });
+      // Auditoria P0-01 (2026-07-29): defesa em profundidade — findFirst
+      // com filtro restaurantId='rest-1' retorna null para produto de
+      // 'other-rest'. O serviço trata null como ForbiddenException
+      // (em vez de NotFoundException) para evitar enumeração.
+      mockPrisma.product.findFirst.mockResolvedValue(null);
 
       await expect(productsService.update('p1', { name: 'X' }, 'rest-1')).rejects.toThrow(
         ForbiddenException
@@ -346,7 +410,7 @@ describe('ProductsService', () => {
 
   describe('delete', () => {
     it('should delete product successfully', async () => {
-      mockPrisma.product.findUnique.mockResolvedValue({
+      mockPrisma.product.findFirst.mockResolvedValue({
         id: 'p1',
         category: { restaurantId: 'rest-1' },
       });
@@ -357,15 +421,14 @@ describe('ProductsService', () => {
     });
 
     it('lança NotFoundException se produto não existe', async () => {
-      mockPrisma.product.findUnique.mockResolvedValue(null);
+      mockPrisma.product.findFirst.mockResolvedValue(null);
       await expect(productsService.delete('ghost')).rejects.toThrow(NotFoundException);
     });
 
     it('lança ForbiddenException se produto pertence a outro restaurante', async () => {
-      mockPrisma.product.findUnique.mockResolvedValue({
-        id: 'p1',
-        category: { restaurantId: 'other-rest' },
-      });
+      // Auditoria P0-01 (2026-07-29): findFirst com filtro duplo
+      // bloqueia cross-tenant antes do delete.
+      mockPrisma.product.findFirst.mockResolvedValue(null);
 
       await expect(productsService.delete('p1', 'rest-1')).rejects.toThrow(ForbiddenException);
     });
