@@ -476,6 +476,8 @@ const handleSignOut = async () => {
 **Validação:** E2E `lgpd-logout.spec.ts` — login A → criar pedido → logout →
 login B → confirmar que pedido A não aparece.
 
+**Status (2026-07-29):** Implementado. `purgeAllUserData` agora é executado antes do logout, em modo best-effort, e limpa os stores locais de dados pessoais. Unit e E2E LGPD adicionados. Commits: `feat(web): chamar purgeAllUserData no logout (P0-09)`, `test(web): adicionar e2e lgpd-logout cross-user (P0-09)`, `test(web): unit tests para useAuth logout order (P0-09)`, `docs(auditoria): documentar status P0-09`.
+
 ---
 
 #### P0-10 — Senha regex viola NIST 800-63B

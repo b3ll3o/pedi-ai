@@ -18,8 +18,9 @@ Tipos de mudança:
 
 ### Segurança
 
+- **P0-09 — Purga de dados locais no logout** (tipo: `fix(security)`). O logout agora purga, antes da invalidação da sessão, os dados locais potencialmente pessoais para impedir que uma conta subsequente no mesmo dispositivo veja pedidos, carrinhos ou perfis da conta anterior. A purga é best-effort e não bloqueia o logout em caso de falha do IndexedDB. Incluídos testes unitários da ordem purga→logout e E2E cross-account LGPD.
+
 - **P0-06 — PII encryption: helper `withEncryptedTransaction` + correção de 3 defeitos reais** (tipo: `fix(security)`). O bug
-  original era "tx em $transaction não recebe a extension", mas auditoria
   empírica em Prisma 7.8 mostrou que `Object.assign(this, ext)` JÁ propaga
   para `tx`. O que estava quebrado de verdade:
   1. `ENCRYPTED_FIELDS` indexado por camelCase vs Extension entregando
@@ -36,6 +37,7 @@ Tipos de mudança:
      **P0-06-fase-2 filed:** extension NÃO decifra em `create` return —
      3 call sites (`auth.service.ts:307,360,455`) usam `user.name` direto
      após `create()` e JWT pode conter ciphertext como nome.
+
 - **P0-01 — BOLA no endpoint de pedidos (Product.restaurantId)** (tipo:
   `fix(security)`). Três instâncias de Broken Object Level Authorization
   (OWASP API #1) fechadas:
