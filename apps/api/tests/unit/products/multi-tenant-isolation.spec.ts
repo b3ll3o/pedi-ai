@@ -52,18 +52,19 @@ describe('ProductsService — Isolamento multi-tenant (P0-01)', () => {
     it('lança NotFoundException quando produto não existe', async () => {
       mockPrisma.product.findFirst.mockResolvedValue(null);
 
-      await expect(service.findById('ghost')).rejects.toThrow(NotFoundException);
+      await expect(service.findById('ghost', 'rest-a')).rejects.toThrow(NotFoundException);
     });
 
     it('inclui restaurantId (via restaurant.active) na query — não vaza cross-tenant', async () => {
       mockPrisma.product.findFirst.mockResolvedValue(null);
 
-      await expect(service.findById('prod-x')).rejects.toThrow(NotFoundException);
+      await expect(service.findById('prod-x', 'rest-a')).rejects.toThrow(NotFoundException);
 
       expect(mockPrisma.product.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
             id: 'prod-x',
+            restaurantId: 'rest-a',
             category: expect.objectContaining({
               restaurant: expect.objectContaining({ active: true }),
             }),
@@ -76,9 +77,26 @@ describe('ProductsService — Isolamento multi-tenant (P0-01)', () => {
       const mockProduct = { id: 'prod-1', name: 'X', price: 100 };
       mockPrisma.product.findFirst.mockResolvedValue(mockProduct);
 
-      const result = await service.findById('prod-1');
+      const result = await service.findById('prod-1', 'rest-a');
 
       expect(result).toEqual(mockProduct);
+    });
+
+    // Auditoria P0-01 (2026-07-29): fail-closed — `requesterRestaurantId`
+    // é OBRIGATÓRIO. Helper lança `ForbiddenException` no construtor se
+    // tenant ausente/vazio, impedindo BOLA por construção.
+    it('lança ForbiddenException quando requesterRestaurantId ausente (fail-closed)', async () => {
+      await expect(service.findById('prod-1', undefined as unknown as string)).rejects.toThrow(
+        ForbiddenException
+      );
+      expect(mockPrisma.product.findFirst).not.toHaveBeenCalled();
+    });
+
+    it('lança ForbiddenException quando requesterRestaurantId é string vazia', async () => {
+      await expect(service.findById('prod-1', '' as unknown as string)).rejects.toThrow(
+        ForbiddenException
+      );
+      expect(mockPrisma.product.findFirst).not.toHaveBeenCalled();
     });
 
     // Auditoria P0-01 (2026-07-29): quando o caller passa
@@ -243,6 +261,55 @@ describe('ProductsService — Isolamento multi-tenant (P0-01)', () => {
         name: 'Y',
       });
     });
+
+    // Auditoria P0-01 (2026-07-29): `update` agora delega ao helper
+    // `scopedRepository` (NÃO a `prisma.product.update` raw), garantindo
+    // que o WHERE da mutação carrega `restaurantId`. Defesa contra
+    // TOCTOU entre lookup e update.
+    it('usa helper scopedRepository para update (restaurantId no WHERE da mutação)', async () => {
+      mockPrisma.product.findFirst.mockResolvedValue({
+        id: 'prod-1',
+        category: { restaurantId: 'rest-A' },
+      });
+      mockPrisma.product.update.mockResolvedValue({ id: 'prod-1', price: 30 });
+
+      await service.update('prod-1', { price: 30 }, 'rest-A');
+
+      expect(mockPrisma.product.update).toHaveBeenCalledWith({
+        where: { id: 'prod-1', restaurantId: 'rest-A' },
+        data: { price: 30 },
+      });
+    });
+
+    // Auditoria P0-01 (2026-07-29): mapeia P2025 (Record to update not
+    // found) do helper para `ForbiddenException` para manter o contrato
+    // "pertencer a outro restaurante" do caller quando a linha foi
+    // reatribuída entre o lookup e a mutação.
+    it('mapeia P2025 do helper para ForbiddenException no update', async () => {
+      const p2025 = Object.assign(new Error('Record to update not found.'), {
+        code: 'P2025',
+      });
+      mockPrisma.product.findFirst.mockResolvedValue({
+        id: 'prod-1',
+        category: { restaurantId: 'rest-A' },
+      });
+      mockPrisma.product.update.mockRejectedValue(p2025);
+
+      await expect(service.update('prod-1', { name: 'Y' }, 'rest-A')).rejects.toThrow(
+        ForbiddenException
+      );
+    });
+
+    it('relança erros não-P2025 do update sem mascarar', async () => {
+      const other = new Error('Conexão perdida');
+      mockPrisma.product.findFirst.mockResolvedValue({
+        id: 'prod-1',
+        category: { restaurantId: 'rest-A' },
+      });
+      mockPrisma.product.update.mockRejectedValue(other);
+
+      await expect(service.update('prod-1', { name: 'Y' }, 'rest-A')).rejects.toBe(other);
+    });
   });
 
   describe('delete — defesa em profundidade', () => {
@@ -277,7 +344,41 @@ describe('ProductsService — Isolamento multi-tenant (P0-01)', () => {
       mockPrisma.product.delete.mockResolvedValue({ id: 'prod-1' });
 
       await expect(service.delete('prod-1', 'rest-A')).resolves.toBeUndefined();
-      expect(mockPrisma.product.delete).toHaveBeenCalledWith({ where: { id: 'prod-1' } });
+      // Auditoria P0-01 (2026-07-29): `delete` agora delega ao helper
+      // `scopedRepository`, que injeta `restaurantId` no WHERE da mutação
+      // — defesa contra TOCTOU entre lookup e delete.
+      expect(mockPrisma.product.delete).toHaveBeenCalledWith({
+        where: { id: 'prod-1', restaurantId: 'rest-A' },
+      });
+    });
+
+    // Auditoria P0-01 (2026-07-29): se a linha foi reatribuída para outro
+    // tenant entre o `findFirst` (que viu o produto no nosso tenant) e
+    // o `delete`, o helper `scopedRepository` injeta `restaurantId` no
+    // WHERE da mutação, que retorna `P2025` (Record to delete not found).
+    // Mapeamos para `ForbiddenException` para manter o contrato do caller.
+    it('mapeia P2025 do helper para ForbiddenException no delete', async () => {
+      const p2025 = Object.assign(new Error('Record to delete not found.'), {
+        code: 'P2025',
+      });
+      mockPrisma.product.findFirst.mockResolvedValue({
+        id: 'prod-1',
+        category: { restaurantId: 'rest-A' },
+      });
+      mockPrisma.product.delete.mockRejectedValue(p2025);
+
+      await expect(service.delete('prod-1', 'rest-A')).rejects.toThrow(ForbiddenException);
+    });
+
+    it('relança erros não-P2025 sem mascarar', async () => {
+      const other = new Error('Conexão perdida');
+      mockPrisma.product.findFirst.mockResolvedValue({
+        id: 'prod-1',
+        category: { restaurantId: 'rest-A' },
+      });
+      mockPrisma.product.delete.mockRejectedValue(other);
+
+      await expect(service.delete('prod-1', 'rest-A')).rejects.toBe(other);
     });
   });
 });

@@ -143,9 +143,10 @@ describe('ProductsService', () => {
     it('should return product when found', async () => {
       const mockProduct = { id: 'p1', name: 'Product 1', price: 1990 };
       // C-NEW-01: findById agora usa `findFirst` filtrando restaurant.active.
+      // Auditoria P0-01 (2026-07-29): `requesterRestaurantId` é OBRIGATÓRIO.
       mockPrisma.product.findFirst.mockResolvedValue(mockProduct);
 
-      const result = await productsService.findById('p1');
+      const result = await productsService.findById('p1', 'rest-1');
 
       expect(result).toEqual(mockProduct);
     });
@@ -153,7 +154,9 @@ describe('ProductsService', () => {
     it('should throw NotFoundException when product not found', async () => {
       mockPrisma.product.findFirst.mockResolvedValue(null);
 
-      await expect(productsService.findById('non-existent')).rejects.toThrow(NotFoundException);
+      await expect(productsService.findById('non-existent', 'rest-1')).rejects.toThrow(
+        NotFoundException
+      );
     });
   });
 

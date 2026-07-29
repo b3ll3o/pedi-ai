@@ -23,13 +23,6 @@ import { scopedRepository } from '../shared/multi-tenant';
  * em vez de chamar `prisma.product.*` direto garante que o filtro de
  * tenant nunca é esquecido em novas hot paths — o construtor do helper
  * é fail-closed (`ForbiddenException` se tenant ausente).
- *
- * **Fallback público sem tenant:** `findById(id)` sem
- * `requesterRestaurantId` mantém compatibilidade com o cardápio público
- * (`/menu/products/:id?restaurantId=...`) que escopa via query no
- * `category.restaurant.active`. Hot path autenticado (ProductsController)
- * sempre passa `req.user.restaurantId`, então a fábrica `scopedRepository`
- * é o caminho de produção.
  */
 @Injectable()
 export class ProductsService {
@@ -135,18 +128,17 @@ export class ProductsService {
    * Produto por ID com isolamento multi-tenant.
    *
    * Auditoria P0-01 (2026-07-29): o model `Product` agora carrega
-   * `restaurantId` autoritativo. Quando o caller fornece
-   * `requesterRestaurantId` (vindo do JWT), usamos o helper
-   * `RestaurantScopedRepository` para que `WHERE` carregue
-   * `restaurantId` automaticamente — defesa em profundidade que blinda
-   * BOLA mesmo se algum caller esquecer de aplicar o filtro.
+   * `restaurantId` autoritativo. O helper `RestaurantScopedRepository`
+   * injeta `restaurantId` no `WHERE` automaticamente — defesa em
+   * profundidade que blinda BOLA mesmo se algum caller esquecer de
+   * aplicar o filtro.
    *
    * **BREAKING CHANGE — P0-01 (2026-07-29):**
-   * O caminho público-anônimo (chamada sem `requesterRestaurantId`)
-   * foi REMOVIDO de produção. Antes, esta rota era pública e permitia
-   * BOLA cross-tenant. Agora, `GET /products/:id` no controller exige
-   * JWT (`@Roles(atendente, gerente, dono)`) e sempre passa
-   * `req.user.restaurantId` para este método.
+   * `requesterRestaurantId` é OBRIGATÓRIO (fail-closed). O caminho
+   * público-anônimo foi REMOVIDO: antes, esta rota era pública e
+   * permitia BOLA cross-tenant. Agora, `GET /products/:id` no
+   * controller exige JWT (`@Roles(atendente, gerente, dono)`) e
+   * sempre passa `req.user.restaurantId` para este método.
    *
    * **Migração de consumidores:**
    *   • Clientes do cardápio → usar `GET /menu/products/:id?restaurantId=<rest>`
@@ -154,44 +146,22 @@ export class ProductsService {
    *   • Painel admin/staff → passar JWT do usuário e este método
    *     recebe `requesterRestaurantId` automaticamente.
    *
-   * **Fallback preservado:** a branch pública deste método (sem
-   * `requesterRestaurantId`) foi MANTIDA apenas como safety net
-   * programático — não é mais alcançável via HTTP. Se alguém a chamar
-   * sem tenant, ainda funciona (escopando via `category.restaurant.active`)
-   * mas não tem utilidade em produção.
-   *
    * @throws NotFoundException se não encontrar (404 — não revela
    *   existência cross-tenant para evitar enumeração).
+   * @throws ForbiddenException se `requesterRestaurantId` for
+   *   ausente/vazio (fail-closed no construtor do helper).
    */
-  async findById(id: string, requesterRestaurantId?: string | null) {
-    if (requesterRestaurantId) {
-      // Auditoria P0-01 (2026-07-29): caminho de produção —
-      // helper fail-closed injeta `restaurantId` no WHERE por baixo
-      // dos panos, mesmo que o caller esqueça de aplicar.
-      const productRepo = scopedRepository(this.prisma.product, requesterRestaurantId);
-      const product = await productRepo.findFirst({
-        where: {
-          id,
-          // Filtro adicional: `category.restaurant.active` cobre o caso
-          // em que restaurante foi desativado mas produto continua na
-          // coluna autoritativa (dado histórico).
-          category: { restaurant: { active: true } },
-        },
-      });
-      if (!product) {
-        throw new NotFoundException('Produto não encontrado');
-      }
-      return product;
-    }
-
-    // Fallback público (compat com `/menu/products/:id?restaurantId=...`):
-    // rota pública não tem tenant no contexto, escopa via `category.restaurant`.
-    // Auditoria P0-01 (2026-07-29): o controller atual (`@Roles(...)`) sempre
-    // passa `requesterRestaurantId`. Esta branch existe para compatibilidade
-    // caso o método seja invocado programaticamente sem contexto de tenant.
-    const product = await this.prisma.product.findFirst({
+  async findById(id: string, requesterRestaurantId: string) {
+    // Auditoria P0-01 (2026-07-29): helper fail-closed injeta
+    // `restaurantId` no WHERE por baixo dos panos, mesmo que o caller
+    // esqueça de aplicar.
+    const productRepo = scopedRepository(this.prisma.product, requesterRestaurantId);
+    const product = await productRepo.findFirst({
       where: {
         id,
+        // Filtro adicional: `category.restaurant.active` cobre o caso
+        // em que restaurante foi desativado mas produto continua na
+        // coluna autoritativa (dado histórico).
         category: { restaurant: { active: true } },
       },
     });
@@ -322,19 +292,35 @@ export class ProductsService {
     requesterRestaurantId?: string | null
   ) {
     if (requesterRestaurantId) {
-      // Auditoria P0-01 (2026-07-29): caminho de produção — helper
-      // fail-closed injeta `restaurantId` no WHERE automaticamente.
-      // BOLA prevenido por construção. `include` não é necessário: o
-      // helper já garante que `restaurantId` está no WHERE — não há
-      // categoria a revalidar (a checagem manual target.category
-      // .restaurantId foi substituída pelo filtro WHERE direto).
+      // Auditoria P0-01 (2026-07-29): caminho de produção — o helper
+      // `scopedRepository` É o caminho de mutação, não apenas uma
+      // conveniência para `findFirst`. Usar `productRepo.update` injeta
+      // `restaurantId` no WHERE da mutação, fechando a janela TOCTOU
+      // entre o lookup e o update: se um admin path reatribuir
+      // `restaurantId` da linha entre o `findFirst` e o `update`, a
+      // mutação recai sobre a cláusula WHERE escopada e retorna
+      // `P2025` (que mapeamos para `ForbiddenException` abaixo).
+      // `findFirst` prévio é mantido apenas para mapear "não existe
+      // neste tenant" → 403 (não revela enumeração cross-tenant).
       const productRepo = scopedRepository(this.prisma.product, requesterRestaurantId);
       const target = await productRepo.findFirst({ where: { id } });
       if (!target) {
         // 403 (não 404) para não revelar se produto existe em outro tenant.
         throw new ForbiddenException('Produto pertence a outro restaurante');
       }
-      return this.prisma.product.update({ where: { id }, data });
+      try {
+        return await productRepo.update({ where: { id }, data });
+      } catch (err) {
+        // Prisma `P2025` = "Record to update not found" — se a linha foi
+        // reatribuída para outro tenant entre o lookup e a mutação, o
+        // helper retorna `P2025` em vez de mutar dados cross-tenant.
+        // Mapeamos para `ForbiddenException` para manter o contrato
+        // "pertencer a outro restaurante" do caller.
+        if ((err as { code?: string }).code === 'P2025') {
+          throw new ForbiddenException('Produto pertence a outro restaurante');
+        }
+        throw err;
+      }
     }
 
     // Fallback sem tenant (compat): lookup direto + 404 puro.
@@ -347,14 +333,25 @@ export class ProductsService {
 
   async delete(id: string, requesterRestaurantId?: string | null) {
     if (requesterRestaurantId) {
-      // Auditoria P0-01 (2026-07-29): mesma defesa em profundidade do `update`.
+      // Auditoria P0-01 (2026-07-29): mesma defesa do `update` — helper
+      // `scopedRepository` É o caminho de mutação. Usar `productRepo.delete`
+      // garante que o `WHERE` da mutação carrega `restaurantId` autoritativo,
+      // prevenindo TOCTOU entre lookup e delete (mesma justificativa do
+      // `update`).
       const productRepo = scopedRepository(this.prisma.product, requesterRestaurantId);
       const target = await productRepo.findFirst({ where: { id } });
       if (!target) {
         throw new ForbiddenException('Produto pertence a outro restaurante');
       }
-      await this.prisma.product.delete({ where: { id } });
-      return;
+      try {
+        await productRepo.delete({ where: { id } });
+        return;
+      } catch (err) {
+        if ((err as { code?: string }).code === 'P2025') {
+          throw new ForbiddenException('Produto pertence a outro restaurante');
+        }
+        throw err;
+      }
     }
 
     // Fallback sem tenant (compat).
