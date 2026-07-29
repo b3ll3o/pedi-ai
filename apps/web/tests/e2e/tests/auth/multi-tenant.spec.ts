@@ -162,6 +162,18 @@ test.describe('Isolamento multi-tenant — GET /products/:id (P0-01)', () => {
     await context.clearCookies();
   });
 
+  // Auditoria P0-01 (2026-07-29): antes, cada teste chamava
+  // `test.skip(!tenantB, ...)` no corpo, mas isso não pula as fixtures
+  // `beforeEach`/`afterAll` — o cleanup e o seed do contexto ainda
+  // rodavam. Movido para `test.beforeAll` que chama `test.skip()`
+  // antes das fixtures serem executadas: se `DATABASE_URL` não estiver
+  // configurada, o describe inteiro é pulado ANTES de qualquer fixture.
+  test.beforeAll(({}) => {
+    if (!process.env.DATABASE_URL) {
+      test.skip(true, 'DATABASE_URL não configurada — pulando suite cross-tenant');
+    }
+  });
+
   // Cleanup do segundo tenant após TODOS os testes do describe.
   // Roda mesmo se algum teste falhar no meio (try/finally).
   test.afterAll(async () => {
@@ -174,7 +186,6 @@ test.describe('Isolamento multi-tenant — GET /products/:id (P0-01)', () => {
     async ({ page, seedData }) => {
       // Setup: cria tenant B direto no DB.
       const tenantB = await createSecondTenant();
-      test.skip(!tenantB, 'DATABASE_URL não configurada — pulando teste cross-tenant');
 
       // Login como atendente (role allowed em GET /products/:id).
       // atendente pertence ao restaurante seedData.restaurant.id (tenant A).
@@ -200,7 +211,6 @@ test.describe('Isolamento multi-tenant — GET /products/:id (P0-01)', () => {
     { tag: ['@RNF-SEC-MT-01', '@multi-tenant', '@BOLA'] },
     async ({ page, seedData }) => {
       const tenantB = await createSecondTenant();
-      test.skip(!tenantB, 'DATABASE_URL não configurada — pulando teste cross-tenant');
 
       const loginResp = await page.request.post('/api/v1/auth/login', {
         data: {
@@ -221,7 +231,6 @@ test.describe('Isolamento multi-tenant — GET /products/:id (P0-01)', () => {
     { tag: ['@RNF-SEC-MT-01', '@multi-tenant', '@BOLA'] },
     async ({ page, seedData }) => {
       const tenantB = await createSecondTenant();
-      test.skip(!tenantB, 'DATABASE_URL não configurada — pulando teste cross-tenant');
 
       const loginResp = await page.request.post('/api/v1/auth/login', {
         data: {
