@@ -59,16 +59,36 @@ export class ProductsController {
   }
 
   @Get(':id')
-  // Auditoria P0-01 (2026-07-29): rota NÃO é mais @Public — agora exige
-  // JWT para que possamos escopar pelo `restaurantId` do usuário
-  // autenticado. Antes, era pública e um atacante com ID de produto
-  // de outro tenant conseguia ler nome/preço/descrição (BOLA /
-  // OWASP API #1). Cardápio público deve usar `/menu/products/:id`
-  // que já exige `restaurantId` via query.
+  // ════════════════════════════════════════════════════════════════════
+  // **BREAKING CHANGE — P0-01 (2026-07-29):**
+  //
+  // Rota NÃO é mais `@Public()` — agora exige JWT (roles: atendente,
+  // gerente, dono) para que possamos escopar pelo `restaurantId` do
+  // usuário autenticado.
+  //
+  // **Por que mudou (BOLA / OWASP API #1):**
+  //   Antes, `GET /products/:id` era público e qualquer cliente com
+  //   um UUID de produto de outro tenant lia nome/preço/descrição/
+  //   modificadores sem autenticação — enumeração cross-tenant
+  //   silenciosa. Defesa em profundidade: mesmo com `WHERE restaurantId`
+  //   aplicado, remover o acesso público reduz a superfície de ataque
+  //   para brute-force de UUIDs válidos.
+  //
+  // **Migração de clientes:**
+  //   • Cardápio público (clientes do restaurante) → usar
+  //     `GET /menu/products/:id?restaurantId=<rest>` (rota pública
+  //     do menu, já escopada por tenant via query).
+  //   • Painel admin/staff → usar esta rota autenticada com JWT do
+  //     usuário (token obtido via `/auth/login`).
+  //
+  // Ver CHANGELOG.md §Segurança [Não publicado] — P0-01 para a
+  // lista completa de breaking changes desta auditoria.
+  // ════════════════════════════════════════════════════════════════════
   @Roles('atendente', 'gerente', 'dono')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Obter produto por ID (escopado por tenant)' })
   @ApiResponse({ status: 200, description: 'Produto encontrado' })
+  @ApiResponse({ status: 401, description: 'Token JWT ausente ou inválido' })
   @ApiResponse({ status: 403, description: 'Produto pertence a outro restaurante' })
   @ApiResponse({ status: 404, description: 'Produto não encontrado' })
   async findById(@Req() req: { user: AuthenticatedUser }, @Param('id') id: string) {

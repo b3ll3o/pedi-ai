@@ -141,18 +141,24 @@ export class ProductsService {
    * `restaurantId` automaticamente — defesa em profundidade que blinda
    * BOLA mesmo se algum caller esquecer de aplicar o filtro.
    *
-   * **Comportamento:**
-   * - Com `requesterRestaurantId`: `scopedRepository(product, tenant).findFirst(...)`
-   *   injeta `WHERE id = ? AND restaurantId = ?` — BOLA impossível por
-   *   construção do helper (fail-closed no construtor).
-   * - Sem `requesterRestaurantId`: WHERE inclui `id = ? AND
-   *   category.restaurant.active = true` (compatibilidade com
-   *   `/menu/products/:id?restaurantId=...` que já escopa via query).
+   * **BREAKING CHANGE — P0-01 (2026-07-29):**
+   * O caminho público-anônimo (chamada sem `requesterRestaurantId`)
+   * foi REMOVIDO de produção. Antes, esta rota era pública e permitia
+   * BOLA cross-tenant. Agora, `GET /products/:id` no controller exige
+   * JWT (`@Roles(atendente, gerente, dono)`) e sempre passa
+   * `req.user.restaurantId` para este método.
    *
-   * **Atual:** `findById` é autenticado (`@Roles(atendente, gerente, dono)`
-   * em ProductsController), então `requesterRestaurantId` é sempre
-   * fornecido em produção. A branch pública permanece apenas para
-   * compatibilidade retroativa.
+   * **Migração de consumidores:**
+   *   • Clientes do cardápio → usar `GET /menu/products/:id?restaurantId=<rest>`
+   *     (rota pública do menu, escopada por tenant via query).
+   *   • Painel admin/staff → passar JWT do usuário e este método
+   *     recebe `requesterRestaurantId` automaticamente.
+   *
+   * **Fallback preservado:** a branch pública deste método (sem
+   * `requesterRestaurantId`) foi MANTIDA apenas como safety net
+   * programático — não é mais alcançável via HTTP. Se alguém a chamar
+   * sem tenant, ainda funciona (escopando via `category.restaurant.active`)
+   * mas não tem utilidade em produção.
    *
    * @throws NotFoundException se não encontrar (404 — não revela
    *   existência cross-tenant para evitar enumeração).

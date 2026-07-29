@@ -24,7 +24,12 @@ Tipos de mudança:
   1. `GET /products/:id` agora exige JWT (`@Roles(atendente, gerente, dono)`)
      e filtra por `req.user.restaurantId` — antes era público e qualquer
      cliente com um ID de produto de outro tenant lia nome/preço/descrição.
-     Cardápio público continua em `/menu/products/:id?restaurantId=...`.
+     **BREAKING CHANGE:** consumidores que usavam esta rota sem
+     autenticação devem migrar para `GET /menu/products/:id?restaurantId=...`
+     (cardápio público) ou autenticar via `/auth/login` (painel
+     admin/staff). Ver JSDoc em
+     `apps/api/src/products/products.controller.ts:61-76` para
+     detalhes da migração.
   2. `POST /orders` valida `productId`s contra `restaurantId` do pedido
      — antes aceitava IDs de produtos de qualquer tenant desde que
      `available: true`. Cross-tenant product injection agora retorna
@@ -36,14 +41,23 @@ Tipos de mudança:
      `products_restaurant_id_fkey` (ON DELETE RESTRICT).
      Migration `20260729120000_add_product_restaurant_id` é idempotente:
      `ADD COLUMN IF NOT EXISTS` + backfill `UPDATE FROM categories` +
-     `ALTER COLUMN ... SET NOT NULL` + `CREATE INDEX IF NOT EXISTS` +
-     FK via `pg_constraint` check. Shared kernel
-     `apps/api/src/shared/multi-tenant/scoped-repository.ts` com
-     `RestaurantScopedRepository` (fail-closed no construtor) para uso
-     em próximas hot paths. Cobertura: BDD 8 cenários + integration 7
+     pre-flight guard `DO $$ ... RAISE EXCEPTION ... $$` (MINOR #3 —
+     detecta produtos órfãos antes do `SET NOT NULL` falhar
+     silenciosamente) + `ALTER COLUMN ... SET NOT NULL` +
+     `CREATE INDEX IF NOT EXISTS` + FK via `pg_constraint` check.
+     Shared kernel `apps/api/src/shared/multi-tenant/scoped-repository.ts`
+     com `RestaurantScopedRepository` (fail-closed no construtor) —
+     usado em produção pelo `ProductsService` (refactor MAJOR:
+     `findByCategory`, `findById`, `update`, `delete`, `create`/
+     `createWithRestaurant` agora delegam ao helper em vez de aplicar
+     `WHERE restaurantId` manual). `MenuService.getProductById`
+     também ganhou filtro `restaurantId` direto (MINOR #2 — defesa em
+     profundidade). Cobertura: BDD 8 cenários + integration 7
      testes com Prisma real + unit 19 testes específicos do
-     `ProductsService` + 23 testes do `OrdersService`. Regressões:
-     0 (638 testes verdes).
+     `ProductsService` + 23 testes do `OrdersService` + 5 testes do
+     `MenuService` + e2e 4 cenários cross-tenant em
+     `apps/web/tests/e2e/tests/auth/multi-tenant.spec.ts`. Regressões:
+     0 (2693 testes verdes).
 
 - **P0-11 — Deploy gateia em CI verde** (tipo: `fix(ci)`). Substitui o gatilho
   `push: branches: [master]` do workflow `.github/workflows/deploy-vps.yml`
