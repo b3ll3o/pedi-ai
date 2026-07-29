@@ -13,6 +13,9 @@ RUN apk add --no-cache python3 make g++ curl
 WORKDIR /app
 
 # Copy workspace files for monorepo resolution
+# `package.json` (root) DEVE vir antes de `pnpm install` — `pnpm.overrides`
+# é necessário para forçar versões únicas (ex.: ioredis) entre workspaces.
+COPY package.json ./
 COPY pnpm-workspace.yaml ./
 COPY pnpm-lock.yaml ./
 

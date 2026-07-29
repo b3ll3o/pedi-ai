@@ -20,6 +20,11 @@ FROM base AS builder
 WORKDIR /app
 
 # Copy workspace files
+# `package.json` (root) DEVE vir antes de `pnpm install` — é onde mora
+# `pnpm.overrides` (ex.: ioredis pin) que força todos os pacotes a usarem
+# a mesma versão. Sem isto, bullmq (pinned) e apps/api são instalados em
+# cópias separadas, gerando TS2322 no build.
+COPY package.json ./
 COPY pnpm-workspace.yaml ./
 COPY pnpm-lock.yaml ./
 COPY packages ./packages

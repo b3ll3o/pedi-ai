@@ -10,6 +10,11 @@ RUN npm install -g pnpm@9 && apk add --no-cache postgresql-client curl procps op
 WORKDIR /app
 
 # Copy workspace files
+# `package.json` (root) DEVE vir antes de `pnpm install` — é onde mora
+# `pnpm.overrides.ioredis` que força todos os pacotes a usarem a mesma
+# versão. Sem isto, bullmq (pinned 5.10.1) e apps/api (^5.4.1 → 5.11.1)
+# são instalados em cópias separadas, gerando TS2322 no build.
+COPY package.json ./
 COPY pnpm-workspace.yaml ./
 COPY pnpm-lock.yaml ./
 COPY packages ./packages
