@@ -324,12 +324,12 @@ export class ProductsService {
     if (requesterRestaurantId) {
       // Auditoria P0-01 (2026-07-29): caminho de produção — helper
       // fail-closed injeta `restaurantId` no WHERE automaticamente.
-      // BOLA prevenido por construção.
+      // BOLA prevenido por construção. `include` não é necessário: o
+      // helper já garante que `restaurantId` está no WHERE — não há
+      // categoria a revalidar (a checagem manual target.category
+      // .restaurantId foi substituída pelo filtro WHERE direto).
       const productRepo = scopedRepository(this.prisma.product, requesterRestaurantId);
-      const target = await productRepo.findFirst({
-        where: { id },
-        include: { category: { select: { restaurantId: true } } },
-      });
+      const target = await productRepo.findFirst({ where: { id } });
       if (!target) {
         // 403 (não 404) para não revelar se produto existe em outro tenant.
         throw new ForbiddenException('Produto pertence a outro restaurante');
@@ -338,11 +338,7 @@ export class ProductsService {
     }
 
     // Fallback sem tenant (compat): lookup direto + 404 puro.
-    // `findFirst` (não `findUnique`) para suportar `include` na mesma query.
-    const target = await this.prisma.product.findFirst({
-      where: { id },
-      include: { category: { select: { restaurantId: true } } },
-    });
+    const target = await this.prisma.product.findFirst({ where: { id } });
     if (!target) {
       throw new NotFoundException('Produto não encontrado');
     }
@@ -353,10 +349,7 @@ export class ProductsService {
     if (requesterRestaurantId) {
       // Auditoria P0-01 (2026-07-29): mesma defesa em profundidade do `update`.
       const productRepo = scopedRepository(this.prisma.product, requesterRestaurantId);
-      const target = await productRepo.findFirst({
-        where: { id },
-        include: { category: { select: { restaurantId: true } } },
-      });
+      const target = await productRepo.findFirst({ where: { id } });
       if (!target) {
         throw new ForbiddenException('Produto pertence a outro restaurante');
       }
@@ -364,11 +357,8 @@ export class ProductsService {
       return;
     }
 
-    // Fallback sem tenant (compat). `findFirst` para suportar `include`.
-    const target = await this.prisma.product.findFirst({
-      where: { id },
-      include: { category: { select: { restaurantId: true } } },
-    });
+    // Fallback sem tenant (compat).
+    const target = await this.prisma.product.findFirst({ where: { id } });
     if (!target) {
       throw new NotFoundException('Produto não encontrado');
     }
