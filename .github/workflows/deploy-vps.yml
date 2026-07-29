@@ -54,8 +54,16 @@ jobs:
 
             cd pedi-ai
 
-            # Pull latest changes
-            git pull origin master
+            # Reset para origin/master (a VPS é um clone descartável — qualquer
+            # commit local no servidor deve ser sobrescrito pelo master remoto).
+            # Antes usávamos `git pull origin master`, que falha com
+            # "fatal: Need to specify how to reconcile divergent branches."
+            # sempre que o servidor tem qualquer commit local (ex.: cherry-pick
+            # de teste). O reset garante paridade com a branch remota sem
+            # intervenção manual.
+            git fetch origin master
+            git reset --hard origin/master
+            git clean -fd -e .env -e apps/api/.env -e apps/web/.env.local
 
             # Stop existing services
             docker compose -f docker-compose.dev.yml down || true
