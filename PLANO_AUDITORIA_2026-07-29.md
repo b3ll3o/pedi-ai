@@ -162,6 +162,31 @@ restaurante.
 
 **Validação:** Teste E2E com usuário `cliente` tentando `PATCH` retorna 403.
 
+**Status (2026-07-29):** Implementado em 5 commits
+(`9a75341` → `84b34dc` → `f514600` → `a67815a` → `f4d1279`). Code review
+aprovado com 8 minor findings. Findings #2/4/5/6 aplicados em `f4d1279`.
+
+**Follow-up P0-03-fase-3** (refactors não bloqueantes, priorizados em
+sprint separada):
+
+- **MINOR #1 (simplification):** Remover dual-constructor pattern do
+  `FeatureFlagsController` (positional + POJO bundle). A forma bundle foi
+  usada pelos testes, mas quebra inferência de tipo da DI quando algo é
+  `any`. Solução: converter os testes para usar a forma positional e
+  eliminar a branch `if (typeof listarUC === 'object' && ...)`.
+- **MINOR #3 (style):** Substituir roles hardcoded (`'owner' || 'dono'`,
+  `'manager' || 'gerente'`) por um enum `Role` em `packages/shared` ou
+  `apps/api/src/shared/`. Único ponto de mudança para adicionar novos
+  papéis.
+- **MINOR #7 (test-coverage/fragility):** Substituir leitura de
+  `fs.readFileSync` em integration spec por verificação via
+  `Reflect.getMetadata('__guards__', ...)` ou outro mecanismo que não
+  dependa de path no disco (frágil a refactor).
+- **MINOR #8 (style):** Mover endpoint público `/evaluate` para fora de
+  `/admin/feature-flags/*` (sugestão: `/api/v1/feature-flags/evaluate`).
+  O prefixo `/admin` é misleading para rota pública — geraria confusão
+  em OpenAPI/Swagger.
+
 ---
 
 #### P0-04 — WebhookEvent sem `@@unique` permite colisão MP↔Asaas
