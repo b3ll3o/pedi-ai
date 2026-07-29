@@ -128,6 +128,21 @@ providers: [
 **Validação:** Teste de integração que chama `/auth/login` 11× em 60s e espera
 429 na 11ª. Feature BDD `rate-limiting.feature`.
 
+> **NOTA — Reestruturação de tiers (commit `5118d91+followup`):**
+> A configuração original deste plano previa 3 tiers nomeados
+> (`short`/`medium`/`long`), mas `@nestjs/throttler@6.5.0` itera TODOS os
+> tiers registrados em `forRoot([...])` e exige que TODOS passem
+> (`continues.every(...)`). Manter `short: 5/min` globalmente limitava
+> **toda a API** a 5 req/min/IP — vetor de DoS. Corrigido em commit
+> de followup: **único tier `default` 300/min no AppModule**, com
+> overrides via `@Throttle({ default: { ttl, limit } })` em rotas que
+> precisam de limites mais restritos e `@SkipThrottle({ default: true })`
+> em health/webhooks. Ver código em [apps/api/src/app.module.ts:60-62](apps/api/src/app.module.ts#L60-L62)
+> e rationale completo no JSDoc acima do `ThrottlerModule.forRoot(...)`.
+> O BDD `rate-limiting.feature` foi refatorado para usar os controllers
+> REAIS (`AuthController`, `HealthController`) em vez de stubs — o teste
+> agora reflete o comportamento de produção.
+
 ---
 
 #### P0-03 — AdminGuard declarado mas nunca aplicado
