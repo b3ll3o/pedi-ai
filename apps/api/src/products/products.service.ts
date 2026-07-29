@@ -55,7 +55,11 @@ export class ProductsService {
     // adicionar `restaurantId: options.restaurantId` na cláusula where,
     // o helper aplica por baixo dos panos — BOLA impossível por construção.
     const productRepo = scopedRepository(this.prisma.product, options.restaurantId);
-    const items = await productRepo.findMany({
+    // Tipo explícito no `findMany<T>`: o helper tem T = unknown por padrão
+    // (para não impor a forma do delegate Prisma), mas o caller sabe que
+    // o resultado carrega ao menos `id` (necessário para o cursor).
+    type ProductWithId = { id: string };
+    const items = (await productRepo.findMany<ProductWithId>({
       // Auditoria A-S-05: por padrão, **só retorna produtos disponíveis**.
       // Antes, produtos desativados (`available: false`) vazavam no cardápio
       // público, contradizendo o `menu.service.getMenuByRestaurant`. Para
@@ -67,7 +71,7 @@ export class ProductsService {
       orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
       take: limit + 1,
       ...(options.cursor ? { cursor: { id: options.cursor }, skip: 1 } : {}),
-    });
+    })) as ProductWithId[];
     const hasNext = items.length > limit;
     const data = hasNext ? items.slice(0, limit) : items;
     const nextCursor = hasNext ? data[data.length - 1].id : null;

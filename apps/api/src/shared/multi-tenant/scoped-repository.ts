@@ -10,15 +10,32 @@ import { ForbiddenException } from '@nestjs/common';
  * operação sobre um model multi-tenant carregue `restaurantId` no `where`.
  * Antes, chamadas como `prisma.product.findFirst({ where: { id } })`
  * vazavam dados cross-tenant (BOLA / OWASP API #1).
+ *
+ * **Notação (`method(args)` em vez de `method: (args) => ...`).** TypeScript
+ * trata o shorthand de método como **bivariante** (aceita tanto delegações
+ * com parâmetros mais estreitos quanto mais largos) — propriedade essencial
+ * porque o delegate Prisma tem tipos genéricos ricos (`findUnique<T>`) que
+ * não seriam atribuíveis a um field-arrow com assinatura `Record<string, unknown>`.
+ * A `RestaurantScopedRepository` continua aplicando o contrato em runtime
+ * (fail-closed, injeta `restaurantId`); aqui só afrouxamos o tipo para
+ * acomodar Prisma 7 sem quebrar os call sites.
  */
-type ScopedDelegate = {
-  findUnique: (args: { where: Record<string, unknown> }) => Promise<unknown>;
-  findFirst: (args: { where?: Record<string, unknown> }) => Promise<unknown>;
-  findMany: (args: { where?: Record<string, unknown> }) => Promise<unknown[]>;
-  count: (args: { where?: Record<string, unknown> }) => Promise<number>;
-  update: (args: { where: Record<string, unknown>; data: unknown }) => Promise<unknown>;
-  delete: (args: { where: Record<string, unknown> }) => Promise<unknown>;
-};
+interface ScopedDelegate {
+  findUnique(args: { where: any }): Promise<any>;
+  findFirst(args?: { where?: any }): Promise<any>;
+  findMany<T = any>(args?: {
+    where?: any;
+    orderBy?: any;
+    take?: number;
+    skip?: number;
+    cursor?: any;
+    select?: any;
+    include?: any;
+  }): Promise<T[]>;
+  count(args?: { where?: any }): Promise<number>;
+  update(args: { where: any; data: any }): Promise<any>;
+  delete(args: { where: any }): Promise<any>;
+}
 
 /**
  * Helper que envolve um Prisma model delegate (ex.: `prisma.product`)
@@ -44,9 +61,9 @@ type ScopedDelegate = {
  * // Internamente: { where: { id: productId, restaurantId: requester.restaurantId } }
  * ```
  */
-export class RestaurantScopedRepository<T extends ScopedDelegate> {
+export class RestaurantScopedRepository<T> {
   constructor(
-    private readonly delegate: T,
+    private readonly delegate: T & ScopedDelegate,
     private readonly tenantId: string | null | undefined
   ) {
     if (!tenantId || typeof tenantId !== 'string') {
@@ -84,9 +101,23 @@ export class RestaurantScopedRepository<T extends ScopedDelegate> {
     return this.delegate.findFirst({ where: this.scopeWhere(args.where) });
   }
 
-  async findMany(args: { where?: Record<string, unknown> } = {}): Promise<unknown[]> {
+  async findMany<T = unknown>(
+    args: {
+      where?: Record<string, unknown>;
+      orderBy?: unknown;
+      take?: number;
+      skip?: number;
+      cursor?: Record<string, unknown>;
+      select?: unknown;
+      include?: unknown;
+    } = {}
+  ): Promise<T[]> {
     if (args.where) this.assertNoTenantOverride(args.where);
-    return this.delegate.findMany({ where: this.scopeWhere(args.where) });
+    const { where, ...rest } = args;
+    return (await this.delegate.findMany({
+      where: this.scopeWhere(where),
+      ...rest,
+    })) as T[];
   }
 
   async count(args: { where?: Record<string, unknown> } = {}): Promise<number> {
@@ -108,14 +139,25 @@ export class RestaurantScopedRepository<T extends ScopedDelegate> {
 /**
  * Factory ergonômica — esconde o `new` para call sites enxutos.
  *
+ * **Aceita qualquer delegate Prisma sem type cast no call site.** Usando
+ * `T extends object` em vez de `T extends ScopedDelegate`, evitamos o
+ * problema de variância entre os delegates tipados do Prisma 7
+ * (`findUnique<T extends ...>(...)`) e a forma relaxada do helper —
+ * o construtor faz a interseção com `ScopedDelegate` via `T & ScopedDelegate`
+ * para preservar checagem estrutural sem obrigar o caller a conhecer
+ * os tipos ricos do Prisma.
+ *
  * @example
  * ```ts
  * const scoped = scopedRepository(prisma.product, requester.restaurantId);
  * ```
  */
-export function scopedRepository<T extends ScopedDelegate>(
+export function scopedRepository<T extends object>(
   delegate: T,
   tenantId: string | null | undefined
 ): RestaurantScopedRepository<T> {
-  return new RestaurantScopedRepository(delegate, tenantId);
+  return new RestaurantScopedRepository(
+    delegate as unknown as T & ScopedDelegate,
+    tenantId
+  );
 }
