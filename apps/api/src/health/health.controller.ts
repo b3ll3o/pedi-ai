@@ -59,6 +59,23 @@ export class HealthController {
     };
   }
 
+  // Alias para `/health` — atende ferramentas de monitoramento que
+  // convencionam o caminho `/health` (Kubernetes, Docker HEALTHCHECK,
+  // docker-compose healthcheck em alguns templates). Equivalente a
+  // `GET /` (liveness): confirma só que o processo responde, sem
+  // tocar em dependências externas.
+  @Get('health')
+  @Public()
+  @SkipThrottle()
+  @ApiOperation({
+    summary: 'Liveness probe (alias)',
+    description: 'Alias de `GET /` — convenção `/health` para monitoramento.',
+  })
+  @ApiResponse({ status: 200, description: 'API viva' })
+  health(): { status: 'ok'; uptime: number } {
+    return this.liveness();
+  }
+
   @Get('ready')
   @Public()
   @SkipThrottle()
