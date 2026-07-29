@@ -69,6 +69,9 @@ export default defineConfig({
       // Pacotes workspace — apontam para as fontes diretas (sem build step).
       // O `pnpm install` cria symlinks em node_modules, mas o alias garante
       // resolução direta também em ambientes sem workspace configurado.
+      // Sem este alias, testes que importam de `@pedi-ai/shared/utils`
+      // resolvem para `dist/` (compilado) e a cobertura do `src/` fica 0.
+      '@pedi-ai/shared': path.resolve(__dirname, './packages/shared/src'),
       '@pedi-ai/feature-flags': path.resolve(__dirname, './packages/feature-flags/src'),
       // Mock do pacote `server-only` em testes: o pacote não está instalado
       // (é um marker do Next.js para erros de build em client components).
