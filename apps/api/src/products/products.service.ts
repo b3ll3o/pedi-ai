@@ -7,6 +7,7 @@ import {
 
 import { PageDto, PAGINATION_DEFAULT_LIMIT } from '../common/dto/pagination.dto';
 import { PrismaService } from '../common/prisma.service';
+import { scopedRepository } from '../shared/multi-tenant';
 
 /**
  * Service de produtos com tenant isolation enforced.
@@ -14,6 +15,21 @@ import { PrismaService } from '../common/prisma.service';
  * Auditoria P0-01 (2026-07-29): o model `Product` agora tem `restaurantId`
  * autoritativo (além de `categoryId → Category.restaurantId`). Toda query
  * escopa por `restaurantId` para prevenir BOLA (OWASP API #1).
+ *
+ * **Multi-tenant em produção:** o helper `RestaurantScopedRepository`
+ * (`apps/api/src/shared/multi-tenant/scoped-repository.ts`) é a fonte
+ * canônica de "WHERE inclui restaurantId automaticamente" para qualquer
+ * model multi-tenant. Usar `scopedRepository(this.prisma.product, tenant)`
+ * em vez de chamar `prisma.product.*` direto garante que o filtro de
+ * tenant nunca é esquecido em novas hot paths — o construtor do helper
+ * é fail-closed (`ForbiddenException` se tenant ausente).
+ *
+ * **Fallback público sem tenant:** `findById(id)` sem
+ * `requesterRestaurantId` mantém compatibilidade com o cardápio público
+ * (`/menu/products/:id?restaurantId=...`) que escopa via query no
+ * `category.restaurant.active`. Hot path autenticado (ProductsController)
+ * sempre passa `req.user.restaurantId`, então a fábrica `scopedRepository`
+ * é o caminho de produção.
  */
 @Injectable()
 export class ProductsService {
@@ -41,19 +57,18 @@ export class ProductsService {
     }
 
     const limit = options.limit ?? PAGINATION_DEFAULT_LIMIT;
-    const items = await this.prisma.product.findMany({
+    // Auditoria P0-01 (2026-07-29): helper fail-closed injeta `restaurantId`
+    // no WHERE automaticamente. Mesmo se um futuro dev esquecer de
+    // adicionar `restaurantId: options.restaurantId` na cláusula where,
+    // o helper aplica por baixo dos panos — BOLA impossível por construção.
+    const productRepo = scopedRepository(this.prisma.product, options.restaurantId);
+    const items = await productRepo.findMany({
       // Auditoria A-S-05: por padrão, **só retorna produtos disponíveis**.
       // Antes, produtos desativados (`available: false`) vazavam no cardápio
       // público, contradizendo o `menu.service.getMenuByRestaurant`. Para
       // visões admin/staff, passe `includeUnavailable: true`.
-      //
-      // Auditoria P0-01 (2026-07-29): filtro `restaurantId` adicionado
-      // para garantir isolamento multi-tenant. Mesmo que o caller
-      // passe um `categoryId` de outro tenant, o WHERE escopado
-      // retorna vazio em vez de vazar dados.
       where: {
         categoryId,
-        restaurantId: options.restaurantId,
         ...(options.includeUnavailable ? {} : { available: true }),
       },
       orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
@@ -83,9 +98,9 @@ export class ProductsService {
     // e 200 produtos por categoria (somatório > 20k itens). Restaurantes
     // maiores devem usar a rota paginada `/products/category/:id`.
     //
-    // Auditoria P0-01 (2026-07-29): o filtro `restaurantId` em Category já
-    // garante isolamento multi-tenant — Products herdam o tenant via
-    // `Category.restaurantId`. Mantemos como está (não regressão).
+    // Auditoria P0-01 (2026-07-29): escopo via `Category.restaurantId`
+    // (não via `Product.restaurantId`) — `Category` já era o filtro
+    // autoritativo pré-migration. Mantido como está.
     const MAX_CATEGORIES = 100;
     const MAX_PRODUCTS_PER_CATEGORY = 200;
     const categories = await this.prisma.category.findMany({
@@ -121,29 +136,57 @@ export class ProductsService {
    *
    * Auditoria P0-01 (2026-07-29): o model `Product` agora carrega
    * `restaurantId` autoritativo. Quando o caller fornece
-   * `requesterRestaurantId` (vindo do JWT), filtramos por ele —
-   * defesa em profundidade que blinda BOLA mesmo se o JOIN
-   * `category.restaurant` for bypassado em algum lugar.
+   * `requesterRestaurantId` (vindo do JWT), usamos o helper
+   * `RestaurantScopedRepository` para que `WHERE` carregue
+   * `restaurantId` automaticamente — defesa em profundidade que blinda
+   * BOLA mesmo se algum caller esquecer de aplicar o filtro.
    *
    * **Comportamento:**
-   * - Com `requesterRestaurantId`: WHERE inclui `id = ? AND
-   *   restaurantId = ? AND category.restaurant.active = true`.
-   * - Sem `requesterRestaurantId`: WHERE inclui apenas `id = ? AND
+   * - Com `requesterRestaurantId`: `scopedRepository(product, tenant).findFirst(...)`
+   *   injeta `WHERE id = ? AND restaurantId = ?` — BOLA impossível por
+   *   construção do helper (fail-closed no construtor).
+   * - Sem `requesterRestaurantId`: WHERE inclui `id = ? AND
    *   category.restaurant.active = true` (compatibilidade com
    *   `/menu/products/:id?restaurantId=...` que já escopa via query).
+   *
+   * **Atual:** `findById` é autenticado (`@Roles(atendente, gerente, dono)`
+   * em ProductsController), então `requesterRestaurantId` é sempre
+   * fornecido em produção. A branch pública permanece apenas para
+   * compatibilidade retroativa.
    *
    * @throws NotFoundException se não encontrar (404 — não revela
    *   existência cross-tenant para evitar enumeração).
    */
   async findById(id: string, requesterRestaurantId?: string | null) {
+    if (requesterRestaurantId) {
+      // Auditoria P0-01 (2026-07-29): caminho de produção —
+      // helper fail-closed injeta `restaurantId` no WHERE por baixo
+      // dos panos, mesmo que o caller esqueça de aplicar.
+      const productRepo = scopedRepository(this.prisma.product, requesterRestaurantId);
+      const product = await productRepo.findFirst({
+        where: {
+          id,
+          // Filtro adicional: `category.restaurant.active` cobre o caso
+          // em que restaurante foi desativado mas produto continua na
+          // coluna autoritativa (dado histórico).
+          category: { restaurant: { active: true } },
+        },
+      });
+      if (!product) {
+        throw new NotFoundException('Produto não encontrado');
+      }
+      return product;
+    }
+
+    // Fallback público (compat com `/menu/products/:id?restaurantId=...`):
+    // rota pública não tem tenant no contexto, escopa via `category.restaurant`.
+    // Auditoria P0-01 (2026-07-29): o controller atual (`@Roles(...)`) sempre
+    // passa `requesterRestaurantId`. Esta branch existe para compatibilidade
+    // caso o método seja invocado programaticamente sem contexto de tenant.
     const product = await this.prisma.product.findFirst({
       where: {
         id,
         category: { restaurant: { active: true } },
-        // Auditoria P0-01 (2026-07-29): filtro direto na coluna
-        // autoritativa `restaurantId` quando o caller fornece o tenant.
-        // BOLA prevenido: prod-b1 (tenant B) com requester=A retorna null.
-        ...(requesterRestaurantId ? { restaurantId: requesterRestaurantId } : {}),
       },
     });
     if (!product) {
@@ -153,24 +196,42 @@ export class ProductsService {
   }
 
   /**
-   * Helper interno: valida que a categoria pertence ao restaurante.
+   * Helper interno: deriva o `restaurantId` autoritativo de uma Category.
    *
-   * Auditoria P0-01 (2026-07-29): mantém o check via `category.restaurantId`
-   * (single source of truth na criação). Em product.create/createWithRestaurant
-   * ainda derivamos `restaurantId` da Category — relação canônica.
+   * Auditoria P0-01 (2026-07-29): centraliza o lookup + validação de
+   * ownership em um único método. Quando `requesterRestaurantId` é
+   * fornecido, usa o helper fail-closed para impedir cross-tenant.
+   * Retorna o `restaurantId` da Category para uso em `prisma.product.create`.
+   *
+   * @throws ForbiddenException se categoria pertence a outro tenant.
+   * @throws NotFoundException se categoria não existe (caminho sem tenant).
    */
-  private async validateCategoryOwnership(
+  private async deriveCategoryRestaurantId(
     categoryId: string,
     requesterRestaurantId: string | null | undefined
-  ): Promise<void> {
-    if (!requesterRestaurantId) return;
+  ): Promise<string> {
+    if (requesterRestaurantId) {
+      // Tenant-aware: helper fail-closed. Se categoria pertencer a outro
+      // tenant, retorna null e lançamos ForbiddenException (BOLA prevenido
+      // sem revelar se a categoria existe).
+      const categoryRepo = scopedRepository(this.prisma.category, requesterRestaurantId);
+      const cat = (await categoryRepo.findUnique({
+        where: { id: categoryId },
+      })) as { restaurantId: string } | null;
+      if (!cat) {
+        throw new ForbiddenException('Categoria pertence a outro restaurante');
+      }
+      return cat.restaurantId;
+    }
+    // Sem tenant: lookup direto (caminho legado — usado em testes/scripts).
     const category = await this.prisma.category.findUnique({
       where: { id: categoryId },
       select: { restaurantId: true },
     });
-    if (!category || category.restaurantId !== requesterRestaurantId) {
-      throw new ForbiddenException('Categoria pertence a outro restaurante');
+    if (!category) {
+      throw new NotFoundException('Categoria não encontrada');
     }
+    return category.restaurantId;
   }
 
   async create(data: {
@@ -183,24 +244,13 @@ export class ProductsService {
     dietaryLabels?: string;
     sortOrder?: number;
   }) {
-    await this.validateCategoryOwnership(data.categoryId, data.restaurantId);
-
-    // Auditoria P0-01 (2026-07-29): ao criar, precisamos popular
-    // `restaurantId` (NOT NULL). Sempre derivamos da Category
-    // (autoritativo) — se o caller passou `data.restaurantId`
-    // divergente, o `validateCategoryOwnership` já bloqueou.
-    const category = await this.prisma.category.findUnique({
-      where: { id: data.categoryId },
-      select: { restaurantId: true },
-    });
-    if (!category) {
-      throw new NotFoundException('Categoria não encontrada');
-    }
-
+    // Auditoria P0-01 (2026-07-29): `restaurantId` derivado da Category
+    // (autoritativo) via helper fail-closed quando tenant é fornecido.
+    const restaurantId = await this.deriveCategoryRestaurantId(data.categoryId, data.restaurantId);
     return this.prisma.product.create({
       data: {
         categoryId: data.categoryId,
-        restaurantId: category.restaurantId,
+        restaurantId,
         name: data.name,
         description: data.description,
         imageUrl: data.imageUrl,
@@ -223,6 +273,10 @@ export class ProductsService {
   }) {
     let categoryId = data.categoryId;
     if (!categoryId && data.restaurantId) {
+      // Auditoria P0-01 (2026-07-29): lookup de categoria default
+      // escopado por `restaurantId` direto na coluna autoritativa.
+      // Não usamos `scopedRepository` aqui pois precisamos de
+      // `orderBy` (helper atual só suporta `where`).
       const cat = await this.prisma.category.findFirst({
         where: { restaurantId: data.restaurantId, deletedAt: null },
         orderBy: { sortOrder: 'asc' },
@@ -232,22 +286,12 @@ export class ProductsService {
     if (!categoryId) {
       throw new NotFoundException('Categoria não encontrada para o restaurante');
     }
-    await this.validateCategoryOwnership(categoryId, data.restaurantId);
-
-    // Auditoria P0-01 (2026-07-29): derivar `restaurantId` da Category
-    // (autoritativo) — mesma fonte usada em `create()`.
-    const category = await this.prisma.category.findUnique({
-      where: { id: categoryId },
-      select: { restaurantId: true },
-    });
-    if (!category) {
-      throw new NotFoundException('Categoria não encontrada');
-    }
-
+    // Mesmo `deriveCategoryRestaurantId` de `create()` — fonte canônica.
+    const restaurantId = await this.deriveCategoryRestaurantId(categoryId, data.restaurantId);
     return this.prisma.product.create({
       data: {
         categoryId,
-        restaurantId: category.restaurantId,
+        restaurantId,
         name: data.name,
         description: data.description,
         imageUrl: data.imageUrl,
@@ -271,52 +315,56 @@ export class ProductsService {
     }>,
     requesterRestaurantId?: string | null
   ) {
-    // Auditoria P0-01 (2026-07-29): filtro duplo — `category.restaurantId`
-    // (manter) + `restaurantId` direto (defesa em profundidade). Mesmo
-    // se um JOIN for bypassado em algum lugar, o filtro direto na coluna
-    // autoritativa fecha a porta.
+    if (requesterRestaurantId) {
+      // Auditoria P0-01 (2026-07-29): caminho de produção — helper
+      // fail-closed injeta `restaurantId` no WHERE automaticamente.
+      // BOLA prevenido por construção.
+      const productRepo = scopedRepository(this.prisma.product, requesterRestaurantId);
+      const target = await productRepo.findFirst({
+        where: { id },
+        include: { category: { select: { restaurantId: true } } },
+      });
+      if (!target) {
+        // 403 (não 404) para não revelar se produto existe em outro tenant.
+        throw new ForbiddenException('Produto pertence a outro restaurante');
+      }
+      return this.prisma.product.update({ where: { id }, data });
+    }
+
+    // Fallback sem tenant (compat): lookup direto + 404 puro.
+    // `findFirst` (não `findUnique`) para suportar `include` na mesma query.
     const target = await this.prisma.product.findFirst({
-      where: {
-        id,
-        ...(requesterRestaurantId ? { restaurantId: requesterRestaurantId } : {}),
-      },
+      where: { id },
       include: { category: { select: { restaurantId: true } } },
     });
     if (!target) {
-      // Auditoria P0-01 (2026-07-29): quando o caller forneceu
-      // `requesterRestaurantId` mas o produto não bate com esse tenant
-      // (filtro WHERE retornou null), é mais seguro lançar 403 do que
-      // 404 — não revela se o produto existe em outro tenant (mitigação
-      // de enumeração). Sem `requesterRestaurantId`, é 404 puro.
-      if (requesterRestaurantId) {
-        throw new ForbiddenException('Produto pertence a outro restaurante');
-      }
       throw new NotFoundException('Produto não encontrado');
-    }
-    if (requesterRestaurantId && target.category.restaurantId !== requesterRestaurantId) {
-      throw new ForbiddenException('Produto pertence a outro restaurante');
     }
     return this.prisma.product.update({ where: { id }, data });
   }
 
   async delete(id: string, requesterRestaurantId?: string | null) {
-    // Auditoria P0-01 (2026-07-29): mesma defesa em profundidade do `update`.
+    if (requesterRestaurantId) {
+      // Auditoria P0-01 (2026-07-29): mesma defesa em profundidade do `update`.
+      const productRepo = scopedRepository(this.prisma.product, requesterRestaurantId);
+      const target = await productRepo.findFirst({
+        where: { id },
+        include: { category: { select: { restaurantId: true } } },
+      });
+      if (!target) {
+        throw new ForbiddenException('Produto pertence a outro restaurante');
+      }
+      await this.prisma.product.delete({ where: { id } });
+      return;
+    }
+
+    // Fallback sem tenant (compat). `findFirst` para suportar `include`.
     const target = await this.prisma.product.findFirst({
-      where: {
-        id,
-        ...(requesterRestaurantId ? { restaurantId: requesterRestaurantId } : {}),
-      },
+      where: { id },
       include: { category: { select: { restaurantId: true } } },
     });
     if (!target) {
-      // Ver `update` acima — mesma lógica de não-enumeração.
-      if (requesterRestaurantId) {
-        throw new ForbiddenException('Produto pertence a outro restaurante');
-      }
       throw new NotFoundException('Produto não encontrado');
-    }
-    if (requesterRestaurantId && target.category.restaurantId !== requesterRestaurantId) {
-      throw new ForbiddenException('Produto pertence a outro restaurante');
     }
     await this.prisma.product.delete({ where: { id } });
   }

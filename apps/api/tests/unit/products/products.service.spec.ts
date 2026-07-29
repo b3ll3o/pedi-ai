@@ -217,7 +217,10 @@ describe('ProductsService', () => {
     });
 
     it('lança ForbiddenException se categoria pertence a outro restaurante', async () => {
-      mockPrisma.category.findUnique.mockResolvedValue({ restaurantId: 'other-rest' });
+      // Auditoria P0-01 (2026-07-29): com `RestaurantScopedRepository`,
+      // o `findUnique` agora carrega `restaurantId` no WHERE — categoria
+      // de outro tenant retorna null (defesa em profundidade do helper).
+      mockPrisma.category.findUnique.mockResolvedValue(null);
 
       await expect(
         productsService.create({
