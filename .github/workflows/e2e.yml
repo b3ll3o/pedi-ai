@@ -67,8 +67,13 @@ jobs:
           echo "NEXT_PUBLIC_API_URL=http://localhost:3001" >> $GITHUB_ENV
           echo "NODE_ENV=e2e" >> $GITHUB_ENV
           echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/pedi_ai?schema=public" >> $GITHUB_ENV
-          echo "JWT_SECRET=e2e-jwt-secret-for-testing-only" >> $GITHUB_ENV
-          echo "JWT_REFRESH_SECRET=e2e-jwt-refresh-secret-for-testing-only" >> $GITHUB_ENV
+          # Valor estável ≥32 chars, sem conter placeholders conhecidos ("secret", "changeme", etc).
+          # Antes era "e2e-jwt-secret-for-testing-only" — o validador de boot
+          # (apps/api/src/auth/secret-strength.ts) rejeitava por causa do
+          # substring "secret", mesmo em NODE_ENV=e2e. Trocado em 2026-07-29
+          # junto com fix do validador para match exato.
+          echo "JWT_SECRET=e2e-jwt-credential-aabbccddeeff00112233445566778899" >> $GITHUB_ENV
+          echo "JWT_REFRESH_SECRET=e2e-jwt-refresh-credential-aabbccddeeff00112233445566778899" >> $GITHUB_ENV
 
       - name: Verificar PostgreSQL
         run: |
