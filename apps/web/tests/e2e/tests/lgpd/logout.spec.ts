@@ -46,23 +46,33 @@ test.describe('Logout e purga LGPD', () => {
       }
     );
 
-    await page.goto('/login');
+    // Clicar no botão de logout (CustomerHeader) em vez de navegar
+    // direto para /login — só assim useAuth.signOut → apiClient.logout →
+    // purgeAllUserData é disparado. Antes deste fix, o teste ia direto
+    // para /login e a purga NUNCA rodava, mascarando o bug BLOCKER.
+    await page.click('[data-testid="customer-logout-button"]');
+    await page.waitForURL(/\/login/);
+
     await page.evaluate(() => {
       const request = indexedDB.open('pedi');
       request.onsuccess = () => {
         const db = request.result;
-        const transaction = db.transaction(
-          ['cart', 'pending_sync', 'pedidos', 'carrinhos', 'usuarios', 'sessoes'],
-          'readonly'
-        );
+        // Lê as stores PII conforme PII_STORE_NAMES em pii-purge.ts.
+        // Stores sem índice `pedidos`/etc. nesta versão do schema são
+        // ignoradas — o assert tolera ausência via .onerror.
         const stores = ['cart', 'pending_sync', 'pedidos', 'carrinhos', 'usuarios', 'sessoes'];
+        const transaction = db.transaction(stores, 'readonly');
         Promise.all(
           stores.map(
             (store) =>
               new Promise<number>((resolve) => {
-                const count = transaction.objectStore(store).count();
-                count.onsuccess = () => resolve(count.result);
-                count.onerror = () => resolve(0);
+                try {
+                  const count = transaction.objectStore(store).count();
+                  count.onsuccess = () => resolve(count.result);
+                  count.onerror = () => resolve(0);
+                } catch {
+                  resolve(0);
+                }
               })
           )
         ).then((counts) => {
