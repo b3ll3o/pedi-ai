@@ -13,6 +13,27 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  gitleaks:
+    # P0-12: bloqueia merge se houver segredos no PR (complementa o hook local).
+    name: Gitleaks (scan de segredos)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          # Necessário para que o scanner veja o histórico completo (PRs de forks).
+          fetch-depth: 0
+
+      - name: gitleaks scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Permite usar o mesmo .gitleaks.toml do hook local.
+          GITLEAKS_CONFIG: .gitleaks.toml
+          # Falhar com exit != 0 quando encontrar vazamentos (default já é true).
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: true
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -194,7 +215,7 @@ jobs:
   ci-pass:
     name: CI Pass
     runs-on: ubuntu-latest
-    needs: [lint, type-check, unit-tests, integration-tests, coverage, complexity]
+    needs: [gitleaks, lint, type-check, unit-tests, integration-tests, coverage, complexity]
     if: always()
     steps:
       - name: Verificar status final
@@ -202,6 +223,7 @@ jobs:
         # `${{ needs[job].result }}` em loop bash: o `${{ }}` é avaliado uma vez
         # antes do shell rodar, com `job` literal, então sempre retornaria vazio.
         env:
+          GITLEAKS: ${{ needs.gitleaks.result }}
           LINT: ${{ needs.lint.result }}
           TYPE_CHECK: ${{ needs.type-check.result }}
           UNIT_TESTS: ${{ needs.unit-tests.result }}
@@ -210,7 +232,7 @@ jobs:
           COMPLEXITY: ${{ needs.complexity.result }}
         run: |
           FAILED=""
-          for job in LINT TYPE_CHECK UNIT_TESTS INTEGRATION COVERAGE COMPLEXITY; do
+          for job in GITLEAKS LINT TYPE_CHECK UNIT_TESTS INTEGRATION COVERAGE COMPLEXITY; do
             if [ "${!job}" != "success" ]; then
               FAILED="$FAILED $job"
             fi
