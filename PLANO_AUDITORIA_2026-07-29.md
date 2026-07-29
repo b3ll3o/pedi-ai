@@ -103,6 +103,29 @@ categories WHERE categories.id = products.category_id LIMIT 1)`
 `apps/api/test/features/shared/` + teste E2E cross-tenant em
 `apps/web/e2e/auth/multi-tenant.spec.ts`.
 
+**Status (2026-07-29):** Implementado em 5 commits nesta branch.
+
+**Detalhes da implementação:**
+
+| Camada             | Arquivo                                                                                                                                                                         | Mudança                                                                                                                                                                                                                                                      |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Schema             | `apps/api/prisma/schema.prisma`                                                                                                                                                 | `Product.restaurantId` adicionado como coluna autoritativa + `@@index([restaurantId])` + relation `restaurant Restaurant @relation(...)`                                                                                                                     |
+| Migration          | `apps/api/prisma/migrations/20260729120000_add_product_restaurant_id/migration.sql`                                                                                             | `ADD COLUMN IF NOT EXISTS` idempotente + backfill `UPDATE products p SET restaurant_id = c.restaurant_id FROM categories c WHERE p.category_id = c.id` + `ALTER COLUMN ... SET NOT NULL` + `CREATE INDEX IF NOT EXISTS` + FK idempotente via `pg_constraint` |
+| Shared kernel      | `apps/api/src/shared/multi-tenant/scoped-repository.ts` + `index.ts`                                                                                                            | `RestaurantScopedRepository` genérico com `findUnique/findFirst/findMany/count/update/delete` escopando `restaurantId` automaticamente; fail-closed no construtor se tenant ausente                                                                          |
+| ProductsService    | `apps/api/src/products/products.service.ts`                                                                                                                                     | `findById(id, requesterRestaurantId?)` filtra por tenant quando caller autenticado; `findByCategory` exige `restaurantId` (BadRequestException 400 fail-closed); `create/createWithRestaurant` derivam `restaurantId` da `Category` autoritativa             |
+| ProductsController | `apps/api/src/products/products.controller.ts`                                                                                                                                  | `GET /products/:id` removido de `@Public()` → agora `@Roles(atendente, gerente, dono)` com `findById(id, req.user.restaurantId)`; rota pública de cardápio permanece em `/menu/products/:id?restaurantId=...`                                                |
+| OrdersService      | `apps/api/src/orders/orders.service.ts:247-254`                                                                                                                                 | `product.findMany` na criação do pedido filtra `id + restaurantId + available: true` — cross-tenant product injection retorna 400 "Produtos indisponíveis ou inexistentes"                                                                                   |
+| BDD                | `apps/api/test/features/shared/multi-tenant-isolation.feature`                                                                                                                  | 8 cenários cobrindo BOLA `GET /products/:id`, cross-tenant no `POST /orders`, `findByCategory` sem tenant, update/delete cross-tenant                                                                                                                        |
+| Integration        | `apps/api/tests/integration/multi-tenant-isolation.int-spec.ts`                                                                                                                 | 7 testes com PrismaClient real: NOT NULL, índice, FK, cross-tenant findMany/findFirst, FK violation                                                                                                                                                          |
+| Unit               | `apps/api/tests/unit/products/multi-tenant-isolation.spec.ts` (19 testes) + updates em `products.service.spec.ts` (27 testes) + updates em `orders.service.spec.ts` (23 testes) | Cobertura completa de `findById` com/sem tenant, `findByCategory` fail-closed, `update/delete` defense-in-depth, OrdersService cross-tenant guard                                                                                                            |
+
+**Validação executada:**
+
+- `npx vitest run` → 638 tests passed (43 test files), 0 regressions.
+- `npx prisma validate` → schema válido.
+- `npx tsc --noEmit` → sem erros de tipo.
+- `npx prisma format` → schema formatado.
+
 ---
 
 #### P0-02 — ThrottlerGuard nunca registrado
