@@ -18,6 +18,24 @@ Tipos de mudança:
 
 ### Segurança
 
+- **P0-06 — PII encryption: helper `withEncryptedTransaction` + correção de 3 defeitos reais** (tipo: `fix(security)`). O bug
+  original era "tx em $transaction não recebe a extension", mas auditoria
+  empírica em Prisma 7.8 mostrou que `Object.assign(this, ext)` JÁ propaga
+  para `tx`. O que estava quebrado de verdade:
+  1. `ENCRYPTED_FIELDS` indexado por camelCase vs Extension entregando
+     PascalCase → extension no-op silencioso. LGPD Art. 46 violado.
+     Corrigido via `normalizeModelKey()` em `pii-crypto.service.ts`.
+  2. Janela de boot: extension instalada em `onModuleInit` (async,
+     condicional). Movida para o construtor — falha-loud em prod/staging.
+  3. `getExtendedClient()` dentro de `$transaction` abria conexão própria,
+     escapando do rollback. Substituído por `withEncryptedTransaction()`
+     helper. 13 call sites de `$transaction` auditados, 3 convertidos
+     (`restaurants.service`, `orders.service`, `payments.service`
+     handleWebhook) + 10 anotados como `SEM PII` com rationale. Suite:
+     595 unit + 7 integration (SELECT ciphertext verificado) + 14 BDD.
+     **P0-06-fase-2 filed:** extension NÃO decifra em `create` return —
+     3 call sites (`auth.service.ts:307,360,455`) usam `user.name` direto
+     após `create()` e JWT pode conter ciphertext como nome.
 - **P0-01 — BOLA no endpoint de pedidos (Product.restaurantId)** (tipo:
   `fix(security)`). Três instâncias de Broken Object Level Authorization
   (OWASP API #1) fechadas:

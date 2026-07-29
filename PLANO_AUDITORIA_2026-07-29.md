@@ -345,6 +345,46 @@ persiste cpf **em claro** no banco. Falha LGPD grave.
 `UserProfile { cpf }` e confirma que `SELECT cpf FROM users_profiles` retorna
 ciphertext, não plaintext.
 
+**Status (2026-07-29):** Implementado em 4 commits (`0c54038` → `d333fc3`).
+
+**Premissa refutada empiricamente:** Em Prisma 7.8, `Object.assign(this, ext)`
+propaga a extension para o `tx` entregue ao callback de `$transaction`. Os 7
+testes de integração travam esse comportamento contra regressão em upgrades.
+
+**Três defeitos reais encontrados e corrigidos (registrados em `0c54038`):**
+
+1. **CRÍTICO** — `ENCRYPTED_FIELDS` indexado por camelCase mas o Prisma
+   Extension entrega `model` em PascalCase → extension virou no-op silencioso.
+   LGPD Art. 46 violado na origem. Corrigido via `normalizeModelKey()`.
+2. **Janela de boot** — extension instalada em `onModuleInit` (assíncrono,
+   condicional) gerava janela em que client operava sem encriptação.
+   Corrigido: instalação movida para o construtor.
+3. **Atomicidade quebrada** — `getExtendedClient()` dentro de `$transaction`
+   abria conexão própria, escapando do rollback. Substituído por
+   `withEncryptedTransaction(callback)` (helper dedicado).
+
+**Cobertura:** 13 call sites de `$transaction` auditados —
+3 convertidos (COM PII: `restaurants.service`, `orders.service`,
+`payments.service` handleWebhook) + 10 anotados como `SEM PII` com rationale.
+Suite: 595 unit + 7 integration (ciphertext verificado via `SELECT`) + 14 BDD
+cenários (AES-256-GCM, formato `v1:`, lookup case-insensitive, fail-closed).
+
+**Follow-up P0-06-fase-2** (bloqueante real, corrigir ASAP):
+
+- **CRÍTICO — extension NÃO decifra em `create` return.** O branch `if (isRead)`
+  só decifra em `find*` — `create` retorna ciphertext. 3 call sites usam
+  `user.name` direto após `create()`/`findUnique()`:
+  - `apps/api/src/auth/auth.service.ts:307-321` (register)
+  - `apps/api/src/auth/auth.service.ts:360-374` (login — usa findUnique, OK)
+  - `apps/api/src/auth/auth.service.ts:455-472` (refresh — depende)
+
+  Consequência: JWT do `register` contém `name` cifrado (`v1:...`). Qualquer
+  UI que renderize "Olá, {name}" mostra lixo. Fix: ou decifrar no return de
+  `create`/`update` (mudança em `decryptResult` chamada também em isWrite),
+  ou usar `findUnique` após create para obter versão decifrada. Investigar
+  implicações antes de aplicar — pode quebrar lógica que assume ciphertext
+  em algum lugar.
+
 ---
 
 #### P0-07 — Pedido PIX stub (não processa pagamento real)
