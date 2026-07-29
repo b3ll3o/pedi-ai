@@ -1,8 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsString, MaxLength, MinLength } from 'class-validator';
 
 /**
- * DTO de registro. Senha mínima 8 caracteres (consistente com regex de força).
+ * DTO de registro.
+ *
+ * Política de senha alinhada com NIST SP 800-63B §5.1.1.2: apenas limites de
+ * comprimento (8–128), **sem regras de composição** (maiúscula/número/especial).
+ *
+ * @see https://pages.nist.gov/800-63-3/sp800-63b.html#memsecret
  */
 export class RegisterDto {
   @ApiProperty({
@@ -14,13 +19,16 @@ export class RegisterDto {
   email!: string;
 
   @ApiProperty({
-    description: 'Senha (mínimo 8 caracteres, 1 maiúscula, 1 número, 1 caractere especial)',
-    example: 'S3nh@Forte!',
+    description:
+      'Senha (mínimo 8 caracteres, máximo 128, sem regras de composição — NIST 800-63B §5.1.1.2)',
+    example: 'cafe com pao de queijo em 2026',
     minLength: 8,
+    maxLength: 128,
     format: 'password',
   })
   @IsString()
   @MinLength(8, { message: 'A senha deve ter pelo menos 8 caracteres' })
+  @MaxLength(128, { message: 'A senha deve ter no máximo 128 caracteres' })
   password!: string;
 
   @ApiProperty({ description: 'Nome completo', example: 'Maria Silva', minLength: 2 })
@@ -34,7 +42,11 @@ export class LoginDto {
   @IsEmail({}, { message: 'Email inválido' })
   email!: string;
 
-  @ApiProperty({ description: 'Senha do usuário', example: 'S3nh@Forte!', format: 'password' })
+  @ApiProperty({
+    description: 'Senha do usuário',
+    example: 'cafe com pao de queijo em 2026',
+    format: 'password',
+  })
   @IsString()
   password!: string;
 }
@@ -77,13 +89,16 @@ export class ResetPasswordDto {
   token!: string;
 
   @ApiProperty({
-    description: 'Nova senha (mesmos requisitos do registro)',
-    example: 'N0v@Senh@!',
+    description:
+      'Nova senha (mínimo 8 caracteres, máximo 128, sem regras de composição — NIST 800-63B §5.1.1.2)',
+    example: 'cafe com pao de queijo em 2026',
     minLength: 8,
+    maxLength: 128,
     format: 'password',
   })
   @IsString()
   @MinLength(8, { message: 'A senha deve ter pelo menos 8 caracteres' })
+  @MaxLength(128, { message: 'A senha deve ter no máximo 128 caracteres' })
   newPassword!: string;
 }
 
