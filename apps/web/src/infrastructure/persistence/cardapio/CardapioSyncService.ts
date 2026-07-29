@@ -15,6 +15,20 @@ import { CategoriaRepository } from './CategoriaRepository';
 import { ItemCardapioRepository } from './ItemCardapioRepository';
 import { ModificadorGrupoRepository } from './ModificadorGrupoRepository';
 
+/**
+ * Normaliza valores `dietaryLabels` serializados como JSON-string pelo
+ * Prisma (ex.: `'"[]"'` ou `'[\"vegano\"]'`). Retorna `null` se a string
+ * não for JSON válido ou não for um array.
+ */
+function safeParseJsonArray(raw: string): string[] | null {
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as string[]) : null;
+  } catch {
+    return null;
+  }
+}
+
 export interface CardapioSyncResult {
   categoriasSincronizadas: number;
   itensSincronizados: number;
@@ -135,15 +149,21 @@ export class CardapioSyncService {
           const now = new Date();
           return ItemCardapio.reconstruir({
             id: prod.id,
-            categoriaId: prod.category_id,
+            categoriaId: prod.category_id ?? prod.categoryId ?? '',
             nome: prod.name,
             descricao: prod.description,
             preco: Dinheiro.criar(prod.price, 'BRL'),
-            imagemUrl: prod.image_url,
+            imagemUrl: prod.image_url ?? prod.imageUrl ?? null,
             tipo: TipoItemCardapio.fromValue('item'),
-            labelsDieteticos: prod.dietary_labels
-              ? LabelDietetico.fromArray(prod.dietary_labels)
-              : [],
+            labelsDieteticos: (() => {
+              const raw =
+                prod.dietary_labels ?? prod.dietaryLabels ?? null;
+              if (!raw) return [];
+              // API pode serializar arrays como JSON-string `"[]"` —
+              // tentamos parsear antes de delegar para LabelDietetico.
+              const arr = typeof raw === 'string' ? safeParseJsonArray(raw) : raw;
+              return Array.isArray(arr) ? LabelDietetico.fromArray(arr) : [];
+            })(),
             ativo: prod.available,
             criadoEm: now,
             atualizadoEm: now,
