@@ -8,7 +8,10 @@ FROM node:20-alpine AS base
 RUN npm install -g pnpm@9
 
 # Native build tools for sharp and other native modules
-RUN apk add --no-cache python3 make g++ curl
+# `bash` é necessário pelo deploy workflow (deploy-vps.yml) que executa
+# E2E via `docker exec pedi_ai_web bash -c "..."`. Imagem base Alpine só
+# traz `sh` (busybox), insuficiente para `bash -c` com quoting mais rico.
+RUN apk add --no-cache python3 make g++ curl bash
 
 WORKDIR /app
 

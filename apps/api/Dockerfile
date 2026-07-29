@@ -63,6 +63,14 @@ RUN cd /app/apps/api && pnpm build
 # ============================================================
 FROM node:20.18.0-alpine AS runner
 
+# `bash` é necessário pelo deploy workflow (deploy-vps.yml) que executa
+# comandos via `docker exec pedi_ai_api bash -c "..."` (ex.: prisma db push
+# e pnpm test:e2e:seed). Sem isto, exec falha com "bash: executable file
+# not found in $PATH" e o job E2E Tests (dento do workflow Deploy) quebra
+# logo no passo "Apply Prisma schema on VPS". Imagem base Alpine só traz
+# `sh` (busybox), insuficiente para `bash -c` com quoting mais rico.
+RUN apk add --no-cache bash
+
 WORKDIR /app
 
 ENV NODE_ENV=production
