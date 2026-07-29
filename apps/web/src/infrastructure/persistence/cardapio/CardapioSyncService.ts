@@ -24,33 +24,49 @@ export interface CardapioSyncResult {
 
 interface CategoriaApiResponse {
   id: string;
-  restaurant_id: string;
+  // API NestJS retorna camelCase (`restaurantId`, `imageUrl`, `sortOrder`)
+  // apesar das tipagens legadas em packages/shared esperarem snake_case
+  // (`restaurant_id`, `image_url`, `sort_order`). Aceitamos ambos para
+  // tolerar drift de contrato enquanto a migração para camelCase
+  // definitivo é concluída.
+  restaurant_id?: string;
+  restaurantId?: string;
   name: string;
   description: string | null;
-  image_url: string | null;
-  sort_order: number;
+  image_url?: string | null;
+  imageUrl?: string | null;
+  sort_order?: number;
+  sortOrder?: number;
   active: boolean;
 }
 
 interface ProdutoApiResponse {
   id: string;
-  category_id: string;
+  category_id?: string;
+  categoryId?: string;
   name: string;
   description: string | null;
   price: number;
-  image_url: string | null;
-  dietary_labels: string[] | null;
+  image_url?: string | null;
+  imageUrl?: string | null;
+  // API pode serializar dietaryLabels como JSON-string `"[]"` (não array)
+  // dependendo do serializer Prisma; normalizamos abaixo.
+  dietary_labels?: string[] | string | null;
+  dietaryLabels?: string[] | string | null;
   available: boolean;
 }
 
 interface GrupoModificadorApiResponse {
   id: string;
-  restaurant_id: string;
+  restaurant_id?: string;
+  restaurantId?: string;
   name: string;
   description: string | null;
   required: boolean;
-  min_selections: number | null;
-  max_selections: number | null;
+  min_selections?: number | null;
+  minSelections?: number | null;
+  max_selections?: number | null;
+  maxSelections?: number | null;
 }
 
 export class CardapioSyncService {
@@ -97,11 +113,11 @@ export class CardapioSyncService {
           const now = new Date();
           return Categoria.reconstruir({
             id: cat.id,
-            restauranteId: cat.restaurant_id,
+            restauranteId: cat.restaurant_id ?? cat.restaurantId ?? '',
             nome: cat.name,
             descricao: cat.description,
-            imagemUrl: cat.image_url,
-            ordemExibicao: cat.sort_order,
+            imagemUrl: cat.image_url ?? cat.imageUrl ?? null,
+            ordemExibicao: cat.sort_order ?? cat.sortOrder ?? 0,
             ativo: cat.active,
             criadoEm: now,
             atualizadoEm: now,
@@ -144,7 +160,7 @@ export class CardapioSyncService {
         const gruposEntities = data.modifier_groups.map((grupo: GrupoModificadorApiResponse) => {
           return ModificadorGrupo.reconstruir({
             id: grupo.id,
-            restauranteId: grupo.restaurant_id,
+            restauranteId: grupo.restaurant_id ?? grupo.restaurantId ?? '',
             nome: grupo.name,
             obrigatorio: grupo.required,
             minSelecoes: grupo.min_selections ?? 0,

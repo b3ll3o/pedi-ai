@@ -26,6 +26,7 @@ import { UsuarioRestauranteRepository } from '@/infrastructure/persistence/admin
 import { db } from '@/infrastructure/persistence/database';
 import { useRestaurantStore } from '@/infrastructure/persistence/restaurantStore';
 import { getSession } from '@/lib/auth/client';
+import { purgeLocalDataSafely } from '@/lib/offline/safePurge';
 
 import styles from './layout.module.css';
 
@@ -202,6 +203,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const handleLogout = async () => {
     try {
+      // Purga IndexedDB ANTES de invalidar a sessão (LGPD art. 18).
+      // Garante que dados locais do admin atual (cache de restaurantes,
+      // perfis, pedidos, etc.) não fiquem acessíveis após logout.
+      await purgeLocalDataSafely();
       await fetch('/api/auth/logout', { method: 'POST' });
     } finally {
       router.push('/admin/login');
