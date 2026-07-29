@@ -1,28 +1,17 @@
 /**
  * Playwright fixtures compartilhadas pelos testes E2E do Pedi-AI.
  *
- * Centraliza `test` e `expect` para permitir injeção futura de fixtures
- * customizadas (autenticação, seed por spec, helpers de pagamento mock, etc.)
- * sem precisar editar cada spec individualmente.
+ * Re-exporta o `test` estendido definido em
+ * `tests/shared/fixtures/index.ts` que injeta as fixtures
+ * `authenticated`, `admin`, `kitchen`, `waiter`, `manager`,
+ * `guest`, `cleanPage`, `seedData` e `api`. Sem este redirect,
+ * testes que importam `test` daqui recebem a versão bare do
+ * `@playwright/test` e quebram em runtime com
+ * "Test has unknown parameter 'authenticated'" / 'admin' / etc.
  *
- * Por enquanto apenas re-exporta do `@playwright/test` para evitar
- * quebrar specs que importam desta fixture esperando a API padrão.
- *
- * Como estender:
- * - Importar `test as base` do `@playwright/test`
- * - Chamar `base.extend({ ...minhasFixtures })` para criar fixtures
- * - Exportar o `test` resultante deste arquivo
- *
- * Exemplo futuro:
+ * Especificações E2E devem importar de `./playwright-fixtures`:
  * ```typescript
- * import { test as base, expect } from '@playwright/test';
- *
- * export const test = base.extend({
- *   restauranteLogado: async ({ page }, use) => {
- *     // setup login, entrega sessão pronta pro spec, cleanup no use
- *   },
- * });
- * export { expect };
+ * import { test, expect } from './playwright-fixtures';
  * ```
  */
-export { test, expect } from '@playwright/test';
+export { test, expect } from './shared/fixtures';

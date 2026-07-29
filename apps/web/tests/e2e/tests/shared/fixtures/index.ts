@@ -33,6 +33,7 @@ export interface Fixtures {
   admin: Page;
   waiter: Page;
   manager: Page;
+  kitchen: Page;
   cleanPage: Page;
   seedData: SeedData;
   api: APIRequestContext;
@@ -310,6 +311,19 @@ export const test = base.extend<Fixtures>({
   manager: async ({ page, seedData }, fixtureUse) => {
     const email = seedData.manager.email;
     const password = seedData.manager.password;
+
+    await performLogin(page, email, password, '/admin/login', /\/admin\/dashboard/);
+    await fixtureUse(page);
+  },
+
+  // Cozinha usa o mesmo login do atendente (waiter) — o dashboard do
+  // atendente tem a view de cozinha (pedidos em preparo/prontos). Esta
+  // fixture é um alias semântico do `waiter` mas com nome mais claro
+  // para specs que testam fluxo de cozinha
+  // (ex.: accessibility/wcag.spec.ts, flow/complete-order-flow.spec.ts).
+  kitchen: async ({ page, seedData }, fixtureUse) => {
+    const email = seedData.waiter.email;
+    const password = seedData.waiter.password;
 
     await performLogin(page, email, password, '/admin/login', /\/admin\/dashboard/);
     await fixtureUse(page);
