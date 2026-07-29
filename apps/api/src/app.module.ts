@@ -35,18 +35,29 @@ import { UsersModule } from './users/users.module';
       envFilePath: ['.env.local', '.env'],
     }),
     /**
-     * Throttling tierizado:
-     * - `short`: rotas sensíveis (login/register/refresh) — 5 req/min por IP.
-     * - `medium`: escritas autenticadas — 30 req/min.
-     * - `long`: leitura pública — 300 req/min (cardápio, categorias).
+     * Throttling global — único tier `default` (300 req/min/IP).
      *
-     * Health/metrics usam `@SkipThrottle()` quando monitorados externamente.
+     * **Por que apenas um tier?**
+     * `ThrottlerGuard.canActivate` itera TODOS os tiers registrados em
+     * `forRoot([...])` e exige que TODOS passem (`continues.every(...)`).
+     * Cada tier aplica seu próprio contador por IP, independentemente de
+     * a rota ter `@Throttle({...})` decorando-a ou não. Ter múltiplos
+     * tiers (ex.: `short: 5/min` + `medium: 30/min` + `long: 300/min`)
+     * limita **toda a API** ao tier mais restritivo (5/min), pois
+     * `short` é avaliado em toda requisição. Isso é o bug P0-02
+     * originalmente reportado: o tier `short` global era aplicado a
+     * rotas que deveriam ter 30/min ou 300/min.
+     *
+     * **Estratégia correta:** registrar APENAS o tier `default`
+     * permissivo (300/min). Rotas que precisam de limites mais
+     * restritos sobrescrevem o tier `default` via
+     * `@Throttle({ default: { ttl, limit } })`. Rotas que não devem
+     * ser limitadas (health, webhooks) usam
+     * `@SkipThrottle({ default: true })`.
+     *
+     * @see https://github.com/nestjs/throttler/blob/v6.5.0/src/throttler.guard.ts
      */
-    ThrottlerModule.forRoot([
-      { name: 'short', ttl: 60_000, limit: 5 },
-      { name: 'medium', ttl: 60_000, limit: 30 },
-      { name: 'long', ttl: 60_000, limit: 300 },
-    ]),
+    ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 300 }]),
     DatabaseModule,
     QueueModule,
     AnalyticsModule,

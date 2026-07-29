@@ -42,12 +42,12 @@ const REFRESH_TOKEN_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 dias
 @ApiTags('auth')
 @Controller('auth')
 @Public()
-@Throttle({ short: { ttl: 60_000, limit: 5 } })
-// Auditoria ACHADO-N12 (Re-varredura 8): tier 'default' não existe no
-// AppModule (todos os tiers têm `name` explícito: short/medium/long).
-// O decorator original `default + short` tinha `default` como no-op —
-// o rate-limit de fato era apenas o tier 'short' global (5/min) duplicado.
-// Agora só declaramos 'short', explicitamente.
+// Auditoria P0-02 (2026-07-29): após restruturação dos tiers no AppModule
+// para apenas `default`, sobrescrevemos o tier `default` aqui para 5/min
+// em vez do 300/min global. O nome do tier nas chaves do decorator
+// (`{ default: ... }`) deve bater com o `name` registrado no
+// `ThrottlerModule.forRoot` — caso contrário, o decorator é no-op.
+@Throttle({ default: { ttl: 60_000, limit: 5 } })
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 

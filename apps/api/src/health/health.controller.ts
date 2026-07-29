@@ -49,7 +49,13 @@ export class HealthController {
 
   @Get()
   @Public()
-  @SkipThrottle()
+  // Auditoria P0-02 (2026-07-29): `ThrottlerGuard` global. Endpoints de
+  // saúde são chamados por k8s/load balancer em alta frequência — devem
+  // ser imunes ao rate-limit. `@SkipThrottle()` sem argumentos era no-op
+  // (defaultava para `{ default: true }` mas o tier registrado era
+  // `short`/`medium`/`long`). Agora que só há o tier `default`, listamos
+  // explicitamente o tier a ser pulado.
+  @SkipThrottle({ default: true })
   @ApiOperation({ summary: 'Liveness probe — confirma que o processo está vivo' })
   @ApiResponse({ status: 200, description: 'API viva' })
   liveness(): { status: 'ok'; uptime: number } {
@@ -66,7 +72,7 @@ export class HealthController {
   // tocar em dependências externas.
   @Get('health')
   @Public()
-  @SkipThrottle()
+  @SkipThrottle({ default: true })
   @ApiOperation({
     summary: 'Liveness probe (alias)',
     description: 'Alias de `GET /` — convenção `/health` para monitoramento.',
@@ -83,7 +89,7 @@ export class HealthController {
   // de `/health` no caminho exato que o workflow espera.
   @Get('api/health')
   @Public()
-  @SkipThrottle()
+  @SkipThrottle({ default: true })
   @ApiOperation({
     summary: 'Liveness probe (alias /api/health)',
     description: 'Alias usado pelo healthcheck do workflow deploy-vps.yml.',
@@ -95,7 +101,7 @@ export class HealthController {
 
   @Get('ready')
   @Public()
-  @SkipThrottle()
+  @SkipThrottle({ default: true })
   @ApiOperation({
     summary: 'Readiness probe — verifica dependências (DB, Redis)',
     description:

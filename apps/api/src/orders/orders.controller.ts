@@ -117,10 +117,10 @@ export class OrdersController {
   // Auditoria M-NEW-05: cria pedido é rota PÚBLICA (QR de mesa), vulnerável
   // a flood/spam sem rate-limit. Limite: 30 req/min por IP — o suficiente para
   // 1 pedido a cada 2s em cenário legítimo (cliente adicionando itens).
-  // Auditoria ACHADO-N12 (Re-varredura 8): tier 'default' não existe no
-  // AppModule (tiers reais: short/medium/long). Decorator era no-op.
-  // Agora usa tier 'medium' (30/min) explícito.
-  @Throttle({ medium: { ttl: 60_000, limit: 30 } })
+  // Auditoria P0-02 (2026-07-29): após restruturação dos tiers para apenas
+  // `default` no AppModule, sobrescrevemos o tier `default` aqui para
+  // 30/min (em vez do global 300/min).
+  @Throttle({ default: { ttl: 60_000, limit: 30 } })
   @ApiOperation({ summary: 'Criar novo pedido' })
   @ApiResponse({ status: 201, description: 'Pedido criado' })
   async create(@Req() req: { user?: AuthenticatedUser }, @Body() data: CreateOrderDto) {
