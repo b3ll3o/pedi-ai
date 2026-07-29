@@ -87,13 +87,13 @@ jobs:
           if [ -n "$CUSTOM_URL" ]; then
             BASE_URL="$CUSTOM_URL"
           elif [ "$ENVIRONMENT" = "production" ]; then
-            BASE_URL="https://pedi.ai"
+            BASE_URL="https://andreazzi.tech"
           else
-            BASE_URL="https://staging.pedi.ai"
+            BASE_URL="https://andreazzi.tech"
           fi
 
           # API URL (assume subdomain api.)
-          API_URL="${BASE_URL/pedi.ai/api.pedi.ai}"
+          API_URL="${BASE_URL/andreazzi.tech/api.andreazzi.tech}"
 
           echo "test_type=$TEST_TYPE" >> $GITHUB_OUTPUT
           echo "base_url=$BASE_URL" >> $GITHUB_OUTPUT

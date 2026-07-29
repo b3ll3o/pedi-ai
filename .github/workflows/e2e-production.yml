@@ -21,15 +21,15 @@ on:
   workflow_dispatch:
     inputs:
       base_url:
-        description: 'URL alvo (default: https://pedi.ai)'
+        description: 'URL alvo (default: https://andreazzi.tech)'
         required: false
         type: string
-        default: 'https://pedi.ai'
+        default: 'https://andreazzi.tech'
       api_url:
-        description: 'URL da API (default: https://api.pedi.ai)'
+        description: 'URL da API (default: https://api.andreazzi.tech)'
         required: false
         type: string
-        default: 'https://api.pedi.ai'
+        default: 'https://api.andreazzi.tech'
 
   # Schedule diário às 6h UTC
   schedule:
@@ -45,8 +45,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      BASE_URL: ${{ github.event.inputs.base_url || 'https://pedi.ai' }}
-      API_URL: ${{ github.event.inputs.api_url || 'https://api.pedi.ai' }}
+      BASE_URL: ${{ github.event.inputs.base_url || 'https://andreazzi.tech' }}
+      API_URL: ${{ github.event.inputs.api_url || 'https://api.andreazzi.tech' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -103,7 +103,7 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const baseUrl = process.env.BASE_URL || 'https://pedi.ai';
+            const baseUrl = process.env.BASE_URL || 'https://andreazzi.tech';
 
             // Notifica via issue/comment (mais simples que Slack webhook)
             const body = [
@@ -154,8 +154,8 @@ jobs:
       - name: Run full smoke tests
         run: pnpm test:e2e:prod:smoke
         env:
-          BASE_URL: ${{ github.event.inputs.base_url || 'https://pedi.ai' }}
-          API_URL: ${{ github.event.inputs.api_url || 'https://api.pedi.ai' }}
+          BASE_URL: ${{ github.event.inputs.base_url || 'https://andreazzi.tech' }}
+          API_URL: ${{ github.event.inputs.api_url || 'https://api.andreazzi.tech' }}
 
       - name: Upload results
         if: always()
