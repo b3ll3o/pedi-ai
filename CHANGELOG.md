@@ -52,7 +52,7 @@ Tipos de mudança:
      `createWithRestaurant` agora delegam ao helper em vez de aplicar
      `WHERE restaurantId` manual). `MenuService.getProductById`
      também ganhou filtro `restaurantId` direto (MINOR #2 — defesa em
-     profundidade). Cobertura: BDD 8 cenários + integration 7
+     profundidade). Cobertura: BDD **9 cenários** + integration 7
      testes com Prisma real + unit 19 testes específicos do
      `ProductsService` + 23 testes do `OrdersService` + 5 testes do
      `MenuService` + e2e 4 cenários cross-tenant em
