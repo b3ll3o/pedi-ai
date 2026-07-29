@@ -171,6 +171,10 @@ export class ModifierGroupsService {
       }
     }
     // Auditoria M-06: cascade delete em `$transaction` atômico.
+    //
+    // Auditoria P0-06 — call site SEM PII: `ModifierGroup`/`ModifierValue`
+    // não têm campos em `PiiCryptoService.ENCRYPTED_FIELDS`. Além disso,
+    // `delete`/`deleteMany` não passam por encrypt/decrypt na extension.
     await this.prisma.$transaction([
       this.prisma.modifierValue.deleteMany({ where: { modifierGroupId: id } }),
       this.prisma.modifierGroup.delete({ where: { id } }),

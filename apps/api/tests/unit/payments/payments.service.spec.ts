@@ -23,6 +23,13 @@ describe('PaymentsService', () => {
       findUnique: vi.fn(),
       create: vi.fn(),
     },
+    // Auditoria P0-06: `withEncryptedTransaction` delega ao mesmo `tx`
+    // do mock de `$transaction` (callback interativo) — em produção ele
+    // primeiro re-estende o client; em mock unitário basta repassar ao
+    // `$transaction` que já é mockado pelos testes.
+    withEncryptedTransaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>, _opcoes?: unknown) => {
+      return (mockPrisma.$transaction as ReturnType<typeof vi.fn>)(callback as (tx: unknown) => Promise<unknown>);
+    }),
     // Suporta tanto transação em batch (array) quanto interativa (callback).
     $transaction: vi.fn(async (arg: unknown) => {
       if (typeof arg === 'function') {

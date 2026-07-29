@@ -58,6 +58,13 @@ describe('OrdersService', () => {
       };
       return fn(mockTx);
     }),
+    // Auditoria P0-06: `withEncryptedTransaction` é usado pelo create e
+    // pela transição de status. Repassa ao mock de `$transaction` (que
+    // os testes reconfiguram com `mockImplementation` apontando `tx =
+    // mockPrisma`).
+    withEncryptedTransaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) => {
+      return (mockPrisma.$transaction as ReturnType<typeof vi.fn>)(callback as (tx: unknown) => Promise<unknown>);
+    }),
   });
 
   const createMockRealtime = () => ({

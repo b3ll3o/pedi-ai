@@ -555,6 +555,12 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(data.newPassword, BCRYPT_COST);
 
+    // Auditoria P0-06 — call site SEM PII: o único campo escrito é
+    // `passwordHash` (bcrypt), que NÃO está em `PiiCryptoService.ENCRYPTED_FIELDS`
+    // (criptografia de PII cobre `name` em `UsersProfile`; `passwordHash` já é um
+    // hash bcrypt e tem sua própria política de rotação). O `refreshToken`
+    // também não tem campos PII. Forma de array (batch), sem callback —
+    // não há `tx` a instrumentar.
     await this.prisma.$transaction([
       this.prisma.usersProfile.update({
         where: { id: resetToken.userId },

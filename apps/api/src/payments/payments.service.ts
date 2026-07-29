@@ -104,6 +104,9 @@ export class PaymentsService {
     // Auditoria A-02: create + update do qrCode dentro de `$transaction` —
     // crash entre as duas queries deixava intent com `qrCode: 'pending'`
     // persistido, causando estado intermediário inválido.
+    //
+    // Auditoria P0-06 — call site SEM PII: `PaymentIntent` não tem campos
+    // em `PiiCryptoService.ENCRYPTED_FIELDS` (só ids, valores e o BR Code).
     const payment = await this.prisma.$transaction(async (tx) => {
       const created = await tx.paymentIntent.create({
         data: {
@@ -267,7 +270,16 @@ export class PaymentsService {
     // Se qualquer passo seguinte falhar, o INSERT é revertido e o eventId
     // fica livre para retry (sem "envenenamento" da idempotência).
     try {
-      return await this.prisma.$transaction(
+      // Auditoria P0-06 — call site que TOCA um model PII (`Order`).
+      // Hoje as operações sobre `Order` aqui usam `select` explícito de
+      // campos não-PII (`status`, `version`) e `updateMany` só de status,
+      // então nada de PII entra ou sai. Ainda assim usamos
+      // `withEncryptedTransaction`: é defesa em profundidade barata contra
+      // o cenário em que alguém adicione um `include`/`select` de
+      // `customerName`/`customerEmail` aqui e receba ciphertext bruto sem
+      // perceber. Mantém `isolationLevel: 'Serializable'` intacto (as
+      // options são repassadas ao `$transaction`).
+      return await this.prisma.withEncryptedTransaction(
         async (tx) => {
           // 1. Claim atômico do eventId.
           try {
