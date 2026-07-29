@@ -50,6 +50,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build shared package
+        # Vitest em testes de API resolvem `@pedi-ai/shared/*` a partir do dist,
+        # que é .gitignored. Sem build, fall-back é silencioso no cache local
+        # mas quebra em CI fresh checkout.
+        run: pnpm --filter @pedi-ai/shared build
+
       - name: Install Playwright browsers
         run: pnpm exec playwright install chromium --with-deps
 

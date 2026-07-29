@@ -31,6 +31,10 @@ COPY apps/api ./apps/api
 # resolver versões divergentes em runtime.
 RUN pnpm install --frozen-lockfile
 
+# Build the shared package — `packages/shared/dist` é .gitignored e os
+# imports `@pedi-ai/shared/*` no api precisam do dist gerado para resolver.
+RUN pnpm --filter @pedi-ai/shared build
+
 # Generate Prisma client. Usando `pnpm exec` em vez de `pnpm dlx` para que a
 # versão venha do node_modules local (travada pelo lockfile) — `pnpm dlx`
 # baixaria a latest 5.22.x do registry a cada build.

@@ -38,6 +38,12 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
 
+      - name: Build shared package
+        # packages/shared/dist é .gitignored — sem este passo, imports
+        # como `@pedi-ai/shared/types` e `@pedi-ai/shared/constants`
+        # não resolvem em tsc --noEmit. (Falha em CI: TS2307 em master)
+        run: pnpm --filter @pedi-ai/shared build
+
       - name: Gerar Prisma Client
         # Necessário antes do tsc --noEmit: imports como `UserRole`/`OrderStatus`
         # vêm de .prisma/client/index.d.ts (gerado, não versionado).
@@ -59,6 +65,12 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
 
+      - name: Build shared package
+        # Sem packages/shared/dist, o Vite falha em resolver
+        # `@pedi-ai/shared/{types,constants}` em imports de testes
+        # (ex.: Assinatura.test.ts → "Failed to resolve import").
+        run: pnpm --filter @pedi-ai/shared build
+
       - name: Executar testes unitários (web + api)
         run: pnpm test:unit
 
@@ -76,6 +88,9 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
 
+      - name: Build shared package
+        run: pnpm --filter @pedi-ai/shared build
+
       - name: Executar testes de integração
         run: pnpm test:integration
 
@@ -89,6 +104,9 @@ jobs:
 
       - name: Setup
         uses: ./.github/actions/setup
+
+      - name: Build shared package
+        run: pnpm --filter @pedi-ai/shared build
 
       - name: Analisar complexidade ciclomática (web)
         id: complexity-web
@@ -161,6 +179,9 @@ jobs:
 
       - name: Setup
         uses: ./.github/actions/setup
+
+      - name: Build shared package
+        run: pnpm --filter @pedi-ai/shared build
 
       - name: Gerar Prisma Client
         # Necessário para que testes de cobertura do @pedi-ai/api consigam

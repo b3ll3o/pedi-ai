@@ -18,6 +18,12 @@ COPY apps/api ./apps/api
 # Install dependencies
 RUN pnpm install --no-frozen-lockfile
 
+# Build the shared package first — `packages/shared/dist` é .gitignored
+# e os imports `@pedi-ai/shared/types`/`@pedi-ai/shared/constants` no
+# api precisam do dist gerado pra resolver. Sem isto: pnpm run build
+# falha com TS2307 em ~23 lugares (subscriptions.service.ts etc).
+RUN pnpm --filter @pedi-ai/shared build
+
 # Generate Prisma client
 RUN cd /app/apps/api && pnpm exec prisma generate
 
