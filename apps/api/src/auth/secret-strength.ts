@@ -54,12 +54,17 @@ export function assertSecretStrength(
   const isStrict = isStrictEnv();
 
   // Placeholders conhecidos — sempre falha (mesmo em dev) porque indica erro
-  // de configuração, não intenção.
+  // de configuração, não intenção. Match por igualdade exata (não substring)
+  // para evitar falsos positivos: `value.includes('secret')` rejeita
+  // "e2e-jwt-secret-for-testing-only" porque contém a palavra "secret",
+  // mas esse valor é claramente um placeholder de teste, não a string
+  // placeholder "secret". A lista já tem entradas específicas
+  // (changeme, changeme123, etc.) que cobrem os casos comuns.
   const lower = value.toLowerCase();
   for (const ph of KNOWN_PLACEHOLDERS) {
-    if (lower.includes(ph)) {
+    if (lower === ph) {
       throw new Error(
-        `${name} contém placeholder conhecido ("${ph}"). ` +
+        `${name} é igual ao placeholder conhecido ("${ph}"). ` +
           `Gere um valor real com: openssl rand -hex 32`
       );
     }
