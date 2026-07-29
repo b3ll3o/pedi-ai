@@ -45,14 +45,21 @@ services:
       MTX_DEBUG: "0"
 
   # ── NestJS API ─────────────────────────────────────────────
+  # Sem bind externo de porta 3001. Conflito na VPS: systemd services
+  # legacy `pedi-ai-api.service` rodam `node dist/main.js` direto no
+  # host (PID 3440311, workingdir /root/pedi-ai/apps/api), ocupando
+  # 0.0.0.0:3001 e reiniciando automaticamente. Bind externo do container
+  # api é dispensável — nginx upstream usa `api:3001` (DNS Docker),
+  # testes E2E rodam via `docker exec` (localhost), e tráfego externo
+  # chega via nginx na :80.
   api:
     build:
       context: .
       dockerfile: apps/api/Dockerfile.dev
     container_name: pedi_ai_api
     restart: unless-stopped
-    ports:
-      - "3001:3001"
+    expose:
+      - "3001"
     depends_on:
       postgres:
         condition: service_healthy
@@ -77,14 +84,19 @@ services:
       start_period: 90s
 
   # ── Next.js Web App ────────────────────────────────────────
+  # Sem bind externo de porta 3000. Mesmo motivo da api: systemd
+  # service `pedi-ai-web.service` mantém `next-server` direto no host
+  # (PID 3440347) ocupando 0.0.0.0:3000. Nginx upstream usa `web:3000`
+  # (DNS Docker); testes E2E via `docker exec` batem em localhost:3000
+  # dentro do container; tráfego externo entra pela :80 do nginx.
   web:
     build:
       context: .
       dockerfile: apps/web/Dockerfile.dev
     container_name: pedi_ai_web
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:3000:3000"
+    expose:
+      - "3000"
     depends_on:
       api:
         condition: service_healthy
