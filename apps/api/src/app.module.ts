@@ -1,7 +1,7 @@
 import { MiddlewareConsumer, Module, NestModule, OnApplicationShutdown } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 import { AnalyticsModule } from './analytics/analytics.module';
 import { FeatureFlagsModule } from './presentation/admin/feature-flags/module/feature-flags.module';
@@ -72,6 +72,9 @@ import { UsersModule } from './users/users.module';
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     // Guard de papéis global — só atua onde há @Roles().
     { provide: APP_GUARD, useClass: RolesGuard },
+    // P0-02 (auditoria 2026-07-29): ThrottlerGuard global honrando todos os
+    // `@Throttle()` decorators. Sem este provider, rate-limiting não opera.
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
     // EmailQueue é fornecido por QueueModule (@Global()). Auditoria
     // ACHADO-7 (Re-varredura 5): cleanup diário de tokens/keys
     // expirados (IdempotencyKey, PasswordResetToken, RefreshToken, WebhookEvent).
