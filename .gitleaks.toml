@@ -9,8 +9,10 @@
 
 title = "Pedi-AI gitleaks config"
 
-# Herda todas as regras padrão (gitleaks v8+)
-extend = "gitleaks:default"
+# Herda todas as regras padrão (gitleaks v8+).
+# Em v8 o extend virou tabela com useDefault (em v7 era `extend = "..."`).
+[extend]
+useDefault = true
 
 # ─── Allowlist global ─────────────────────────────────────────────────────
 # Arquivos/paths onde falsos positivos são esperados ou onde segredos
