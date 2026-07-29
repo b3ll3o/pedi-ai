@@ -23,6 +23,15 @@
 import { test, expect } from '../shared/fixtures';
 
 test.describe('FeatureFlagsAdminGuard (P0-03) — RBAC HTTP', () => {
+  // Limpa cookies ANTES de cada teste para garantir isolamento entre
+  // cenários (Playwright pode herdar cookies do `page.context()` se houver
+  // testes anteriores que fizeram login). Sem isso, o teste "sem token"
+  // poderia passar falsamente — o cookie herdado da sessão anterior faria
+  // o `JwtAuthGuard` autenticar a request e o 401 nunca apareceria.
+  test.beforeEach(async ({ context }) => {
+    await context.clearCookies();
+  });
+
   test(
     'cliente NÃO pode editar feature flags (PATCH retorna 403)',
     { tag: ['@RNF-SEC-FF-01', '@RBAC', '@admin-guard'] },
@@ -124,6 +133,28 @@ test.describe('FeatureFlagsAdminGuard (P0-03) — RBAC HTTP', () => {
         data: { key: 'flag_teste', valueType: 'BOOLEAN', defaultValue: false },
       });
       expect(postResp.status()).toBe(401);
+    }
+  );
+
+  test(
+    'cliente recebe 403 em GET (não passa de JwtAuthGuard para FeatureFlagAdminGuard)',
+    { tag: ['@RNF-SEC-FF-01', '@RBAC', '@admin-guard'] },
+    async ({ page, seedData }) => {
+      const loginResp = await page.request.post('/api/v1/auth/login', {
+        data: {
+          email: seedData.customer.email,
+          password: seedData.customer.password,
+        },
+      });
+      expect(loginResp.status()).toBeLessThan(400);
+
+      // GET em leitura — cliente deve receber 403 (não 200). Apenas
+      // owner/manager passam pela camada RBAC.
+      const listResp = await page.request.get('/api/v1/admin/feature-flags?limit=10');
+      expect(listResp.status()).toBe(403);
+
+      const detailResp = await page.request.get('/api/v1/admin/feature-flags/pix_enabled');
+      expect(detailResp.status()).toBe(403);
     }
   );
 

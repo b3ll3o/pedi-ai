@@ -12,12 +12,13 @@
  * **Fix:** aplicar `@UseGuards(JwtAuthGuard, FeatureFlagAdminGuard)` no
  * controller e remover o dead code.
  *
- * **Bug pré-existente (corrigido em P0-03-fase-2):** handlers `listar`,
- * `criar`, `atualizar`, `adicionarOverride`, `avaliar` usavam argumentos
- * posicionais sem decorators `@Req()`/`@Param()`/`@Body()`/`@Query()`. Em
- * produção NestJS/Fastify injetava `undefined` em todos os slots, fazendo
- * `req.user.sub` lançar TypeError (500). Adicionados os decorators canônicos
- * e trocado `req.user.sub` por `req.user.id` (alinhado com `AuthenticatedUser`).
+ * **Bug pré-existente (corrigido em P0-03-fase-2 → commit `f514600`):**
+ * handlers `listar`, `criar`, `atualizar`, `adicionarOverride`, `avaliar`
+ * usavam argumentos posicionais sem decorators `@Req()`/`@Param()`/
+ * `@Body()`/`@Query()`. Em produção NestJS/Fastify injetava `undefined`
+ * em todos os slots, fazendo `req.user.sub` lançar TypeError (500).
+ * Adicionados os decorators canônicos e trocado `req.user.sub` por
+ * `req.user.id` (alinhado com `AuthenticatedUser`).
  *
  * **Estratégia de teste:**
  *
@@ -377,7 +378,7 @@ describe('FeatureFlagsController — AdminGuard aplicado via @UseGuards (P0-03)'
  * requests HTTP reais via Fastify `inject()`. Valida que os decorators
  * `@Req()`/`@Param()`/`@Body()`/`@Query()` foram reconhecidos pelo pipeline
  * NestJS — body, params e query chegam ao handler, não `undefined` (bug
- * pré-existente corrigido no P0-03-fase-2).
+ * pré-existente corrigido no P0-03-fase-2 → commit `f514600`).
  *
  * Os use cases são mockados (`useValue`); dependências de DB/Redis são
  * evitadas para não exigir infra no CI.
