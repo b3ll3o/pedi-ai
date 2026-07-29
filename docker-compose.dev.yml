@@ -5,12 +5,20 @@
 
 services:
   # ── PostgreSQL 16 ──────────────────────────────────────────
+  # Sem bind externo de porta 5432. Conflito na VPS: o container admin
+  # `postgres` (postgres-setup, criado em 2026-05-26, parte do pgadmin
+  # rodando na :5050) segura 0.0.0.0:5432 há meses, e o `ports: "5432"`
+  # do pedi-ai falha com "port is already allocated" antes mesmo de
+  # criar o container. Api e web acessam postgres pela rede Docker
+  # interna (DNS `postgres:5432`), então o bind externo é dispensável
+  # — só era usado pra `psql` do host, e ninguém nos workflows CI/CD/
+  # deploy conecta via host:5432 (todos via `docker exec`).
   postgres:
     image: postgres:16-alpine
     container_name: pedi_ai_postgres
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:5432:5432"
+    expose:
+      - "5432"
     environment:
       POSTGRES_DB: pedi_ai
       POSTGRES_USER: postgres
