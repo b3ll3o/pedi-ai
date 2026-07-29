@@ -41,7 +41,6 @@ const REFRESH_TOKEN_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 dias
  */
 @ApiTags('auth')
 @Controller('auth')
-@Public()
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
@@ -56,11 +55,20 @@ export class AuthController {
   // bater com o `name` registrado no `ThrottlerModule.forRoot` — caso
   // contrário, o decorator é no-op.
   //
+  // Auditoria P0-04 (2026-07-29): `@Public()` foi removido do nível de
+  // classe e adicionado explicitamente aos métodos que precisam dele
+  // (login, register, refresh, request-reset, reset-password). Antes,
+  // o `@Public()` no nível de classe sobrescrevia o `@UseGuards(JwtAuthGuard)`
+  // aplicado em `/me` e `/logout` via `Reflector.getAllAndOverride` —
+  // esses endpoints eram tratados como públicos, e `req.user` ficava
+  // `undefined`. Sintoma: `/auth/me` retornava `200` com corpo vazio.
+  //
   // Limites por método:
   // - 5/min: register, login, refresh, request-reset, reset-password
   //          (proteção contra brute-force e abuso de reset)
   // - 300/min (global): me, logout (autenticados, baixo risco)
 
+  @Public()
   @Post('register')
   @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @ApiOperation({ summary: 'Registrar novo usuário' })
@@ -80,6 +88,7 @@ export class AuthController {
     return result;
   }
 
+  @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60_000, limit: 5 } })
@@ -100,6 +109,7 @@ export class AuthController {
     return result;
   }
 
+  @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60_000, limit: 5 } })
@@ -149,6 +159,7 @@ export class AuthController {
     return result;
   }
 
+  @Public()
   @Post('request-reset')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60_000, limit: 5 } })
@@ -158,6 +169,7 @@ export class AuthController {
     return this.authService.requestPasswordReset(body.email);
   }
 
+  @Public()
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60_000, limit: 5 } })
