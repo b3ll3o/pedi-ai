@@ -163,27 +163,62 @@ export class PiiCryptoService implements OnModuleInit {
   }
 
   /**
+   * Auditoria P0-06: normaliza o nome da model para lookup no registro.
+   *
+   * **Bug encontrado.** O registro `ENCRYPTED_FIELDS` usa chaves em
+   * camelCase (`usersProfile`), que é a convenção dos *delegates* do
+   * client (`prisma.usersProfile`). Mas o Prisma Client Extension entrega
+   * o parâmetro `model` em **PascalCase** (`UsersProfile`) — é o nome da
+   * model no schema, não o do delegate. Resultado: TODO lookup retornava
+   * `Set` vazio e a extension virava no-op silencioso. Nenhum campo PII
+   * jamais foi encriptado at-rest (LGPD Art. 46).
+   *
+   * Por que passou despercebido: o teste unitário da extension montava o
+   * payload à mão com `model: 'usersProfile'` (camelCase) — combinação
+   * que nunca ocorre em runtime.
+   *
+   * A normalização é case-insensitive nos dois sentidos, então tanto
+   * `usersProfile` quanto `UsersProfile` resolvem para a mesma entrada,
+   * independentemente da convenção do caller.
+   */
+  private static normalizeModelKey(model: string): string {
+    return model.toLowerCase();
+  }
+
+  /**
    * Indica se um campo de uma model é PII criptografado.
+   * Aceita o nome da model em qualquer casing (`UsersProfile`/`usersProfile`).
    */
   static isEncryptedField(model: string, field: string): boolean {
-    return PiiCryptoService.ENCRYPTED_FIELDS.get(model)?.has(field) ?? false;
+    return PiiCryptoService.getEncryptedFields(model).has(field);
   }
 
   /**
    * Lista os campos PII de uma model. Usado pelo Prisma extension.
+   * Aceita o nome da model em qualquer casing (`UsersProfile`/`usersProfile`).
    */
   static getEncryptedFields(model: string): Set<string> {
-    return PiiCryptoService.ENCRYPTED_FIELDS.get(model) ?? new Set();
+    const alvo = PiiCryptoService.normalizeModelKey(model);
+    for (const [chave, campos] of PiiCryptoService.ENCRYPTED_FIELDS) {
+      if (PiiCryptoService.normalizeModelKey(chave) === alvo) return campos;
+    }
+    return new Set();
   }
 
   /**
    * Registra um novo campo como PII criptografado. Útil para testes ou
-   * para campos dinâmicos.
+   * para campos dinâmicos. Se a model já existir com outro casing, o
+   * campo é adicionado à entrada existente (evita registros duplicados
+   * `usersProfile` + `UsersProfile` divergindo entre si).
    */
   static registerEncryptedField(model: string, field: string): void {
-    if (!PiiCryptoService.ENCRYPTED_FIELDS.has(model)) {
-      PiiCryptoService.ENCRYPTED_FIELDS.set(model, new Set());
+    const alvo = PiiCryptoService.normalizeModelKey(model);
+    for (const [chave, campos] of PiiCryptoService.ENCRYPTED_FIELDS) {
+      if (PiiCryptoService.normalizeModelKey(chave) === alvo) {
+        campos.add(field);
+        return;
+      }
     }
-    PiiCryptoService.ENCRYPTED_FIELDS.get(model)!.add(field);
+    PiiCryptoService.ENCRYPTED_FIELDS.set(model, new Set([field]));
   }
 }
