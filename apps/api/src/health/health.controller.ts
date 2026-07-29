@@ -76,6 +76,23 @@ export class HealthController {
     return this.liveness();
   }
 
+  // Alias `/api/health` para o caminho usado pelo healthcheck do deploy
+  // (`docker exec pedi_ai_api curl http://localhost:3001/api/health`).
+  // Dentro do container não passa pelo nginx, então o rewrite
+  // `^/api(.*)$ → $1` não acontece — esse alias dá a mesma resposta
+  // de `/health` no caminho exato que o workflow espera.
+  @Get('api/health')
+  @Public()
+  @SkipThrottle()
+  @ApiOperation({
+    summary: 'Liveness probe (alias /api/health)',
+    description: 'Alias usado pelo healthcheck do workflow deploy-vps.yml.',
+  })
+  @ApiResponse({ status: 200, description: 'API viva' })
+  apiHealth(): { status: 'ok'; uptime: number } {
+    return this.liveness();
+  }
+
   @Get('ready')
   @Public()
   @SkipThrottle()
