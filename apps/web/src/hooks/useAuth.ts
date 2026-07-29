@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
 import { apiClient } from '@/lib/api-client';
+import { purgeAllUserData } from '@/lib/offline/pii-purge';
 
 export interface AuthUser {
   id: string;
@@ -115,10 +116,22 @@ export function useAuth(): UseAuthReturn {
     }
   }, []);
 
+  /**
+   * Encerra a sessão e purga dados locais antes da troca de usuário.
+   * A purga atende ao direito ao esquecimento da LGPD (art. 18) e evita
+   * que pedidos ou dados pessoais offline sejam exibidos para outra conta.
+   */
   const handleSignOut = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
+      try {
+        // A purga é best-effort: falhas locais não podem impedir o logout.
+        await purgeAllUserData();
+      } catch (purgeError) {
+        console.error('Falha ao purgar dados locais durante logout', purgeError);
+      }
+
       await apiClient.logout();
       setSession(null);
       setUser(null);

@@ -24,6 +24,11 @@ export const MAX_RETENTION_MS = 7 * 24 * 60 * 60 * 1000; // 7 dias
 export interface PiiPurgeResult {
   cart: number;
   pendingSync: number;
+  pedidos: number;
+  carrinhos: number;
+  usuarios: number;
+  sessoes: number;
+  configuracoes: number;
   menuCache: number;
   tablesInfo: number;
   total: number;
@@ -92,19 +97,44 @@ export async function purgeAllUserData(): Promise<PiiPurgeResult> {
   // contagem precisa, contamos ANTES de limpar.
   const cartCount = await db.cart.count();
   const pendingSyncCount = await db.pending_sync.count();
+  const pedidosCount = await db.pedidos.count();
+  const carrinhosCount = await db.carrinhos.count();
+  const usuariosCount = await db.usuarios.count();
+  const sessoesCount = await db.sessoes.count();
+  const configuracoesCount = await db.configuracoes_restaurante.count();
   const tablesInfoCount = await db.tables_info.count();
 
-  await db.cart.clear();
-  await db.pending_sync.clear();
-  await db.tables_info.clear();
+  await Promise.all([
+    db.cart.clear(),
+    db.pending_sync.clear(),
+    db.pedidos.clear(),
+    db.carrinhos.clear(),
+    db.usuarios.clear(),
+    db.sessoes.clear(),
+    db.configuracoes_restaurante.clear(),
+    db.tables_info.clear(),
+  ]);
 
   const result: PiiPurgeResult = {
     cart: cartCount,
     pendingSync: pendingSyncCount,
+    pedidos: pedidosCount,
+    carrinhos: carrinhosCount,
+    usuarios: usuariosCount,
+    sessoes: sessoesCount,
+    configuracoes: configuracoesCount,
     menuCache: 0,
     tablesInfo: tablesInfoCount,
     total: 0,
   };
-  result.total = result.cart + result.pendingSync + result.tablesInfo;
+  result.total =
+    result.cart +
+    result.pendingSync +
+    result.pedidos +
+    result.carrinhos +
+    result.usuarios +
+    result.sessoes +
+    result.configuracoes +
+    result.tablesInfo;
   return result;
 }
