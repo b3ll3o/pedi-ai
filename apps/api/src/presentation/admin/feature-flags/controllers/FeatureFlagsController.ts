@@ -30,10 +30,12 @@ import {
   Post,
   Query,
   Req,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { Public } from '../../../../auth/decorators/public.decorator';
+import { JwtAuthGuard } from '../../../../auth/guards/jwt-auth.guard';
 
 import { AdicionarOverrideUseCase } from '../../../../application/admin/feature-flags/use-cases/AdicionarOverrideUseCase';
 import { AtualizarFeatureFlagUseCase } from '../../../../application/admin/feature-flags/use-cases/AtualizarFeatureFlagUseCase';
@@ -57,6 +59,7 @@ import {
 @ApiTags('admin/feature-flags')
 @ApiBearerAuth('JWT-auth')
 @Controller('admin/feature-flags')
+@UseGuards(JwtAuthGuard, FeatureFlagAdminGuard)
 export class FeatureFlagsController {
   private readonly listarUC: ListarFeatureFlagsUseCase;
   private readonly obterUC: ObterFeatureFlagUseCase;
@@ -277,11 +280,3 @@ export class FeatureFlagsController {
     });
   }
 }
-
-/**
- * Ativa o guard global em todos os métodos (exceto `avaliar` que é público).
- * Aplicado via decorator na classe; feito separado para evitar warnings do TS.
- */
-const _adminGuard = FeatureFlagAdminGuard;
-// Mantém referência simbólica para análise estática do decorator.
-void _adminGuard;
