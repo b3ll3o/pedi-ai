@@ -107,7 +107,11 @@ describe('RegisterForm', () => {
     });
 
     it('não exibe erro de nome quando nome está preenchido', async () => {
-      const utils = render(<RegisterForm />);
+      // onSubmit default: sem handler, o form lança 'onSubmit handler not
+      // provided' após validação — em CI essa rejeição vaza como unhandled
+      // error e quebra o test run. Mock explícito evita o throw.
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
+      const utils = render(<RegisterForm onSubmit={onSubmit} />);
       preencherFormulario(utils);
       fireEvent.click(utils.getByTestId('register-button'));
 
@@ -147,7 +151,9 @@ describe('RegisterForm', () => {
     });
 
     it('não exibe erro de email quando email é válido', async () => {
-      const utils = render(<RegisterForm />);
+      // Ver nota sobre onSubmit mock em 'não exibe erro de nome'.
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
+      const utils = render(<RegisterForm onSubmit={onSubmit} />);
       preencherFormulario(utils);
       fireEvent.click(utils.getByTestId('register-button'));
 
@@ -204,7 +210,9 @@ describe('RegisterForm', () => {
     });
 
     it('não exibe erro de senha quando tem 8+ caracteres com complexidade', async () => {
-      const utils = render(<RegisterForm />);
+      // Ver nota sobre onSubmit mock em 'não exibe erro de nome'.
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
+      const utils = render(<RegisterForm onSubmit={onSubmit} />);
       preencherFormulario(utils);
       fireEvent.click(utils.getByTestId('register-button'));
 
@@ -248,7 +256,9 @@ describe('RegisterForm', () => {
     });
 
     it('não exibe erro de confirmação quando senhas coincidem', async () => {
-      const utils = render(<RegisterForm />);
+      // Ver nota sobre onSubmit mock em 'não exibe erro de nome'.
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
+      const utils = render(<RegisterForm onSubmit={onSubmit} />);
       preencherFormulario(utils);
       fireEvent.click(utils.getByTestId('register-button'));
 
