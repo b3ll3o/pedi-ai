@@ -97,6 +97,7 @@ class PasswordPolicyWorldImpl implements PasswordPolicyWorld {
           role: 'cliente',
           restaurantId: null,
         })),
+        update: fn().mockResolvedValue({}),
       },
       refreshToken: {
         updateMany: fn().mockResolvedValue({ count: 0 }),
@@ -105,7 +106,16 @@ class PasswordPolicyWorldImpl implements PasswordPolicyWorld {
         updateMany: fn().mockResolvedValue({ count: 1 }),
         findFirst: fn().mockResolvedValue({ userId: 'user-1' }),
       },
-      $transaction: fn().mockResolvedValue([]),
+      $transaction: fn().mockImplementation(async (ops: unknown) => {
+        if (Array.isArray(ops)) {
+          const results: unknown[] = [];
+          for (const op of ops) {
+            results.push(await op);
+          }
+          return results;
+        }
+        return [];
+      }),
     } as unknown as PrismaService;
 
     const mockJwt = {
@@ -141,6 +151,10 @@ Before(function () {
   w.originalFetch = globalThis.fetch;
   w.hibpFetch = defaultHibpFetch;
   globalThis.fetch = ((url: unknown) => w.hibpFetch!(url as string)) as unknown as typeof fetch;
+  // AuthService.generateTokens exige JWT_REFRESH_SECRET.
+  if (!process.env.JWT_REFRESH_SECRET) {
+    process.env.JWT_REFRESH_SECRET = 'test-refresh-secret';
+  }
   w.service = w.build();
 });
 

@@ -220,39 +220,26 @@ export async function purgeAllUserData(): Promise<PiiPurgeResult> {
 
   await Promise.all(targets.map(({ table }) => table.clear()));
 
+  // Mapeamento de store-name → chave do `PiiPurgeResult`. Declarado fora
+  // do laço para manter complexidade ciclomática dentro do limiar (15).
+  const STORE_TO_RESULT_KEY: Record<string, keyof Omit<PiiPurgeResult, 'total'>> = {
+    cart: 'cart',
+    pending_sync: 'pendingSync',
+    usuarios: 'usuarios',
+    sessoes: 'sessoes',
+    pedidos: 'pedidos',
+    carrinhos: 'carrinhos',
+    pagamentos: 'pagamentos',
+    transacoes: 'transacoes',
+    user_restaurants: 'userRestaurants',
+    configuracoes_restaurante: 'configuracoes',
+  };
+
   const result: PiiPurgeResult = { ...EMPTY_RESULT };
   for (const { name, count } of counts) {
-    switch (name) {
-      case 'cart':
-        result.cart = count;
-        break;
-      case 'pending_sync':
-        result.pendingSync = count;
-        break;
-      case 'usuarios':
-        result.usuarios = count;
-        break;
-      case 'sessoes':
-        result.sessoes = count;
-        break;
-      case 'pedidos':
-        result.pedidos = count;
-        break;
-      case 'carrinhos':
-        result.carrinhos = count;
-        break;
-      case 'pagamentos':
-        result.pagamentos = count;
-        break;
-      case 'transacoes':
-        result.transacoes = count;
-        break;
-      case 'user_restaurants':
-        result.userRestaurants = count;
-        break;
-      case 'configuracoes_restaurante':
-        result.configuracoes = count;
-        break;
+    const key = STORE_TO_RESULT_KEY[name];
+    if (key) {
+      (result as Record<string, number>)[key] = count;
     }
   }
   result.total =

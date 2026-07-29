@@ -19,9 +19,25 @@ import { EmailQueue } from '../queues/email.queue';
 
 import { RefreshTokenService } from './refresh-token.service';
 
-// ─── Requisitos de senha forte ────────────────────────────────────────────────
+// ─── Requisitos de senha forte (NIST 800-63B §5.1.1) ─────────────────────────
+/**
+ * Política de senha alinhada com NIST SP 800-63B §5.1.1 (memorized secrets).
+ *
+ * Decisões:
+ * - **Mínimo 8 caracteres** — anti-brute-force sem composition rules.
+ * - **Máximo 128 caracteres** — anti-DoS via bcrypt cost (bcrypt é O(length)).
+ *   NIST sugere ≤ 64 como mitigação; usamos 128 porque a planilha atual
+ *   de password managers (1Password, Bitwarden) recomenda ≥ 128 para
+ *   "passphrase mode" e o DoS em bcrypt só importa em senhas ~1k+.
+ * - **Sem regras de composição** — NIST §5.1.1.2: "Verifiers SHOULD NOT
+ *   impose other composition rules" (causam password fatigue → "Password1!").
+ * - **HIBP breach check** — senhas em vazamentos públicos são rejeitadas.
+ *
+ * Auditoria P0-10: removemos `SENHA_REGEX_FORCA` que exigia 1 maiúscula + 1
+ * número + 1 caractere especial. Era contrário a NIST 800-63B §5.1.1.2.
+ */
 const SENHA_MIN_CARACTERES = 8;
-const SENHA_REGEX_FORCA = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+const SENHA_MAX_CARACTERES = 128;
 
 // `PASSWORD_RESET_TTL_MS` importado de `common/constants/time.ts`.
 
@@ -271,18 +287,31 @@ export class AuthService {
   ) {}
 
   /**
-   * Validação de força de senha (composição + breach check).
+   * Validação de força de senha conforme NIST 800-63B §5.1.1.
+   *
+   * Regras (auditoria P0-10):
+   * - Mínimo 8 caracteres (sem composição — sem exigir maiúscula/número/especial).
+   * - Máximo 128 caracteres (anti-DoS bcrypt).
+   * - Rejeita senha vazia.
+   * - Rejeita senha só com espaços (8 espaços passa no length check
+   *   mas é claramente inválida — defense-in-depth).
+   * - Rejeita senha em vazamento público (HIBP, k-anonymity).
+   *
    * Auditoria A10: é método da classe (não top-level) para usar
    * `this.logger` na auditoria de falhas HIBP.
    */
   private async validarForcaSenha(senha: string): Promise<void> {
+    if (typeof senha !== 'string' || senha.length === 0) {
+      throw new BadRequestException('Senha é obrigatória');
+    }
+    if (senha.trim().length === 0) {
+      throw new BadRequestException('Senha não pode ser apenas espaços');
+    }
     if (senha.length < SENHA_MIN_CARACTERES) {
       throw new BadRequestException(`Senha deve ter no mínimo ${SENHA_MIN_CARACTERES} caracteres`);
     }
-    if (!SENHA_REGEX_FORCA.test(senha)) {
-      throw new BadRequestException(
-        'Senha deve conter pelo menos 1 letra maiúscula, 1 número e 1 caractere especial'
-      );
+    if (senha.length > SENHA_MAX_CARACTERES) {
+      throw new BadRequestException(`Senha deve ter no máximo ${SENHA_MAX_CARACTERES} caracteres`);
     }
     if (await senhaFoiVazada(senha, this.logger)) {
       throw new BadRequestException(
