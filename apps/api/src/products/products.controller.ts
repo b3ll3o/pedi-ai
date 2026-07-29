@@ -36,22 +36,43 @@ export class ProductsController {
 
   @Get('category/:categoryId')
   @Public()
-  @ApiOperation({ summary: 'Listar produtos por categoria (público)' })
-  @ApiResponse({ status: 200, description: 'Página de produtos' })
-  async findByCategory(@Param('categoryId') categoryId: string, @Query() page: PageQueryDto) {
+  // Auditoria P0-01 (2026-07-29): rota pública EXIGE `restaurantId` via
+  // query (?restaurantId=...) para prevenir BOLA. Sem ele, o service
+  // lança 400 antes de tocar no DB. Cliente que conhece só `categoryId`
+  // de outro tenant não recebe dados.
+  @ApiOperation({ summary: 'Listar produtos por categoria (público, escopado por tenant)' })
+  @ApiResponse({ status: 200, description: 'Página de produtos do tenant informado' })
+  @ApiResponse({ status: 400, description: 'restaurantId é obrigatório' })
+  async findByCategory(
+    @Param('categoryId') categoryId: string,
+    @Query('restaurantId') restaurantId: string,
+    @Query() page: PageQueryDto
+  ) {
+    if (!restaurantId) {
+      throw new BadRequestException('restaurantId é obrigatório (isolamento multi-tenant)');
+    }
     return this.productsService.findByCategory(categoryId, {
       cursor: page.cursor,
       limit: page.limit,
+      restaurantId,
     });
   }
 
   @Get(':id')
-  @Public()
-  @ApiOperation({ summary: 'Obter produto por ID (público)' })
+  // Auditoria P0-01 (2026-07-29): rota NÃO é mais @Public — agora exige
+  // JWT para que possamos escopar pelo `restaurantId` do usuário
+  // autenticado. Antes, era pública e um atacante com ID de produto
+  // de outro tenant conseguia ler nome/preço/descrição (BOLA /
+  // OWASP API #1). Cardápio público deve usar `/menu/products/:id`
+  // que já exige `restaurantId` via query.
+  @Roles('atendente', 'gerente', 'dono')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Obter produto por ID (escopado por tenant)' })
   @ApiResponse({ status: 200, description: 'Produto encontrado' })
+  @ApiResponse({ status: 403, description: 'Produto pertence a outro restaurante' })
   @ApiResponse({ status: 404, description: 'Produto não encontrado' })
-  async findById(@Param('id') id: string) {
-    return this.productsService.findById(id);
+  async findById(@Req() req: { user: AuthenticatedUser }, @Param('id') id: string) {
+    return this.productsService.findById(id, req.user.restaurantId);
   }
 
   @Post()
