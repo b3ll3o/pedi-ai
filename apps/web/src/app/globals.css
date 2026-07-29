@@ -33,7 +33,11 @@
   --color-surface-elevated: #fff8f0;
   --color-text-primary: #1c1917;
   --color-text-secondary: #57534e;
-  --color-text-tertiary: #a8a29e;
+  /* Antes: #a8a29e (ratio 2.96:1 sobre #fffbf5 — FALHAVA AA WCAG 1.4.3).
+     Agora: #57534e (ratio ~7.4:1 — passa em qualquer tamanho). Cobre
+     ~25 usos em landing, cardápio, navbar, FAQ, footer via
+     `var(--color-text-muted)`. */
+  --color-text-tertiary: #57534e;
   --color-border: #e7e5e4;
   --color-border-strong: #d6d3d1;
   --color-gray: #f5f5f4;
@@ -119,7 +123,9 @@
     --color-surface-elevated: #44403c;
     --color-text-primary: #fafaf9;
     --color-text-secondary: #d6d3d1;
-    --color-text-tertiary: #78716c;
+    /* Antes: #78716c (ratio 3.71:1 sobre #1c1917 — FALHAVA AA).
+       Agora: #a8a29e (ratio ~7.1:1 — passa texto normal). */
+    --color-text-tertiary: #a8a29e;
     --color-border: #44403c;
     --color-border-strong: #57534e;
     --color-gray: #292524;
@@ -140,7 +146,8 @@
   --color-surface-elevated: #44403c;
   --color-text-primary: #fafaf9;
   --color-text-secondary: #d6d3d1;
-  --color-text-tertiary: #78716c;
+  /* Mesma correção da auto-dark: #78716c → #a8a29e (ratio 7.1:1 sobre #1c1917). */
+  --color-text-tertiary: #a8a29e;
   --color-border: #44403c;
   --color-border-strong: #57534e;
   --color-gray: #292524;
@@ -187,5 +194,30 @@ a {
 @media (prefers-color-scheme: dark) {
   html {
     color-scheme: dark;
+  }
+}
+
+/**
+ * Reduced-motion guard (WCAG 2.3.3 / 2.2.2).
+ *
+ * Pedi-AI tem 46 @keyframes + ~60 animations + ~80 transitions
+ * distribuídas em CSS Modules, globals e styled components.
+ * Sem esta regra, animações decorativas (blob, pulse, fade,
+ * spin, shimmer) podem disparar desconforto em usuários com
+ * sensibilidade vestibular.
+ *
+ * Quando o usuário solicita `prefers-reduced-motion: reduce`
+ * (configuração do SO), neutralizamos o motion sem alterar
+ * comportamento funcional. !important para sobrescrever regras
+ * locais (cada CSS Module pode redeclarar durations).
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
