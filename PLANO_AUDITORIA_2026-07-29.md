@@ -552,6 +552,36 @@ Git (configuração `.husky/_` legacy). Commits com `STRIPE_SECRET=...` passam.
 **Validação:** `git commit -m 'test' --allow-empty` com arquivo staged contendo
 `AWS_ACCESS_KEY_ID=AKIA...` deve bloquear.
 
+**Status:** ✅ Corrigido em `chore/auditoria-completa-2026-07-29` (commits
+`488c827`, `6902152`, `eea8263`).
+
+- `.husky/pre-commit` (Husky 9 format) agora roda `lint-staged` +
+  `gitleaks protect --staged --redact --no-banner --config .gitleaks.toml`.
+- `.husky/pre-commit.sh` removido (nunca era invocado pelo Git — Git só chama
+  o arquivo de nome exato `pre-commit`, não `pre-commit.sh`).
+- `.gitleaks.toml` migrado para sintaxe gitleaks v8 (`[extend].useDefault=true`
+  no lugar de `extend = "gitleaks:default"` — v7 não carregava em v8 e quebrava
+  o hook em TODO commit, não só nos com secrets).
+- `.github/workflows/ci.yml`: job `gitleaks` adicionado ao gate (`gitleaks-action@v2`,
+  `fetch-depth: 0` para escanear histórico de PRs de forks, mesmo `.gitleaks.toml`
+  do hook local). Adicionado ao `needs:` do `ci-pass` para impedir merge com secret.
+
+Validação funcional: stage de `AWS_ACCESS_KEY_ID=AKIAABCDEFGHIJKLMNOP` (chave
+que satisfaz o regex AWS do gitleaks v8 — `[A-Z2-7]{16}`) bloqueia o commit com
+exit code 1 e mensagem `leaks found: 1`. Nota: a chave do AWS docs
+`AKIAIOSFODNN7EXAMPLE` é ignorada pelo stopword embutido `'.+EXAMPLE$'`, então
+para o teste real é preciso usar uma chave sem o sufixo EXAMPLE.
+
+**PENDÊNCIAS / Follow-ups:**
+
+1. `gitleaks` não é gerenciado pelo `pnpm` (é binário Go). Instalar local
+   via `brew install gitleaks` (macOS) ou
+   <https://github.com/gitleaks/gitleaks/releases> (Linux). Em CI a Action
+   baixa o binário automaticamente.
+
+2. Considerar adicionar regra custom para `STRIPE_*` (atualmente coberta só
+   pelos defaults do gitleaks, mas o projeto usa Stripe? verificar antes).
+
 ---
 
 ### 2.2 🟡 P1 — Próxima sprint
