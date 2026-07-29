@@ -25,10 +25,11 @@ import { RefreshTokenService } from './refresh-token.service';
  *
  * Decisões:
  * - **Mínimo 8 caracteres** — anti-brute-force sem composition rules.
- * - **Máximo 128 caracteres** — anti-DoS via bcrypt cost (bcrypt é O(length)).
- *   NIST sugere ≤ 64 como mitigação; usamos 128 porque a planilha atual
- *   de password managers (1Password, Bitwarden) recomenda ≥ 128 para
- *   "passphrase mode" e o DoS em bcrypt só importa em senhas ~1k+.
+ * - **Máximo 128 caracteres** — limite prático para inputs do usuário: defesa
+ *   contra inputs patológicos (payloads gigantes que inflam o DB e estouram
+ *   timeouts de hash/serialização). Não é mitigação de DoS no bcrypt: o bcrypt
+ *   trunca a entrada em 72 bytes, então o custo de hash já é constante acima
+ *   desse ponto, independentemente do cap de 128.
  * - **Sem regras de composição** — NIST §5.1.1.2: "Verifiers SHOULD NOT
  *   impose other composition rules" (causam password fatigue → "Password1!").
  * - **HIBP breach check** — senhas em vazamentos públicos são rejeitadas.
