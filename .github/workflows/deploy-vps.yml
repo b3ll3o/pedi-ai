@@ -1,9 +1,16 @@
 name: Deploy to VPS
 
+# Gate de CI: deploy só dispara após workflow `CI` completar com sucesso em
+# `master`. Antes deste gate, o deploy rodava em `push: master` direto, o que
+# permitia que PR com testes/lint/scan vermelhos fossem deployados (produção
+# recebia build quebrado). Agora, somente após o CI verde o deploy roda.
+# `workflow_dispatch` é mantido para permitir rollback manual quando o usuário
+# valida CI localmente (a CI passa direto, este workflow é disparado à mão).
 on:
-  push:
-    branches:
-      - master
+  workflow_run:
+    workflows: ['CI']
+    types: [completed]
+    branches: [master]
   workflow_dispatch:
     inputs:
       skip_e2e:
@@ -34,6 +41,10 @@ jobs:
     name: Deploy
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Gate: para o gatilho `workflow_run`, só roda se o CI fechou com sucesso.
+    # Para `workflow_dispatch` (manual), sempre permite — o usuário assume
+    # a responsabilidade de validar o CI antes de disparar.
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     environment:
       name: production
       url: https://andreazzi.tech
