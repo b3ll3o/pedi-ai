@@ -6,13 +6,15 @@
  *  - owner: todos os métodos permitidos
  *  - manager: apenas leitura (GET)
  *  - staff: nenhum método admin
- *  - /evaluate: público (verificar separadamente)
+ *  - @Public() no handler/controller: bypass do guard (mesma convenção
+ *    do JwtAuthGuard — vide MINOR #2 do spec do controller)
  *  - Fail-closed: sem role no token ⇒ 403
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { Reflector } from '@nestjs/core';
 
-// @ts-expect-error — módulo ainda não implementado (TDD: RED)
 import { FeatureFlagAdminGuard } from '../../../../../../src/presentation/admin/feature-flags/guards/FeatureFlagAdminGuard';
+import { IS_PUBLIC_KEY } from '../../../../../../src/auth/decorators/public.decorator';
 
 interface MockContext {
   switchToHttp: () => {
@@ -38,12 +40,27 @@ function makeContext(method: string, role?: string): MockContext {
   };
 }
 
+/**
+ * Aplica metadata IS_PUBLIC_KEY em um handler para simular um handler
+ * decorado com `@Public()`. Espelha o que NestJS faz em runtime.
+ */
+function makePublicHandler(): unknown {
+  const handler = function (): void {
+    /* noop */
+  };
+  Reflect.defineMetadata(IS_PUBLIC_KEY, true, handler);
+  return handler;
+}
+
 describe('FeatureFlagAdminGuard (RNF-SEC-FF-01)', () => {
   let guard: FeatureFlagAdminGuard;
+  let reflector: Reflector;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    guard = new FeatureFlagAdminGuard();
+    reflector = new Reflector();
+    // Guard agora requer Reflector para checar @Public() — vide MINOR #2.
+    guard = new FeatureFlagAdminGuard(reflector);
   });
 
   describe('owner tem acesso total', () => {
@@ -115,16 +132,17 @@ describe('FeatureFlagAdminGuard (RNF-SEC-FF-01)', () => {
     });
   });
 
-  describe('/evaluate é público', () => {
-    it('GET /evaluate é permitido sem autenticação', () => {
-      // O guard deve verificar o handler/route — não usar este guard no /evaluate.
-      // Verificação: o controller aplica outro guard (ou nenhum) em /evaluate.
-      // Este teste documenta a expectativa arquitetural.
-      const handler = { name: 'avaliar' };
+  describe('@Public() bypassa o guard (MINOR #2)', () => {
+    it('handler com @Public() permite acesso sem user (200)', () => {
+      // Em produção, o `@Public()` decorator aplica metadata IS_PUBLIC_KEY.
+      // Aqui simulamos isso manualmente para validar a leitura via Reflector.
       const ctx = makeContext('GET');
-      ctx.getHandler = () => handler;
-      // Sem user → não deve lançar 401 (handler `avaliar` é marcado como público)
-      expect(() => guard.canActivate(ctx as never)).not.toThrow(/token|401/i);
+      ctx.getHandler = () => makePublicHandler() as { name: string };
+
+      // Sem user, sem role, sem nada — mas como a rota é @Public(), o guard
+      // libera. Reflete o comportamento esperado de `/evaluate`.
+      expect(() => guard.canActivate(ctx as never)).not.toThrow();
+      expect(guard.canActivate(ctx as never)).toBe(true);
     });
   });
 });
