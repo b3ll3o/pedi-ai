@@ -104,9 +104,10 @@ function isBrowser(): boolean {
 /**
  * Resolve uma tabela por nome de forma defensiva. Se a store não existir
  * na instância, retorna `null` (sem throw). Usada para tolerar a coexistência
- * das duas definições de `PediDatabase`.
+ * das duas definições de `PediDatabase` (Dexie sem index signature na classe).
  */
-function getTable(db: { [k: string]: unknown }, name: string) {
+function getTable(db: unknown, name: string) {
+  if (!db || typeof db !== 'object') return null;
   const candidate = (db as Record<string, unknown>)[name];
   if (candidate && typeof candidate === 'object' && 'clear' in candidate) {
     return candidate as { count: () => Promise<number>; clear: () => Promise<unknown> };
