@@ -13,7 +13,11 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import { useAuth } from '@/hooks/useAuth';
 import { apiClient } from '@/lib/api-client';
+import { purgeAllUserData } from '@/lib/offline/pii-purge';
 
+vi.mock('@/lib/offline/pii-purge', () => ({
+  purgeAllUserData: vi.fn<() => Promise<void>>(),
+}));
 const mockPush = vi.fn();
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
@@ -49,6 +53,8 @@ vi.mock('@/lib/api-client', () => ({
     clearUser: vi.fn<() => void>(),
   },
 }));
+
+const purge = purgeAllUserData as ReturnType<typeof vi.fn>;
 
 const verifySession = apiClient.verifySession as ReturnType<typeof vi.fn>;
 const login = apiClient.login as ReturnType<typeof vi.fn>;
@@ -199,6 +205,37 @@ describe('useAuth hook', () => {
   // ── 3. Sign out ────────────────────────────────────────────────────────────
 
   describe('3. Sign out', () => {
+    it('purga dados locais antes de chamar logout', async () => {
+      verifySession.mockResolvedValue(mockUser);
+      logout.mockResolvedValue(undefined);
+      purge.mockResolvedValue(undefined);
+      const ordem: string[] = [];
+      purge.mockImplementation(async () => {
+        ordem.push('purga');
+      });
+      logout.mockImplementation(async () => {
+        ordem.push('logout');
+      });
+
+      const { result } = renderHook(() => useAuth());
+      await waitFor(() => expect(result.current.user).toEqual(mockUser));
+      await result.current.signOut();
+
+      expect(ordem).toEqual(['purga', 'logout']);
+    });
+
+    it('continua o logout quando a purga local falha', async () => {
+      verifySession.mockResolvedValue(mockUser);
+      purge.mockRejectedValue(new Error('IndexedDB indisponível'));
+      logout.mockResolvedValue(undefined);
+
+      const { result } = renderHook(() => useAuth());
+      await waitFor(() => expect(result.current.user).toEqual(mockUser));
+      await result.current.signOut();
+
+      expect(logout).toHaveBeenCalledTimes(1);
+      expect(mockPush).toHaveBeenCalledWith('/login');
+    });
     it('signOut calls logout', async () => {
       verifySession.mockResolvedValue(mockUser);
       logout.mockResolvedValue(undefined);
