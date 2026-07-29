@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import { CookieBanner } from '@/components/lgpd/CookieBanner';
 import { PlausibleAnalytics } from '@/components/analytics/PlausibleAnalytics';
 import { SentryErrorBoundary } from '@/components/analytics/SentryErrorBoundary';
+import { WebVitalsReporter } from '@/components/analytics/WebVitalsReporter';
 import { CartBadge } from '@/components/cart/CartBadge';
 import { CartDrawer } from '@/components/cart/CartDrawer';
 import { OfflineIndicator } from '@/components/providers/OfflineIndicator';
@@ -210,6 +211,8 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         {/* Analytics (LGPD-friendly). No-op em dev. */}
         <PlausibleAnalytics />
+        {/* Core Web Vitals reporter (LCP/INP/CLS → backend). */}
+        <WebVitalsReporter />
         {/* Sentry global error handler (auditoria P1-1). */}
         <SentryErrorBoundary>
           <ReactQueryProvider>
