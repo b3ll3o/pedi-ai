@@ -25,6 +25,14 @@
 -- **Compatibilidade:** em primeira execução, a coluna é nullable para
 -- acomodar linhas pré-existentes; após backfill vira NOT NULL. Em
 -- re-execuções após o deploy, ambas as tentativas são no-op.
+--
+-- **Pre-flight guard (P0-01 MINOR #3 — 2026-07-29):** antes do
+-- `SET NOT NULL`, conta quantos produtos ficaram com `restaurant_id`
+-- NULL após o backfill. Se > 0, aborta com mensagem explícita —
+-- normalmente significa produtos órfãos (categoria inexistente) que
+-- o INNER JOIN do backfill não cobriu. Sem este guard, o deploy
+-- falharia no `SET NOT NULL` com erro genérico de constraint, sem
+-- indicar que o problema é o backfill incompleto.
 
 -- ── 1. Adicionar coluna nullable (idempotente) ────────────────
 
@@ -39,6 +47,25 @@ SET "restaurant_id" = c."restaurant_id"
 FROM "categories" c
 WHERE p."category_id" = c."id"
   AND p."restaurant_id" IS NULL;
+
+-- ── 2.5. Pre-flight guard anti-órfão (P0-01 MINOR #3) ─────────
+-- Garante que 100% dos produtos foram backfilled antes do SET NOT NULL.
+-- Se houver produtos órfãos (categoria inexistente — INNER JOIN excluiu),
+-- falha ALTO com mensagem acionável. Sem este guard, o SET NOT NULL
+-- falharia com constraint violation genérica, sem indicar a causa raiz.
+
+DO $$
+DECLARE
+  orphan_count INTEGER;
+BEGIN
+  SELECT COUNT(*) INTO orphan_count
+  FROM products p
+  WHERE p.restaurant_id IS NULL;
+
+  IF orphan_count > 0 THEN
+    RAISE EXCEPTION 'P0-01 pre-flight falhou: % produto(s) com restaurant_id NULL após backfill. Resolver antes de prosseguir (ex.: produtos órfãos sem categoria, ou FK category_id apontando para categoria inexistente).', orphan_count;
+  END IF;
+END $$;
 
 -- ── 3. Tornar NOT NULL após backfill ─────────────────────────
 -- Em produção real, este ALTER só aplica se a coluna estiver NULL-able;
