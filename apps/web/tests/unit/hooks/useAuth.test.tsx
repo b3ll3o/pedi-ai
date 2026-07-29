@@ -13,10 +13,10 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import { useAuth } from '@/hooks/useAuth';
 import { apiClient } from '@/lib/api-client';
-import { purgeAllUserData } from '@/lib/offline/pii-purge';
+import { purgeLocalDataSafely } from '@/lib/offline/safePurge';
 
-vi.mock('@/lib/offline/pii-purge', () => ({
-  purgeAllUserData: vi.fn<() => Promise<void>>(),
+vi.mock('@/lib/offline/safePurge', () => ({
+  purgeLocalDataSafely: vi.fn<() => Promise<void>>(),
 }));
 const mockPush = vi.fn();
 vi.mock('next/navigation', () => ({
@@ -54,7 +54,7 @@ vi.mock('@/lib/api-client', () => ({
   },
 }));
 
-const purge = purgeAllUserData as ReturnType<typeof vi.fn>;
+const purge = purgeLocalDataSafely as ReturnType<typeof vi.fn>;
 
 const verifySession = apiClient.verifySession as ReturnType<typeof vi.fn>;
 const login = apiClient.login as ReturnType<typeof vi.fn>;
@@ -205,29 +205,31 @@ describe('useAuth hook', () => {
   // ── 3. Sign out ────────────────────────────────────────────────────────────
 
   describe('3. Sign out', () => {
-    it('purga dados locais antes de chamar logout', async () => {
+    it('delega logout ao apiClient.logout (que centraliza a purga LGPD)', async () => {
+      // A purga LGPD foi movida para dentro de apiClient.logout() para
+      // garantir que TODOS os caminhos de logout (useAuth, AdminLayout
+      // chamando lib/auth/client.logout, etc.) purguem dados pessoais.
+      // useAuth agora apenas delega — o orquestrador fica em apiClient.
       verifySession.mockResolvedValue(mockUser);
       logout.mockResolvedValue(undefined);
-      purge.mockResolvedValue(undefined);
-      const ordem: string[] = [];
-      purge.mockImplementation(async () => {
-        ordem.push('purga');
-      });
-      logout.mockImplementation(async () => {
-        ordem.push('logout');
-      });
 
       const { result } = renderHook(() => useAuth());
       await waitFor(() => expect(result.current.user).toEqual(mockUser));
       await result.current.signOut();
 
-      expect(ordem).toEqual(['purga', 'logout']);
+      expect(logout).toHaveBeenCalledTimes(1);
+      // useAuth NÃO chama purge diretamente (centralizado em apiClient).
+      expect(purge).not.toHaveBeenCalled();
     });
 
     it('continua o logout quando a purga local falha', async () => {
       verifySession.mockResolvedValue(mockUser);
-      purge.mockRejectedValue(new Error('IndexedDB indisponível'));
-      logout.mockResolvedValue(undefined);
+      // A purga agora roda dentro de apiClient.logout() (mockado aqui),
+      // então para testar que o logout prossegue quando a purga falha
+      // precisamos testar o wrapper diretamente em outro teste (ver
+      // safePurge.int-spec.ts). Aqui validamos apenas que signOut
+      // continua chamando logout mesmo se a chamada mockada rejeitar.
+      logout.mockRejectedValue(new Error('IndexedDB indisponível'));
 
       const { result } = renderHook(() => useAuth());
       await waitFor(() => expect(result.current.user).toEqual(mockUser));

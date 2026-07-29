@@ -29,8 +29,19 @@ export async function login(email: string, password: string): Promise<{ error?: 
 
 /**
  * Logout via API route
+ *
+ * Purga dados pessoais locais (LGPD art. 18) ANTES de chamar o endpoint de
+ * logout. A purga é best-effort e não bloqueia o logout em caso de falha.
+ * Isso garante que o caminho de logout do AdminLayout (que usa este helper
+ * diretamente, sem passar por `useAuth`) também limpe PII.
  */
 export async function logout(): Promise<void> {
+  // Import dinâmico para evitar carregar Dexie em bundles server (este
+  // módulo é client-only pelo nome, mas o bundler do Next pode tree-shake
+  // errado se houver re-export).
+  const { purgeLocalDataSafely } = await import('@/lib/offline/safePurge');
+  await purgeLocalDataSafely();
+
   try {
     await fetch('/api/auth/logout', {
       method: 'POST',
