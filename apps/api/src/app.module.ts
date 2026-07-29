@@ -16,6 +16,7 @@ import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { HealthModule } from './health/health.module';
 import { MenuModule } from './menu/menu.module';
 import { ModifierGroupsModule } from './modifier-groups/modifier-groups.module';
+import { ObservabilityModule } from './observability/observability.module';
 import { OrdersModule } from './orders/orders.module';
 import { PaymentsModule } from './payments/payments.module';
 import { ProductsModule } from './products/products.module';
@@ -66,6 +67,7 @@ import { UsersModule } from './users/users.module';
     SubscriptionsModule,
     CartModule,
     HealthModule,
+    ObservabilityModule,
   ],
   providers: [
     // Guard JWT global — rotas marcadas com @Public() são liberadas.

@@ -24,6 +24,22 @@ const NODE_ENV = process.env.NODE_ENV ?? 'development';
 if (NODE_ENV === 'production' && SENTRY_DSN) {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const Sentry = require('@sentry/nextjs');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const sentryNs = require('@sentry/nextjs');
+
+  // Auditoria OBSERVABILITY.md § P0.4 + § P0.5:
+  // - browserTracingIntegration: injeta sentry-trace/baggage em fetches
+  //   → correlação API↔Frontend via W3C TraceContext.
+  // - webVitalsIntegration: auto-captura LCP/INP/CLS/TTFB/FID.
+  // Checagem via `typeof` para compatibilidade cross-version.
+  const integrations = [
+    typeof sentryNs.browserTracingIntegration === 'function'
+      ? sentryNs.browserTracingIntegration({ idleTimeout: 1000, enableInp: true })
+      : undefined,
+    typeof sentryNs.webVitalsIntegration === 'function'
+      ? sentryNs.webVitalsIntegration({ reportAllChanges: false })
+      : undefined,
+  ].filter(Boolean);
 
   Sentry.init({
     dsn: SENTRY_DSN,
@@ -34,14 +50,20 @@ if (NODE_ENV === 'production' && SENTRY_DSN) {
 
     environment: NODE_ENV,
 
-    // NÃO gravar session replay (LGPD: replay pode capturar dados sensíveis).
-    // Ativar somente se tiver consentimento explícito (LGPD Art. 7º).
+    // LGPD Art. 7º + 46: NÃO enviar PII padrão (IP, email, username).
+    sendDefaultPii: false,
+
+    // LGPD: replay pode capturar dados sensíveis. Só ativar com consentimento.
     replaysSessionSampleRate: 0,
     replaysOnErrorSampleRate: 0,
 
+    integrations: integrations.length > 0 ? integrations : undefined,
+
+    // Lista branca de URLs para propagação do trace context.
+    tracePropagationTargets: ['localhost', 'andreazzi.tech', /^https:\/\/[^/]*\.andreazzi\.tech/],
+
     // Filtra console.log/breadcrumbs que possam ter PII.
     beforeBreadcrumb(breadcrumb: { category?: string; message?: string; [key: string]: unknown }) {
-      // Bloqueia console.log com conteúdo > 200 chars (potencial PII dump).
       if (
         breadcrumb.category === 'console' &&
         breadcrumb.message &&

@@ -10,6 +10,11 @@ import { OrderStatus, PaymentMethod, Prisma } from '@prisma/client';
 import { IDEMPOTENCY_KEY_TTL_MS } from '../common/constants/time';
 import { PageDto, PAGINATION_DEFAULT_LIMIT } from '../common/dto/pagination.dto';
 import { PrismaService } from '../common/prisma.service';
+import {
+  withSpan,
+  ordersCounter,
+  orderValueHistogram,
+} from '../observability/observability.module';
 import { RealtimeService } from '../realtime/realtime.service';
 
 import { isValidOrderStatusTransition } from './order-state-machine';
@@ -201,6 +206,20 @@ export class OrdersService {
       notes?: string;
     }>;
   }) {
+    return withSpan(
+      'pedi.order.create',
+      async (span) => {
+        span.setAttribute('restaurant_id', data.restaurantId);
+        span.setAttribute('items_count', data.items.length);
+        span.setAttribute('total_brl', data.total);
+        if (data.paymentMethod) span.setAttribute('payment_method', data.paymentMethod);
+        return this.createInternal(data);
+      },
+      { restaurant_id: data.restaurantId }
+    );
+  }
+
+  private async createInternal(data: Parameters<OrdersService['create']>[0]) {
     // 1. Idempotência atômica via tabela `IdempotencyKey` (auditoria A-AD-05).
     // Antes: `findFirst` + `create` sofria race (TOCTOU). Agora, o INSERT
     // inicial na tabela IdempotencyKey com `@@unique([scope, key])` faz o
@@ -342,6 +361,13 @@ export class OrdersService {
       id: order.id,
       total: order.total,
     });
+
+    // Métricas de negócio após sucesso.
+    ordersCounter.add(1, {
+      restaurant_id: data.restaurantId,
+      channel: data.tableId ? 'table' : 'direct',
+    });
+    orderValueHistogram.record(data.total, { restaurant_id: data.restaurantId });
 
     return order;
   }

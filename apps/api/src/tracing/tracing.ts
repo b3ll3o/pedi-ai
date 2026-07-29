@@ -25,10 +25,12 @@
  * - `OTEL_SERVICE_NAME`: nome do serviço (default: `pedi-ai-api`).
  * - `OTEL_TRACES_ENABLED`: `true` (default) ou `false` para desligar em dev.
  */
-import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
+import { diag, DiagConsoleLogger, DiagLogLevel, metrics } from '@opentelemetry/api';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
+import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { resourceFromAttributes } from '@opentelemetry/resources';
+import { MeterProvider, PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import {
   BatchSpanProcessor,
@@ -46,9 +48,28 @@ if (process.env.OTEL_DIAG_ENABLED === 'true') {
 
 const SERVICE_NAME = process.env.OTEL_SERVICE_NAME ?? 'pedi-ai-api';
 const ENABLED = process.env.OTEL_TRACES_ENABLED !== 'false';
+const METRICS_ENABLED = process.env.OTEL_METRICS_ENABLED !== 'false';
 const OTLP_ENDPOINT = process.env.OTEL_EXPORTER_OTLP_ENDPOINT;
 
+/**
+ * Modo de export de métricas.
+ * **2025/2026 recomendação:** `otlp` (push). OTLP é o padrão cross-vendor,
+ * suporta exemplars nativos (link métrica → trace), e não expõe porta.
+ * `prometheus` (pull) mantido como fallback para cenários legacy/air-gapped.
+ * Default: `otlp` se OTLP_ENDPOINT configurado, senão `prometheus`.
+ */
+const METRICS_MODE: 'otlp' | 'prometheus' | 'both' = (() => {
+  const explicit = process.env.OTEL_METRICS_EXPORTER?.toLowerCase();
+  if (explicit === 'otlp' || explicit === 'prometheus' || explicit === 'both') return explicit;
+  return OTLP_ENDPOINT ? 'otlp' : 'prometheus';
+})();
+
+/** Porta do Prometheus exporter (só quando METRICS_MODE !== 'otlp'). */
+const METRICS_PORT = Number(process.env.METRICS_PORT ?? '9090');
+
 let sdk: NodeSDK | null = null;
+let meterProvider: MeterProvider | null = null;
+let prometheusExporter: PrometheusExporter | null = null;
 
 if (ENABLED) {
   try {
@@ -66,12 +87,14 @@ if (ENABLED) {
       ? new BatchSpanProcessor(exporter)
       : new SimpleSpanProcessor(exporter);
 
+    const resource = resourceFromAttributes({
+      [SemanticResourceAttributes.SERVICE_NAME]: SERVICE_NAME,
+      [SemanticResourceAttributes.SERVICE_VERSION]: process.env.npm_package_version ?? '1.0.0',
+      [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]: process.env.NODE_ENV ?? 'development',
+    });
+
     sdk = new NodeSDK({
-      resource: resourceFromAttributes({
-        [SemanticResourceAttributes.SERVICE_NAME]: SERVICE_NAME,
-        [SemanticResourceAttributes.SERVICE_VERSION]: process.env.npm_package_version ?? '1.0.0',
-        [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]: process.env.NODE_ENV ?? 'development',
-      }),
+      resource,
       spanProcessor,
       instrumentations: [
         getNodeAutoInstrumentations({
@@ -83,6 +106,50 @@ if (ENABLED) {
 
     sdk.start();
 
+    // ── Metrics (OTLP ou Prometheus + MeterProvider) ───────────
+    // OBSERVABILITY.md § P0.2 — segue recomendação 2025/2026:
+    // OTLP/HTTP é o padrão cross-vendor; Prometheus fica como fallback.
+    if (METRICS_ENABLED) {
+      try {
+        const readers: Array<PeriodicExportingMetricReader | PrometheusExporter> = [];
+
+        if ((METRICS_MODE === 'otlp' || METRICS_MODE === 'both') && OTLP_ENDPOINT) {
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
+          const { OTLPMetricExporter } = require('@opentelemetry/exporter-metrics-otlp-http');
+          const otlpMetricExporter = new OTLPMetricExporter({
+            url: `${OTLP_ENDPOINT}/v1/metrics`,
+          });
+          readers.push(
+            new PeriodicExportingMetricReader({
+              exporter: otlpMetricExporter,
+              exportIntervalMillis: Number(process.env.OTEL_METRIC_EXPORT_INTERVAL ?? 30000),
+            })
+          );
+          // eslint-disable-next-line no-console
+          console.log(`[OTel] metrics OTLP exporter → ${OTLP_ENDPOINT}/v1/metrics`);
+        }
+
+        if (METRICS_MODE === 'prometheus' || METRICS_MODE === 'both') {
+          prometheusExporter = new PrometheusExporter({
+            port: METRICS_PORT,
+            endpoint: '/metrics',
+            host: '0.0.0.0',
+          });
+          readers.push(prometheusExporter);
+          // eslint-disable-next-line no-console
+          console.log(`[OTel] metrics Prometheus exporter pronto em :${METRICS_PORT}/metrics`);
+        }
+
+        meterProvider = new MeterProvider({ resource, readers });
+        metrics.setGlobalMeterProvider(meterProvider);
+      } catch (err) {
+        // Falha no metrics NÃO pode derrubar a API.
+        // eslint-disable-next-line no-console
+        console.error('[OTel] falha ao iniciar metrics:', err);
+      }
+    }
+
+    // eslint-disable-next-line no-console
     console.log(
       `[OTel] tracing iniciado (service=${SERVICE_NAME}, exporter=${
         OTLP_ENDPOINT ? 'otlp-http' : 'console'
@@ -104,11 +171,16 @@ if (ENABLED) {
 export async function shutdownOtel(): Promise<void> {
   if (!sdk) return;
   try {
+    if (meterProvider) {
+      await meterProvider.shutdown();
+    }
     await sdk.shutdown();
   } catch (err) {
-    // HIGH-009 (2ª varredura QA): substituído `otelLogger.error` (não
-    // existe em `@opentelemetry/api`) por `console.error` — OTel já
-    // está desligando, então logger próprio do runtime é suficiente.
+    // eslint-disable-next-line no-console
     console.error('[OTel] shutdown error:', err);
   }
+}
+
+export function getPrometheusExporter(): PrometheusExporter | null {
+  return prometheusExporter;
 }

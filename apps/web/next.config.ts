@@ -104,6 +104,11 @@ function buildImageRemotePatterns(): Array<{
 }
 
 const nextConfig: NextConfig = {
+  // Web Vitals Attribution — habilita `reportWebVitals` no Next.js
+  // para captura de LCP/INP/CLS/TTFB/FID. OBSERVABILITY.md § P0.4.
+  experimental: {
+    webVitalsAttribution: ['CLS', 'LCP', 'INP', 'TTFB', 'FID'],
+  },
   // TypeScript build errors são bloqueantes. Os erros pré-existentes foram
   // resolvidos (mapeamento de campos pt-BR do domínio, anotações de
   // generics em api-client wrappers, conversão Buffer em QRCodeVisual).

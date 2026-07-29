@@ -3,6 +3,11 @@ import { PaymentStatus, Prisma } from '@prisma/client';
 
 import { PIX_INTENT_TTL_MS } from '../common/constants/time';
 import { PrismaService } from '../common/prisma.service';
+import {
+  withSpan,
+  paymentsCounter,
+  pixFailureCounter,
+} from '../observability/observability.module';
 import { isValidWebhookTransition } from '../orders/order-state-machine';
 
 /**
@@ -76,6 +81,29 @@ export class PaymentsService {
   constructor(private prisma: PrismaService) {}
 
   async createPixPayment(data: { orderId: string; restaurantId: string; amount?: number }) {
+    return withSpan(
+      'pedi.payment.pix.create',
+      async (span) => {
+        span.setAttribute('order_id', data.orderId);
+        span.setAttribute('restaurant_id', data.restaurantId);
+        try {
+          const result = await this.createPixPaymentInternal(data);
+          paymentsCounter.add(1, { method: 'pix', status: 'created' });
+          return result;
+        } catch (err) {
+          paymentsCounter.add(1, { method: 'pix', status: 'failed' });
+          throw err;
+        }
+      },
+      { restaurant_id: data.restaurantId }
+    );
+  }
+
+  private async createPixPaymentInternal(data: {
+    orderId: string;
+    restaurantId: string;
+    amount?: number;
+  }) {
     const order = await this.prisma.order.findUnique({ where: { id: data.orderId } });
     if (!order) {
       throw new NotFoundException('Pedido não encontrado');
@@ -243,6 +271,35 @@ export class PaymentsService {
   }
 
   async handleWebhook(data: {
+    eventId: string;
+    paymentId: string;
+    status: string;
+    orderId?: string;
+    restaurantId?: string;
+  }) {
+    return withSpan(
+      'pedi.payment.webhook',
+      async (span) => {
+        span.setAttribute('event_id', data.eventId);
+        span.setAttribute('mp_payment_id', data.paymentId);
+        span.setAttribute('mp_status', data.status);
+        if (data.restaurantId) span.setAttribute('restaurant_id', data.restaurantId);
+        try {
+          const result = await this.handleWebhookInternal(data);
+          span.setAttribute('result', String(result.status));
+          paymentsCounter.add(1, { method: 'pix', status: data.status });
+          return result;
+        } catch (err) {
+          paymentsCounter.add(1, { method: 'pix', status: 'webhook_error' });
+          pixFailureCounter.add(1, { reason: 'webhook_handler_error' });
+          throw err;
+        }
+      },
+      {}
+    );
+  }
+
+  private async handleWebhookInternal(data: {
     eventId: string;
     paymentId: string;
     status: string;

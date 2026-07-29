@@ -83,7 +83,12 @@ async function bootstrap() {
 
   const adapter = new FastifyAdapter({
     logger: true,
-    trustProxy: true, // Necessário para `req.ip` correto atrás de Nginx/proxy
+    trustProxy: true,
+    // Graceful shutdown (OBSERVABILITY.md § P1.6).
+    // Fastify v5: `forceCloseConnections: true` encerra conexões idle após
+    // `app.close()`. Em Fastify v4 era `return503OnClosing` (removido em v5).
+    // Para retornar 503 durante shutdown, usamos um onClose hook abaixo.
+    forceCloseConnections: true,
   });
 
   // `bodyParser: false` desabilita o registro automático do parser
@@ -163,7 +168,19 @@ async function bootstrap() {
     origin: resolveAllowedOrigins(),
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      // W3C Trace Context (correlação API↔Frontend, OBSERVABILITY.md § P0.5)
+      'traceparent',
+      'tracestate',
+      // Sentry distributed tracing
+      'sentry-trace',
+      'baggage',
+      // Request ID (correlação logs)
+      'x-request-id',
+    ],
   });
 
   // ─── Validação global ───
