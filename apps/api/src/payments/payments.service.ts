@@ -248,7 +248,14 @@ export class PaymentsService {
     status: string;
     orderId?: string;
     restaurantId?: string;
+    provider?: string;
   }) {
+    // Provider do webhook. Auditoria P0-04: a idempotência agora é escopada
+    // por (provider, externalId) — sem `provider`, dois providers (MP, Asaas)
+    // com mesmo externalId colidiriam no INSERT e o segundo seria
+    // incorretamente marcado como `duplicate`. Default `mercadopago` mantém
+    // compatibilidade com callers existentes até o controller ser migrado.
+    const provider = data.provider ?? 'mercadopago';
     // Transação interativa em Serializable: o INSERT do WebhookEvent é a
     // operação de "claim" — duas entregas simultâneas do mesmo eventId
     // não podem coexistir. A segunda撞a P2002 e sai como duplicate.
@@ -262,6 +269,8 @@ export class PaymentsService {
             await tx.webhookEvent.create({
               data: {
                 id: data.eventId,
+                provider,
+                externalId: data.eventId,
                 eventType: 'payment',
                 processedAt: new Date(),
               },

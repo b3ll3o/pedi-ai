@@ -439,10 +439,37 @@ model ProductModifierGroup {
   @@index([modifierGroupId])
 }
 
+/// WebhookEvent — idempotência de webhooks de pagamento (P0-04)
+///
+/// Antes do fix: o model só tinha `id` (PK) usado como eventId do provider
+/// e `eventType` — sem `provider`/`externalId` separados. Webhooks de
+/// providers diferentes (MP ↔ Asaas) com mesmo `externalId` poderiam
+/// coexistir e o INSERT do segundo era processado normalmente, gerando
+/// débito PIX duplicado em produção.
+///
+/// Depois do fix: `provider` + `externalId` formam a chave lógica do
+/// evento. A unique constraint em `externalId` (GLOBAL) impede colisão
+/// cross-provider — qualquer INSERT com `externalId` já presente falha
+/// com P2002, e o serviço reconhece como `duplicate`.
+///
+/// NOTA: a constraint é GLOBAL (`@@unique([externalId])`), não composta
+/// (`@@unique([provider, externalId])`). A composta permitiria o cenário
+/// bug — `(mercadopago, X)` e `(asaas, X)` são tuples distintas e
+/// passariam. O bug exige isolamento GLOBAL do externalId.
+///
+/// `id` (PK) permanece como `eventId` do provider para manter a API
+/// existente do `payments.service.ts` (`tx.webhookEvent.create({ data: { id, ... } })`)
+/// e a semântica "INSERT é o claim atômico da transação".
 model WebhookEvent {
-  id           String   @id @default(uuid())
-  eventType    String
-  processedAt  DateTime @default(now())
+  id          String    @id @default(uuid())
+  provider    String
+  externalId  String    @unique
+  eventType   String
+  payload     Json?
+  receivedAt  DateTime  @default(now())
+  processedAt DateTime  @default(now())
+
+  @@index([provider, receivedAt])
 }
 
 /// FeatureFlag (aggregate root) — RF-ADM-FF-01..04

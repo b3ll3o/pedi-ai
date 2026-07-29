@@ -439,6 +439,7 @@ export class PaymentsController {
         paymentId,
         status: mpPayment.status,
         orderId,
+        provider: 'mercadopago',
       });
     } catch (error) {
       this.logger.error(
