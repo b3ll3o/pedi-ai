@@ -185,13 +185,32 @@ test.describe('Landing Page', () => {
       const jsonLdScripts = await page.$$('script[type="application/ld+json"]');
       const allContent = await Promise.all(jsonLdScripts.map((script) => script.textContent()));
 
+      // O layout.tsx usa o formato @graph do schema.org (múltiplas entidades
+      // num único script), então o root tem `{ '@context', '@graph': [...] }`.
+      // Também suporta o formato "schema raiz" (um único objeto) e array puro
+      // — ambos são normalizados para uma lista flat de entidades.
       const combinedContent = allContent.join('');
-      const parsedSchemas = JSON.parse(combinedContent);
-      const schemasArray = Array.isArray(parsedSchemas) ? parsedSchemas : [parsedSchemas];
+      const parsed = JSON.parse(combinedContent);
+      const schemasArray: Array<Record<string, unknown>> = [];
+      const collect = (node: unknown): void => {
+        if (Array.isArray(node)) {
+          node.forEach(collect);
+          return;
+        }
+        if (node && typeof node === 'object') {
+          const obj = node as Record<string, unknown>;
+          if (Array.isArray(obj['@graph'])) {
+            obj['@graph'].forEach(collect);
+          } else if (obj['@type']) {
+            schemasArray.push(obj);
+          }
+        }
+      };
+      collect(parsed);
 
-      const schemaTypes = schemasArray.map((s: Record<string, unknown>) => s['@type']);
-      expect(schemaTypes, 'Deve conter schema Organization ou WebSite').toContain('Organization');
-      expect(schemaTypes, 'Deve conter schema Organization ou WebSite').toContain('WebSite');
+      const schemaTypes = schemasArray.map((s) => s['@type']);
+      expect(schemaTypes, 'Deve conter schema Organization').toContain('Organization');
+      expect(schemaTypes, 'Deve conter schema WebSite').toContain('WebSite');
     });
   });
 });

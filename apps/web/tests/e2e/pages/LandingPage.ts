@@ -69,11 +69,18 @@ export class LandingPage {
     await this.page.evaluate((id) => {
       const element = document.getElementById(id);
       if (element) {
-        element.scrollIntoView({ behavior: 'instant' });
+        // block: 'center' alinha o centro do elemento com o centro do
+        // viewport. Necessário para o IntersectionObserver da Navbar
+        // (rootMargin: '-50% 0px -50% 0px') disparar — a "região efetiva"
+        // do observer é uma linha horizontal no meio do viewport.
+        // Sem o alinhamento, o observer nunca intersecta a seção.
+        element.scrollIntoView({ behavior: 'instant', block: 'center' });
       }
     }, sectionId);
-    // Wait for intersection observer to update active state
-    await this.page.waitForTimeout(200);
+    // Aguarda o ciclo do IntersectionObserver propagar e o React re-render
+    // o `aria-current` na navbar. 200ms é folgado o suficiente para
+    // cobrir o callback assíncrono do observer + render.
+    await this.page.waitForTimeout(300);
   }
 
   async openMobileMenu(): Promise<void> {
