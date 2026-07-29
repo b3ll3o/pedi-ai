@@ -236,10 +236,13 @@ export async function purgeAllUserData(): Promise<PiiPurgeResult> {
   };
 
   const result: PiiPurgeResult = { ...EMPTY_RESULT };
+  // Cast via `unknown` para satisfazer strict-mode sem `any` (o índice
+  // de PiiPurgeResult é nominal, não index-signature).
+  const resultMutable = result as unknown as Record<string, number>;
   for (const { name, count } of counts) {
     const key = STORE_TO_RESULT_KEY[name];
     if (key) {
-      (result as Record<string, number>)[key] = count;
+      resultMutable[key] = count;
     }
   }
   result.total =
