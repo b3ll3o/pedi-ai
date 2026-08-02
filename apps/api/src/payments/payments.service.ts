@@ -1,59 +1,12 @@
-import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PaymentStatus, Prisma } from '@prisma/client';
 
 import { PIX_INTENT_TTL_MS } from '../common/constants/time';
 import { PrismaService } from '../common/prisma.service';
 import { isValidWebhookTransition } from '../orders/order-state-machine';
 
-/**
- * Gera um payload PIX EMV no formato BR Code (BACEN).
- *
- * **Stub** (auditoria A17): o conteúdo é construído deterministicamente a
- * partir do `paymentId` e do valor, mas **não é registrado no SPI/PIX**
- * (não há integração com o PSP real). O QR code retornado pelo frontend
- * aponta para um placeholder (api.qrserver.com) que renderiza o payload.
- *
- * Estrutura (versão simplificada):
- *  - 00  - Payload Format Indicator (01)
- *  - 26  - Merchant Account Information (gui + chave stub)
- *  - 52  - Merchant Category Code (0000)
- *  - 53  - Transaction Currency (986 = BRL)
- *  - 54  - Transaction Amount (em centavos → reais com 2 casas)
- *  - 58  - Country Code (BR)
- *  - 59  - Merchant Name (PEDI-AI STUB)
- *  - 60  - Merchant City (SAO PAULO)
- *  - 62  - Additional Data Field (txid)
- *  - 63  - CRC16 (placeholder)
- *
- * Quando a integração com Mercado Pago estiver ativa (RF-PAG-02), este
- * payload será substituído pelo BR Code gerado pelo PSP.
- */
-function buildPixStubPayload(amountCents: number, paymentId: string): string {
-  const amount = (amountCents / 100).toFixed(2);
-  const txid = paymentId.slice(0, 25).padEnd(25, '0');
-
-  // TLV (Tag-Length-Value) helper.
-  const tlv = (tag: string, value: string): string => {
-    const len = String(value.length).padStart(2, '0');
-    return `${tag}${len}${value}`;
-  };
-
-  const merchantAccount = tlv('00', 'br.gov.bcb.pix') + tlv('01', 'stub@pedi-ai.com');
-  const parts = [
-    tlv('00', '01'),
-    tlv('26', merchantAccount),
-    tlv('52', '0000'),
-    tlv('53', '986'),
-    tlv('54', amount),
-    tlv('58', 'BR'),
-    tlv('59', 'PEDI-AI STUB'),
-    tlv('60', 'SAO PAULO'),
-    tlv('62', tlv('05', txid)),
-  ];
-  // CRC16 placeholder — sem o CRC válido, apps bancários podem recusar
-  // (por isso é importante migrar para o payload real do PSP quando ativo).
-  return parts.join('') + '6304STUB';
-}
+import { PixGateway } from './infrastructure/pix-gateway';
+import { PIX_GATEWAY } from './infrastructure/pix-gateway.provider';
 
 /**
  * Service de pagamentos PIX.
@@ -73,9 +26,13 @@ function buildPixStubPayload(amountCents: number, paymentId: string): string {
 export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(PIX_GATEWAY) private readonly pixGateway: PixGateway
+  ) {}
 
   async createPixPayment(data: { orderId: string; restaurantId: string; amount?: number }) {
+    // @spec(RF-PAY-01) — ver `.openspec/specs/pagamento/design.md` §2.
     const order = await this.prisma.order.findUnique({ where: { id: data.orderId } });
     if (!order) {
       throw new NotFoundException('Pedido não encontrado');
@@ -104,6 +61,14 @@ export class PaymentsService {
     // Auditoria A-02: create + update do qrCode dentro de `$transaction` —
     // crash entre as duas queries deixava intent com `qrCode: 'pending'`
     // persistido, causando estado intermediário inválido.
+    //
+    // P0-07 (2026-08-01): o `pixGateway` injetado via `PIX_GATEWAY` é
+    // resolvido em runtime pelo `pixGatewayProvider`:
+    // - `PIX_GATEWAY_MODE=mp` + `MERCADOPAGO_ACCESS_TOKEN` → MercadoPagoPixGateway (produção)
+    // - sem token                                              → DemoPixGateway (BR Code determinístico, dev/CI)
+    // Antes desta PR, o service embutia `buildPixStubPayload` que gerava BR
+    // Code com CRC16 placeholder (`PEDI-AI STUB`) — apps bancários
+    // **recusavam** o pagamento. Agora o payload vem do PSP real.
     const payment = await this.prisma.$transaction(async (tx) => {
       const created = await tx.paymentIntent.create({
         data: {
@@ -113,27 +78,32 @@ export class PaymentsService {
           paymentMethod: 'pix',
           status: 'pending',
           expiresAt,
-          // placeholder, atualizado abaixo com o BR Code real.
+          // placeholder, atualizado abaixo com o resultado do gateway.
           qrCode: 'pending',
         },
       });
 
-      // Auditoria A17: gera payload PIX EMV stub (BR Code) e codifica em
-      // URL para um serviço de QR code (api.qrserver.com). Apps bancários
-      // podem rejeitar por CRC16 stub, mas o payload tem a estrutura certa
-      // para migração futura ao PSP real.
-      const pixPayload = buildPixStubPayload(serverAmount, created.id);
-      const qrCode = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(pixPayload)}`;
+      const charge = await this.pixGateway.createPixCharge({
+        orderId: created.id,
+        amount: serverAmount,
+        description: `Pedido #${created.id.slice(-8)} — Pedi-AI`,
+        expirationMs: PIX_INTENT_TTL_MS,
+      });
 
       return tx.paymentIntent.update({
         where: { id: created.id },
-        data: { qrCode },
+        data: {
+          qrCode: charge.qrCode,
+          qrCodeBase64: charge.qrCodeBase64 || null,
+          mercadoPagoPaymentId: charge.externalId,
+        },
       });
     });
 
     return {
       id: payment.id,
       qrCode: payment.qrCode,
+      qrCodeBase64: payment.qrCodeBase64,
       expiresAt: payment.expiresAt,
       amount: payment.amount,
     };
