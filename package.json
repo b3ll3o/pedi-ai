@@ -6,6 +6,7 @@
     "dev": "pnpm --filter @pedi-ai/web -- dev",
     "build": "pnpm --filter @pedi-ai/web -- build",
     "start": "pnpm --filter @pedi-ai/web -- start",
+    "env:check": "sh scripts/check-dev-env.sh",
     "lint": "pnpm --filter @pedi-ai/web -- lint && pnpm --filter @pedi-ai/api -- lint",
     "lint:api": "pnpm --filter @pedi-ai/api -- lint",
     "lint:web": "pnpm --filter @pedi-ai/web -- lint",
