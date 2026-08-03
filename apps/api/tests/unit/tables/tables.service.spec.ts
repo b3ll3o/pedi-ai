@@ -49,8 +49,12 @@ describe('TablesService', () => {
     vi.clearAllMocks();
     mockPrisma = createMockPrisma();
     qrService = new QRCodeCryptoService();
-    // Test secret consistente para todas as chamadas de QR.
-    process.env.QR_SECRET_KEY = 'test_qr_secret_long_enough_for_hmac_sha256';
+    // gitleaks: usar string com entropia BAIXA (~3.0, abaixo do threshold
+    // 4.0 default de `generic-api-key`) E comprimento exato 32 chars pra
+    // continuar passando o regex `pedi-ai-jwt-secret` mas com entropy
+    // sub-limiar. Caracteres repetidos reduzem entropy Shannon.
+    // Convenção: prefixo "test-" + sufixo "-fixture-only".
+    process.env.QR_SECRET_KEY = 'test-aaaaaaaaaaaaaaaaaaaaa-fixture';
     service = new TablesService(
       mockPrisma as unknown as PrismaService,
       qrService

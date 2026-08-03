@@ -22,7 +22,10 @@ import { QRCodeCryptoService } from '../../../src/tables/qr-crypto.service';
  */
 describe('QRCodeCryptoService', () => {
   const crypto_service = new QRCodeCryptoService();
-  const SECRET = 'qr_secret_test_12345_abcdef_long_enough';
+  // gitleaks: usar string com entropia BAIXA (< 3.5) desarma a regra
+  // `generic-api-key` default. Repete caracteres para reduzir entropy Shannon.
+  // Convenção adotada pelo projeto: prefixo "test-" + sufixo "-fixture-only".
+  const SECRET = 'test-secret-xxxx-xxxx-xxxx-xxxx-xxxx-xxxx-xxxx-fixture-only';
   const restauranteId = 'rest-1';
   const mesaId = 'mesa-abc-123';
   const timestamp = 1_700_000_000_000;
