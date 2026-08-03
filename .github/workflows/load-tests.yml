@@ -110,7 +110,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install k6
         run: |
@@ -219,7 +219,7 @@ jobs:
       needs.k6-smoke.result == 'success' &&
       (needs.prepare.outputs.test_type == 'smoke' || needs.prepare.outputs.test_type == 'landing')
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Download latest results
         uses: actions/download-artifact@v4
