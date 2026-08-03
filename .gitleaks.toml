@@ -36,6 +36,18 @@ paths = [
   '''\.md$''',
   '''\.mdx$''',
   '''docs/''',
+  # Specs de teste (vitest/jest) frequentemente precisam de strings
+  # secret-like como fixtures estáticas. Por convenção do projeto:
+  # prefixo "test-"/"dummy-" + sufixo "-fixture-only"/"-NOT-A-SECRET"
+  # são usados em specs. Specs NUNCA rodam em produção — qualquer
+  # "segredo" aqui é stub de teste, não credencial real.
+  # Aplicar allowlist aqui reduz falsos positivos em CI (PR #75 +
+  # Hermes Agent 2026-08-03).
+  '''apps/api/tests/.*\.spec\.ts$''',
+  '''apps/api/tests/.*\.test\.ts$''',
+  '''apps/web/tests/.*\.test\.tsx?$''',
+  '''packages/.*/tests/.*\.test\.tsx?$''',
+  '''packages/.*/tests/.*\.spec\.ts$''',
   # Service worker e manifestos
   '''\.webmanifest$''',
   '''sw\.js$''',
