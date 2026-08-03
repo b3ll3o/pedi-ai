@@ -61,6 +61,16 @@ const SEED_PREFIX = 'e2e+';
 const TEST_PASSWORD = 'E2ETestPassword123!';
 const RESTAURANT_NAME = 'Restaurant E2E Test';
 
+/**
+ * Total (sentinela) do pedido do tenant B.
+ *
+ * Valor absurdamente alto e único no seed para que qualquer vazamento
+ * cross-tenant em agregações (`/analytics/overview` → `revenue`) seja
+ * detectável por comparação numérica direta. Se o faturamento do tenant A
+ * chegar perto desse valor, o filtro por tenant vazou.
+ */
+const TENANT_B_ORDER_TOTAL = 9999.99;
+
 function getShardSuffix(): string {
   return IS_SHARD_MODE ? `+sh${SHARD_CURRENT}` : '';
 }
@@ -84,9 +94,26 @@ interface SeedResult {
     id: string;
     name: string;
   };
+  /**
+   * Tenant B — restaurante "vizinho" usado pelos testes BOLA
+   * (`tests/security/multitenant.spec.ts`).
+   *
+   * **Precisa ter dados reais.** Um tenant B vazio torna qualquer
+   * asserção de isolamento infalsificável: iterar um array vazio passa
+   * até numa implementação que vaze tudo. Por isso o seed cria pelo
+   * menos 1 categoria, 1 produto, 1 mesa e 1 pedido em B, e expõe os
+   * IDs aqui para que os testes possam afirmar
+   * "este ID conhecido de B NUNCA aparece nas respostas de A".
+   */
   restaurantB: {
     id: string;
     name: string;
+    categoryId: string;
+    productId: string;
+    productName: string;
+    tableId: string;
+    orderId: string;
+    orderTotal: number;
   };
   categories: Array<{
     id: string;
@@ -102,6 +129,12 @@ interface SeedResult {
     id: string;
     number: number;
     qr_code: string;
+  }>;
+  /** Pedidos do tenant A (usados para asserções positivas de listagem). */
+  orders: Array<{
+    id: string;
+    status: string;
+    total: number;
   }>;
   modifierGroups?: {
     tamanhoId: string;
@@ -121,6 +154,16 @@ interface TestUser {
 // ============================================
 
 let _sql: ReturnType<typeof import('postgres').default> | null = null;
+/**
+ * Promise única de inicialização do pool.
+ *
+ * `getSql()` é chamado concorrentemente pelas fases do seed
+ * (`Promise.all([createUsers(), createRestaurant(), ...])`). Sem o
+ * memo da *promise* (e não só do resultado), cada chamador via `_sql`
+ * ainda `null` e criava seu próprio pool de 10 conexões — até 3 pools
+ * (30 conexões) por execução, vazando conexões até o fim do processo.
+ */
+let _sqlInit: Promise<ReturnType<typeof import('postgres').default>> | null = null;
 
 // O DATABASE_URL configurado no GHA inclui `?schema=public` (convenção Prisma),
 // mas o cliente `postgres` não reconhece esse parâmetro e falha com
@@ -132,11 +175,15 @@ function sanitizeDatabaseUrl(url: string): string {
 }
 
 async function getSql() {
-  if (!_sql) {
-    const postgres = (await import('postgres')).default;
-    _sql = postgres(sanitizeDatabaseUrl(DATABASE_URL!), { max: 10 });
+  if (_sql) return _sql;
+  if (!_sqlInit) {
+    _sqlInit = (async () => {
+      const postgres = (await import('postgres')).default;
+      _sql = postgres(sanitizeDatabaseUrl(DATABASE_URL!), { max: 10 });
+      return _sql;
+    })();
   }
-  return _sql;
+  return _sqlInit;
 }
 
 // ============================================
@@ -305,9 +352,12 @@ async function createRestaurant(): Promise<{ id: string; name: string }> {
  * Cria um segundo restaurante para testes de BOLA (multi-tenant).
  * Tem ID distinto para validar isolamento entre tenants.
  *
- * NOTA: este restaurant NÃO é vinculado ao MEMO admin do seed. O token
+ * NOTA: este restaurant NÃO é vinculado ao MESMO admin do seed. O token
  * do admin (do tenant A) deve ser rejeitado ao tentar acessar dados
  * deste tenant — é exatamente o que os testes BOLA validam.
+ *
+ * Os dados internos de B (categoria, produto, mesa, pedido) são criados
+ * por `seedTenantB`, chamado depois que o restaurante existe.
  */
 async function createRestaurantB(): Promise<{ id: string; name: string }> {
   console.log('🏪 Criando segundo restaurant (B) para testes BOLA...');
@@ -393,10 +443,16 @@ async function createProducts(
   const products = [];
   for (const p of productsData) {
     const id = randomUUID();
+    // `restaurantId` é coluna autoritativa do tenant desde a auditoria
+    // P0-01 (migration `20260729120000_add_product_restaurant_id`). Sem
+    // ela no INSERT, o seed quebra com NOT NULL violation — e, antes
+    // disso, o `prisma db push` do CI já criava a coluna, então toda
+    // rota escopada por tenant (`scopedRepository`) devolvia 500.
     await sql`
-      INSERT INTO "Product" (id, "categoryId", name, description, price, available, "dietaryLabels", "sortOrder", "createdAt", "updatedAt")
+      INSERT INTO "Product" (id, "restaurantId", "categoryId", name, description, price, available, "dietaryLabels", "sortOrder", "createdAt", "updatedAt")
       VALUES (
         ${id},
+        ${restaurantId},
         ${categories[p.category_idx].id},
         ${p.name},
         ${`Descrição do produto ${p.name}`},
@@ -444,6 +500,139 @@ async function createTables(restaurantId: string) {
 
   console.log('');
   return tables;
+}
+
+/**
+ * Cria pedidos do tenant A.
+ *
+ * Necessário para que os testes de isolamento sejam **falsificáveis**:
+ * asserções do tipo "todo pedido retornado pertence ao tenant A" passam
+ * trivialmente quando a listagem vem vazia. Com pedidos reais em A (e em
+ * B, ver `seedTenantB`), a mesma asserção só passa se o filtro por tenant
+ * realmente funcionar.
+ */
+async function createOrders(
+  restaurantId: string,
+  tableId: string,
+  products: Array<{ id: string; price: number }>
+): Promise<SeedResult['orders']> {
+  console.log('🧾 Criando pedidos de teste (tenant A)...');
+
+  const sql = await getSql();
+
+  const ordersData = [
+    { status: 'paid', paymentStatus: 'paid', subtotal: 45.99 },
+    { status: 'pending_payment', paymentStatus: 'pending', subtotal: 12.99 },
+  ];
+
+  const orders: SeedResult['orders'] = [];
+  for (const o of ordersData) {
+    const id = randomUUID();
+    const tax = Number((o.subtotal * 0.1).toFixed(2));
+    const total = Number((o.subtotal + tax).toFixed(2));
+    await sql`
+      INSERT INTO "Order" (
+        id, "restaurantId", "tableId", status, version, subtotal, tax, total,
+        "paymentMethod", "paymentStatus", "createdAt", "updatedAt"
+      )
+      VALUES (
+        ${id}, ${restaurantId}, ${tableId}, ${o.status}::"OrderStatus", 0,
+        ${o.subtotal}, ${tax}, ${total},
+        ${'pix'}::"PaymentMethod", ${o.paymentStatus}::"PaymentStatus", NOW(), NOW()
+      )
+    `;
+    if (products[0]) {
+      await sql`
+        INSERT INTO "OrderItem" (id, "orderId", "productId", quantity, "unitPrice", "totalPrice", "createdAt")
+        VALUES (${randomUUID()}, ${id}, ${products[0].id}, 1, ${products[0].price}, ${products[0].price}, NOW())
+      `;
+    }
+    console.log(`   Pedido ${o.status}: R$ ${total.toFixed(2)} (${id})`);
+    orders.push({ id, status: o.status, total });
+  }
+
+  console.log('');
+  return orders;
+}
+
+/**
+ * Popula o tenant B com dados reais (1 categoria, 1 produto, 1 mesa,
+ * 1 pedido pago).
+ *
+ * **Por que isso importa (BOLA):** os testes de
+ * `tests/security/multitenant.spec.ts` afirmam que IDs conhecidos do
+ * tenant B nunca aparecem nas respostas do tenant A e que mutações
+ * cross-tenant (PATCH/DELETE em recursos de B com token de A) são
+ * rejeitadas. Sem linhas reais em B, esses testes validavam apenas o
+ * caminho "not found" — passavam com qualquer implementação.
+ */
+async function seedTenantB(restaurantId: string): Promise<{
+  categoryId: string;
+  productId: string;
+  productName: string;
+  tableId: string;
+  orderId: string;
+  orderTotal: number;
+}> {
+  console.log('🧪 Populando tenant B (dados reais para testes BOLA)...');
+
+  const sql = await getSql();
+
+  const categoryId = randomUUID();
+  await sql`
+    INSERT INTO "Category" (id, "restaurantId", name, active, "sortOrder", "createdAt", "updatedAt")
+    VALUES (${categoryId}, ${restaurantId}, ${'Bebidas (Tenant B)'}, true, 1, NOW(), NOW())
+  `;
+
+  const productId = randomUUID();
+  const productName = 'Produto Exclusivo do Tenant B';
+  await sql`
+    INSERT INTO "Product" (id, "restaurantId", "categoryId", name, description, price, available, "dietaryLabels", "sortOrder", "createdAt", "updatedAt")
+    VALUES (
+      ${productId}, ${restaurantId}, ${categoryId}, ${productName},
+      ${'Produto que NUNCA pode ser lido/alterado/deletado pelo tenant A'},
+      ${77.77}, true, ${'[]'}, 0, NOW(), NOW()
+    )
+  `;
+
+  const tableId = randomUUID();
+  await sql`
+    INSERT INTO "Table" (id, "restaurantId", number, name, capacity, "qrCode", active, "createdAt", "updatedAt")
+    VALUES (${tableId}, ${restaurantId}, 1, ${'Mesa 1 (Tenant B)'}, 4, ${'E2E-TABLE-B-001'}, true, NOW(), NOW())
+  `;
+
+  const orderId = randomUUID();
+  const subtotal = Number((TENANT_B_ORDER_TOTAL / 1.1).toFixed(2));
+  const tax = Number((TENANT_B_ORDER_TOTAL - subtotal).toFixed(2));
+  await sql`
+    INSERT INTO "Order" (
+      id, "restaurantId", "tableId", status, version, subtotal, tax, total,
+      "paymentMethod", "paymentStatus", "createdAt", "updatedAt"
+    )
+    VALUES (
+      ${orderId}, ${restaurantId}, ${tableId}, ${'paid'}::"OrderStatus", 0,
+      ${subtotal}, ${tax}, ${TENANT_B_ORDER_TOTAL},
+      ${'pix'}::"PaymentMethod", ${'paid'}::"PaymentStatus", NOW(), NOW()
+    )
+  `;
+  await sql`
+    INSERT INTO "OrderItem" (id, "orderId", "productId", quantity, "unitPrice", "totalPrice", "createdAt")
+    VALUES (${randomUUID()}, ${orderId}, ${productId}, 1, ${77.77}, ${77.77}, NOW())
+  `;
+
+  console.log(`   Categoria B: ${categoryId}`);
+  console.log(`   Produto B: ${productName} (${productId})`);
+  console.log(`   Mesa B: ${tableId}`);
+  console.log(`   Pedido B: R$ ${TENANT_B_ORDER_TOTAL} (${orderId})\n`);
+
+  return {
+    categoryId,
+    productId,
+    productName,
+    tableId,
+    orderId,
+    orderTotal: TENANT_B_ORDER_TOTAL,
+  };
 }
 
 async function linkUserProfiles(users: SeedResult['users'], restaurantId: string) {
@@ -516,7 +705,7 @@ async function createModifierGroups(restaurantId: string) {
 }
 
 // ============================================
-// Cleanup
+// Limpeza
 // ============================================
 
 async function cleanupExistingTestData() {
@@ -565,7 +754,7 @@ async function cleanupExistingTestData() {
     }
   }
 
-  console.log('✅ Cleanup concluído\n');
+  console.log('✅ Limpeza concluída\n');
 }
 
 // ============================================
@@ -580,11 +769,11 @@ export async function seed(): Promise<SeedResult> {
     console.log('🚀 SEED E2E - Iniciando...');
     console.log('========================================\n');
 
-    // Cleanup primeiro
+    // Limpeza primeiro
     await cleanupExistingTestData();
 
     // Phase 1: Users and Restaurants (independent)
-    const [users, restaurant, restaurantB] = await Promise.all([
+    const [users, restaurant, restaurantBRow] = await Promise.all([
       createUsers(),
       createRestaurant(),
       createRestaurantB(),
@@ -603,13 +792,22 @@ export async function seed(): Promise<SeedResult> {
     // Phase 4: Modifier Groups
     const modifierGroups = await createModifierGroups(restaurant.id);
 
+    // Phase 5: Pedidos do tenant A + dados reais do tenant B.
+    // Ambos alimentam os testes BOLA: sem linhas nos dois tenants, as
+    // asserções de isolamento seriam infalsificáveis (array vazio passa).
+    const [orders, tenantB] = await Promise.all([
+      createOrders(restaurant.id, tables[0].id, products),
+      seedTenantB(restaurantBRow.id),
+    ]);
+
     const result: SeedResult = {
       users,
       restaurant,
-      restaurantB,
+      restaurantB: { ...restaurantBRow, ...tenantB },
       categories,
       products,
       tables,
+      orders,
       modifierGroups,
     };
 
