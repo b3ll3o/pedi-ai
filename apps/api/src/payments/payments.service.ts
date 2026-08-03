@@ -3,6 +3,11 @@ import { PaymentStatus, Prisma } from '@prisma/client';
 
 import { PIX_INTENT_TTL_MS } from '../common/constants/time';
 import { PrismaService } from '../common/prisma.service';
+import {
+  withSpan,
+  paymentsCounter,
+  pixFailureCounter,
+} from '../observability/observability.module';
 import { isValidWebhookTransition } from '../orders/order-state-machine';
 
 /**
@@ -64,7 +69,7 @@ function buildPixStubPayload(amountCents: number, paymentId: string): string {
  * - Idempotência atômica via INSERT-then-process dentro de transação
  *   `Serializable`. O INSERT do `WebhookEvent` funciona como "lock" —
  *   se duas entregas simultâneas chegarem com o mesmo `eventId`, a segunda
- *  撞ará P2002 (unique violation) e será rejeitada como duplicada.
+ *  Colidirá com P2002 (unique violation) e será rejeitada como duplicada.
  *   Se o processamento falhar após o INSERT, toda a transação sofre
  *   rollback e o eventId fica disponível para retry legítimo.
  * - Status do MP nunca é confiável isoladamente; é mapeado para o enum interno.
@@ -76,6 +81,29 @@ export class PaymentsService {
   constructor(private prisma: PrismaService) {}
 
   async createPixPayment(data: { orderId: string; restaurantId: string; amount?: number }) {
+    return withSpan(
+      'pedi.payment.pix.create',
+      async (span) => {
+        span.setAttribute('order_id', data.orderId);
+        span.setAttribute('restaurant_id', data.restaurantId);
+        try {
+          const result = await this.createPixPaymentInternal(data);
+          paymentsCounter.add(1, { method: 'pix', status: 'created' });
+          return result;
+        } catch (err) {
+          paymentsCounter.add(1, { method: 'pix', status: 'failed' });
+          throw err;
+        }
+      },
+      { restaurant_id: data.restaurantId }
+    );
+  }
+
+  private async createPixPaymentInternal(data: {
+    orderId: string;
+    restaurantId: string;
+    amount?: number;
+  }) {
     const order = await this.prisma.order.findUnique({ where: { id: data.orderId } });
     if (!order) {
       throw new NotFoundException('Pedido não encontrado');
@@ -264,9 +292,40 @@ export class PaymentsService {
     // — callers Asaas futuros que esquecessem de passar provider cairiam
     // no default errado e o bug do débito PIX duplicado ressurgiria.
     const { provider } = data;
+    return withSpan(
+      'pedi.payment.webhook',
+      async (span) => {
+        span.setAttribute('event_id', data.eventId);
+        span.setAttribute('mp_payment_id', data.paymentId);
+        span.setAttribute('mp_status', data.status);
+        span.setAttribute('webhook_provider', provider);
+        if (data.restaurantId) span.setAttribute('restaurant_id', data.restaurantId);
+        try {
+          const result = await this.handleWebhookInternal(data);
+          span.setAttribute('result', String(result.status));
+          paymentsCounter.add(1, { method: 'pix', status: data.status });
+          return result;
+        } catch (err) {
+          paymentsCounter.add(1, { method: 'pix', status: 'webhook_error' });
+          pixFailureCounter.add(1, { reason: 'webhook_handler_error' });
+          throw err;
+        }
+      },
+      {}
+    );
+  }
+
+  private async handleWebhookInternal(data: {
+    eventId: string;
+    paymentId: string;
+    status: string;
+    orderId?: string;
+    restaurantId?: string;
+    provider: string;
+  }) {
     // Transação interativa em Serializable: o INSERT do WebhookEvent é a
     // operação de "claim" — duas entregas simultâneas do mesmo eventId
-    // não podem coexistir. A segunda撞a P2002 e sai como duplicate.
+    // não podem coexistir. A segunda colide com P2002 e sai como duplicate.
     // Se qualquer passo seguinte falhar, o INSERT é revertido e o eventId
     // fica livre para retry (sem "envenenamento" da idempotência).
     try {

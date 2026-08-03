@@ -74,10 +74,28 @@ Edite `.env.local` com suas credenciais.
 ### 3. Subir infraestrutura com Docker
 
 ```bash
-docker-compose -f docker-compose.dev.yml up -d
+# Mínimo (postgres + api + web):
+docker compose up -d
+
+# Dev (com pgAdmin + mailpit):
+docker compose --profile tools up -d
+
+# Com observabilidade (OpenObserve + Prometheus — opcional, VPS ≥2GB livres):
+ENABLE_OBSERVABILITY=true docker compose --profile observability up -d
+
+# Tudo junto (dev + observabilidade):
+docker compose --profile tools --profile observability up -d
 ```
 
-Isso sobe PostgreSQL + Mailpit + API + Web + Nginx (com hot reload).
+**Profiles disponíveis:**
+
+| Profile         | Serviços extras         | Quando usar                                     |
+| --------------- | ----------------------- | ----------------------------------------------- |
+| (default)       | postgres, api, web      | Produção / produção mínima                      |
+| `tools`         | pgAdmin, mailpit        | Dev local / staging                             |
+| `observability` | OpenObserve, Prometheus | Quando quiser logs/metrics/traces centralizados |
+
+Ver `docker-compose.yml` cabeçalho para detalhes de portas e binds.
 
 ### 4. Aplicar schema e seed
 

@@ -1,0 +1,235 @@
+# Prometheus alerting rules — Pedi-AI
+#
+# Aplicado pelo Grafana Cloud / Prometheus server apontando para
+# `apps/api` (OTLPMetricExporter → Mimir) ou scrape direto no
+# `apps/api:9090/metrics` (modo legacy Prometheus exporter).
+#
+# Estas regras seguem o padrão **multi-window multi-burn-rate**
+# (Google SRE Workbook, Ch. 5) — alertamos quando o error budget
+# está sendo consumido rápido demais.
+#
+# SLOs definidos em OBSERVABILITY.md § P1.7:
+# - API availability: 99.9% em 30d (error budget: 43min/mês)
+# - API latency: p95 < 500ms em 30d
+# - PIX success rate: 98% em 30d
+#
+# Auditoria origem: OBSERVABILITY.md § P1.7.
+
+groups:
+  # ─────────────────────────────────────────────────────────────
+  # API availability (SLO: 99.9%)
+  # ─────────────────────────────────────────────────────────────
+  - name: pedi_api_availability
+    interval: 30s
+    rules:
+      # Fast burn: 14.4× budget em 1h OU 6× em 6h → page imediato
+      - alert: ApiAvailabilityFastBurn
+        expr: |
+          (
+            sum(rate(http_server_requests_total{status=~"5.."}[5m]))
+            /
+            sum(rate(http_server_requests_total[5m]))
+          ) > (1 - 0.999) * 14.4
+        for: 2m
+        labels:
+          severity: critical
+          slo: availability
+          window: 1h
+        annotations:
+          summary: "API error rate >10% (burn rate 14.4× budget)"
+          description: |
+            Error rate em janela 5min é {{ $value | humanizePercentage }}.
+            Burn rate 14.4× consome budget mensal em ~2h.
+            Runbook: docs/runbooks/api-down.md
+          dashboard: https://grafana.pedi-ai.com/d/api-overview
+
+      - alert: ApiAvailabilityMediumBurn
+        expr: |
+          (
+            sum(rate(http_server_requests_total{status=~"5.."}[30m]))
+            /
+            sum(rate(http_server_requests_total[30m]))
+          ) > (1 - 0.999) * 6
+        for: 5m
+        labels:
+          severity: warning
+          slo: availability
+          window: 6h
+        annotations:
+          summary: "API error rate elevado (burn rate 6× budget)"
+          description: "Error rate 30min é {{ $value | humanizePercentage }}."
+
+      # Slow burn: 1× budget em 24h OU 3h
+      - alert: ApiAvailabilitySlowBurn
+        expr: |
+          (
+            sum(rate(http_server_requests_total{status=~"5.."}[6h]))
+            /
+            sum(rate(http_server_requests_total[6h]))
+          ) > (1 - 0.999) * 3
+        for: 30m
+        labels:
+          severity: warning
+          slo: availability
+          window: 3d
+        annotations:
+          summary: "API consumindo error budget em ritmo alto"
+
+  # ─────────────────────────────────────────────────────────────
+  # API latency (SLO: p95 < 500ms)
+  # ─────────────────────────────────────────────────────────────
+  - name: pedi_api_latency
+    interval: 30s
+    rules:
+      - alert: ApiHighP95Latency
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le, route) (rate(http_server_request_duration_seconds_bucket[5m]))
+          ) > 0.5
+        for: 10m
+        labels:
+          severity: critical
+          slo: latency
+        annotations:
+          summary: "p95 latency > 500ms (route: {{ $labels.route }})"
+          description: |
+            p95 na rota {{ $labels.route }} é {{ $value }}s.
+            Investigar queries Prisma lentas / dependências externas.
+            Runbook: docs/runbooks/high-p95.md
+
+      - alert: ApiHighP99Latency
+        expr: |
+          histogram_quantile(0.99,
+            sum by (le, route) (rate(http_server_request_duration_seconds_bucket[5m]))
+          ) > 1.5
+        for: 10m
+        labels:
+          severity: warning
+          slo: latency
+        annotations:
+          summary: "p99 latency > 1.5s (route: {{ $labels.route }})"
+
+  # ─────────────────────────────────────────────────────────────
+  # PIX success rate (SLO: 98%)
+  # ─────────────────────────────────────────────────────────────
+  - name: pedi_pix_reliability
+    interval: 30s
+    rules:
+      - alert: PixFailureSpike
+        expr: |
+          (
+            sum(rate(pedi_payments_processed_total{method="pix",status!~"approved|created"}[5m]))
+            /
+            sum(rate(pedi_payments_processed_total{method="pix"}[5m]))
+          ) > 0.10
+        for: 2m
+        labels:
+          severity: critical
+          slo: pix_success
+        annotations:
+          summary: "Taxa de falha PIX > 10% (últimos 5min)"
+          description: |
+            {{ $value | humanizePercentage }} dos pagamentos PIX falharam.
+            Verificar status do MercadoPago e dedupe de webhook.
+            Runbook: docs/runbooks/pix-failure-spike.md
+
+      - alert: PixFailureSustained
+        expr: |
+          (
+            sum(rate(pedi_payments_processed_total{method="pix",status!~"approved|created"}[1h]))
+            /
+            sum(rate(pedi_payments_processed_total{method="pix"}[1h]))
+          ) > 0.02
+        for: 15m
+        labels:
+          severity: warning
+          slo: pix_success
+        annotations:
+          summary: "Taxa de falha PIX sustentada > 2%"
+
+      - alert: PixWebhookHandlerError
+        expr: |
+          rate(pedi_payments_pix_failed_total{reason="webhook_handler_error"}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Erros no handler do webhook PIX"
+
+  # ─────────────────────────────────────────────────────────────
+  # Database
+  # ─────────────────────────────────────────────────────────────
+  - name: pedi_database
+    interval: 30s
+    rules:
+      - alert: DbSlowQueries
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le) (rate(pedi_db_query_duration_seconds_bucket[5m]))
+          ) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "p95 de queries Prisma > 500ms"
+
+      - alert: DbConnectionPoolExhausted
+        # Indireto: alta duração de queries pode indicar pool exausto.
+        expr: |
+          histogram_quantile(0.99,
+            sum by (le) (rate(pedi_db_query_duration_seconds_bucket[2m]))
+          ) > 2
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Pool de conexões DB provavelmente exausto"
+
+  # ─────────────────────────────────────────────────────────────
+  # Filas BullMQ
+  # ─────────────────────────────────────────────────────────────
+  - name: pedi_queues
+    interval: 30s
+    rules:
+      - alert: QueueBacklogGrowing
+        expr: |
+          sum by (queue) (
+            pedi_queue_jobs{state="waiting"} > 100
+          )
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Backlog na fila {{ $labels.queue }} > 100 jobs"
+
+      - alert: QueueJobsFailing
+        expr: |
+          rate(pedi_queue_jobs{state="failed"}[5m]) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Jobs falhando consistentemente na fila {{ $labels.queue }}"
+
+  # ─────────────────────────────────────────────────────────────
+  # Infraestrutura básica
+  # ─────────────────────────────────────────────────────────────
+  - name: pedi_infrastructure
+    interval: 30s
+    rules:
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes > 500_000_000
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "RSS > 500MB (processo: {{ $labels.process_command_name }})"
+
+      - alert: HighCpuUsage
+        expr: |
+          rate(process_cpu_seconds_total[5m]) * 100 > 80
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CPU > 80% sustentado (processo: {{ $labels.process_command_name }})"

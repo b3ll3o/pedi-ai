@@ -99,6 +99,46 @@ export class HealthController {
     return this.liveness();
   }
 
+  /** Aliases k8s-conventional (`/livez`, `/healthz`). */
+  @Get('livez')
+  @Public()
+  @SkipThrottle()
+  @ApiOperation({ summary: 'Alias k8s para liveness probe (livez)' })
+  livez(): { status: 'ok'; uptime: number } {
+    return this.liveness();
+  }
+
+  @Get('healthz')
+  @Public()
+  @SkipThrottle()
+  @ApiOperation({ summary: 'Alias k8s para liveness probe (healthz)' })
+  healthz(): { status: 'ok'; uptime: number } {
+    return this.liveness();
+  }
+
+  /**
+   * Startup probe — bloqueia liveness/readiness até o bootstrap completar.
+   * Evita restart prematuro em cold starts lentos (Prisma connect + OTel init).
+   * `failureThreshold: 30` no manifest k8s dá 150s para terminar.
+   */
+  @Get('startup')
+  @Public()
+  @SkipThrottle()
+  @ApiOperation({ summary: 'Startup probe — confirma bootstrap completo' })
+  startup(): { status: 'ok' | 'starting'; uptime: number; ready: boolean } {
+    const uptime = Math.floor((Date.now() - this.startupTime) / 1000);
+    const ready = uptime >= 1;
+    return { status: ready ? 'ok' : 'starting', uptime, ready };
+  }
+
+  @Get('startz')
+  @Public()
+  @SkipThrottle()
+  @ApiOperation({ summary: 'Alias k8s para startup probe (startz)' })
+  startz(): { status: 'ok' | 'starting'; uptime: number; ready: boolean } {
+    return this.startup();
+  }
+
   @Get('ready')
   @Public()
   @SkipThrottle({ default: true })
@@ -183,5 +223,14 @@ export class HealthController {
       throw new ServiceUnavailableException(response);
     }
     return response;
+  }
+
+  /** Alias k8s `/readyz` para readiness probe. */
+  @Get('readyz')
+  @Public()
+  @SkipThrottle()
+  @ApiOperation({ summary: 'Alias k8s para readiness probe (readyz)' })
+  async readyz(): Promise<HealthResponse> {
+    return this.readiness();
   }
 }
