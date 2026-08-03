@@ -156,12 +156,73 @@ Pipeline de autenticação:
 
 ---
 
+### `RF-AUTH-12` — Exportar dados pessoais do titular (LGPD art. 18, V)
+
+**Ator:** Titular dos dados (cliente autenticado).
+
+**Trigger:** Solicitar via `GET /users/me/export` (acesso direto ou pedido formal do DPO).
+
+**Pré-condições:**
+
+- Usuário autenticado (JWT válido).
+- `userId` vem **sempre** do JWT — nunca do path/query (defesa contra BOLA).
+
+**Pós-condições:**
+
+- Resposta JSON estruturada com: `subject` (perfil), `orders` (com items e paymentIntents), `refreshTokens`, `passwordResetTokens`, `subscriptions`.
+- Resposta em ≤500ms (P95) — atende SLA de 15 dias do art. 18, §5º.
+
+**Regras de negócio:**
+
+- **MUST NOT** incluir segredos criptográficos: `passwordHash`, hash de refresh token, valor raw de reset token.
+- **MUST** agregar paymentIntents a partir dos orders do titular (sem query extra).
+- **MUST** retornar subscriptions apenas se `restaurantId` vinculado.
+
+**Materialização:**
+
+- `apps/api/src/users/lgpd.service.ts:exportUserData()` (`@spec(RF-AUTH-12)`)
+- `apps/api/src/users/users.controller.ts:exportMe()`
+
+---
+
+### `RF-AUTH-13` — Anonimizar conta do titular (LGPD art. 18, VI)
+
+**Ator:** Titular dos dados (cliente autenticado).
+
+**Trigger:** Solicitar via `DELETE /users/me` (autoexercício do direito de eliminação).
+
+**Pré-condições:**
+
+- Usuário autenticado (JWT válido).
+- Rate limit dedicado: 3 chamadas/hora por IP (sobrepõe tier `long`).
+
+**Pós-condições:**
+
+- Perfil anonimizado: `email` → `anon-<userId>@deleted.local`, `name` → `"Usuário Removido"`, `passwordHash` → `null`, `userId` (FK) → `null`.
+- Todos os `RefreshToken` ativos revogados com `revokedReason = 'lgpd_self_deletion'`.
+- Todos os `PasswordResetToken` em aberto marcados como `used`.
+- **Orders/PaymentIntents/Subscriptions PRESERVADOS** (art. 27 LGPD + Receita Federal, 5 anos).
+
+**Regras de negócio:**
+
+- Operação em `$transaction` Serializable (atomicidade).
+- Idempotente: segunda chamada detecta `email = 'anon-<userId>@deleted.local'` e retorna sem efeito.
+- Logs estruturados com `metric=lgpd.delete` para agregadores (Loki/Datadog).
+
+**Materialização:**
+
+- `apps/api/src/users/lgpd.service.ts:anonymizeOwnAccount()` (`@spec(RF-AUTH-13)`)
+- `apps/api/src/users/users.controller.ts:deleteMe()`
+
+---
+
 ## 3. Próximos Requisitos (planejados, sem RF ainda)
 
-| ID de trabalho   | Descrição                                 | Quarter alvo |
-| ---------------- | ----------------------------------------- | ------------ |
-| `WIP-AUTH-2FA`   | Autenticação de dois fatores para `owner` | Q1/2027      |
-| `WIP-AUTH-OAUTH` | Login via Google/Apple                    | Q4/2026      |
+| ID de trabalho   | Descrição                                        | Quarter alvo |
+| ---------------- | ------------------------------------------------ | ------------ |
+| `WIP-AUTH-2FA`   | Autenticação de dois fatores para `owner`        | Q1/2027      |
+| `WIP-AUTH-OAUTH` | Login via Google/Apple                           | Q4/2026      |
+| `WIP-AUTH-DPO`   | Endpoint DPO: anonimizar outro user (RF-AUTH-14) | Q3/2026      |
 
 ---
 
