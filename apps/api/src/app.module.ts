@@ -58,7 +58,24 @@ import { UsersModule } from './users/users.module';
      *
      * @see https://github.com/nestjs/throttler/blob/v6.5.0/src/throttler.guard.ts
      */
-    ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 300 }]),
+    // Throttler em ambiente E2E (NODE_ENV=e2e) é elevado para acomodar
+    // a suíte E2E paralelizada (~8 workers × 1 login por teste =
+    // dezenas de logins/min no mesmo IP). Em produção/dev/staging o
+    // limite padrão (300/min) permanece para defesa contra brute-force.
+    //
+    // Sem este relaxamento, testes E2E paralelos recebem HTTP 429 em
+    // `/auth/login` (limite específico de 5/min), `apiClient.login()`
+    // lança erro e `page.waitForURL` na fixture auth timeouta em 45s.
+    //
+    // @see apps/api/src/auth/auth.controller.ts (login/register/refresh
+    //   têm @Throttle({ default: { limit: 5 } }) — também relaxado).
+    ThrottlerModule.forRoot([
+      {
+        name: 'default',
+        ttl: 60_000,
+        limit: process.env.NODE_ENV === 'e2e' ? 100_000 : 300,
+      },
+    ]),
     DatabaseModule,
     QueueModule,
     AnalyticsModule,

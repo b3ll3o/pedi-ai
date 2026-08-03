@@ -13,6 +13,16 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { Throttle } from '@nestjs/throttler';
 import type { FastifyReply } from 'fastify';
 
+/**
+ * Limite por minuto para endpoints sensíveis (login/register/refresh/
+ * reset). Em produção/dev/staging é 5/min (defesa contra brute-force
+ * e abuso de reset); em `NODE_ENV=e2e` (suíte E2E paralelizada) é
+ * elevado para acomodar dezenas de logins/min no mesmo IP sem
+ * receber 429 — vide `apps/api/src/app.module.ts` para o mesmo pattern
+ * no tier global.
+ */
+const AUTH_ENDPOINT_LIMIT = process.env.NODE_ENV === 'e2e' ? 100_000 : 5;
+
 import { AuthService, AuthResponse } from './auth.service';
 import { clearAuthCookies, setAuthCookies } from './cookie-helper';
 import { Public } from './decorators/public.decorator';
@@ -70,7 +80,7 @@ export class AuthController {
 
   @Public()
   @Post('register')
-  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  @Throttle({ default: { ttl: 60_000, limit: AUTH_ENDPOINT_LIMIT } })
   @ApiOperation({ summary: 'Registrar novo usuário' })
   @ApiResponse({ status: 201, description: 'Usuário registrado com sucesso' })
   @ApiResponse({ status: 400, description: 'Dados inválidos' })
@@ -91,7 +101,7 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  @Throttle({ default: { ttl: 60_000, limit: AUTH_ENDPOINT_LIMIT } })
   @ApiOperation({ summary: 'Login com email e senha' })
   @ApiResponse({ status: 200, description: 'Login realizado com sucesso' })
   @ApiResponse({ status: 401, description: 'Credenciais inválidas' })
@@ -112,7 +122,7 @@ export class AuthController {
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  @Throttle({ default: { ttl: 60_000, limit: AUTH_ENDPOINT_LIMIT } })
   @ApiOperation({ summary: 'Renovar token de acesso' })
   @ApiResponse({ status: 200, description: 'Token renovado com sucesso' })
   @ApiResponse({ status: 401, description: 'Refresh token inválido' })
@@ -162,7 +172,7 @@ export class AuthController {
   @Public()
   @Post('request-reset')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  @Throttle({ default: { ttl: 60_000, limit: AUTH_ENDPOINT_LIMIT } })
   @ApiOperation({ summary: 'Solicitar redefinição de senha' })
   @ApiResponse({ status: 200, description: 'Email de recuperação enviado se o email existir' })
   async requestReset(@Body() body: RequestResetDto) {
@@ -172,7 +182,7 @@ export class AuthController {
   @Public()
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  @Throttle({ default: { ttl: 60_000, limit: AUTH_ENDPOINT_LIMIT } })
   @ApiOperation({ summary: 'Redefinir senha com token' })
   @ApiResponse({ status: 200, description: 'Senha redefinida com sucesso' })
   @ApiResponse({ status: 400, description: 'Token inválido ou expirado' })

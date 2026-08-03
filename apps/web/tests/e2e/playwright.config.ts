@@ -34,6 +34,18 @@ const shardMatch = process.env.SHARD?.match(/^(\d+)\/(\d+)$/);
 
 export default defineConfig({
   testDir: path.resolve(__dirname, 'tests'),
+  // Testes de produção (smoke/health pós-deploy) ficam em tests/production/
+  // e exigem BASE_URL pública (https://pedi.ai). No config local/dev eles
+  // falham imediatamente tentando resolver DNS de pedi.ai. O config dedicado
+  // `playwright.prod.config.ts` é o único que inclui esse subdiretório —
+  // aqui ignoramos para que `pnpm test:e2e` (e variantes) não tentem
+  // bater em prod acidentalmente.
+  //
+  // Para rodar smoke/health de produção:
+  //   pnpm test:e2e:prod:smoke   (smoke)
+  //   pnpm test:e2e:prod:health  (health detalhado)
+  //   BASE_URL=https://staging.pedi.ai pnpm test:e2e:prod:smoke  (staging)
+  testIgnore: ['**/tests/production/**', '**/node_modules/**'],
   fullyParallel: true,
   forbidOnly: isCI,
   retries: isCI ? 1 : 0,
