@@ -65,12 +65,27 @@ jobs:
             git reset --hard origin/master
             git clean -fd -e .env -e apps/api/.env -e apps/web/.env.local
 
-            # Stop existing services
-            docker compose -f docker-compose.dev.yml down || true
+            # Stop existing services. `--remove-orphans` remove containers
+            # que ficaram fora do projeto (ex.: criado em deploy anterior
+            # abortado). Sem isso, containers zombies podem manter o bind
+            # de porta e bloquear o `up` do próximo deploy.
+            docker compose -f docker-compose.dev.yml down --remove-orphans || true
 
-            # Ensure port 80 is free (kill any process using it)
-            fuser -k 80/tcp 2>/dev/null || true
-            sleep 2
+            # Ensure ports are free. Builds OK de imagens mas o `up` falha
+            # quando o container não consegue fazer bind de porta ocupada
+            # por container zombie de deploy anterior abortado (visto em
+            # #117: "port 5432 already allocated"). Cobre TODAS as portas
+            # declaradas no docker-compose.dev.yml.
+            #   - 80    (nginx)
+            #   - 5432  (postgres)
+            #   - 1025  (mailpit SMTP)
+            #   - 8025  (mailpit web UI)
+            #   - 3000  (next.js dev)
+            #   - 3001  (nestjs api)
+            for port in 80 5432 1025 8025 3000 3001; do
+              fuser -k ${port}/tcp 2>/dev/null || true
+            done
+            sleep 3
 
             # Build and start services (usa .env local)
             docker compose -f docker-compose.dev.yml up -d --build
