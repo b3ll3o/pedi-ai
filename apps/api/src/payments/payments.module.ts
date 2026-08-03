@@ -2,13 +2,14 @@ import { Logger, Module, OnModuleInit } from '@nestjs/common';
 
 import { assertSecretStrength } from '../auth/secret-strength';
 
+import { pixGatewayProvider } from './infrastructure/pix-gateway.provider';
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
 
 @Module({
   controllers: [PaymentsController],
-  providers: [PaymentsService],
-  exports: [PaymentsService],
+  providers: [PaymentsService, pixGatewayProvider],
+  exports: [PaymentsService, pixGatewayProvider],
 })
 export class PaymentsModule implements OnModuleInit {
   private readonly logger = new Logger(PaymentsModule.name);

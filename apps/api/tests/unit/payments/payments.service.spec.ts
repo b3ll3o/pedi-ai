@@ -3,10 +3,12 @@ import { NotFoundException, ForbiddenException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PaymentsService } from '../../../src/payments/payments.service';
 import { PrismaService } from '../../../src/common/prisma.service';
+import { PixGateway } from '../../../src/payments/infrastructure/pix-gateway';
 
 describe('PaymentsService', () => {
   let paymentsService: PaymentsService;
   let mockPrisma: ReturnType<typeof createMockPrisma>;
+  let mockPixGateway: PixGateway;
 
   const createMockPrisma = () => ({
     order: {
@@ -56,7 +58,17 @@ describe('PaymentsService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockPrisma = createMockPrisma();
-    paymentsService = new PaymentsService(mockPrisma as unknown as PrismaService);
+    // P0-07: PixGateway é injetado via @Inject(PIX_GATEWAY). Mock padrão
+    // retorna charge com BR Code + base64 (cenário produção com MP).
+    mockPixGateway = {
+      createPixCharge: vi.fn().mockResolvedValue({
+        externalId: 'mp-charge-1',
+        qrCode: '00020126580014BR.GOV.BCB.PIX...6304ABCD',
+        qrCodeBase64: 'iVBORw0KGgoAAAANSUhEUg==',
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+      }),
+    };
+    paymentsService = new PaymentsService(mockPrisma as unknown as PrismaService, mockPixGateway);
   });
 
   describe('createPixPayment', () => {
@@ -66,7 +78,7 @@ describe('PaymentsService', () => {
       amount: 5000,
     };
 
-    it('should create a PIX payment successfully', async () => {
+    it('should create a PIX payment successfully (P0-07: via PixGateway)', async () => {
       const mockOrder = { id: 'order-1', total: 5000, restaurantId: 'restaurant-1' };
       mockPrisma.order.findUnique.mockResolvedValue(mockOrder);
 
@@ -83,6 +95,11 @@ describe('PaymentsService', () => {
         expiresAt: new Date(Date.now() + 30 * 60 * 1000),
         qrCode: 'pending',
       };
+      let persistedPayload: {
+        qrCode: string;
+        qrCodeBase64: string | null;
+        mercadoPagoPaymentId: string;
+      } | null = null;
       mockPrisma.$transaction.mockImplementation(async (fn: unknown) => {
         const tx = {
           paymentIntent: {
@@ -90,10 +107,17 @@ describe('PaymentsService', () => {
             update: vi
               .fn()
               .mockImplementation(
-                async (args: { where: { id: string }; data: { qrCode: string } }) => ({
-                  ...createdIntent,
-                  qrCode: args.data.qrCode,
-                })
+                async (args: {
+                  where: { id: string };
+                  data: {
+                    qrCode: string;
+                    qrCodeBase64: string | null;
+                    mercadoPagoPaymentId: string;
+                  };
+                }) => {
+                  persistedPayload = args.data;
+                  return { ...createdIntent, ...args.data };
+                }
               ),
           },
         };
@@ -102,16 +126,34 @@ describe('PaymentsService', () => {
 
       const result = await paymentsService.createPixPayment(paymentData);
 
-      expect(result).toHaveProperty('id');
-      expect(result).toHaveProperty('qrCode');
-      expect(result).toHaveProperty('expiresAt');
-      expect(result.amount).toBe(paymentData.amount);
+      // P0-07: PixGateway é chamado com orderId, amount e description derivada.
+      expect(mockPixGateway.createPixCharge).toHaveBeenCalledTimes(1);
+      expect(mockPixGateway.createPixCharge).toHaveBeenCalledWith({
+        orderId: 'pix-1',
+        amount: 5000,
+        description: expect.stringContaining('Pedido #'),
+        expirationMs: expect.any(Number),
+      });
+
+      // Persistência: BR Code, base64 e externalId (mpPaymentId).
+      expect(persistedPayload).toEqual({
+        qrCode: '00020126580014BR.GOV.BCB.PIX...6304ABCD',
+        qrCodeBase64: 'iVBORw0KGgoAAAANSUhEUg==',
+        mercadoPagoPaymentId: 'mp-charge-1',
+      });
+
+      // Retorno expõe qrCodeBase64 para o frontend renderizar <img>.
+      expect(result).toMatchObject({
+        id: 'pix-1',
+        qrCode: '00020126580014BR.GOV.BCB.PIX...6304ABCD',
+        qrCodeBase64: 'iVBORw0KGgoAAAANSUhEUg==',
+        amount: 5000,
+      });
+      expect(result.expiresAt).toBeInstanceOf(Date);
+
       expect(mockPrisma.order.findUnique).toHaveBeenCalledWith({
         where: { id: paymentData.orderId },
       });
-      // A17: QR Code agora é BR Code stub (começa com o TLV 00 02 01).
-      expect(result.qrCode).toContain('api.qrserver.com');
-      expect(result.qrCode).toContain('000201');
     });
 
     it('should throw NotFoundException if order not found', async () => {
@@ -136,7 +178,40 @@ describe('PaymentsService', () => {
       );
     });
 
-    it('should generate QR code with BR Code payload (A17)', async () => {
+    it('should propagate PixGateway failure (rollback transaction, no intent persisted)', async () => {
+      // P0-07: se o PSP (Mercado Pago) está fora do ar ou recusa a cobrança,
+      // a transação inteira sofre rollback — nenhum PaymentIntent com
+      // qrCode: 'pending' é persistido (estado intermediário inválido).
+      mockPrisma.order.findUnique.mockResolvedValue({
+        id: 'order-1',
+        total: 5000,
+        restaurantId: 'restaurant-1',
+      });
+      (mockPixGateway.createPixCharge as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+        new Error('Falha ao criar cobrança PIX no Mercado Pago (HTTP 503)')
+      );
+      const txUpdateMock = vi.fn();
+      mockPrisma.$transaction.mockImplementation(async (fn: unknown) => {
+        const tx = {
+          paymentIntent: {
+            create: vi.fn().mockResolvedValue({
+              id: 'pix-1',
+              qrCode: 'pending',
+            }),
+            update: txUpdateMock,
+          },
+        };
+        return (fn as (t: typeof tx) => Promise<unknown>)(tx);
+      });
+
+      await expect(paymentsService.createPixPayment(paymentData)).rejects.toThrow(/Mercado Pago/);
+      // Update do qrCode nunca é chamado (gateway falhou antes).
+      expect(txUpdateMock).not.toHaveBeenCalled();
+    });
+
+    it('should NOT use stub fallback — gateway is the only path', async () => {
+      // P0-07 guardrail: se algum dev futuro reintroduzir `buildPixStubPayload`,
+      // este teste falha porque o PixGateway mockado NUNCA é chamado.
       mockPrisma.order.findUnique.mockResolvedValue({
         id: 'order-1',
         total: 5000,
@@ -145,19 +220,16 @@ describe('PaymentsService', () => {
       mockPrisma.$transaction.mockImplementation(async (fn: unknown) => {
         const tx = {
           paymentIntent: {
-            create: vi.fn().mockImplementation(async (data: { data: Record<string, unknown> }) => ({
-              id: 'pix-1',
-              ...data.data,
-              expiresAt: new Date(),
-              qrCode: 'pending',
-            })),
+            create: vi.fn().mockResolvedValue({ id: 'pix-1', qrCode: 'pending' }),
             update: vi
               .fn()
               .mockImplementation(
-                async (args: { where: { id: string }; data: { qrCode: string } }) => ({
+                async (args: { where: { id: string }; data: Record<string, unknown> }) => ({
                   id: args.where.id,
-                  qrCode: args.data.qrCode,
-                  expiresAt: new Date(),
+                  qrCode: 'from-gateway',
+                  qrCodeBase64: '',
+                  mercadoPagoPaymentId: 'ext-1',
+                  ...args.data,
                 })
               ),
           },
@@ -165,12 +237,17 @@ describe('PaymentsService', () => {
         return (fn as (t: typeof tx) => Promise<unknown>)(tx);
       });
 
-      const result = await paymentsService.createPixPayment(paymentData);
+      await paymentsService.createPixPayment(paymentData);
 
-      // A17: BR Code stub inclui o merchant account info + txid derivado
-      // do paymentId. Validamos pedaços da estrutura TLV.
-      expect(result.qrCode).toContain('api.qrserver.com');
-      expect(result.qrCode).toContain(encodeURIComponent('PEDI-AI STUB'));
+      // Stub legacy foi removido. Se for reintroduzido, este assert quebra
+      // porque `createPixCharge` deixa de ser invocado.
+      expect(mockPixGateway.createPixCharge).toHaveBeenCalledTimes(1);
+      expect(mockPixGateway.createPixCharge).toHaveBeenCalledWith(
+        expect.objectContaining({
+          orderId: 'pix-1',
+          amount: 5000,
+        })
+      );
     });
 
     it('should set expiration to 30 minutes from now', async () => {
@@ -398,14 +475,12 @@ describe('PaymentsService', () => {
       // WebhookEvent com este eventId; a segunda撞a unique constraint.
       const tx = {
         webhookEvent: {
-          create: vi
-            .fn()
-            .mockRejectedValue(
-              new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
-                code: 'P2002',
-                clientVersion: 'test',
-              })
-            ),
+          create: vi.fn().mockRejectedValue(
+            new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+              code: 'P2002',
+              clientVersion: 'test',
+            })
+          ),
         },
         paymentIntent: { findFirst: vi.fn(), update: vi.fn() },
         order: { update: vi.fn(), updateMany: vi.fn() },

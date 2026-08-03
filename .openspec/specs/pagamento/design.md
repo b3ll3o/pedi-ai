@@ -24,16 +24,16 @@
 
 ## 2. Requisitos Funcionais (RF-PAY)
 
-| ID          | Descrição                               | Materialização (código)                    | Status       |
-| ----------- | --------------------------------------- | ------------------------------------------ | ------------ |
-| `RF-PAY-01` | Criar cobrança PIX                      | `CriarPixChargeUseCase.ts`                 | ✅ Done      |
-| `RF-PAY-02` | Processar webhook                       | `ProcessarWebhookUseCase.ts`               | ✅ Done      |
-| `RF-PAY-03` | Validar assinatura webhook              | `PixAdapter.validarAssinatura()`           | ✅ Done      |
-| `RF-PAY-04` | Listar pagamentos do pedido (planejado) | `ListarPagamentosUseCase.ts` (a confirmar) | 🟡 Planejado |
-| `RF-PAY-05` | Atualizar status                        | `AtualizarStatusPagamentoUseCase.ts`       | ✅ Done      |
-| `RF-PAY-06` | Modo demo                               | `NEXT_PUBLIC_DEMO_PAYMENT_MODE=true`       | ✅ Done      |
-| `RF-PAY-07` | Idempotência (WebhookEvent)             | `apps/api/prisma/schema.prisma`            | ✅ Done      |
-| `RF-PAY-08` | Iniciar reembolso                       | `IniciarReembolsoUseCase.ts`               | ✅ Done      |
+| ID          | Descrição                               | Materialização (código)                                                                                                                                                              | Status                             |
+| ----------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------- |
+| `RF-PAY-01` | Criar cobrança PIX                      | `apps/api/src/payments/payments.service.ts` (`@Inject(PIX_GATEWAY)`) + `apps/api/src/payments/infrastructure/mercadopago-pix.gateway.ts` (produção) / `demo-pix.gateway.ts` (dev/CI) | ✅ Done (P0-07 fechado 2026-08-01) |
+| `RF-PAY-02` | Processar webhook                       | `ProcessarWebhookUseCase.ts`                                                                                                                                                         | ✅ Done                            |
+| `RF-PAY-03` | Validar assinatura webhook              | `PixAdapter.validarAssinatura()`                                                                                                                                                     | ✅ Done                            |
+| `RF-PAY-04` | Listar pagamentos do pedido (planejado) | `ListarPagamentosUseCase.ts` (a confirmar)                                                                                                                                           | 🟡 Planejado                       |
+| `RF-PAY-05` | Atualizar status                        | `AtualizarStatusPagamentoUseCase.ts`                                                                                                                                                 | ✅ Done                            |
+| `RF-PAY-06` | Modo demo                               | `apps/api/src/payments/infrastructure/demo-pix.gateway.ts` (injetado por `pixGatewayProvider` quando `MERCADOPAGO_ACCESS_TOKEN` ausente)                                             | ✅ Done                            |
+| `RF-PAY-07` | Idempotência (WebhookEvent)             | `apps/api/prisma/schema.prisma`                                                                                                                                                      | ✅ Done                            |
+| `RF-PAY-08` | Iniciar reembolso                       | `IniciarReembolsoUseCase.ts`                                                                                                                                                         | ✅ Done                            |
 
 ---
 
