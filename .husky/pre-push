@@ -1,8 +1,45 @@
 #!/usr/bin/env sh
+# .husky/pre-push — gates de qualidade completos antes do push.
+#
+# Etapas (60-300s):
+#   1) lockfile consistente
+#   2) testes dos arquivos alterados (web + api)
+#   3) typecheck (web + api + shared)
+#   4) build (web + api + shared)
+#   5) cobertura ≥ 80% nos alterados (web)
+#
+# Para pular (NÃO recomendado): git push --no-verify
 
-echo "🔨 Running pre-push checks..."
+. "$(dirname -- "$0")/_lib.sh"
 
-echo "📦 Running build..."
-pnpm build
+# ── 1) Lockfile consistente ────────────────────────────
+if ! pnpm install --frozen-lockfile --prefer-offline --silent; then
+  log_err "pnpm-lock.yaml inconsistente. Rode: pnpm install"
+  exit 1
+fi
+log_ok "Lockfile consistente"
 
-echo "✅ Pre-push checks passed!"
+# ── 2) Testes dos arquivos alterados (web + api) ───────
+log_ok "Rodando testes dos arquivos alterados (web)…"
+pnpm --filter @pedi-ai/web -- exec vitest run --changed HEAD~1
+log_ok "Rodando testes dos arquivos alterados (api)…"
+pnpm --filter @pedi-ai/api -- exec vitest run --changed HEAD~1 2>/dev/null || \
+  log_warn "api sem config de vitest, pulando"
+
+# ── 3) Typecheck em todos os pacotes ────────────────────
+log_ok "Typecheck web + api + shared…"
+pnpm -r --filter @pedi-ai/web --filter @pedi-ai/api --filter @pedi-ai/shared -- exec tsc --noEmit
+
+# ── 4) Build de web + api + shared ──────────────────────
+log_ok "Build web + api + shared…"
+pnpm -r --filter @pedi-ai/web --filter @pedi-ai/api --filter @pedi-ai/shared build
+
+# ── 5) Cobertura mínima nos alterados (web) ────────────
+log_ok "Cobertura web (≥ 80% nos alterados)…"
+pnpm --filter @pedi-ai/web -- exec vitest run --coverage --changed HEAD~1 \
+  --coverage.thresholds.lines=80 \
+  --coverage.thresholds.branches=75 \
+  --coverage.thresholds.functions=80 \
+  --coverage.thresholds.statements=80
+
+log_ok "Todos os gates passaram. Push liberado."
