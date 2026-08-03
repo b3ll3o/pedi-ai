@@ -55,15 +55,14 @@ gitleaks protect --staged --redact --no-banner --config .gitleaks.toml
 # ── 5) secretlint (defesa em profundidade) ─────────────
 # Roda apenas nos arquivos staged (rápido). Sem config, pula.
 if [ -f .secretlintrc.json ] || [ -f .secretlintrc.* ]; then
-  secretlint_targets=""
+  set --
   for f in $files; do
     if [ -f "$f" ] && [ ! -d "$f" ]; then
-      secretlint_targets="$secretlint_targets \"$f\""
+      set -- "$@" "$f"
     fi
   done
-  if [ -n "$secretlint_targets" ]; then
-    # shellcheck disable=SC2086
-    if ! npx --no -- secretlint --maskSecrets $secretlint_targets >/dev/null 2>&1; then
+  if [ "$#" -gt 0 ]; then
+    if ! npx --no -- secretlint --maskSecrets "$@" >/dev/null 2>&1; then
       log_warn "secretlint encontrou padrões suspeitos. Revise antes do push."
     fi
   fi
