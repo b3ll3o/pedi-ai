@@ -40,6 +40,16 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Testes de integração usar Vitest com mocks de APIs
 - Configurar pipelines de CI para rodar todos os testes automaticamente
 
+#### Gates de Qualidade (Husky)
+
+- **Todo commit e push** passa por hooks do Husky antes de chegar ao remoto.
+- **Não usar `--no-verify`** exceto em emergências extremas (devidamente documentadas no PR).
+- Antes do primeiro commit ou quando um hook parecer estranho, rode `pnpm env:check`.
+- **Conventional Commits obrigatório**: `type(scope): subject em pt-BR` com scope restrito aos BCs do DDD (`pedido`, `cardapio`, `mesa`, `pagamento`, `autenticacao`, `admin`, `shared`) ou áreas transversais (`web`, `api`, `infra`, `docs`, `deps`, `ci`, `e2e`, `husky`, `docker`, `rtm`, `openspec`).
+- **pre-push** roda: lockfile íntegro, testes dos arquivos alterados (web + api), typecheck (web + api + shared), build (web + api + shared), e cobertura ≥ 80% no web.
+- **pre-commit** roda: validação de ambiente (gitleaks, Node, lockfile), bloqueio de arquivos sensíveis e > 5 MB, lint-staged, gitleaks e secretlint.
+- Troubleshooting e detalhes em [`docs/guides/HUSKY.md`](../guides/HUSKY.md).
+
 ### Arquitetura DDD (TODAS AS APPS)
 
 > Todas as apps do monorepo (`apps/web` e `apps/api`) DEVEM seguir a arquitetura DDD.
