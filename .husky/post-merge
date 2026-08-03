@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+# .husky/post-merge — avisa se configs de ambiente mudaram após merge.
+# Args: $1 = refs/heads/<branch>, $2 = novo sha
+. "$(dirname -- "$0")/_lib.sh"
+
+prev="$1"
+curr="$2"
+[ -z "$prev" ] || [ -z "$curr" ] && exit 0
+
+changed_files=$(git diff --name-only "$prev" "$curr" 2>/dev/null)
+echo "$changed_files" | grep -qE '^(package\.json|pnpm-lock\.yaml|\.nvmrc|\.npmrc|commitlint\.config\.[mc]?js|\.commitlintrc\.js|scripts/check-dev-env\.sh|\.husky/_lib\.sh|\.husky/.*)$' && {
+  log_warn "Configuração de ambiente mudou. Rode: pnpm install && pnpm rebuild"
+  exit 0
+}
