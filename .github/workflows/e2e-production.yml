@@ -48,7 +48,7 @@ jobs:
       BASE_URL: ${{ github.event.inputs.base_url || 'https://andreazzi.tech' }}
       API_URL: ${{ github.event.inputs.api_url || 'https://api.andreazzi.tech' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -137,7 +137,7 @@ jobs:
     # Só roda em manual trigger (não após deploy automático)
     if: github.event_name == 'workflow_dispatch'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Node
         uses: actions/setup-node@v4
