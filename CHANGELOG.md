@@ -34,6 +34,16 @@ Tipos de mudança:
   `commitlint.config.mjs` (ESM). Novo `scripts/check-dev-env.sh` exposto como
   `pnpm env:check`. Documentação operacional em [`docs/guides/HUSKY.md`](docs/guides/HUSKY.md).
 
+- **Husky — fix de 3 bugs pós-review** (tipo: `fix(security)`).
+  **(1)** `exit 1` dentro de `while | do done` rodava em subshell — arquivos sensíveis
+  e > 5 MB não eram efetivamente bloqueados. Substituído por `for f in $(...)`.
+  **(2)** `secretlint` sem `.secretlintrc.json` retornava exit 1 em todo commit
+  (warning falso / cry-wolf). Adicionado `.secretlintrc.json` com preset-recommend
+  e corrigido flag `--mask {{SECRET}}` → `--maskSecrets`. Agora roda apenas nos
+  staged files (rápido).
+  **(3)** `post-checkout`/`post-merge` propagavam exit 1 do `grep -q` quando
+  não havia match (todo checkout trivial falhava). Adicionado `exit 0` explícito.
+
 - **P0-12 — Husky 9 + gitleaks ativos no pre-commit** (tipo: `feat(security)`).
   O hook `.husky/pre-commit.sh` (legacy) tinha lógica de gitleaks que nunca
   era invocada pelo Git. Migrado para Husky 9 (`.husky/pre-commit` já
