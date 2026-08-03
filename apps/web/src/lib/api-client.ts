@@ -61,6 +61,70 @@ class ApiClientClass {
   private user: User | null = null;
 
   /**
+   * Cookie header a propagar para o NestJS API. Só é preenchido quando o
+   * cliente é construído a partir de um `Request` (Route Handlers do
+   * Next.js). No browser, `credentials: 'include'` já cuida disso.
+   *
+   * **Por que isso existe:** os Route Handlers `/api/auth/*` rodam em Node,
+   * não no browser. O `fetch` do Node não tem cookie jar — sem propagar o
+   * header `Cookie` manualmente, o NestJS enxerga toda chamada como
+   * anônima e `/auth/me` devolve 401 mesmo com o usuário logado.
+   */
+  private cookieHeader: string | null = null;
+
+  /**
+   * `Set-Cookie` capturados das respostas do NestJS durante esta request.
+   * Route Handlers devem repassá-los ao browser (ver `consumeSetCookies`),
+   * caso contrário o cookie HttpOnly emitido pelo login nunca chega ao
+   * navegador.
+   */
+  private collectedSetCookies: string[] = [];
+
+  constructor(cookieHeader?: string | null) {
+    this.cookieHeader = cookieHeader ?? null;
+  }
+
+  /**
+   * Retorna (e limpa) os `Set-Cookie` acumulados nas respostas do backend.
+   */
+  consumeSetCookies(): string[] {
+    const cookies = this.collectedSetCookies;
+    this.collectedSetCookies = [];
+    return cookies;
+  }
+
+  /**
+   * Captura os `Set-Cookie` de uma resposta do NestJS.
+   *
+   * `Headers.getSetCookie()` existe no runtime do Next (undici) mas não em
+   * todos os ambientes de teste — daí o fallback para `get('set-cookie')`.
+   */
+  private captureSetCookies(response: Response): void {
+    const headers = response.headers as Headers & { getSetCookie?: () => string[] };
+    const values =
+      typeof headers.getSetCookie === 'function'
+        ? headers.getSetCookie()
+        : ([response.headers.get('set-cookie')].filter(Boolean) as string[]);
+    if (values.length > 0) {
+      this.collectedSetCookies.push(...values);
+    }
+  }
+
+  /**
+   * Monta os headers padrão, incluindo `Cookie` quando em contexto server.
+   */
+  private buildHeaders(extra?: HeadersInit): Record<string, string> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(extra as Record<string, string>),
+    };
+    if (this.cookieHeader) {
+      headers.Cookie = this.cookieHeader;
+    }
+    return headers;
+  }
+
+  /**
    * Armazena somente o usuário (não-confidencial) em memória.
    * Tokens vivem em cookies HttpOnly no servidor — não tocamos aqui.
    */
@@ -104,16 +168,14 @@ class ApiClientClass {
   async fetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = endpoint.startsWith('http') ? endpoint : `${API_URL}${endpoint}`;
 
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...(options.headers as Record<string, string>),
-    };
+    const headers = this.buildHeaders(options.headers);
 
     let response = await fetch(url, {
       ...options,
       headers,
       credentials: 'include',
     });
+    this.captureSetCookies(response);
 
     // Se 401, tenta refresh uma vez (servidor lê refresh do cookie).
     if (response.status === 401) {
@@ -121,9 +183,10 @@ class ApiClientClass {
       if (refreshed) {
         response = await fetch(url, {
           ...options,
-          headers,
+          headers: this.buildHeaders(options.headers),
           credentials: 'include',
         });
+        this.captureSetCookies(response);
       }
     }
 
@@ -139,13 +202,44 @@ class ApiClientClass {
     try {
       const response = await fetch(`${API_URL}/auth/refresh`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.buildHeaders(),
         credentials: 'include',
       });
+      this.captureSetCookies(response);
+      if (response.ok) {
+        // Em contexto server (Route Handler) não há cookie jar: o retry
+        // seguinte precisa enviar os cookies recém-emitidos, senão o
+        // refresh é inútil e a chamada volta a dar 401.
+        this.mergeCookieHeaderFromCollected();
+      }
       return response.ok;
     } catch {
       return false;
     }
+  }
+
+  /**
+   * Reescreve `cookieHeader` aplicando os pares `nome=valor` presentes nos
+   * `Set-Cookie` capturados. Só faz sentido em contexto server.
+   */
+  private mergeCookieHeaderFromCollected(): void {
+    // No browser o cookie jar é do navegador e `Cookie` é um header
+    // proibido em `fetch` — não faz sentido (nem funciona) montar à mão.
+    if (typeof window !== 'undefined') return;
+    if (this.collectedSetCookies.length === 0) return;
+    const jar = new Map<string, string>();
+    for (const pair of (this.cookieHeader ?? '').split(';')) {
+      const [name, ...rest] = pair.trim().split('=');
+      if (name) jar.set(name, rest.join('='));
+    }
+    for (const raw of this.collectedSetCookies) {
+      const [nameValue] = raw.split(';');
+      const [name, ...rest] = nameValue.trim().split('=');
+      if (name) jar.set(name, rest.join('='));
+    }
+    this.cookieHeader = Array.from(jar.entries())
+      .map(([name, value]) => `${name}=${value}`)
+      .join('; ');
   }
 
   /**
@@ -188,10 +282,12 @@ class ApiClientClass {
   async login(email: string, password: string): Promise<AuthResponse> {
     const response = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.buildHeaders(),
       credentials: 'include',
       body: JSON.stringify({ email, password }),
     });
+    this.captureSetCookies(response);
+    this.mergeCookieHeaderFromCollected();
 
     const data = await response.json();
 
@@ -209,10 +305,12 @@ class ApiClientClass {
   async register(email: string, password: string, name: string): Promise<AuthResponse> {
     const response = await fetch(`${API_URL}/auth/register`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.buildHeaders(),
       credentials: 'include',
       body: JSON.stringify({ email, password, name }),
     });
+    this.captureSetCookies(response);
+    this.mergeCookieHeaderFromCollected();
 
     const data = await response.json();
 
@@ -354,10 +452,12 @@ export const apiClient = new ApiClientClass();
  * aceita `NextRequest` opcional; quando passado, injeta o header
  * `Cookie` no cliente para que o NestJS API reconheça a sessão.
  *
- * Por enquanto retorna o singleton (mesmo comportamento de antes) —
- * rotas podem usar `getApiClient(request)` e evoluir para um cliente
- * per-request sem precisar trocar imports.
+ * Quando `request` é informado, devolve uma instância dedicada com o
+ * header `Cookie` do browser propagado — necessário porque Route Handlers
+ * rodam em Node, sem cookie jar. Sem `request`, devolve o singleton.
  */
-export function getApiClient(_request?: Request): ApiClientClass {
-  return apiClient;
+export function getApiClient(request?: Request): ApiClientClass {
+  if (!request) return apiClient;
+  const cookieHeader = request.headers.get('cookie');
+  return new ApiClientClass(cookieHeader);
 }

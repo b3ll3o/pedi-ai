@@ -1,17 +1,15 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-import { apiClient } from '@/lib/api-client';
+import { getApiClient } from '@/lib/api-client';
+import { forwardSetCookies } from '@/lib/auth/forward-cookies';
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
-    await apiClient.logout();
+    const client = getApiClient(request);
+    await client.logout();
 
     const response = NextResponse.json({ success: true });
-    response.headers.set(
-      'Set-Cookie',
-      'access_token=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'
-    );
-    return response;
+    return forwardSetCookies(response, client.consumeSetCookies());
   } catch (error) {
     console.error('Logout error:', error);
     return NextResponse.json({ error: 'Erro ao fazer logout' }, { status: 500 });

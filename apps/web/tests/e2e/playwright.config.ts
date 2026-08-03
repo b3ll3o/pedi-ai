@@ -125,7 +125,7 @@ export default defineConfig({
   // docker-compose.dev.yml starts the web service.
   webServer: {
     command: 'pnpm dev',
-    cwd: path.resolve(__dirname, '..'),
+    cwd: path.resolve(__dirname, '../..'),
     url: BASE_URL,
     reuseExistingServer: true,
     timeout: 180_000,

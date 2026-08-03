@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { apiClient } from '@/lib/api-client';
+import { getApiClient } from '@/lib/api-client';
+import { forwardSetCookies } from '@/lib/auth/forward-cookies';
 import { createRateLimiter } from '@/lib/rate-limit';
 
 // S3#4: defesa contra brute-force. Limite por (IP + email) — ator com
@@ -41,16 +42,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await apiClient.login(email, senha);
+    const client = getApiClient(request);
+    const result = await client.login(email, senha);
 
     // Login bem-sucedido: limpa o contador para que usuário legítimo
     // não fique bloqueado após algumas falhas seguidas de sucesso.
     loginLimiter.reset(key);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       user: result.user,
     });
+    return forwardSetCookies(response, client.consumeSetCookies());
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erro interno do servidor';
     console.error('Login error:', message);

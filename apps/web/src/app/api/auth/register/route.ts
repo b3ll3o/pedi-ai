@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { apiClient } from '@/lib/api-client';
+import { getApiClient } from '@/lib/api-client';
+import { forwardSetCookies } from '@/lib/auth/forward-cookies';
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,18 +27,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Registrar usuário na API (retorna access_token, refresh_token, user)
-    const result = await apiClient.register(email, senha, nome.trim());
+    const client = getApiClient(request);
+    const result = await client.register(email, senha, nome.trim());
 
     // O intent não é persistido no user - após login o usuário pode criar restaurante
     // O role padrão é 'cliente' na API
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         success: true,
         user: result.user,
       },
       { status: 201 }
     );
+    return forwardSetCookies(response, client.consumeSetCookies());
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erro interno do servidor';
     console.error('Register error:', message);

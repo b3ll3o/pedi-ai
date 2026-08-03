@@ -495,10 +495,26 @@ async function cleanupExistingTestData() {
     await sql`DELETE FROM "UsersProfile" WHERE email = ${email}`;
   }
 
-  // Delete restaurant
+  // Delete restaurant (ordem importa por causa das FKs: depende de Restaurant → Table, Category, Product, ModifierGroup, Order, etc.)
   const restaurantNames = [`${shardPrefix}${RESTAURANT_NAME}`, RESTAURANT_NAME];
   for (const name of restaurantNames) {
-    await sql`DELETE FROM "Restaurant" WHERE name = ${name}`;
+    // Buscar IDs primeiro
+    const restaurantIds = await sql<{ id: string }[]>`
+      SELECT id FROM "Restaurant" WHERE name = ${name}
+    `;
+    for (const { id: rid } of restaurantIds) {
+      await sql`DELETE FROM "OrderItem" WHERE "orderId" IN (SELECT id FROM "Order" WHERE "restaurantId" = ${rid})`;
+      await sql`DELETE FROM "OrderStatusHistory" WHERE "orderId" IN (SELECT id FROM "Order" WHERE "restaurantId" = ${rid})`;
+      await sql`DELETE FROM "Order" WHERE "restaurantId" = ${rid}`;
+      await sql`DELETE FROM "PaymentIntent" WHERE "orderId" IN (SELECT id FROM "Order" WHERE "restaurantId" = ${rid})`;
+      await sql`DELETE FROM "Combo" WHERE "restaurantId" = ${rid}`;
+      await sql`DELETE FROM "Product" WHERE "categoryId" IN (SELECT id FROM "Category" WHERE "restaurantId" = ${rid})`;
+      await sql`DELETE FROM "Category" WHERE "restaurantId" = ${rid}`;
+      await sql`DELETE FROM "ModifierValue" WHERE "modifierGroupId" IN (SELECT id FROM "ModifierGroup" WHERE "restaurantId" = ${rid})`;
+      await sql`DELETE FROM "ModifierGroup" WHERE "restaurantId" = ${rid}`;
+      await sql`DELETE FROM "Table" WHERE "restaurantId" = ${rid}`;
+      await sql`DELETE FROM "Restaurant" WHERE id = ${rid}`;
+    }
   }
 
   console.log('✅ Cleanup concluído\n');

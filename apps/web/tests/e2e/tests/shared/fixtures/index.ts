@@ -296,7 +296,10 @@ export const test = base.extend<Fixtures>({
     const email = seedData.admin.email;
     const password = seedData.admin.password;
 
-    await performLogin(page, email, password, '/admin/login', /\/admin\/dashboard/);
+    // O destino exato após o login depende do estado do usuário
+    // (ex.: sem restaurante selecionado → /admin/restaurants). Aceitar
+    // qualquer URL /admin/* que não seja a tela de login.
+    await performLogin(page, email, password, '/admin/login', /\/admin\/(?!login)/);
     await fixtureUse(page);
   },
 
@@ -304,7 +307,7 @@ export const test = base.extend<Fixtures>({
     const email = seedData.waiter.email;
     const password = seedData.waiter.password;
 
-    await performLogin(page, email, password, '/admin/login', /\/admin\/dashboard/);
+    await performLogin(page, email, password, '/admin/login', /\/admin\/(?!login)/);
     await fixtureUse(page);
   },
 
@@ -312,7 +315,7 @@ export const test = base.extend<Fixtures>({
     const email = seedData.manager.email;
     const password = seedData.manager.password;
 
-    await performLogin(page, email, password, '/admin/login', /\/admin\/dashboard/);
+    await performLogin(page, email, password, '/admin/login', /\/admin\/(?!login)/);
     await fixtureUse(page);
   },
 
@@ -325,7 +328,7 @@ export const test = base.extend<Fixtures>({
     const email = seedData.waiter.email;
     const password = seedData.waiter.password;
 
-    await performLogin(page, email, password, '/admin/login', /\/admin\/dashboard/);
+    await performLogin(page, email, password, '/admin/login', /\/admin\/(?!login)/);
     await fixtureUse(page);
   },
 
