@@ -10,7 +10,8 @@
  *   - Sem user no request → 401 (fail-closed)
  *   - user sem role → 403 (fail-closed)
  *   - role desconhecida → 403 (fail-closed)
- *   - Handler `avaliar` é público (sem user → bypass)
+ *   - Rotas marcadas com `@Public()` são liberadas sem checar role
+ *     (mesma convenção do `JwtAuthGuard`).
  */
 import {
   CanActivate,
@@ -19,23 +20,33 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+
+import { IS_PUBLIC_KEY } from '../../../../auth/decorators/public.decorator';
 
 const READ_METHODS = new Set(['GET', 'HEAD']);
 const MUTATION_METHODS = new Set(['POST', 'PATCH', 'PUT', 'DELETE']);
 
 @Injectable()
 export class FeatureFlagAdminGuard implements CanActivate {
+  constructor(private readonly reflector: Reflector) {}
+
   canActivate(context: ExecutionContext): boolean {
+    // Rotas `@Public()` (ex.: `avaliar`) são liberadas sem checar role.
+    // Usamos `Reflector` com `IS_PUBLIC_KEY` — mesma chave do JwtAuthGuard,
+    // garantindo fonte única de verdade para "rota pública".
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (isPublic) {
+      return true;
+    }
+
     const request = context.switchToHttp().getRequest<{
       method: string;
       user?: { role?: string; sub?: string };
     }>();
-    const handler = context.getHandler();
-
-    // Handler `avaliar` é marcado como público (sem user → bypass)
-    if (handler.name === 'avaliar') {
-      return true;
-    }
 
     if (!request.user) {
       throw new UnauthorizedException('Token ausente ou inválido');

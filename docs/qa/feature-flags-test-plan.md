@@ -133,10 +133,12 @@ docker-compose -f docker-compose.dev.yml up -d                  # restaura
 ### 4.5 Lint + build
 
 ```bash
-pnpm lint                                                        # ESLint (root)
-pnpm --filter @pedi-ai/api lint
-pnpm --filter @pedi-ai/api build
-pnpm validate:quick                                              # lint + build + unit (root)
+pnpm lint                                                        # ESLint (root) — lint:api && lint:web
+pnpm build                                                       # Next.js + packages/shared transpilados
+pnpm test                                                        # vitest run (root) — unit + integration
+# (Não existe `pnpm validate:quick` no package.json raiz na revisão
+# 2026-07-29; os 3 comandos acima correspondem à sequência
+#  "lint + build + unit" que o plano assumia.)
 ```
 
 ---
@@ -149,7 +151,7 @@ pnpm validate:quick                                              # lint + build 
 - [ ] Cobertura ≥ 80% em `apps/api/src/{domain,application,infrastructure,presentation}/admin/feature-flags/`.
 - [ ] Cenários BDD de `gerenciar-flags.feature` verdes.
 - [ ] E2E `feature-flags.spec.ts` (testes de owner feliz) verdes.
-- [ ] `pnpm validate:quick` verde.
+- [ ] Lint, build e unit verdes (ver bloco "Lint + build" acima).
 - [ ] Pelo menos 1 commit por par `R/G` (TDD disciplinado — histórico mostra RED→GREEN).
 
 ### F2 — Targeting & Avaliação

@@ -14,9 +14,11 @@
  *   GET    /:key/audit                — audit log (owner|manager)
  *   GET    /evaluate                  — público, rate-limited
  *
- * Os métodos públicos recebem argumentos explícitos (em vez de decorators
- * NestJS) para serem diretamente testáveis via POJO. Cada handler também é
- * anotado com o decorator NestJS correspondente — vide wrapper abaixo.
+ * Cada handler usa os decorators canônicos do NestJS (`@Req()`, `@Param()`,
+ * `@Body()`, `@Query()`) para que a request body/params/query cheguem ao
+ * handler corretamente em produção. P0-03 corrigiu um bug onde vários
+ * handlers usavam argumentos posicionais sem decorators — o NestJS/Fastify
+ * injetava `undefined` em todos os slots, fazendo mutações retornarem 500.
  */
 import {
   Body,
@@ -30,10 +32,13 @@ import {
   Post,
   Query,
   Req,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
+import { AuthenticatedUser } from '../../../../auth/types/auth.types';
 import { Public } from '../../../../auth/decorators/public.decorator';
+import { JwtAuthGuard } from '../../../../auth/guards/jwt-auth.guard';
 
 import { AdicionarOverrideUseCase } from '../../../../application/admin/feature-flags/use-cases/AdicionarOverrideUseCase';
 import { AtualizarFeatureFlagUseCase } from '../../../../application/admin/feature-flags/use-cases/AtualizarFeatureFlagUseCase';
@@ -57,6 +62,13 @@ import {
 @ApiTags('admin/feature-flags')
 @ApiBearerAuth('JWT-auth')
 @Controller('admin/feature-flags')
+// Dupla camada de guards (defense-in-depth):
+//   - `JwtAuthGuard` popula `req.user` a partir do token JWT.
+//   - `FeatureFlagAdminGuard` aplica RBAC granular (owner/manager/...).
+// Mantemos ambos explícitos na classe — mesmo padrão do `payments.controller.ts`
+// (Auditoria M-07) — para que, se alguém remover o guard global em refactor
+// futuro, este controller permaneça protegido.
+@UseGuards(JwtAuthGuard, FeatureFlagAdminGuard)
 export class FeatureFlagsController {
   private readonly listarUC: ListarFeatureFlagsUseCase;
   private readonly obterUC: ObterFeatureFlagUseCase;
@@ -134,7 +146,7 @@ export class FeatureFlagsController {
   @ApiResponse({ status: 200, description: 'Lista de flags' })
   @ApiResponse({ status: 401, description: 'Sem autenticação' })
   @ApiResponse({ status: 403, description: 'Sem permissão' })
-  async listar(_req: unknown, rawQuery: { limit?: string; offset?: string }) {
+  async listar(@Query() rawQuery: { limit?: string; offset?: string }) {
     const query = validar(ListarQueryDtoSchema, rawQuery);
     return this.listarUC.executar({ limit: query.limit, offset: query.offset });
   }
@@ -155,7 +167,7 @@ export class FeatureFlagsController {
   @ApiResponse({ status: 201, description: 'Flag criada' })
   @ApiResponse({ status: 400, description: 'Dados inválidos' })
   @ApiResponse({ status: 409, description: 'Flag já existe' })
-  async criar(req: { user: { sub: string } }, rawBody: Record<string, unknown>) {
+  async criar(@Req() req: { user: AuthenticatedUser }, @Body() rawBody: Record<string, unknown>) {
     const dto = validar(CriarFeatureFlagDtoSchema, rawBody);
     return this.criarUC.executar({
       key: dto.key,
@@ -163,7 +175,7 @@ export class FeatureFlagsController {
       valueType: dto.valueType,
       defaultValue: dto.defaultValue,
       enabled: true,
-      actorId: req.user.sub,
+      actorId: req.user.id,
     });
   }
 
@@ -172,12 +184,16 @@ export class FeatureFlagsController {
   @ApiOperation({ summary: 'Atualizar feature flag' })
   @ApiResponse({ status: 200, description: 'Flag atualizada' })
   @ApiResponse({ status: 404, description: 'Flag não encontrada' })
-  async atualizar(req: { user: { sub: string } }, key: string, rawBody: Record<string, unknown>) {
+  async atualizar(
+    @Req() req: { user: AuthenticatedUser },
+    @Param('key') key: string,
+    @Body() rawBody: Record<string, unknown>
+  ) {
     const patch = validar(AtualizarFeatureFlagDtoSchema, rawBody);
     return this.atualizarUC.executar({
       key,
       patch,
-      actorId: req.user.sub,
+      actorId: req.user.id,
     });
   }
 
@@ -189,19 +205,19 @@ export class FeatureFlagsController {
   @ApiResponse({ status: 400, description: 'Dados inválidos' })
   @ApiResponse({ status: 404, description: 'Flag não encontrada' })
   async adicionarOverride(
-    req: { user: { sub: string } },
-    params: { key: string },
-    rawBody: Record<string, unknown>
+    @Req() req: { user: AuthenticatedUser },
+    @Param('key') key: string,
+    @Body() rawBody: Record<string, unknown>
   ) {
     const dto = validar(AdicionarOverrideDtoSchema, rawBody);
     return this.adicionarOverrideUC.executar({
-      flagKey: params.key,
+      flagKey: key,
       scope: dto.scope,
       scopeId: dto.scopeId ?? null,
       value: dto.value,
       rolloutPct: dto.rolloutPct ?? null,
       expiresAt: dto.expiresAt ?? null,
-      actorId: req.user.sub,
+      actorId: req.user.id,
     });
   }
 
@@ -212,14 +228,14 @@ export class FeatureFlagsController {
   @ApiResponse({ status: 204, description: 'Override removido' })
   @ApiResponse({ status: 404, description: 'Override não encontrado' })
   async removerOverride(
-    @Req() req: { user: { sub: string } },
+    @Req() req: { user: AuthenticatedUser },
     @Param('key') key: string,
     @Param('id') id: string
   ) {
     await this.removerOverrideUC.executar({
       flagKey: key,
       overrideId: id,
-      actorId: req.user.sub,
+      actorId: req.user.id,
     });
   }
 
@@ -262,7 +278,7 @@ export class FeatureFlagsController {
   @ApiResponse({ status: 200, description: 'Mapa de valores resolvidos' })
   @ApiResponse({ status: 400, description: 'keys inválidas' })
   @ApiResponse({ status: 429, description: 'Rate limit excedido' })
-  async avaliar(rawQuery: Record<string, unknown>) {
+  async avaliar(@Query() rawQuery: Record<string, unknown>) {
     const query = validar(AvaliacaoContextoDtoSchema, rawQuery);
     const keys = query.keys
       .split(',')
@@ -277,11 +293,3 @@ export class FeatureFlagsController {
     });
   }
 }
-
-/**
- * Ativa o guard global em todos os métodos (exceto `avaliar` que é público).
- * Aplicado via decorator na classe; feito separado para evitar warnings do TS.
- */
-const _adminGuard = FeatureFlagAdminGuard;
-// Mantém referência simbólica para análise estática do decorator.
-void _adminGuard;

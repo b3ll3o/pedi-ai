@@ -153,7 +153,7 @@ describe('createPiiPrismaExtension', () => {
       const handler = ext.query!.$allModels!.$allOperations!;
 
       await handler(
-        { model: 'usersProfile', operation: 'findMany', args: { where: {} }, query },
+        { model: 'UsersProfile', operation: 'findMany', args: { where: {} }, query },
         undefined
       );
 
@@ -212,7 +212,7 @@ describe('createPiiPrismaExtension', () => {
 
       await handler(
         {
-          model: 'usersProfile',
+          model: 'UsersProfile',
           operation: 'create',
           args: { data: { name: 'João', email: 'j@x.com' } },
           query,
@@ -233,7 +233,7 @@ describe('createPiiPrismaExtension', () => {
 
       await handler(
         {
-          model: 'usersProfile',
+          model: 'UsersProfile',
           operation: 'createMany',
           args: { data: [{ name: 'Ana' }, { name: 'Bia' }] },
           query,
@@ -254,7 +254,7 @@ describe('createPiiPrismaExtension', () => {
 
       await handler(
         {
-          model: 'usersProfile',
+          model: 'UsersProfile',
           operation: 'upsert',
           args: {
             where: { email: 'x' },
@@ -277,7 +277,7 @@ describe('createPiiPrismaExtension', () => {
 
       await handler(
         {
-          model: 'usersProfile',
+          model: 'UsersProfile',
           operation: 'create',
           args: { data: { name: 12345 as unknown as string } },
           query,
@@ -296,7 +296,7 @@ describe('createPiiPrismaExtension', () => {
 
       await handler(
         {
-          model: 'usersProfile',
+          model: 'UsersProfile',
           operation: 'create',
           args: { data: { email: 'j@x.com' } }, // sem name
           query,
@@ -316,7 +316,7 @@ describe('createPiiPrismaExtension', () => {
       const handler = ext.query!.$allModels!.$allOperations!;
 
       const result = await handler(
-        { model: 'usersProfile', operation: 'findMany', args: {}, query },
+        { model: 'UsersProfile', operation: 'findMany', args: {}, query },
         undefined
       );
 
@@ -334,7 +334,7 @@ describe('createPiiPrismaExtension', () => {
       const handler = ext.query!.$allModels!.$allOperations!;
 
       const result = await handler(
-        { model: 'usersProfile', operation: 'findUnique', args: { where: { id: '1' } }, query },
+        { model: 'UsersProfile', operation: 'findUnique', args: { where: { id: '1' } }, query },
         undefined
       );
 
@@ -347,7 +347,7 @@ describe('createPiiPrismaExtension', () => {
       const handler = ext.query!.$allModels!.$allOperations!;
 
       const result = await handler(
-        { model: 'usersProfile', operation: 'findFirstOrThrow', args: {}, query },
+        { model: 'UsersProfile', operation: 'findFirstOrThrow', args: {}, query },
         undefined
       );
 
@@ -361,7 +361,7 @@ describe('createPiiPrismaExtension', () => {
       const handler = ext.query!.$allModels!.$allOperations!;
 
       const result = await handler(
-        { model: 'usersProfile', operation: 'findUnique', args: {}, query },
+        { model: 'UsersProfile', operation: 'findUnique', args: {}, query },
         undefined
       );
 
@@ -375,7 +375,7 @@ describe('createPiiPrismaExtension', () => {
       const handler = ext.query!.$allModels!.$allOperations!;
 
       const result = await handler(
-        { model: 'usersProfile', operation: 'findUnique', args: {}, query },
+        { model: 'UsersProfile', operation: 'findUnique', args: {}, query },
         undefined
       );
 
@@ -390,7 +390,7 @@ describe('createPiiPrismaExtension', () => {
 
       const result = await handler(
         {
-          model: 'usersProfile',
+          model: 'UsersProfile',
           operation: 'update',
           args: { where: { id: '1' }, data: { name: 'updated' } },
           query,
@@ -411,7 +411,7 @@ describe('createPiiPrismaExtension', () => {
 
       await handler(
         {
-          model: 'usersProfile',
+          model: 'UsersProfile',
           operation: 'updateMany',
           args: { where: { id: '1' }, data: { name: 'bulk' } },
           query,

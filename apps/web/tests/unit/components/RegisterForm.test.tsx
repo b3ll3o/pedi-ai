@@ -32,8 +32,8 @@ function preencherFormulario(
   const {
     name = 'João Silva',
     email = 'teste@email.com',
-    password = 'Senha@123',
-    confirmPassword = 'Senha@123',
+    password = 'longpasswordwithoutcomplex',
+    confirmPassword = 'longpasswordwithoutcomplex',
     intent = 'Quero gerenciar meu restaurante',
   } = overrides;
 
@@ -179,7 +179,7 @@ describe('RegisterForm', () => {
       });
     });
 
-    it('exibe erro "Senha deve ter pelo menos 8 caracteres" quando senha tem menos de 8 chars', async () => {
+    it('exibe erro "Senha deve ter no mínimo 8 caracteres" quando senha tem menos de 8 chars', async () => {
       const { getByTestId, queryByText } = render(<RegisterForm />);
 
       fireEvent.change(getByTestId('name-input'), { target: { value: 'João Silva' } });
@@ -189,27 +189,74 @@ describe('RegisterForm', () => {
       fireEvent.click(getByTestId('register-button'));
 
       await waitFor(() => {
-        expect(queryByText('Senha deve ter pelo menos 8 caracteres')).toBeInTheDocument();
+        expect(queryByText('Senha deve ter no mínimo 8 caracteres')).toBeInTheDocument();
       });
     });
 
-    it('exibe erro de complexidade quando senha não tem maiúscula, número e caractere especial', async () => {
-      const { getByTestId, queryByText } = render(<RegisterForm />);
+    it('ACEITA senha de 8 chars sem composição (NIST 800-63B §5.1.1.2)', async () => {
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
+      const utils = render(<RegisterForm onSubmit={onSubmit} />);
 
-      fireEvent.change(getByTestId('name-input'), { target: { value: 'João Silva' } });
-      fireEvent.change(getByTestId('email-input'), { target: { value: 'teste@email.com' } });
-      fireEvent.change(getByTestId('password-input'), { target: { value: 'abcdefgh' } });
-      fireEvent.change(getByTestId('confirm-password-input'), { target: { value: 'abcdefgh' } });
-      fireEvent.click(getByTestId('register-button'));
+      preencherFormulario(utils, { password: 'abcdefgh', confirmPassword: 'abcdefgh' });
+      fireEvent.click(utils.getByTestId('register-button'));
 
       await waitFor(() => {
-        expect(
-          queryByText('Senha deve conter letra maiúscula, número e caractere especial')
-        ).toBeInTheDocument();
+        expect(onSubmit).toHaveBeenCalledWith(
+          'João Silva',
+          'teste@email.com',
+          'abcdefgh',
+          'gerenciar_restaurante'
+        );
       });
     });
 
-    it('não exibe erro de senha quando tem 8+ caracteres com complexidade', async () => {
+    it('ACEITA passphrase longa sem complexidade', async () => {
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
+      const utils = render(<RegisterForm onSubmit={onSubmit} />);
+      const passphrase = 'cafe com pao de queijo em 2026';
+
+      preencherFormulario(utils, { password: passphrase, confirmPassword: passphrase });
+      fireEvent.click(utils.getByTestId('register-button'));
+
+      await waitFor(() => {
+        expect(onSubmit).toHaveBeenCalledWith(
+          'João Silva',
+          'teste@email.com',
+          passphrase,
+          'gerenciar_restaurante'
+        );
+      });
+    });
+
+    it('REJEITA senha com 129 caracteres', async () => {
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
+      const utils = render(<RegisterForm onSubmit={onSubmit} />);
+      const senhaLonga = 'a'.repeat(129);
+
+      preencherFormulario(utils, { password: senhaLonga, confirmPassword: senhaLonga });
+      fireEvent.click(utils.getByTestId('register-button'));
+
+      await waitFor(() => {
+        expect(utils.queryByText('Senha deve ter no máximo 128 caracteres')).toBeInTheDocument();
+      });
+      expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it('REJEITA senha só com espaços', async () => {
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
+      const utils = render(<RegisterForm onSubmit={onSubmit} />);
+      const somenteEspacos = '            ';
+
+      preencherFormulario(utils, { password: somenteEspacos, confirmPassword: somenteEspacos });
+      fireEvent.click(utils.getByTestId('register-button'));
+
+      await waitFor(() => {
+        expect(utils.queryByText('Senha não pode ser apenas espaços')).toBeInTheDocument();
+      });
+      expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it('não exibe erro de senha quando tem 8+ caracteres', async () => {
       // Ver nota sobre onSubmit mock em 'não exibe erro de nome'.
       const onSubmit = vi.fn().mockResolvedValue(undefined);
       const utils = render(<RegisterForm onSubmit={onSubmit} />);
@@ -218,10 +265,8 @@ describe('RegisterForm', () => {
 
       await waitFor(() => {
         expect(utils.queryByText('Senha é obrigatória')).not.toBeInTheDocument();
-        expect(utils.queryByText('Senha deve ter pelo menos 8 caracteres')).not.toBeInTheDocument();
-        expect(
-          utils.queryByText('Senha deve conter letra maiúscula, número e caractere especial')
-        ).not.toBeInTheDocument();
+        expect(utils.queryByText('Senha deve ter no mínimo 8 caracteres')).not.toBeInTheDocument();
+        expect(utils.queryByText('Senha deve ter no máximo 128 caracteres')).not.toBeInTheDocument();
       });
     });
   });
@@ -281,7 +326,7 @@ describe('RegisterForm', () => {
         expect(onSubmit).toHaveBeenCalledWith(
           'João Silva',
           'teste@email.com',
-          'Senha@123',
+          'longpasswordwithoutcomplex',
           'gerenciar_restaurante'
         );
       });

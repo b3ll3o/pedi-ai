@@ -28,6 +28,19 @@ const VALID_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const VALID_REFERRAL_CODE = /^[A-Z0-9]{6,12}$/;
 const MAX_CONVERSIONS = 100; // anti-abuse
 
+/**
+ * Política de senha alinhada com NIST SP 800-63B §5.1.1.2 (memorized secrets).
+ *
+ * - **Mínimo 8 caracteres** — anti-brute-force sem regras de composição.
+ * - **Máximo 128 caracteres** — limite prático para inputs do usuário.
+ * - **Sem regras de composição** — NIST §5.1.1.2: "Verifiers SHOULD NOT impose
+ *   other composition rules for memorized secrets".
+ *
+ * @see https://pages.nist.gov/800-63-3/sp800-63b.html#memsecret
+ */
+const SENHA_MIN_CARACTERES = 8;
+const SENHA_MAX_CARACTERES = 128;
+
 interface ReferralValidation {
   valid: boolean;
   referralId?: string;
@@ -45,6 +58,9 @@ interface RegisterBody {
 /**
  * Validação dos campos básicos (email, nome, senha, intent).
  * Retorna null se OK, ou uma Response 400 com a mensagem de erro.
+ *
+ * Senha segue NIST SP 800-63B §5.1.1.2: apenas limites de comprimento,
+ * sem regras de composição (maiúscula/número/especial).
  */
 function validateBasicFields(body: RegisterBody): NextResponse | null {
   const { email, nome, senha, intent } = body;
@@ -57,14 +73,38 @@ function validateBasicFields(body: RegisterBody): NextResponse | null {
     return NextResponse.json({ error: 'Nome muito curto' }, { status: 400 });
   }
 
-  if (!senha || typeof senha !== 'string' || senha.length < 8) {
-    return NextResponse.json({ error: 'Senha deve ter no mínimo 8 caracteres' }, { status: 400 });
+  const senhaError = validatePassword(senha);
+  if (senhaError) {
+    return NextResponse.json({ error: senhaError }, { status: 400 });
   }
 
   if (intent !== 'gerenciar_restaurante' && intent !== 'fazer_pedidos') {
     return NextResponse.json({ error: 'Intent inválido' }, { status: 400 });
   }
 
+  return null;
+}
+
+/**
+ * Valida a senha conforme NIST SP 800-63B §5.1.1.2.
+ * Retorna `null` se válida, ou a mensagem de erro.
+ */
+function validatePassword(senha: unknown): string | null {
+  if (typeof senha !== 'string') {
+    return 'Senha é obrigatória';
+  }
+  if (senha.length === 0) {
+    return 'Senha é obrigatória';
+  }
+  if (senha.trim().length === 0) {
+    return 'Senha não pode ser apenas espaços';
+  }
+  if (senha.length < SENHA_MIN_CARACTERES) {
+    return `Senha deve ter no mínimo ${SENHA_MIN_CARACTERES} caracteres`;
+  }
+  if (senha.length > SENHA_MAX_CARACTERES) {
+    return `Senha deve ter no máximo ${SENHA_MAX_CARACTERES} caracteres`;
+  }
   return null;
 }
 

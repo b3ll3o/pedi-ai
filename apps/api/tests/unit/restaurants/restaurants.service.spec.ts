@@ -24,6 +24,14 @@ describe('RestaurantsService', () => {
     subscription: {
       create: vi.fn(),
     },
+    // Auditoria P0-06: `withEncryptedTransaction` delega ao mock de
+    // `$transaction` (callback interativo). Em produção ele re-estende o
+    // client antes de abrir a transação; em mock unitário basta repassar
+    // ao mesmo `$transaction` mockado (que já está configurado pelos
+    // testes para devolver um `tx = mockPrisma`).
+    withEncryptedTransaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) => {
+      return (mockPrisma.$transaction as ReturnType<typeof vi.fn>)(callback as (tx: unknown) => Promise<unknown>);
+    }),
     $transaction: vi.fn(),
   });
 

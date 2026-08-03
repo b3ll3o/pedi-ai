@@ -192,11 +192,11 @@ import { FeatureFlagAdminGuard } from '../guards/FeatureFlagAdminGuard';
     // Guard
     FeatureFlagAdminGuard,
 
-    // Controller — recebe os 9 use cases diretamente via construtor.
-    // Como o construtor do controller aceita `any` para todos os parâmetros
-    // (forma bundle/POJO), precisamos explicitamente listar o tipo de cada
-    // dependência via `inject` — TS não emite metadata útil quando tudo é
-    // `any`. Para tipos concretos nos slots, alteramos o controller abaixo.
+    // Controller — recebe os 9 use cases via construtor tipado
+    // (positional, classes concretas — ver `FeatureFlagsController.ts`).
+    // A forma bundle/POJO foi mantida para retrocompatibilidade com testes
+    // legados mas a detecção automática via `Reflect.getMetadata` da DI
+    // funciona apenas quando os parâmetros são tipados concretamente.
     FeatureFlagsController,
   ],
   exports: ['IFeatureFlagRepository', FeatureFlagCache, FeatureFlagMetrics],

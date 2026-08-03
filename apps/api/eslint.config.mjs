@@ -81,6 +81,14 @@ const eslintConfig = defineConfig([
         sourceType: 'module',
       },
     },
+    // Re-declara os plugins aqui também — sem isso, regras
+    // `@typescript-eslint/*` referenciadas via `// eslint-disable-next-line`
+    // em arquivos de teste resultam em "Definition for rule 'X' was not
+    // found" mesmo quando X está declarada como `off` em `rules`. O ESLint
+    // precisa conhecer o plugin para silenciar a diretiva.
+    plugins: {
+      '@typescript-eslint': tseslint,
+    },
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/ban-ts-comment': 'off',

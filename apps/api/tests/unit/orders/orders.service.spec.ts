@@ -58,6 +58,13 @@ describe('OrdersService', () => {
       };
       return fn(mockTx);
     }),
+    // Auditoria P0-06: `withEncryptedTransaction` é usado pelo create e
+    // pela transição de status. Repassa ao mock de `$transaction` (que
+    // os testes reconfiguram com `mockImplementation` apontando `tx =
+    // mockPrisma`).
+    withEncryptedTransaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) => {
+      return (mockPrisma.$transaction as ReturnType<typeof vi.fn>)(callback as (tx: unknown) => Promise<unknown>);
+    }),
   });
 
   const createMockRealtime = () => ({
@@ -239,6 +246,89 @@ describe('OrdersService', () => {
         id: 'order-1',
         total: 110,
       });
+    });
+
+    // Auditoria P0-01 (2026-07-29): `create` DEVE filtrar produtos por
+    // `restaurantId` antes de validar disponibilidade. Sem esse filtro,
+    // um cliente do restaurante A podia injetar `productId` do restaurante
+    // B no payload e o sistema validaria apenas `available: true` — BOLA.
+    it('escopa query de produtos pelo restaurantId do pedido (anti-BOLA)', async () => {
+      const orderData = {
+        restaurantId: 'rest-a',
+        subtotal: 100,
+        tax: 10,
+        total: 110,
+        items: [{ productId: 'prod-1', quantity: 1, unitPrice: 100, totalPrice: 100 }],
+      };
+      const createdOrder = { id: 'order-a', ...orderData, status: 'pending' };
+      mockPrisma.$transaction.mockImplementation(async (fn) => {
+        const tx = {
+          order: { create: vi.fn().mockResolvedValue(createdOrder) },
+          orderStatusHistory: { create: vi.fn().mockResolvedValue({}) },
+        };
+        return fn(tx);
+      });
+
+      await ordersService.create(orderData);
+
+      // P0-01: a query de produtos filtra por restaurantId='rest-a'
+      // (não apenas `id + available`).
+      expect(mockPrisma.product.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            restaurantId: 'rest-a',
+            available: true,
+          }),
+        })
+      );
+    });
+
+    // Auditoria P0-01 (2026-07-29): cross-tenant product injection.
+    // Cliente do restaurante A envia `prod-b1` (produto do restaurante B).
+    // Como o `findMany` agora filtra por `restaurantId: 'rest-a'`, o
+    // mock simula que nenhum produto foi encontrado (`length === 0`) —
+    // e o serviço deve lançar 400 com a mensagem padrão.
+    it('rejeita pedido com produto de OUTRO tenant (cross-tenant injection)', async () => {
+      const orderData = {
+        restaurantId: 'rest-a',
+        subtotal: 0,
+        tax: 0,
+        total: 0,
+        items: [{ productId: 'prod-b1', quantity: 1, unitPrice: 40, totalPrice: 40 }],
+      };
+      // Mock: findMany com filtro `restaurantId: 'rest-a'` retorna
+      // vazio (prod-b1 não bate). O serviço reporta como indisponível.
+      mockPrisma.product.findMany.mockResolvedValueOnce([]);
+
+      await expect(ordersService.create(orderData)).rejects.toThrow(
+        /Produtos indisponíveis ou inexistentes: prod-b1/
+      );
+      // Garante que NENHUMA order foi criada.
+      expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    // Auditoria P0-01 (2026-07-29): pedido misto (item válido + item
+    // cross-tenant). Apenas o item cross-tenant deve aparecer na
+    // lista de "indisponíveis".
+    it('pedido com 1 item válido + 1 cross-tenant retorna 400 listando apenas o cross-tenant', async () => {
+      const orderData = {
+        restaurantId: 'rest-a',
+        subtotal: 25,
+        tax: 0,
+        total: 25,
+        items: [
+          { productId: 'prod-a1', quantity: 1, unitPrice: 25, totalPrice: 25 },
+          { productId: 'prod-b1', quantity: 1, unitPrice: 40, totalPrice: 40 },
+        ],
+      };
+      // findMany filtra por restaurantId='rest-a', então só retorna prod-a1.
+      mockPrisma.product.findMany.mockResolvedValueOnce([
+        { id: 'prod-a1', price: 25, name: 'Produto A' },
+      ]);
+
+      await expect(ordersService.create(orderData)).rejects.toThrow(
+        /Produtos indisponíveis ou inexistentes: prod-b1/
+      );
     });
   });
 

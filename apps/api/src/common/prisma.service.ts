@@ -4,6 +4,11 @@ import { PrismaPg } from '@prisma/adapter-pg';
 
 import { PiiCryptoService } from './pii-crypto.service';
 import {
+  comTransacaoEncriptada,
+  OpcoesTransacaoPii,
+  TransacaoPiiClient,
+} from './prisma-encrypted-transaction';
+import {
   createPiiPrismaExtension,
   detectRawQueryModel,
   PII_PROTECTED_MODELS,
@@ -13,27 +18,42 @@ import {
 /**
  * PrismaService que aplica a extensão de PII encryption.
  *
- * **Auditoria M11** — mudanças vs. versão anterior:
+ * **Auditoria P0-06** — mudanças desta rodada:
  *
- * 1. **FAIL LOUD em produção/staging se a extensão falhar** — antes, o
- *    serviço continuava rodando sem PII (apenas log de erro). Em
- *    produção, isso significa que dados novos seriam persistidos em
- *    plaintext silenciosamente — risco sério de LGPD/GDPR.
+ * 1. **Extension aplicada no CONSTRUTOR, não em `onModuleInit`.** Antes,
+ *    existia uma janela de boot: entre `new PrismaService(...)` e o fim do
+ *    `onModuleInit()` (assíncrono, depois de `$connect`), qualquer escrita
+ *    persistia PII em plaintext — permanentemente e sem nenhum sinal.
+ *    Pior: a instalação era condicionada a `piiCrypto.isEnabled()` no
+ *    instante do init; se a ordem de inicialização do Nest colocasse o
+ *    `PiiCryptoService` depois, a extension jamais era aplicada. Agora ela
+ *    é instalada no construtor e consulta `crypto.isEnabled()` *por
+ *    chamada*, então passa a valer assim que a chave existir.
+ *
+ * 2. **`withEncryptedTransaction()` substitui o padrão perigoso de
+ *    `getExtendedClient()` dentro de `$transaction`.** O docblock antigo
+ *    recomendava chamar `getExtendedClient()` DENTRO do callback — mas
+ *    aquele client tem conexão própria, logo as escritas **não participam
+ *    da transação e não sofrem rollback**. A recomendação corrompia dados.
+ *    Ver `tests/integration/pii-encryption-transaction.int-spec.ts`.
+ *
+ * **Auditoria M11** — mudanças anteriores, ainda válidas:
+ *
+ * 1. **FAIL LOUD em produção/staging se a extensão falhar** — em produção,
+ *    seguir sem extension significa persistir PII em plaintext
+ *    silenciosamente (risco LGPD/GDPR).
  *
  * 2. **Guard em `$queryRaw`/`$executeRaw` para models PII** (L-NEW-04) —
  *    a API de extensions do Prisma (`$allModels.$allOperations`) intercepta
- *    apenas delegates de modelo (`this.user.findMany`, `this.order.create`,
- *    etc.). `$queryRaw`/`$executeRaw` passam **sem** encriptação automática.
- *    Aqui, **bloqueamos** raw queries que tocam models PII (`UsersProfile`)
- *    — heurística simples baseada em regex do nome da tabela. False
- *    negatives são aceitos (em produção, monitoring cobre), mas
- *    **tentativas óbvias** de ler/escrever PII via SQL cru falham alto.
+ *    apenas delegates de modelo. `$queryRaw`/`$executeRaw` passam **sem**
+ *    encriptação automática, então raw queries contra models PII falham alto.
  *
- * 3. **Mantém `Object.assign` como trade-off pragmático** — a alternativa
- *    "pura" exigiria refatorar todos os call sites para usar
- *    `this.extendedClient.user.findMany(...)`. Para evitar um patch
- *    invasivo em 30+ arquivos, aceitamos o trade-off conhecido (PII via
- *    raw SQL exige cuidado manual) e tornamos o risco visível via logs.
+ * 3. **`Object.assign` mantido como trade-off pragmático** — a alternativa
+ *    "pura" exigiria refatorar todos os call sites para
+ *    `this.extendedClient.user.findMany(...)`. Verificado empiricamente no
+ *    Prisma 7.8: o `$transaction` copiado é o do client estendido e o
+ *    Prisma propaga as extensions para o `tx` do callback. Os testes de
+ *    integração travam esse comportamento contra regressão em upgrades.
  */
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
@@ -51,34 +71,29 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     super({
       adapter: new PrismaPg({ connectionString }),
     });
+
+    // Auditoria P0-06: instalar AQUI (e não em `onModuleInit`) fecha a
+    // janela de boot em que escritas iam para o disco em plaintext.
+    // A extension consulta `crypto.isEnabled()` a cada operação, então
+    // funciona mesmo que a chave só seja carregada depois — não há mais
+    // acoplamento com a ordem de inicialização dos providers do Nest.
+    this.aplicarExtensaoPii();
   }
 
-  async onModuleInit() {
-    await this.$connect();
-    if (!this.piiCrypto.isEnabled()) {
-      this.logger.warn(
-        'PII_ENCRYPTION_KEY não configurada — campos PII em plaintext. Defina antes de produção.'
-      );
-      return;
-    }
-
+  /**
+   * Aplica a extension de PII sobre `this`. Idempotente: chamadas
+   * repetidas não empilham camadas de encriptação porque o
+   * `Object.assign` substitui os delegates pelos do novo proxy.
+   */
+  private aplicarExtensaoPii(): void {
     try {
       const extended = this.$extends(createPiiPrismaExtension(this.piiCrypto));
-      // Auditoria ACHADO-29 (Re-varredura 6): `Object.assign` copia os
-      // delegates do proxy estendido para a instância PrismaClient original.
-      // Limitação conhecida (documentada em `pii-prisma.extension.ts`):
-      // chamadas via `$transaction(tx => tx.usersProfile.findMany(...))`
-      // recebem o client RAW (não extended), bypassando a encriptação
-      // automática para campos PII. Mitigação atual:
-      //   1. `$queryRaw`/`$executeRaw` têm guard para models PII (L-NEW-04).
-      //   2. `getExtendedClient()` expõe o proxy para quem precisar garantir
-      //      encriptação em `$transaction` callback (uso opcional).
-      // A refatoração completa (todos os 30+ call sites usando extended
-      // client) está fora do escopo desta hardening — o trade-off
-      // permanece, mas agora é rastreável.
+      // `Object.assign` copia os delegates do proxy estendido — incluindo
+      // `$transaction`, que por isso propaga as extensions para o `tx`
+      // entregue ao callback (verificado no Prisma 7.8 e travado por
+      // `tests/integration/pii-encryption-transaction.int-spec.ts`).
       Object.assign(this, extended);
       this.piiApplied = true;
-      this.logger.log('PII encryption extension aplicada ao Prisma');
     } catch (err) {
       const isStrict = process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging';
       if (isStrict) {
@@ -96,23 +111,74 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     }
   }
 
+  async onModuleInit() {
+    await this.$connect();
+    if (!this.piiCrypto.isEnabled()) {
+      this.logger.warn(
+        'PII_ENCRYPTION_KEY não configurada — campos PII em plaintext. Defina antes de produção.'
+      );
+      return;
+    }
+
+    if (this.piiApplied) {
+      this.logger.log('PII encryption extension aplicada ao Prisma');
+      return;
+    }
+
+    // Só chega aqui se a aplicação no construtor falhou em dev (em
+    // prod/staging teria abortado o boot). Retentamos para dar uma
+    // segunda chance antes de operar sem proteção.
+    this.aplicarExtensaoPii();
+    if (this.piiApplied) {
+      this.logger.log('PII encryption extension aplicada ao Prisma');
+    }
+  }
+
   /**
-   * Auditoria ACHADO-29 (Re-varredura 6): retorna o client Prisma com a
-   * extension de PII aplicada como **Proxy** (não o resultado do
-   * `Object.assign`). Use em `$transaction` callbacks quando precisar
-   * garantir que campos PII sejam encriptados/decriptados dentro da
-   * transação.
+   * Auditoria P0-06: executa `callback` dentro de uma transação cujo `tx`
+   * tem a extension de PII garantidamente aplicada.
    *
-   * Exemplo:
-   *   await this.prisma.$transaction(async (tx) => {
-   *     // Em vez de: tx.usersProfile.findUnique(...)
-   *     const ext = this.prisma.getExtendedClient();
-   *     return ext.usersProfile.findUnique(...); // passa pela extension
-   *   });
+   * **Use este método em vez de `getExtendedClient()` dentro de um
+   * `$transaction`.** O client devolvido por `getExtendedClient()` tem
+   * conexão própria: escritas feitas por ele **não participam da
+   * transação** e **não sofrem rollback** se o callback lançar depois.
    *
-   * Custo: 1 chamada extra por transação (criação do Proxy). Para a
-   * maioria dos call sites atuais, `$transaction` é usada para
-   * operações não-PII (orders, payments) — o risco é residual.
+   * ```ts
+   * // ❌ ERRADO — escreve fora da transação, sem rollback
+   * await this.prisma.$transaction(async (tx) => {
+   *   const ext = this.prisma.getExtendedClient();
+   *   return ext.usersProfile.create({ data: { name } });
+   * });
+   *
+   * // ✅ CORRETO — encriptado E atômico
+   * await this.prisma.withEncryptedTransaction(async (tx) => {
+   *   return tx.usersProfile.create({ data: { name } });
+   * });
+   * ```
+   *
+   * @param callback Recebe o `tx` já estendido.
+   * @param opcoes   Repassadas ao `$transaction` (isolationLevel, timeout...).
+   */
+  withEncryptedTransaction<T>(
+    callback: (tx: TransacaoPiiClient) => Promise<T>,
+    opcoes?: OpcoesTransacaoPii
+  ): Promise<T> {
+    return comTransacaoEncriptada(this, this.piiCrypto, callback, opcoes);
+  }
+
+  /**
+   * Retorna o client Prisma com a extension de PII aplicada como **Proxy**.
+   *
+   * ⚠️ **NÃO use dentro de um callback de `$transaction`** — o client
+   * retornado abre conexão própria e suas escritas ficam **fora** da
+   * transação (sem rollback). Para esse caso, use
+   * {@link withEncryptedTransaction}.
+   *
+   * Uso legítimo: obter um client estendido fora de qualquer transação,
+   * quando o caller tem apenas uma referência genérica a `PrismaClient`.
+   * Na prática, com a extension aplicada no construtor, os delegates de
+   * `this` já passam pela encriptação — este método permanece por
+   * compatibilidade com call sites existentes.
    */
   getExtendedClient(): PiiPrismaClient {
     // CRIT-003 (2ª varredura QA): retorno de `$extends(...)` não é

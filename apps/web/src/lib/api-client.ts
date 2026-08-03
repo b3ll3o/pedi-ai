@@ -226,8 +226,21 @@ class ApiClientClass {
 
   /**
    * Logout via API. Servidor limpa os cookies.
+   *
+   * Antes de chamar o endpoint, purga dados pessoais do IndexedDB local
+   * (LGPD art. 18 — direito ao esquecimento). A purga é best-effort:
+   * se falhar (ex.: IndexedDB indisponível), o logout prossegue.
+   *
+   * Server-side: a purga é no-op (guard interno). Assim esta função é
+   * segura para ser chamada de Route Handlers Next.js também.
    */
   async logout(): Promise<void> {
+    // Import dinâmico: o módulo `safePurge` só roda em ambiente browser
+    // (guarda contra ausência de indexedDB) e mantém Dexie fora do
+    // bundle server quando a rota é chamada por SSR.
+    const { purgeLocalDataSafely } = await import('@/lib/offline/safePurge');
+    await purgeLocalDataSafely();
+
     try {
       await this.fetch(`${API_URL}/auth/logout`, { method: 'POST' });
     } catch {

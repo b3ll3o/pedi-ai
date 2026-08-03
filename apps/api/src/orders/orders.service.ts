@@ -233,8 +233,23 @@ export class OrdersService {
     // com produto indisponível — quebrava o contrato "produto no cardápio
     // = pode pedir". Agora: query filtra disponíveis; qualquer ID não
     // retornado é reportado como "indisponível" no 400.
+    //
+    // Auditoria P0-01 (2026-07-29): adiciona filtro `restaurantId` à query
+    // de produtos. ANTES, o `findMany` aceitava IDs de produtos de QUALQUER
+    // tenant — um cliente malicioso com cardápio cacheado do restaurante A
+    // podia injetar `productId` do restaurante B (cross-tenant product
+    // injection). Sem o filtro, o sistema validava `available: true` mas
+    // não validava o tenant — vazando a existência de produtos cross-tenant
+    // (BOLA / OWASP API #1). Agora, a query escopa por `restaurantId` do
+    // pedido (vem do `assertTableOwnership` no controller ou do body
+    // validado). Produtos cross-tenant retornam na lista de "indisponíveis
+    // ou inexistentes" — mesma UX que produto desativado.
     const products = await this.prisma.product.findMany({
-      where: { id: { in: productIds }, available: true },
+      where: {
+        id: { in: productIds },
+        restaurantId: data.restaurantId,
+        available: true,
+      },
       select: { id: true, price: true, name: true },
     });
     if (products.length !== productIds.length) {
@@ -270,7 +285,11 @@ export class OrdersService {
 
     let order;
     try {
-      order = await this.prisma.$transaction(async (tx) => {
+      // Auditoria P0-06: call site COM PII — `Order.customerPhone/Name/Email`
+    // estão em `PiiCryptoService.ENCRYPTED_FIELDS`. Usamos
+    // `withEncryptedTransaction` (helper P0-06) para garantir encriptação
+    // E atomicidade (rollback em conjunto).
+    order = await this.prisma.withEncryptedTransaction(async (tx) => {
         // Claim atômico do idempotency-key DENTRO da transação (M-NEW-03).
         // Se `tx.order.create` falhar, o claim é revertido pelo Prisma
         // (rollback) e o cliente pode fazer retry sem 409 espúrio.
@@ -403,7 +422,10 @@ export class OrdersService {
       );
     }
 
-    const order = await this.prisma.$transaction(async (tx) => {
+    // Auditoria P0-06: call site COM PII — o `tx.order.findUnique` retorna
+    // a linha com `customerPhone/Name/Email` cifradas. O `withEncryptedTransaction`
+    // garante que essa leitura passe pela decrypt hook da extension.
+    const order = await this.prisma.withEncryptedTransaction(async (tx) => {
       const updatedOrder = await tx.order.findUnique({ where: { id } });
       if (!updatedOrder) {
         // Não deveria acontecer — updateMany confirmou existência.

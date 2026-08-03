@@ -18,7 +18,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: ['**/*.spec.ts', '**/*.test.ts'],
+    include: ['**/*.spec.ts', '**/*.test.ts', '**/*.int-spec.ts'],
     testTimeout: 10_000,
     coverage: {
       provider: 'v8',

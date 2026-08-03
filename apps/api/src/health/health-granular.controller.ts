@@ -88,7 +88,7 @@ export class HealthGranularController {
    */
   @Get('db')
   @Public()
-  @SkipThrottle()
+  @SkipThrottle({ default: true })
   @ApiOperation({ summary: 'Health check do Postgres' })
   @ApiResponse({ status: 200, description: 'Postgres saudável' })
   @ApiResponse({ status: 503, description: 'Postgres indisponível' })
@@ -153,7 +153,7 @@ export class HealthGranularController {
    */
   @Get('redis')
   @Public()
-  @SkipThrottle()
+  @SkipThrottle({ default: true })
   @ApiOperation({ summary: 'Health check do Redis (BullMQ)' })
   @ApiResponse({ status: 200, description: 'Redis saudável ou não configurado' })
   @ApiResponse({ status: 503, description: 'Redis indisponível' })
@@ -234,7 +234,7 @@ export class HealthGranularController {
    */
   @Get('full')
   @Public()
-  @SkipThrottle()
+  @SkipThrottle({ default: true })
   @ApiOperation({ summary: 'Health completo (DB + Redis + versão)' })
   async full(): Promise<FullHealthResponse> {
     // Executa ambos checks em paralelo (performance)

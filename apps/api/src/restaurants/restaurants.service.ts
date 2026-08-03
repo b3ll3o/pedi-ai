@@ -215,7 +215,14 @@ export class RestaurantsService {
     const trialEndsAt = new Date();
     trialEndsAt.setDate(trialEndsAt.getDate() + trialDays);
 
-    return this.prisma.$transaction(async (tx) => {
+    // Auditoria P0-06: call site COM PII — `restaurant.phone/address` e
+    // `usersProfile.name` estão em `PiiCryptoService.ENCRYPTED_FIELDS`.
+    // Usamos `withEncryptedTransaction` (helper P0-06) que re-estende o
+    // client ANTES de abrir a transação, garantindo encriptação E
+    // atomicidade juntas. Em Prisma 7.8 as extensions propagam para o
+    // `tx`, mas isso é detalhe de implementação que pode mudar entre
+    // versões. Coberto por `tests/integration/pii-encryption-transaction.int-spec.ts`.
+    return this.prisma.withEncryptedTransaction(async (tx) => {
       const restaurant = await tx.restaurant.create({
         data: {
           name: data.name,

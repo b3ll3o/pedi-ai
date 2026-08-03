@@ -74,6 +74,67 @@ describe('PiiCryptoService', () => {
     });
   });
 
+  describe('lookup de model insensível a casing (P0-06)', () => {
+    /**
+     * Auditoria P0-06 — regressão que deixou TODA a criptografia de PII
+     * inerte em produção.
+     *
+     * O registro interno usa chaves em camelCase (`usersProfile`), que é a
+     * convenção dos delegates do client. Mas o Prisma Client Extension
+     * entrega `model` em **PascalCase** (`UsersProfile`) — é o nome da
+     * model no schema. O lookup batia `Map.get('UsersProfile')`, recebia
+     * `undefined`, e a extension virava no-op silencioso: nenhum campo PII
+     * era encriptado at-rest (LGPD Art. 46).
+     *
+     * O bug sobreviveu à cobertura de testes porque os specs da extension
+     * montavam o payload à mão com `model: 'usersProfile'` — combinação
+     * que nunca ocorre em runtime.
+     *
+     * Estes casos usam o casing REAL entregue pelo Prisma.
+     */
+    it('resolve UsersProfile (PascalCase — o que o Prisma entrega em runtime)', () => {
+      expect(PiiCryptoService.getEncryptedFields('UsersProfile').has('name')).toBe(true);
+      expect(PiiCryptoService.isEncryptedField('UsersProfile', 'name')).toBe(true);
+    });
+
+    it('resolve Restaurant (PascalCase)', () => {
+      const campos = PiiCryptoService.getEncryptedFields('Restaurant');
+      expect(campos.has('phone')).toBe(true);
+      expect(campos.has('address')).toBe(true);
+    });
+
+    it('resolve Order (PascalCase)', () => {
+      const campos = PiiCryptoService.getEncryptedFields('Order');
+      expect(campos.has('customerPhone')).toBe(true);
+      expect(campos.has('customerName')).toBe(true);
+      expect(campos.has('customerEmail')).toBe(true);
+    });
+
+    it('continua resolvendo camelCase (compatibilidade com callers antigos)', () => {
+      expect(PiiCryptoService.getEncryptedFields('usersProfile').has('name')).toBe(true);
+      expect(PiiCryptoService.getEncryptedFields('order').has('customerEmail')).toBe(true);
+    });
+
+    it('retorna Set vazio para model sem PII, em qualquer casing', () => {
+      expect(PiiCryptoService.getEncryptedFields('Product').size).toBe(0);
+      expect(PiiCryptoService.getEncryptedFields('product').size).toBe(0);
+      expect(PiiCryptoService.isEncryptedField('Product', 'name')).toBe(false);
+    });
+
+    it('não cria entrada duplicada ao registrar com casing divergente', () => {
+      PiiCryptoService.registerEncryptedField('PedidoCasing', 'campoA');
+      PiiCryptoService.registerEncryptedField('pedidocasing', 'campoB');
+
+      // Ambos os campos devem viver na MESMA entrada — se houvesse
+      // duplicação, um dos lookups perderia um dos campos.
+      const porPascal = PiiCryptoService.getEncryptedFields('PedidoCasing');
+      const porLower = PiiCryptoService.getEncryptedFields('pedidocasing');
+      expect(porPascal.has('campoA')).toBe(true);
+      expect(porPascal.has('campoB')).toBe(true);
+      expect(porLower).toBe(porPascal);
+    });
+  });
+
   describe('sem chave configurada (dev/test)', () => {
     beforeEach(() => {
       crypto = new PiiCryptoService({

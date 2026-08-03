@@ -129,6 +129,10 @@ export class CombosService {
     }
     // Auditoria M-06: cascade delete em `$transaction` atômico — crash entre
     // as duas queries deixa comboItems órfãos.
+    //
+    // Auditoria P0-06 — call site SEM PII: `Combo`/`ComboItem` não têm
+    // campos em `PiiCryptoService.ENCRYPTED_FIELDS`, e `delete`/`deleteMany`
+    // não passam por encrypt/decrypt na extension.
     await this.prisma.$transaction([
       this.prisma.comboItem.deleteMany({ where: { comboId: id } }),
       this.prisma.combo.delete({ where: { id } }),

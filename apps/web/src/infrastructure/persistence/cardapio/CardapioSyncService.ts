@@ -15,6 +15,20 @@ import { CategoriaRepository } from './CategoriaRepository';
 import { ItemCardapioRepository } from './ItemCardapioRepository';
 import { ModificadorGrupoRepository } from './ModificadorGrupoRepository';
 
+/**
+ * Normaliza valores `dietaryLabels` serializados como JSON-string pelo
+ * Prisma (ex.: `'"[]"'` ou `'[\"vegano\"]'`). Retorna `null` se a string
+ * não for JSON válido ou não for um array.
+ */
+function safeParseJsonArray(raw: string): string[] | null {
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as string[]) : null;
+  } catch {
+    return null;
+  }
+}
+
 export interface CardapioSyncResult {
   categoriasSincronizadas: number;
   itensSincronizados: number;
@@ -24,33 +38,49 @@ export interface CardapioSyncResult {
 
 interface CategoriaApiResponse {
   id: string;
-  restaurant_id: string;
+  // API NestJS retorna camelCase (`restaurantId`, `imageUrl`, `sortOrder`)
+  // apesar das tipagens legadas em packages/shared esperarem snake_case
+  // (`restaurant_id`, `image_url`, `sort_order`). Aceitamos ambos para
+  // tolerar drift de contrato enquanto a migração para camelCase
+  // definitivo é concluída.
+  restaurant_id?: string;
+  restaurantId?: string;
   name: string;
   description: string | null;
-  image_url: string | null;
-  sort_order: number;
+  image_url?: string | null;
+  imageUrl?: string | null;
+  sort_order?: number;
+  sortOrder?: number;
   active: boolean;
 }
 
 interface ProdutoApiResponse {
   id: string;
-  category_id: string;
+  category_id?: string;
+  categoryId?: string;
   name: string;
   description: string | null;
   price: number;
-  image_url: string | null;
-  dietary_labels: string[] | null;
+  image_url?: string | null;
+  imageUrl?: string | null;
+  // API pode serializar dietaryLabels como JSON-string `"[]"` (não array)
+  // dependendo do serializer Prisma; normalizamos abaixo.
+  dietary_labels?: string[] | string | null;
+  dietaryLabels?: string[] | string | null;
   available: boolean;
 }
 
 interface GrupoModificadorApiResponse {
   id: string;
-  restaurant_id: string;
+  restaurant_id?: string;
+  restaurantId?: string;
   name: string;
   description: string | null;
   required: boolean;
-  min_selections: number | null;
-  max_selections: number | null;
+  min_selections?: number | null;
+  minSelections?: number | null;
+  max_selections?: number | null;
+  maxSelections?: number | null;
 }
 
 export class CardapioSyncService {
@@ -97,11 +127,11 @@ export class CardapioSyncService {
           const now = new Date();
           return Categoria.reconstruir({
             id: cat.id,
-            restauranteId: cat.restaurant_id,
+            restauranteId: cat.restaurant_id ?? cat.restaurantId ?? '',
             nome: cat.name,
             descricao: cat.description,
-            imagemUrl: cat.image_url,
-            ordemExibicao: cat.sort_order,
+            imagemUrl: cat.image_url ?? cat.imageUrl ?? null,
+            ordemExibicao: cat.sort_order ?? cat.sortOrder ?? 0,
             ativo: cat.active,
             criadoEm: now,
             atualizadoEm: now,
@@ -119,15 +149,21 @@ export class CardapioSyncService {
           const now = new Date();
           return ItemCardapio.reconstruir({
             id: prod.id,
-            categoriaId: prod.category_id,
+            categoriaId: prod.category_id ?? prod.categoryId ?? '',
             nome: prod.name,
             descricao: prod.description,
             preco: Dinheiro.criar(prod.price, 'BRL'),
-            imagemUrl: prod.image_url,
+            imagemUrl: prod.image_url ?? prod.imageUrl ?? null,
             tipo: TipoItemCardapio.fromValue('item'),
-            labelsDieteticos: prod.dietary_labels
-              ? LabelDietetico.fromArray(prod.dietary_labels)
-              : [],
+            labelsDieteticos: (() => {
+              const raw =
+                prod.dietary_labels ?? prod.dietaryLabels ?? null;
+              if (!raw) return [];
+              // API pode serializar arrays como JSON-string `"[]"` —
+              // tentamos parsear antes de delegar para LabelDietetico.
+              const arr = typeof raw === 'string' ? safeParseJsonArray(raw) : raw;
+              return Array.isArray(arr) ? LabelDietetico.fromArray(arr) : [];
+            })(),
             ativo: prod.available,
             criadoEm: now,
             atualizadoEm: now,
@@ -144,7 +180,7 @@ export class CardapioSyncService {
         const gruposEntities = data.modifier_groups.map((grupo: GrupoModificadorApiResponse) => {
           return ModificadorGrupo.reconstruir({
             id: grupo.id,
-            restauranteId: grupo.restaurant_id,
+            restauranteId: grupo.restaurant_id ?? grupo.restaurantId ?? '',
             nome: grupo.name,
             obrigatorio: grupo.required,
             minSelecoes: grupo.min_selections ?? 0,

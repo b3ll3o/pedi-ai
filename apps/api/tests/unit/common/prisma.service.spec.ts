@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Prisma } from '@prisma/client';
+import { Logger } from '@nestjs/common';
 
 import { PiiCryptoService } from '../../../src/common/pii-crypto.service';
 
@@ -118,26 +119,50 @@ describe('PrismaService', () => {
       expect(connectSpy).toHaveBeenCalledTimes(1);
     });
 
-    it('loga warning e pula extension quando PII_ENCRYPTION_KEY ausente', async () => {
+    it('loga warning quando PII_ENCRYPTION_KEY ausente', async () => {
       const logger = (service as unknown as { logger: { warn: ReturnType<typeof vi.fn> } }).logger;
       const warnSpy = vi.spyOn(logger, 'warn');
 
       await service.onModuleInit();
 
       expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('PII_ENCRYPTION_KEY'));
-      // Não tenta aplicar extension quando crypto desabilitado.
-      expect(extendsSpy).not.toHaveBeenCalled();
+    });
+
+    it('aplica a extension JÁ NO CONSTRUTOR (P0-06 — fecha janela de boot)', () => {
+      // Auditoria P0-06: antes, a extension só era instalada em
+      // `onModuleInit` (assíncrono, depois de `$connect`). Escritas na
+      // janela entre o `new` e o fim do init persistiam PII em plaintext.
+      extendsSpy.mockClear();
+      extendsSpy.mockReturnValue({});
+
+      const novo = new PrismaService(piiCrypto);
+
+      expect(extendsSpy).toHaveBeenCalled();
+      expect((novo as unknown as { piiApplied: boolean }).piiApplied).toBe(true);
+    });
+
+    it('aplica extension independentemente de isEnabled() no momento do construtor', () => {
+      // A extension consulta `crypto.isEnabled()` a CADA operação, então
+      // instalá-la sempre é seguro: se a chave só existir depois, a
+      // encriptação passa a valer sem precisar reinstalar nada. Isso
+      // remove o acoplamento com a ordem de init dos providers do Nest.
+      extendsSpy.mockClear();
+      extendsSpy.mockReturnValue({});
+
+      const semChave = new PrismaService({ isEnabled: () => false } as unknown as PiiCryptoService);
+
+      expect(extendsSpy).toHaveBeenCalled();
+      expect((semChave as unknown as { piiApplied: boolean }).piiApplied).toBe(true);
     });
 
     it('aplica extension quando PII_ENCRYPTION_KEY configurada', async () => {
       piiCrypto = { isEnabled: () => true } as unknown as PiiCryptoService;
+      const mockExtended = { mock: true, usersProfile: {} };
+      extendsSpy.mockReturnValue(mockExtended);
       service = new PrismaService(piiCrypto);
 
       const logger = (service as unknown as { logger: { log: ReturnType<typeof vi.fn> } }).logger;
       const logSpy = vi.spyOn(logger, 'log');
-
-      const mockExtended = { mock: true, usersProfile: {} };
-      extendsSpy.mockReturnValue(mockExtended);
 
       await service.onModuleInit();
 
@@ -147,42 +172,99 @@ describe('PrismaService', () => {
       expect((service as unknown as { piiApplied: boolean }).piiApplied).toBe(true);
     });
 
-    it('FALHA em produção quando extension joga', async () => {
+    it('FALHA em produção quando extension joga', () => {
       process.env.NODE_ENV = 'production';
       piiCrypto = { isEnabled: () => true } as unknown as PiiCryptoService;
-      service = new PrismaService(piiCrypto);
       extendsSpy.mockImplementation(() => {
         throw new Error('extension crash');
       });
 
-      await expect(service.onModuleInit()).rejects.toThrow(/CRÍTICA/);
+      // P0-06: a falha agora acontece no CONSTRUTOR (não mais no init),
+      // porque é lá que a extension é instalada.
+      expect(() => new PrismaService(piiCrypto)).toThrow(/CRÍTICA/);
     });
 
-    it('FALHA em staging quando extension joga', async () => {
+    it('FALHA em staging quando extension joga', () => {
       process.env.NODE_ENV = 'staging';
       piiCrypto = { isEnabled: () => true } as unknown as PiiCryptoService;
-      service = new PrismaService(piiCrypto);
       extendsSpy.mockImplementation(() => {
         throw new Error('extension crash');
       });
 
-      await expect(service.onModuleInit()).rejects.toThrow(/CRÍTICA/);
+      expect(() => new PrismaService(piiCrypto)).toThrow(/CRÍTICA/);
     });
 
-    it('loga erro e continua em dev/test quando extension joga', async () => {
+    it('loga erro e continua em dev/test quando extension joga', () => {
       process.env.NODE_ENV = 'development';
       piiCrypto = { isEnabled: () => true } as unknown as PiiCryptoService;
-      service = new PrismaService(piiCrypto);
       extendsSpy.mockImplementation(() => {
         throw new Error('extension crash');
       });
 
-      const logger = (service as unknown as { logger: { error: ReturnType<typeof vi.fn> } }).logger;
-      const errorSpy = vi.spyOn(logger, 'error');
+      const errorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
 
-      await service.onModuleInit();
+      const degradado = new PrismaService(piiCrypto);
 
       expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Falha ao aplicar PII'));
+      expect((degradado as unknown as { piiApplied: boolean }).piiApplied).toBe(false);
+    });
+
+    it('retenta aplicar a extension no init se o construtor falhou em dev', async () => {
+      process.env.NODE_ENV = 'development';
+      piiCrypto = { isEnabled: () => true } as unknown as PiiCryptoService;
+      extendsSpy.mockImplementation(() => {
+        throw new Error('extension crash');
+      });
+      vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+
+      const degradado = new PrismaService(piiCrypto);
+      expect((degradado as unknown as { piiApplied: boolean }).piiApplied).toBe(false);
+
+      // Falha transitória resolvida — o init deve conseguir aplicar.
+      extendsSpy.mockReset();
+      extendsSpy.mockReturnValue({});
+
+      await degradado.onModuleInit();
+
+      expect((degradado as unknown as { piiApplied: boolean }).piiApplied).toBe(true);
+    });
+  });
+
+  describe('withEncryptedTransaction (P0-06)', () => {
+    it('estende o client ANTES de abrir a transação (preserva atomicidade)', async () => {
+      // A ordem importa: estender depois — ex. chamando `getExtendedClient()`
+      // dentro do callback — cria um client com conexão própria, cujas
+      // escritas ficam FORA da transação e não sofrem rollback.
+      const txSpy = vi.fn().mockResolvedValue('resultado');
+      extendsSpy.mockReturnValue({ $transaction: txSpy });
+
+      const svc = new PrismaService(piiCrypto);
+      const callback = vi.fn();
+      const resultado = await svc.withEncryptedTransaction(callback);
+
+      expect(txSpy).toHaveBeenCalledWith(callback, undefined);
+      expect(resultado).toBe('resultado');
+    });
+
+    it('repassa options de transação (isolationLevel, timeout)', async () => {
+      const txSpy = vi.fn().mockResolvedValue(undefined);
+      extendsSpy.mockReturnValue({ $transaction: txSpy });
+
+      const svc = new PrismaService(piiCrypto);
+      const opcoes = { isolationLevel: 'Serializable' as const, timeout: 8_000 };
+      const callback = vi.fn();
+      await svc.withEncryptedTransaction(callback, opcoes);
+
+      expect(txSpy).toHaveBeenCalledWith(callback, opcoes);
+    });
+
+    it('propaga a rejeição do callback (para o rollback acontecer)', async () => {
+      const txSpy = vi.fn().mockRejectedValue(new Error('rollback forçado'));
+      extendsSpy.mockReturnValue({ $transaction: txSpy });
+
+      const svc = new PrismaService(piiCrypto);
+
+      await expect(svc.withEncryptedTransaction(vi.fn())).rejects.toThrow('rollback forçado');
     });
   });
 

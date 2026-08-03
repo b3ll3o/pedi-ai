@@ -176,10 +176,18 @@ export class MenuService {
   async getProductById(productId: string, restaurantId: string) {
     // Auditoria C8: produto precisa estar **available: true** E o restaurante
     // **active: true**. Sem isso, produtos desativados vazam no cardápio.
+    //
+    // Auditoria P0-01 (2026-07-29) — defesa em profundidade: além do filtro
+    // via `category.restaurantId`, incluímos `restaurantId` direto na coluna
+    // autoritativa do Product. Caso futuro o JOIN `category.restaurantId`
+    // fique desatualizado (ex.: migração mal feita que move categoria entre
+    // tenants sem atualizar `product.restaurant_id`), a coluna autoritativa
+    // ainda segura o filtro.
     const product = await this.prisma.product.findFirst({
       where: {
         id: productId,
         available: true,
+        restaurantId,
         category: { restaurantId, restaurant: { active: true } },
       },
       include: {

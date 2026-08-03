@@ -16,6 +16,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 
 import { Public } from '../auth/decorators/public.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -231,6 +232,14 @@ export class PaymentsController {
    */
   @Post('webhooks/pix')
   @Public()
+  // Auditoria P0-02 (2026-07-29): webhook PIX não pode ser limitado pelo
+  // `ThrottlerGuard` global — Mercado Pago dispara notificações em rajada
+  // (vários webhooks simultâneos por payment). Segurança é feita por:
+  // (1) allowlist de IP, (2) validação HMAC-SHA256 do header `x-signature`
+  // e (3) idempotência via `WebhookEvent.externalId`. Sem `@SkipThrottle`
+  // este endpoint seria limitado a 300/min (tier `default` global), o que
+  // bloqueia entregas legítimas do MP em momentos de pico.
+  @SkipThrottle({ default: true })
   @ApiOperation({ summary: 'Webhook PIX do Mercado Pago (protegido por HMAC v1 + IP)' })
   @ApiResponse({ status: 200, description: 'Webhook processado' })
   @ApiResponse({ status: 401, description: 'Assinatura inválida' })
@@ -439,6 +448,7 @@ export class PaymentsController {
         paymentId,
         status: mpPayment.status,
         orderId,
+        provider: 'mercadopago',
       });
     } catch (error) {
       this.logger.error(

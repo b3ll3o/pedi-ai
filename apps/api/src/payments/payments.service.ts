@@ -104,6 +104,9 @@ export class PaymentsService {
     // Auditoria A-02: create + update do qrCode dentro de `$transaction` —
     // crash entre as duas queries deixava intent com `qrCode: 'pending'`
     // persistido, causando estado intermediário inválido.
+    //
+    // Auditoria P0-06 — call site SEM PII: `PaymentIntent` não tem campos
+    // em `PiiCryptoService.ENCRYPTED_FIELDS` (só ids, valores e o BR Code).
     const payment = await this.prisma.$transaction(async (tx) => {
       const created = await tx.paymentIntent.create({
         data: {
@@ -248,20 +251,43 @@ export class PaymentsService {
     status: string;
     orderId?: string;
     restaurantId?: string;
+    /**
+     * Origem do webhook (mercadopago, asaas, ...). **Obrigatório** —
+     * a idempotência cross-provider (P0-04) depende desse valor para
+     * distinguir eventos. Caller que esquecer de passar `provider` será
+     * bloqueado em runtime com `TypeError` no destructuring.
+     */
+    provider: string;
   }) {
+    // Auditoria P0-04: provider é obrigatório (ver JSDoc acima).
+    // O default `?? 'mercadopago'` foi removido para evitar "porta dos fundos"
+    // — callers Asaas futuros que esquecessem de passar provider cairiam
+    // no default errado e o bug do débito PIX duplicado ressurgiria.
+    const { provider } = data;
     // Transação interativa em Serializable: o INSERT do WebhookEvent é a
     // operação de "claim" — duas entregas simultâneas do mesmo eventId
     // não podem coexistir. A segunda撞a P2002 e sai como duplicate.
     // Se qualquer passo seguinte falhar, o INSERT é revertido e o eventId
     // fica livre para retry (sem "envenenamento" da idempotência).
     try {
-      return await this.prisma.$transaction(
+      // Auditoria P0-06 — call site que TOCA um model PII (`Order`).
+      // Hoje as operações sobre `Order` aqui usam `select` explícito de
+      // campos não-PII (`status`, `version`) e `updateMany` só de status,
+      // então nada de PII entra ou sai. Ainda assim usamos
+      // `withEncryptedTransaction`: é defesa em profundidade barata contra
+      // o cenário em que alguém adicione um `include`/`select` de
+      // `customerName`/`customerEmail` aqui e receba ciphertext bruto sem
+      // perceber. Mantém `isolationLevel: 'Serializable'` intacto (as
+      // options são repassadas ao `$transaction`).
+      return await this.prisma.withEncryptedTransaction(
         async (tx) => {
           // 1. Claim atômico do eventId.
           try {
             await tx.webhookEvent.create({
               data: {
                 id: data.eventId,
+                provider,
+                externalId: data.eventId,
                 eventType: 'payment',
                 processedAt: new Date(),
               },

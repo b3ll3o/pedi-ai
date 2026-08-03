@@ -30,9 +30,11 @@ export default defineConfig({
         lines: 80,
         perFile: false,
       },
-      // Incluir código fonte — apenas lógica de negócio (DDD layers + libs)
-      // NOTA: cobertura da api é feita em `apps/api/vitest.config.ts` (threshold 70%
-      // enquanto dura a migração DDD — ver `docs/guides/DDD_MIGRACAO_API.md`).
+      // Incluir código fonte — apenas lógica de negócio (DDD layers + libs).
+      // NOTA: cobertura da api é feita em `apps/api/vitest.config.ts` (threshold
+      // 80%, mesmo do root e dos packages desde a Fase 2 da auditoria 2026-07-29).
+      // A meta intermediária de 70% documentada em `docs/guides/DDD_MIGRACAO_API.md`
+      // já foi superada e mantém-se alinhamento entre os quatro configs.
       include: [
         'apps/web/src/domain/**/*',
         'apps/web/src/application/**/*',

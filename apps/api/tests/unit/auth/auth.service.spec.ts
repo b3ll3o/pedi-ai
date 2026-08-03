@@ -138,10 +138,81 @@ describe('AuthService', () => {
       );
     });
 
-    it('lança BadRequestException para senha sem complexidade', async () => {
+    // ── NIST 800-63B §5.1.1.2 (P0-10) ────────────────────────────────────────
+    // Política: mínimo 8 + máximo 128 caracteres, SEM composição. Senhas
+    // longas sem maiúscula/número/especial DEVEM ser aceitas — a regex
+    // de composição que existia antes causava password fatigue
+    // ("Password1!") e reduzia o espaço de busca do atacante.
+    it('aceita senha longa sem composição complexa (NIST 800-63B)', async () => {
+      mockPrisma.usersProfile.findUnique.mockResolvedValue(null);
+      mockPrisma.usersProfile.create.mockResolvedValue({
+        id: 'user-1',
+        email: registerData.email,
+        name: registerData.name,
+        passwordHash: 'hashed-password',
+        role: 'cliente',
+        restaurantId: null,
+      });
+
       await expect(
         authService.register({ ...registerData, password: 'longpasswordwithoutcomplex' })
-      ).rejects.toThrow(/maiúscula/);
+      ).resolves.toBeDefined();
+    });
+
+    it('lança BadRequestException para senha com mais de 128 caracteres', async () => {
+      const senhaAcima128 = 'a'.repeat(129);
+      await expect(
+        authService.register({ ...registerData, password: senhaAcima128 })
+      ).rejects.toThrow(/no máximo 128/);
+    });
+
+    it('aceita senha com exatamente 128 caracteres', async () => {
+      mockPrisma.usersProfile.findUnique.mockResolvedValue(null);
+      mockPrisma.usersProfile.create.mockResolvedValue({
+        id: 'user-1',
+        email: registerData.email,
+        name: registerData.name,
+        passwordHash: 'hashed-password',
+        role: 'cliente',
+        restaurantId: null,
+      });
+
+      const senha128 = 'a'.repeat(128);
+      await expect(
+        authService.register({ ...registerData, password: senha128 })
+      ).resolves.toBeDefined();
+    });
+
+    it('lança BadRequestException para senha vazia', async () => {
+      await expect(authService.register({ ...registerData, password: '' })).rejects.toThrow(
+        BadRequestException
+      );
+    });
+
+    it('lança BadRequestException para senha com apenas espaços (trim check)', async () => {
+      await expect(authService.register({ ...registerData, password: '        ' })).rejects.toThrow(
+        /apenas espaços/
+      );
+    });
+
+    it('lança BadRequestException para senha em vazamento HIBP (cache miss → API)', async () => {
+      // Stub do fetch: HIBP retorna a senha como vazada.
+      const crypto = await import('crypto');
+      const senhaVazada = 'p@ssw0rd123';
+      const sha1 = crypto.createHash('sha1').update(senhaVazada).digest('hex').toUpperCase();
+      const prefix = sha1.slice(0, 5);
+      const suffix = sha1.slice(5);
+      const hibpBody = `${suffix}:1234\nOTHER_SUFFIX:99`;
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        text: () => Promise.resolve(hibpBody),
+      });
+      // Garante que a chamada vai para o prefix certo.
+      void prefix;
+
+      await expect(
+        authService.register({ ...registerData, password: senhaVazada })
+      ).rejects.toThrow(/vazamentos públicos/);
     });
   });
 

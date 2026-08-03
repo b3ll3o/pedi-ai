@@ -97,15 +97,13 @@ export class TablesController {
   @Post('validate')
   @Public()
   // Auditoria ACHADO-38 (Re-varredura 7): rate-limit mais restritivo que o
-  // tier 'long' global (300/min). Rota pública, vulnerável a enumeração de
-  // `table_id` + DoS via DB load. 30 req/min/IP = 1 tentativa a cada 2s
+  // tier 'default' global (300/min). Rota pública, vulnerável a enumeração
+  // de `table_id` + DoS via DB load. 30 req/min/IP = 1 tentativa a cada 2s
   // (cenário legítimo: cliente reescaneia QR).
-  // Auditoria ACHADO-N12 (Re-varredura 8): `default` não existe no
-  // ThrottlerModule.forRoot do AppModule (tiers são short/medium/long).
-  // Sem isso, o decorator era no-op e a rota caía no tier 'long' global
-  // (300/min) — vetor de enumeração de table_id. Agora usa tier 'medium'
-  // (30/min) explícito.
-  @Throttle({ medium: { ttl: 60_000, limit: 30 } })
+  // Auditoria P0-02 (2026-07-29): após restruturação dos tiers para apenas
+  // `default` no AppModule, sobrescrevemos o tier `default` aqui para
+  // 30/min (em vez do global 300/min).
+  @Throttle({ default: { ttl: 60_000, limit: 30 } })
   @ApiOperation({ summary: 'Validar QR code de mesa' })
   @ApiResponse({ status: 200, description: 'Validação realizada com sucesso' })
   async validateQrCode(

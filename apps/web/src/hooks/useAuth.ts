@@ -115,6 +115,15 @@ export function useAuth(): UseAuthReturn {
     }
   }, []);
 
+  /**
+   * Encerra a sessão e redireciona para /login.
+   *
+   * A purga de dados pessoais locais (LGPD art. 18) acontece DENTRO de
+   * `apiClient.logout()` — wrapper centralizado garante que TODOS os
+   * caminhos de logout (useAuth, AdminLayout chamando `logout()` de
+   * lib/auth/client, etc.) purguem dados pessoais sem cada chamador
+   * precisar lembrar.
+   */
   const handleSignOut = useCallback(async () => {
     setIsLoading(true);
     setError(null);

@@ -97,6 +97,10 @@ export class CategoriesService {
     // Auditoria M5: wrapped em `prisma.$transaction` para garantir atomicidade.
     // `Promise.all` permitia updates parciais se uma das queries falhasse no meio,
     // deixando sortOrder inconsistente.
+    //
+    // Auditoria P0-06 — call site SEM PII: `Category` não tem campos em
+    // `PiiCryptoService.ENCRYPTED_FIELDS` e só `sortOrder` é atualizado.
+    // Forma de array (batch), sem callback.
     await this.prisma.$transaction(
       categories.map((cat) =>
         this.prisma.category.update({

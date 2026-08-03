@@ -1,2 +1,26 @@
 #!/usr/bin/env sh
+# .husky/pre-commit — gate de qualidade + segurança antes de cada commit.
+#
+# 1) lint-staged: aplica ESLint + Prettier nos arquivos modificados.
+# 2) gitleaks: varre segredos (AKIA, GH_PAT, Stripe, MP, JWT, etc.) nos
+#    arquivos staged. Bloqueia o commit se encontrar vazamento.
+#
+# Instalação do gitleaks (dev local):
+#   - macOS:  brew install gitleaks
+#   - Linux:  https://github.com/gitleaks/gitleaks/releases
+#
+# Para pular ambos os checks (NÃO recomendado), use: git commit --no-verify
+
 pnpm exec lint-staged
+
+# gitleaks: detecta segredos antes de virarem commit. Config em .gitleaks.toml.
+# `protect` só vê arquivos staged (não escaneia histórico inteiro).
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks protect --staged --redact --no-banner --config .gitleaks.toml
+else
+  echo "❌ gitleaks não encontrado no PATH."
+  echo "   Instale com: brew install gitleaks (macOS) ou baixe o binário em"
+  echo "   https://github.com/gitleaks/gitleaks/releases (Linux/Windows)."
+  echo "   Para ignorar este check (NÃO recomendado), use: git commit --no-verify"
+  exit 1
+fi

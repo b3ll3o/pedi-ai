@@ -16,15 +16,22 @@ interface RegisterFormProps {
 }
 
 /**
- * Verifica se a senha atende aos requisitos de complexidade da API:
- * 1 letra maiúscula, 1 número e 1 caractere especial.
+ * Política de senha alinhada com NIST SP 800-63B §5.1.1.2 (memorized secrets).
+ *
+ * - **Mínimo 8 caracteres** — anti-brute-force sem regras de composição.
+ * - **Máximo 128 caracteres** — limite prático para inputs do usuário.
+ * - **Sem regras de composição** — NIST §5.1.1.2: "Verifiers SHOULD NOT impose
+ *   other composition rules (e.g., requiring mixtures of different character
+ *   types) for memorized secrets", pois causam password fatigue → "Senha@123".
+ *
+ * Auditoria P0-10: removida `validarComplexidadeSenha` que exigia 1 maiúscula
+ * + 1 número + 1 caractere especial. Era contrária ao NIST 800-63B §5.1.1.2 e
+ * divergia da política real aplicada pela API.
+ *
+ * @see https://pages.nist.gov/800-63-3/sp800-63b.html#memsecret
  */
-function validarComplexidadeSenha(password: string): boolean {
-  const temMaiuscula = /[A-Z]/.test(password);
-  const temNumero = /\d/.test(password);
-  const temEspecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
-  return temMaiuscula && temNumero && temEspecial;
-}
+const SENHA_MIN_CARACTERES = 8;
+const SENHA_MAX_CARACTERES = 128;
 
 export function RegisterForm({ onSubmit }: RegisterFormProps) {
   const [name, setName] = useState('');
@@ -72,14 +79,18 @@ export function RegisterForm({ onSubmit }: RegisterFormProps) {
       setPasswordError('Senha é obrigatória');
       return 'Senha obrigatória';
     }
-    // API exige: 8+ chars, 1 maiúscula, 1 número, 1 caractere especial
-    if (password.length < 8) {
-      setPasswordError('Senha deve ter pelo menos 8 caracteres');
+    // Política NIST 800-63B §5.1.1.2: apenas comprimento, sem composição.
+    if (password.trim().length === 0) {
+      setPasswordError('Senha não pode ser apenas espaços');
+      return 'Senha inválida';
+    }
+    if (password.length < SENHA_MIN_CARACTERES) {
+      setPasswordError(`Senha deve ter no mínimo ${SENHA_MIN_CARACTERES} caracteres`);
       return 'Senha curta';
     }
-    if (!validarComplexidadeSenha(password)) {
-      setPasswordError('Senha deve conter letra maiúscula, número e caractere especial');
-      return 'Senha fraca';
+    if (password.length > SENHA_MAX_CARACTERES) {
+      setPasswordError(`Senha deve ter no máximo ${SENHA_MAX_CARACTERES} caracteres`);
+      return 'Senha longa';
     }
 
     if (!confirmPassword) {

@@ -7,6 +7,14 @@
  * Atomicidade (RNF-RELI-FF-01): mutações que alteram flag + audit log
  * usam `prisma.$transaction(async tx => {...})` — qualquer falha em
  * `audit.create` desfaz a mutation.
+ *
+ * Auditoria P0-06 — call sites de `$transaction` neste adapter são SEM PII:
+ * as tabelas `FeatureFlag`, `FeatureFlagOverride` e `FeatureFlagAuditLog`
+ * não têm nenhum campo em `PiiCryptoService.ENCRYPTED_FIELDS`, e este
+ * adapter depende da interface estrutural `PrismaLike` (sem
+ * `withEncryptedTransaction`). Em consequência, nenhum site deste arquivo
+ * precisa da extensão de PII — manter `prisma.$transaction` direto está
+ * correto. Cada call site tem um comentário `Auditoria P0-06` reforçando.
  */
 import {
   AdicionarOverrideInput,
@@ -157,6 +165,9 @@ export class PrismaFeatureFlagRepository implements IFeatureFlagRepository {
   // ── criar (transação atômica) ───────────────────────────────
 
   async criar(input: CriarFlagInput): Promise<FeatureFlagCompleto> {
+    // Auditoria P0-06 — call site SEM PII: só toca `FeatureFlag` e
+    // `FeatureFlagAuditLog`, ambos sem campos em `PiiCryptoService.ENCRYPTED_FIELDS`.
+    // Ver docblock da classe para o racional completo (interface `PrismaLike`).
     const flag = (await this.prisma.$transaction(async (tx) => {
       const created = (await tx.featureFlag.create({
         data: {
@@ -220,6 +231,8 @@ export class PrismaFeatureFlagRepository implements IFeatureFlagRepository {
     if (input.patch.defaultValue !== undefined) data.defaultValue = input.patch.defaultValue;
     if (input.patch.enabled !== undefined) data.enabled = input.patch.enabled;
 
+    // Auditoria P0-06 — call site SEM PII: só `FeatureFlag` e
+    // `FeatureFlagAuditLog`. Ver docblock da classe.
     const after = (await this.prisma.$transaction(async (tx) => {
       const updated = (await tx.featureFlag.update({
         where: { id: before.id },
@@ -276,6 +289,8 @@ export class PrismaFeatureFlagRepository implements IFeatureFlagRepository {
       throw new Error('FeatureFlag não encontrada');
     }
 
+    // Auditoria P0-06 — call site SEM PII: só `FeatureFlagOverride` e
+    // `FeatureFlagAuditLog`. Ver docblock da classe.
     const result = (await this.prisma.$transaction(async (tx) => {
       const created = (await tx.featureFlagOverride.create({
         data: {
@@ -332,6 +347,8 @@ export class PrismaFeatureFlagRepository implements IFeatureFlagRepository {
 
     if (!before) return null;
 
+    // Auditoria P0-06 — call site SEM PII: só `FeatureFlagOverride` e
+    // `FeatureFlagAuditLog`. Ver docblock da classe.
     await this.prisma.$transaction(async (tx) => {
       const removed = (await tx.featureFlagOverride.delete({
         where: { id: overrideId },

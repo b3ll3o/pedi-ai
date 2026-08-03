@@ -75,12 +75,13 @@ model Restaurant {
   phone       String?
   logoUrl     String?
   active      Boolean  @default(true)
-  settings    String?  // JSON as string
+  settings    String? // JSON as string
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   tables         Table[]
   categories     Category[]
+  products       Product[]
   usersProfiles  UsersProfile[]
   orders         Order[]
   paymentIntents PaymentIntent[]
@@ -90,7 +91,7 @@ model Restaurant {
 
   // Referral: 1:1 (restaurant → seu próprio Referral como referrer)
   // + 1:N (restaurant → conversões onde foi o referred)
-  referralAsOwner    Referral? @relation("ReferralOwner")
+  referralAsOwner    Referral?           @relation("ReferralOwner")
   referralAsReferred ReferralConversion? @relation("ReferredByReferral")
 
   // Auditoria ACHADO-N4 (Re-varredura 8): `slug` era String? sem
@@ -143,49 +144,57 @@ model Category {
 }
 
 model Product {
-  id           String    @id @default(uuid())
-  categoryId   String
-  name         String
-  description  String?
-  imageUrl     String?
-  price        Float
+  id            String   @id @default(uuid())
+  // Auditoria P0-01 (2026-07-29): `restaurantId` adicionado para
+  // garantir isolamento multi-tenant. Antes, o tenant era inferido via
+  // `categoryId → Category.restaurantId`, deixando `findById`/`findMany`
+  // vulneráveis a BOLA (OWASP API #1). Ver migration
+  // `20260729120000_add_product_restaurant_id` para backfill idempotente.
+  restaurantId  String
+  categoryId    String
+  name          String
+  description   String?
+  imageUrl      String?
+  price         Float
   dietaryLabels String?
-  available    Boolean   @default(true)
-  sortOrder    Int       @default(0)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  available     Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
+  restaurant            Restaurant             @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
   category              Category               @relation(fields: [categoryId], references: [id])
   orderItems            OrderItem[]
   comboItems            ComboItem[]
   productModifierGroups ProductModifierGroup[]
 
   @@index([categoryId])
+  @@index([restaurantId])
 }
 
 model ModifierGroup {
-  id           String   @id @default(uuid())
-  restaurantId String
-  name         String
-  required     Boolean  @default(false)
-  minSelections Int     @default(0)
-  maxSelections Int     @default(1)
-  createdAt    DateTime @default(now())
+  id            String   @id @default(uuid())
+  restaurantId  String
+  name          String
+  required      Boolean  @default(false)
+  minSelections Int      @default(0)
+  maxSelections Int      @default(1)
+  createdAt     DateTime @default(now())
 
-  restaurant         Restaurant             @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
-  modifierValues     ModifierValue[]
+  restaurant            Restaurant             @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
+  modifierValues        ModifierValue[]
   productModifierGroups ProductModifierGroup[]
 
   @@index([restaurantId])
 }
 
 model ModifierValue {
-  id             String   @id @default(uuid())
+  id              String   @id @default(uuid())
   modifierGroupId String
-  name           String
-  priceAdjustment Float   @default(0)
-  available      Boolean  @default(true)
-  createdAt      DateTime @default(now())
+  name            String
+  priceAdjustment Float    @default(0)
+  available       Boolean  @default(true)
+  createdAt       DateTime @default(now())
 
   modifierGroup ModifierGroup @relation(fields: [modifierGroupId], references: [id], onDelete: Restrict)
 
@@ -232,46 +241,46 @@ model ComboItem {
 // Sem unique composto, `findFirst` antes do `create` sofre race condition
 // (TOCTOU). Esta tabela resolve a nível de DB.
 model IdempotencyKey {
-  id          String   @id @default(uuid())
-  scope       String   // ex: "order:create", "payment:create"
-  key         String   // valor do header Idempotency-Key do cliente
-  resultHash  String?  // hash do response para retornar mesma resposta
-  createdAt   DateTime @default(now())
-  expiresAt   DateTime // TTL: 24h (cleanup via job/cron)
+  id         String   @id @default(uuid())
+  scope      String // ex: "order:create", "payment:create"
+  key        String // valor do header Idempotency-Key do cliente
+  resultHash String? // hash do response para retornar mesma resposta
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime // TTL: 24h (cleanup via job/cron)
 
   @@unique([scope, key])
   @@index([expiresAt])
 }
 
 model Order {
-  id              String        @id @default(uuid())
-  restaurantId    String
-  tableId         String?
-  customerId      String?
-  customerPhone   String?
-  customerName    String?
+  id             String         @id @default(uuid())
+  restaurantId   String
+  tableId        String?
+  customerId     String?
+  customerPhone  String?
+  customerName   String?
   customerEmail  String?
-  status          OrderStatus    @default(pending_payment)
+  status         OrderStatus    @default(pending_payment)
   // Auditoria ACHADO-6 (Re-varredura 5): optimistic locking para evitar
   // TOCTOU entre webhook do Mercado Pago e mudanças de status por staff.
   // Sem version, um webhook "paid" que chega ao mesmo tempo que um staff
   // que clica em "cancelled" pode fazer last-write-wins silencioso.
   // O `update`/`updateMany` deve incluir `where: { id, version }` e
   // incrementar `version` na mesma operação. Conflito → 409.
-  version         Int            @default(0)
-  subtotal        Float
-  tax             Float
-  total           Float
-  paymentMethod   PaymentMethod?
-  paymentStatus   PaymentStatus @default(pending)
-  idempotencyKey  String?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  version        Int            @default(0)
+  subtotal       Float
+  tax            Float
+  total          Float
+  paymentMethod  PaymentMethod?
+  paymentStatus  PaymentStatus  @default(pending)
+  idempotencyKey String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
-  restaurant    Restaurant          @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
-  table         Table?              @relation(fields: [tableId], references: [id], onDelete: Restrict)
-  items         OrderItem[]
-  statusHistory OrderStatusHistory[]
+  restaurant     Restaurant           @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
+  table          Table?               @relation(fields: [tableId], references: [id], onDelete: Restrict)
+  items          OrderItem[]
+  statusHistory  OrderStatusHistory[]
   paymentIntents PaymentIntent[]
 
   @@index([restaurantId])
@@ -286,7 +295,7 @@ model Order {
 }
 
 model OrderItem {
-  id         String    @id @default(uuid())
+  id         String   @id @default(uuid())
   orderId    String
   productId  String?
   comboId    String?
@@ -294,9 +303,9 @@ model OrderItem {
   unitPrice  Float
   totalPrice Float
   notes      String?
-  createdAt  DateTime  @default(now())
+  createdAt  DateTime @default(now())
 
-  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   // SetNull (não Restrict) ao deletar Product/Combo: preserva histórico de
   // pedidos já pagos. O item aparece com productId=null mas mantém o
   // unitPrice/totalPrice para fins fiscais/auditoria.
@@ -319,19 +328,19 @@ model OrderStatusHistory {
 }
 
 model UsersProfile {
-  id            String   @id @default(uuid())
-  userId        String?  @unique
-  restaurantId  String?
-  role          UserRole @default(cliente)
-  name          String
-  email         String   @unique
-  passwordHash  String?
-  createdAt     DateTime @default(now())
+  id           String   @id @default(uuid())
+  userId       String?  @unique
+  restaurantId String?
+  role         UserRole @default(cliente)
+  name         String
+  email        String   @unique
+  passwordHash String?
+  createdAt    DateTime @default(now())
 
   // SetNull: se Restaurant for deletado (cenário raro), preserva o
   // perfil do usuário mas desvincula do restaurante. Cascade apagaria
   // também refresh tokens, password resets, etc — perda irreversível.
-  restaurant       Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: SetNull)
+  restaurant          Restaurant?          @relation(fields: [restaurantId], references: [id], onDelete: SetNull)
   passwordResetTokens PasswordResetToken[]
   refreshTokens       RefreshToken[]
 
@@ -376,18 +385,18 @@ model RefreshToken {
 }
 
 model PaymentIntent {
-  id                  String        @id @default(uuid())
-  orderId             String
-  restaurantId        String
-  amount              Float
-  currency            String        @default("BRL")
-  status              PaymentStatus @default(pending)
-  paymentMethod       String
+  id                   String        @id @default(uuid())
+  orderId              String
+  restaurantId         String
+  amount               Float
+  currency             String        @default("BRL")
+  status               PaymentStatus @default(pending)
+  paymentMethod        String
   mercadoPagoPaymentId String?
-  qrCode              String?
-  qrCodeBase64        String?
-  expiresAt           DateTime?
-  createdAt           DateTime      @default(now())
+  qrCode               String?
+  qrCodeBase64         String?
+  expiresAt            DateTime?
+  createdAt            DateTime      @default(now())
 
   order      Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
@@ -426,10 +435,10 @@ model Subscription {
 }
 
 model ProductModifierGroup {
-  id             String   @id @default(uuid())
-  productId      String
+  id              String   @id @default(uuid())
+  productId       String
   modifierGroupId String
-  createdAt      DateTime @default(now())
+  createdAt       DateTime @default(now())
 
   product       Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
   modifierGroup ModifierGroup @relation(fields: [modifierGroupId], references: [id], onDelete: Cascade)
@@ -439,10 +448,37 @@ model ProductModifierGroup {
   @@index([modifierGroupId])
 }
 
+/// WebhookEvent — idempotência de webhooks de pagamento (P0-04)
+///
+/// Antes do fix: o model só tinha `id` (PK) usado como eventId do provider
+/// e `eventType` — sem `provider`/`externalId` separados. Webhooks de
+/// providers diferentes (MP ↔ Asaas) com mesmo `externalId` poderiam
+/// coexistir e o INSERT do segundo era processado normalmente, gerando
+/// débito PIX duplicado em produção.
+///
+/// Depois do fix: `provider` + `externalId` formam a chave lógica do
+/// evento. A unique constraint em `externalId` (GLOBAL) impede colisão
+/// cross-provider — qualquer INSERT com `externalId` já presente falha
+/// com P2002, e o serviço reconhece como `duplicate`.
+///
+/// NOTA: a constraint é GLOBAL (`@@unique([externalId])`), não composta
+/// (`@@unique([provider, externalId])`). A composta permitiria o cenário
+/// bug — `(mercadopago, X)` e `(asaas, X)` são tuples distintas e
+/// passariam. O bug exige isolamento GLOBAL do externalId.
+///
+/// `id` (PK) permanece como `eventId` do provider para manter a API
+/// existente do `payments.service.ts` (`tx.webhookEvent.create({ data: { id, ... } })`)
+/// e a semântica "INSERT é o claim atômico da transação".
 model WebhookEvent {
-  id           String   @id @default(uuid())
-  eventType    String
-  processedAt  DateTime @default(now())
+  id          String   @id @default(uuid())
+  provider    String
+  externalId  String   @unique
+  eventType   String
+  payload     Json?
+  receivedAt  DateTime @default(now())
+  processedAt DateTime @default(now())
+
+  @@index([provider, receivedAt])
 }
 
 /// FeatureFlag (aggregate root) — RF-ADM-FF-01..04
@@ -506,40 +542,40 @@ model FeatureFlagAuditLog {
 // ── Referral System ──────────────────────────────────────────────
 
 enum ReferralStatus {
-  pending    /// Aceitando referrals
-  cancelled  /// Desabilitado pelo dono ou admin
-  expired    /// Desabilitado por atingir limite (100 conversões)
+  pending /// Aceitando referrals
+  cancelled /// Desabilitado pelo dono ou admin
+  expired /// Desabilitado por atingir limite (100 conversões)
 }
 
 enum ReferralConversionStatus {
-  pending   /// Signup feito, ainda não assinou
-  rewarded  /// Primeira assinatura confirmada, reward aplicado
+  pending /// Signup feito, ainda não assinou
+  rewarded /// Primeira assinatura confirmada, reward aplicado
   cancelled /// Cancelado (fraude, reembolso, etc)
 }
 
 /// Programa de referral — 1:1 com Restaurant (cada restaurante tem 1 Referral)
 /// @see apps/web/src/domain/referral/Referral.ts
 model Referral {
-  id                          String           @id @default(uuid())
+  id                        String         @id @default(uuid())
   /// Restaurante que indica (referrer). UNIQUE garante 1:1.
-  referrerRestaurantId        String           @unique
+  referrerRestaurantId      String         @unique
   /// Código único de 8 caracteres (sem I, O, 0, 1).
-  code                        String           @unique
+  code                      String         @unique
   /// Total de pessoas que se cadastraram usando este código.
-  totalSignups                Int              @default(0)
+  totalSignups              Int            @default(0)
   /// Total de conversões (referred assinou pela primeira vez).
-  totalConversions            Int              @default(0)
+  totalConversions          Int            @default(0)
   /// Tier de reward acumulado em meses extras (1/2/3 baseado em tier).
-  rewardCreditMonths          Int              @default(0)
+  rewardCreditMonths        Int            @default(0)
   /// Reward já aplicado em faturas anteriores.
-  rewardCreditAppliedMonths   Int              @default(0)
-  status                      ReferralStatus   @default(pending)
-  createdAt                   DateTime         @default(now())
-  updatedAt                   DateTime         @updatedAt
+  rewardCreditAppliedMonths Int            @default(0)
+  status                    ReferralStatus @default(pending)
+  createdAt                 DateTime       @default(now())
+  updatedAt                 DateTime       @updatedAt
   /// Optimistic locking (auditoria M-03).
-  version                     Int              @default(1)
+  version                   Int            @default(1)
 
-  referrerRestaurant Restaurant            @relation("ReferralOwner", fields: [referrerRestaurantId], references: [id], onDelete: Restrict)
+  referrerRestaurant Restaurant           @relation("ReferralOwner", fields: [referrerRestaurantId], references: [id], onDelete: Restrict)
   conversions        ReferralConversion[]
 
   @@index([code])
@@ -550,23 +586,23 @@ model Referral {
 /// Conversão de referral — 1:1 com Restaurant (1 referred → 1 conversion max)
 /// Rastreia o ciclo: signup → primeira assinatura → reward creditado
 model ReferralConversion {
-  id                      String                    @id @default(uuid())
-  referralId              String
+  id                       String                   @id @default(uuid())
+  referralId               String
   /// Restaurante que foi indicado (referred). UNIQUE garante 1:1.
-  referredRestaurantId    String                    @unique
-  status                  ReferralConversionStatus  @default(pending)
+  referredRestaurantId     String                   @unique
+  status                   ReferralConversionStatus @default(pending)
   /// Quando o referred assinou (1ª cobrança confirmada).
-  convertedAt             DateTime?
+  convertedAt              DateTime?
   /// Quando o reward foi aplicado no referrer.
-  rewardedAt              DateTime?
+  rewardedAt               DateTime?
   /// Meses de reward creditados (1 mês padrão).
-  rewardMonths            Int                       @default(1)
+  rewardMonths             Int                      @default(1)
   /// ID da assinatura que ativou a conversão (FK lógica).
   triggeringSubscriptionId String?
-  createdAt               DateTime                  @default(now())
+  createdAt                DateTime                 @default(now())
 
-  referral                Referral                  @relation(fields: [referralId], references: [id], onDelete: Restrict)
-  referredRestaurant      Restaurant                @relation("ReferredByReferral", fields: [referredRestaurantId], references: [id], onDelete: Restrict)
+  referral           Referral   @relation(fields: [referralId], references: [id], onDelete: Restrict)
+  referredRestaurant Restaurant @relation("ReferredByReferral", fields: [referredRestaurantId], references: [id], onDelete: Restrict)
 
   @@index([referralId])
   @@index([status])
