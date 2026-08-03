@@ -13,6 +13,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 
 import { Roles } from '../auth/decorators/roles.decorator';
 import { AuthenticatedUser } from '../auth/types/auth.types';
@@ -25,6 +26,7 @@ import {
   UpdateMeDto,
   FindProfilesQueryDto,
 } from './dto/users.dto';
+import { LgpdService } from './lgpd.service';
 import { UsersService } from './users.service';
 
 @ApiTags('users')
@@ -32,7 +34,8 @@ import { UsersService } from './users.service';
 export class UsersController {
   constructor(
     private readonly usersService: UsersService,
-    private readonly prisma: PrismaService
+    private readonly prisma: PrismaService,
+    private readonly lgpdService: LgpdService
   ) {}
 
   // ── Rotas do próprio usuário autenticado ─────────────────────
@@ -71,6 +74,55 @@ export class UsersController {
     // service rejeita explicitamente qualquer tentativa de injetar
     // role/email/restaurantId, mesmo que o DTO evolua no futuro.
     return this.usersService.updateOwnProfile(req.user.id, body);
+  }
+
+  /**
+   * LGPD art. 18, V — direito de acesso.
+   *
+   * Retorna JSON agregado com todos os dados pessoais do titular sob
+   * custódia do controlador. NÃO inclui segredos criptográficos
+   * (passwordHash, hash de refresh token, valor raw de reset token).
+   *
+   * Resposta em <500ms (P95) — síncrono, atende SLA de 15 dias do art. 18, §5º.
+   *
+   * @spec(RF-AUTH-12)
+   */
+  @Get('me/export')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Exportar todos os dados pessoais do usuário autenticado (LGPD art. 18, V)',
+  })
+  @ApiResponse({ status: 200, description: 'JSON estruturado com dados do titular' })
+  @ApiResponse({ status: 401, description: 'Não autenticado' })
+  @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
+  async exportMe(@Req() req: { user: AuthenticatedUser }) {
+    return this.lgpdService.exportUserData(req.user.id);
+  }
+
+  /**
+   * LGPD art. 18, VI — direito de eliminação.
+   *
+   * Anonimiza os campos PII do perfil (email, nome, passwordHash) e
+   * revoga todas as credenciais ativas. Preserva Orders/PaymentIntents
+   * para fins de auditoria fiscal (art. 27 LGPD + Receita Federal).
+   *
+   * Rate limit dedicado (3/hora) para desencorajar abuso/accidental click.
+   * Idempotente: segunda chamada detecta email já anonimizado.
+   *
+   * @spec(RF-AUTH-13)
+   */
+  @Delete('me')
+  @Throttle({ default: { limit: 3, ttl: 3_600_000 } })
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Anonimizar conta do usuário autenticado (LGPD art. 18, VI)',
+  })
+  @ApiResponse({ status: 200, description: 'Conta anonimizada com sucesso' })
+  @ApiResponse({ status: 401, description: 'Não autenticado' })
+  @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
+  @ApiResponse({ status: 429, description: 'Rate limit excedido (3/hora)' })
+  async deleteMe(@Req() req: { user: AuthenticatedUser }) {
+    return this.lgpdService.anonymizeOwnAccount(req.user.id);
   }
 
   // ── Rotas administrativas (RBAC: dono | gerente) ─────────────
