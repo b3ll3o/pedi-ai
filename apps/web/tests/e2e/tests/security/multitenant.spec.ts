@@ -29,7 +29,7 @@
  *
  * **Cobertura REAL (auditoria P0-01):** o seed cria dados em ambos os
  * tenants (`seedTenantB` em `scripts/seed.ts`). Estes testes
- * ASSERTem que IDs conhecidos do tenant B NUNCA aparecem em respostas
+ * garantem que IDs conhecidos do tenant B NUNCA aparecem em respostas
  * autenticadas como tenant A, e que mutações cross-tenant sobre o
  * tenant B falham com 403 + (verificação no DB) nenhuma linha afetada.
  */
@@ -105,7 +105,7 @@ async function injectAuthCookies(
 }
 
 /**
- * Helpers de DB. Usados para ASSERTIR que mutações cross-tenant
+ * Helpers de DB. Usados para verificar que mutações cross-tenant
  * falharam (nenhuma linha criada/alterada/deletada no tenant B).
  *
  * Requer `DATABASE_URL` — em CI ela é exportada via `$GITHUB_ENV`
@@ -163,8 +163,8 @@ test.describe('Multi-Tenant Isolation @security @multitenant @bola @critical', (
 
       // Asserção dura: /orders SEMPRE responde 200 quando autenticado
       // (papel gerente/dono). Aceitar 400/403/404 era infalsificável
-      // (IMPORTANT #6 do bug scan) — estreitamos para 200 + assertions
-      // positivas (não-vazio + IDs do tenant B ausentes + sentinel).
+      // (IMPORTANT #6 do bug scan) — estreitamos para 200 + verificações
+      // positivas (não-vazio + IDs do tenant B ausentes + sentinela).
       expect(response.status()).toBe(200);
       const body = await response.json();
       const orders: Array<{ id: string; restaurantId?: string; restaurant_id?: string; total?: number }> = Array.isArray(body)
@@ -223,7 +223,16 @@ test.describe('Multi-Tenant Isolation @security @multitenant @bola @critical', (
     async ({ page, seedData }) => {
       await injectAuthCookies(page, authCookies);
 
-      const response = await page.request.get(`${E2E_API_URL}/categories`);
+      // GET /categories é `@Public()` e exige `restaurantId` na query
+      // (`apps/api/src/categories/categories.controller.ts`). Sem o
+      // query param, o service chama `findByRestaurant(undefined)` e
+      // estoura 500 — o teste ficaria verde por motivos errados
+      // (CRITICAL #1 do code review). Fix: passar o `restaurantId` do
+      // tenant A (escopo do JWT) e ainda assim garantir que nenhuma
+      // categoria do tenant B vaza na resposta.
+      const response = await page.request.get(
+        `${E2E_API_URL}/categories?restaurantId=${seedData.restaurant.id}`
+      );
       expect(response.status()).toBe(200);
       const body = await response.json();
       const cats: Array<{ id: string; restaurantId?: string; restaurant_id?: string }> = Array.isArray(body)
@@ -270,10 +279,10 @@ test.describe('Multi-Tenant Isolation @security @multitenant @bola @critical', (
 
       const status = response.status();
 
-      // 500 = schema drift (Issue #1 do code review): o antigo
-      // whitelist `[400, 403, 500]` mascarava bugs reais. Agora
-      // explodimos alto para que CI surface o problema em vez de
-      // deixar passar como "rejeitado".
+      // 500 = schema drift (Issue #1 do code review): a antiga
+      // lista de status permitidos `[400, 403, 500]` mascarava bugs
+      // reais. Agora explodimos alto para que CI surface o problema
+      // em vez de deixar passar como "rejeitado".
       if (status === 500) {
         const body = await response.text().catch(() => '');
         throw new Error(
@@ -289,7 +298,7 @@ test.describe('Multi-Tenant Isolation @security @multitenant @bola @critical', (
         const product = await response.json();
         const createdIn = product.restaurantId ?? product.restaurant_id;
         expect(createdIn).toBe(seedData.restaurant.id);
-        // Cleanup defensivo.
+        // Limpeza defensiva.
         await page.request.delete(`${E2E_API_URL}/products/${product.id}`);
       }
 
@@ -329,17 +338,17 @@ test.describe('Multi-Tenant Isolation @security @multitenant @bola @critical', (
 
       expect([403, 404]).toContain(response.status());
 
-      // ASSERÇÃO NO DB: o nome do produto B NÃO foi alterado.
+      // ASSERÇÃO NO DB: o nome do produto B NÃO foi alterado E continua
+      // pertencendo ao tenant B. MINOR #5: combinamos em uma única query
+      // (antes eram 2 round-trips).
       const sql = getSql();
-      const rows = await sql<Array<{ name: string }>>`
-        SELECT name FROM "Product" WHERE id = ${seedData.restaurantB.productId}
+      const rows = await sql<Array<{ name: string; restaurantId: string }>>`
+        SELECT name, "restaurantId"
+          FROM "Product"
+         WHERE id = ${seedData.restaurantB.productId}
       `;
       expect(rows[0]?.name).toBe(seedData.restaurantB.productName);
-      // E continua pertencendo ao tenant B.
-      const tenant = await sql<Array<{ restaurantId: string }>>`
-        SELECT "restaurantId" FROM "Product" WHERE id = ${seedData.restaurantB.productId}
-      `;
-      expect(tenant[0]?.restaurantId).toBe(seedData.restaurantB.id);
+      expect(rows[0]?.restaurantId).toBe(seedData.restaurantB.id);
     }
   );
 
@@ -389,11 +398,12 @@ test.describe('Multi-Tenant Isolation @security @multitenant @bola @critical', (
       // /analytics/overview usa o tenant do JWT.
       const response = await page.request.get(`${E2E_API_URL}/analytics/overview`);
 
-      // analytics exige role gerente/dono — 200 quando OK. 403 quando
-      // role sem permissão. O importante é que o tenant é o do JWT.
-      expect([200, 403]).toContain(response.status());
-
-      if (response.status() !== 200) return;
+      // CRITICAL #2 do code review: o teste antigo aceitava 200 OU 403
+      // e silenciosamente pulava as asserções em 403. Como o admin é
+      // `dono` (role permitida pela rota), 403 nunca deve acontecer —
+      // se acontecer, é bug a ser surfaced, não um caminho válido.
+      // Apertamos para 200 e exigimos body não-vazio do tenant A.
+      expect(response.status()).toBe(200);
 
       const body = await response.json();
 
@@ -409,6 +419,7 @@ test.describe('Multi-Tenant Isolation @security @multitenant @bola @critical', (
 
       // Positivo: revenue do tenant A é > 0 (seed cria 2 pedidos pagos).
       expect(body.revenue).toBeGreaterThan(0);
+      expect(body.orders).toBeGreaterThan(0);
 
       // Negativo (CRITICAL #1): revenue NUNCA chega perto do sentinela
       // 9999.99 do tenant B — se chegar, o filtro de tenant vazou.
