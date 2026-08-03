@@ -18,6 +18,22 @@ Tipos de mudança:
 
 ### Segurança
 
+- **Husky endurecido — gates máximos de segurança e consistência** (tipo: `feat(security)`).
+  Hooks agora cobrem validação de ambiente (gitleaks, Node version vs `.nvmrc`,
+  presença do `pnpm-lock.yaml`), bloqueio de arquivos sensíveis (`*.env*`, `*.pem`,
+  `*.key`, `id_rsa*`, `.DS_Store`, `Thumbs.db`, `*.log`, `node_modules`) e > 5 MB.
+  Pipeline do `pre-commit`: lint-staged → gitleaks (bloqueia) → secretlint (defesa
+  em profundidade, warning). `commit-msg` valida Conventional Commits com scope
+  obrigatório restrito aos BCs do DDD (`pedido`, `cardapio`, `mesa`, `pagamento`,
+  `autenticacao`, `admin`, `shared`) e áreas transversais (`web`, `api`, `infra`,
+  `docs`, `deps`, `ci`, `e2e`, `husky`, `docker`, `rtm`, `openspec`). `pre-push`
+  roda gate completo: lockfile íntegro, testes dos arquivos alterados (web + api),
+  typecheck (web + api + shared), build (web + api + shared) e cobertura ≥ 80%
+  (web). `post-merge` e `post-checkout` avisam se configs críticas mudaram.
+  `commitlint.config.js` (CJS) e `.commitlintrc.js` removidos; unificado em
+  `commitlint.config.mjs` (ESM). Novo `scripts/check-dev-env.sh` exposto como
+  `pnpm env:check`. Documentação operacional em [`docs/guides/HUSKY.md`](docs/guides/HUSKY.md).
+
 - **P0-12 — Husky 9 + gitleaks ativos no pre-commit** (tipo: `feat(security)`).
   O hook `.husky/pre-commit.sh` (legacy) tinha lógica de gitleaks que nunca
   era invocada pelo Git. Migrado para Husky 9 (`.husky/pre-commit` já
