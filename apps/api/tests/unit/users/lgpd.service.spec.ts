@@ -4,6 +4,11 @@ import { NotFoundException } from '@nestjs/common';
 import { LgpdService } from '../../../src/users/lgpd.service';
 import { PrismaService } from '../../../src/common/prisma.service';
 
+/**
+ * @spec(RF-AUTH-12, RF-AUTH-13)
+ * Materializa os cenários de teste para os direitos de acesso e eliminação
+ * previstos em LGPD art. 18, V e VI.
+ */
 describe('LgpdService', () => {
   let lgpdService: LgpdService;
   let mockPrisma: ReturnType<typeof createMockPrisma>;
@@ -36,6 +41,9 @@ describe('LgpdService', () => {
     lgpdService = new LgpdService(mockPrisma as unknown as PrismaService);
   });
 
+  /**
+   * @spec(RF-AUTH-12) — LGPD art. 18, V: direito de acesso
+   */
   describe('exportUserData', () => {
     it('retorna objeto com subject, orders, refreshTokens, passwordResetTokens e subscriptions', async () => {
       const userId = 'user-1';
@@ -144,6 +152,9 @@ describe('LgpdService', () => {
     });
   });
 
+  /**
+   * @spec(RF-AUTH-13) — LGPD art. 18, VI: direito de eliminação
+   */
   describe('anonymizeOwnAccount', () => {
     const userId = 'user-to-delete';
 

@@ -114,6 +114,34 @@ function collectSpecs(): RfRef[] {
 }
 
 function collectCodeRefs(): CodeRef[] {
+  // Diretórios DDD (camadas) + módulos legados NestJS que ainda coexistem
+  // durante a migração (ver `docs/guides/DDD_MIGRACAO_API.md`). Enquanto os
+  // módulos `auth/`, `users/`, `payments/`, etc. não migrarem, eles precisam
+  // ser varridos para que o RTM não reporte falsos "Missing" para RFs já
+  // materializados.
+  const legacyApiModules = [
+    'analytics',
+    'auth',
+    'cart',
+    'categories',
+    'combos',
+    'common',
+    'health',
+    'menu',
+    'modifier-groups',
+    'observability',
+    'orders',
+    'payments',
+    'products',
+    'queues',
+    'realtime',
+    'restaurants',
+    'shared',
+    'subscriptions',
+    'tables',
+    'tracing',
+    'users',
+  ];
   const files = [
     ...walk(join(ROOT, 'apps', 'web', 'src', 'domain'), ['.ts', '.tsx']),
     ...walk(join(ROOT, 'apps', 'web', 'src', 'application'), ['.ts', '.tsx']),
@@ -126,6 +154,9 @@ function collectCodeRefs(): CodeRef[] {
     ...walk(join(ROOT, 'apps', 'api', 'src', 'application'), ['.ts']),
     ...walk(join(ROOT, 'apps', 'api', 'src', 'infrastructure'), ['.ts']),
     ...walk(join(ROOT, 'apps', 'api', 'src', 'presentation'), ['.ts']),
+    ...legacyApiModules.flatMap((m) =>
+      walk(join(ROOT, 'apps', 'api', 'src', m), ['.ts'])
+    ),
   ];
 
   const refs: CodeRef[] = [];
