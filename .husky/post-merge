@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
-# .husky/post-checkout — avisa se configs de ambiente mudaram após checkout.
-# Args: $1 = sha anterior, $2 = novo sha, $3 = 1 se troca de branch
+# .husky/post-merge — avisa se configs de ambiente mudaram após merge.
+# Args: $1 = refs/heads/<branch>, $2 = novo sha
 . "$(dirname -- "$0")/_lib.sh"
 
 prev="$1"
