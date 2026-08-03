@@ -15,29 +15,36 @@ need gitleaks
 check_node
 
 # ── 1) Bloquear arquivos proibidos ─────────────────────
-git diff --cached --name-only --diff-filter=ACMR | while read -r f; do
-  case "$f" in
-    *.env | *.env.* | .envrc | \
-    *.pem | *.key | *.p12 | *.pfx | \
-    id_rsa | id_dsa | id_ed25519 | \
-    .DS_Store | Thumbs.db | *.log | node_modules)
-      log_err "Arquivo bloqueado: $f"
-      exit 1
-      ;;
-  esac
-done
+# Usa `for f in $(...)` em vez de `while | do done` para evitar subshell:
+# exit 1 dentro de pipe mata só o subshell, não o hook.
+files=$(git diff --cached --name-only --diff-filter=ACMR)
+if [ -n "$files" ]; then
+  for f in $files; do
+    case "$f" in
+      *.env | *.env.* | .envrc | \
+      *.pem | *.key | *.p12 | *.pfx | \
+      id_rsa | id_dsa | id_ed25519 | \
+      .DS_Store | Thumbs.db | *.log | node_modules)
+        log_err "Arquivo bloqueado: $f"
+        exit 1
+        ;;
+    esac
+  done
+fi
 
 # ── 2) Bloquear arquivos > 5 MB ────────────────────────
 MAX=5242880
-git diff --cached --name-only --diff-filter=ACMR | while read -r f; do
-  if [ -f "$f" ]; then
-    size=$(stat -c %s "$f" 2>/dev/null || stat -f %z "$f" 2>/dev/null)
-    if [ -n "$size" ] && [ "$size" -gt "$MAX" ]; then
-      log_err "Arquivo > 5 MB: $f ($size bytes). Use Git LFS ou .gitignore."
-      exit 1
+if [ -n "$files" ]; then
+  for f in $files; do
+    if [ -f "$f" ]; then
+      size=$(stat -c %s "$f" 2>/dev/null || stat -f %z "$f" 2>/dev/null)
+      if [ -n "$size" ] && [ "$size" -gt "$MAX" ]; then
+        log_err "Arquivo > 5 MB: $f ($size bytes). Use Git LFS ou .gitignore."
+        exit 1
+      fi
     fi
-  fi
-done
+  done
+fi
 
 # ── 3) Lint + format nos modificados ───────────────────
 pnpm exec lint-staged
@@ -46,10 +53,20 @@ pnpm exec lint-staged
 gitleaks protect --staged --redact --no-banner --config .gitleaks.toml
 
 # ── 5) secretlint (defesa em profundidade) ─────────────
-if command -v secretlint >/dev/null 2>&1; then
-  if ! npx --no -- secretlint --mask '{{SECRET}}' "**/*" >/dev/null 2>&1; then
-    log_warn "secretlint encontrou padrões suspeitos. Revise antes do push."
+# Roda apenas nos arquivos staged (rápido). Sem config, pula.
+if [ -f .secretlintrc.json ] || [ -f .secretlintrc.* ]; then
+  secretlint_targets=""
+  for f in $files; do
+    if [ -f "$f" ] && [ ! -d "$f" ]; then
+      secretlint_targets="$secretlint_targets \"$f\""
+    fi
+  done
+  if [ -n "$secretlint_targets" ]; then
+    # shellcheck disable=SC2086
+    if ! npx --no -- secretlint --maskSecrets $secretlint_targets >/dev/null 2>&1; then
+      log_warn "secretlint encontrou padrões suspeitos. Revise antes do push."
+    fi
   fi
 else
-  log_warn "secretlint não instalado (opcional; gitleaks já cobre)."
+  log_warn "secretlint sem config (.secretlintrc.json ausente); pulando."
 fi
