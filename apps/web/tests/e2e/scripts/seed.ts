@@ -84,6 +84,10 @@ interface SeedResult {
     id: string;
     name: string;
   };
+  restaurantB: {
+    id: string;
+    name: string;
+  };
   categories: Array<{
     id: string;
     name: string;
@@ -297,6 +301,45 @@ async function createRestaurant(): Promise<{ id: string; name: string }> {
   return { id: DEMO_RESTAURANT_ID, name: `${shardPrefix}${RESTAURANT_NAME}` };
 }
 
+/**
+ * Cria um segundo restaurante para testes de BOLA (multi-tenant).
+ * Tem ID distinto para validar isolamento entre tenants.
+ *
+ * NOTA: este restaurant NÃO é vinculado ao MEMO admin do seed. O token
+ * do admin (do tenant A) deve ser rejeitado ao tentar acessar dados
+ * deste tenant — é exatamente o que os testes BOLA validam.
+ */
+async function createRestaurantB(): Promise<{ id: string; name: string }> {
+  console.log('🏪 Criando segundo restaurant (B) para testes BOLA...');
+
+  const sql = await getSql();
+  const shardPrefix = getShardPrefix();
+
+  const DEMO_RESTAURANT_B_ID = IS_SHARD_MODE
+    ? `00000000-0000-0000-0000-00000000001${SHARD_CURRENT}`
+    : '00000000-0000-0000-0000-000000000002';
+
+  await sql`
+    INSERT INTO "Restaurant" (id, name, description, settings, "createdAt", "updatedAt")
+    VALUES (
+      ${DEMO_RESTAURANT_B_ID},
+      ${`${shardPrefix}Restaurant E2E Test B`},
+      ${'Restaurant B de testes E2E (BOLA)'},
+      ${'{"currency": "BRL", "timezone": "America/Sao_Paulo", "tax_rate": 0.1}'},
+      NOW(),
+      NOW()
+    )
+    ON CONFLICT (id) DO UPDATE SET
+      name = EXCLUDED.name,
+      description = EXCLUDED.description,
+      settings = EXCLUDED.settings,
+      "updatedAt" = NOW()
+  `;
+
+  console.log(`   Restaurant B criado: ${DEMO_RESTAURANT_B_ID}\n`);
+  return { id: DEMO_RESTAURANT_B_ID, name: `${shardPrefix}Restaurant E2E Test B` };
+}
+
 async function createCategories(restaurantId: string) {
   console.log('📂 Criando categorias de teste...');
 
@@ -496,7 +539,12 @@ async function cleanupExistingTestData() {
   }
 
   // Delete restaurant (ordem importa por causa das FKs: depende de Restaurant → Table, Category, Product, ModifierGroup, Order, etc.)
-  const restaurantNames = [`${shardPrefix}${RESTAURANT_NAME}`, RESTAURANT_NAME];
+  const restaurantNames = [
+    `${shardPrefix}${RESTAURANT_NAME}`,
+    RESTAURANT_NAME,
+    `${shardPrefix}Restaurant E2E Test B`,
+    'Restaurant E2E Test B',
+  ];
   for (const name of restaurantNames) {
     // Buscar IDs primeiro
     const restaurantIds = await sql<{ id: string }[]>`
@@ -535,8 +583,12 @@ export async function seed(): Promise<SeedResult> {
     // Cleanup primeiro
     await cleanupExistingTestData();
 
-    // Phase 1: Users and Restaurant (independent)
-    const [users, restaurant] = await Promise.all([createUsers(), createRestaurant()]);
+    // Phase 1: Users and Restaurants (independent)
+    const [users, restaurant, restaurantB] = await Promise.all([
+      createUsers(),
+      createRestaurant(),
+      createRestaurantB(),
+    ]);
 
     // Phase 2: Categories, Tables, Profile linkage (depend on restaurantId)
     const [categories, tables] = await Promise.all([
@@ -554,6 +606,7 @@ export async function seed(): Promise<SeedResult> {
     const result: SeedResult = {
       users,
       restaurant,
+      restaurantB,
       categories,
       products,
       tables,

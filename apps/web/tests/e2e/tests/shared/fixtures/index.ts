@@ -44,6 +44,7 @@ export interface Fixtures {
  */
 export interface SeedData {
   restaurant: { id: string; name: string };
+  restaurantB: { id: string; name: string };
   customer: { email: string; password: string; id: string };
   admin: { email: string; password: string; id: string };
   waiter: { email: string; password: string; id: string };
@@ -75,6 +76,7 @@ async function loadSeedData(): Promise<SeedData> {
 
   return {
     restaurant: raw.restaurant,
+    restaurantB: raw.restaurantB,
     customer: {
       id: raw.users.customer.id,
       email: raw.users.customer.email,
