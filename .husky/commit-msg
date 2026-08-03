@@ -1,1 +1,7 @@
-npx --no -- commitlint --edit $1
+#!/usr/bin/env sh
+# .husky/commit-msg — valida mensagem contra commitlint (config unificada).
+#
+# Para pular (NÃO recomendado): git commit --no-verify
+
+. "$(dirname -- "$0")/_lib.sh"
+npx --no -- commitlint --edit "$1"
