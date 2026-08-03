@@ -4,7 +4,7 @@
 
 ## 1. Contexto
 
-A auditoria completa de 2026-07-29 (PLANO_AUDITORIA_2026-07-29.md §2.1)
+A auditoria completa de 2026-07-29 (docs/auditorias/PLANO_AUDITORIA_2026-07-29.md §2.1)
 identificou **P0-07**: o `apps/api/src/payments/payments.service.ts:78-140`
 embute um stub `buildPixStubPayload()` que gera BR Code com CRC16 placeholder
 e QR Code hospedado em `api.qrserver.com`. **Apps bancários recusam o

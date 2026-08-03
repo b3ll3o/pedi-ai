@@ -8,7 +8,7 @@
 
 **Tech Stack:** NestJS 11, Prisma 7, PostgreSQL 16, Next.js 16, React 19, Dexie 4, Workbox 7, Husky 9, GitHub Actions.
 
-**Spec:** [PLANO_AUDITORIA_2026-07-29.md §2.1](../../PLANO_AUDITORIA_2026-07-29.md#21--p0--correção-imediata)
+**Spec:** [docs/auditorias/PLANO_AUDITORIA_2026-07-29.md §2.1](../../auditorias/PLANO_AUDITORIA_2026-07-29.md#21--p0--correção-imediata)
 
 ---
 
@@ -1976,4 +1976,4 @@ Após conclusão da Tranche A:
 
 **Mantido por:** @leo
 **Versão:** 1.0.0
-**Spec origem:** [PLANO_AUDITORIA_2026-07-29.md §2.1](../../PLANO_AUDITORIA_2026-07-29.md)
+**Spec origem:** [docs/auditorias/PLANO_AUDITORIA_2026-07-29.md §2.1](../../auditorias/PLANO_AUDITORIA_2026-07-29.md)

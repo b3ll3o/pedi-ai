@@ -1,7 +1,7 @@
 /**
  * E2E — Isolamento multi-tenant no endpoint `GET /products/:id` (P0-01)
  *
- * @see PLANO_AUDITORIA_2026-07-29.md §P0-01 (validação esperada)
+ * @see docs/auditorias/PLANO_AUDITORIA_2026-07-29.md §P0-01 (validação esperada)
  * @see docs/superpowers/plans/2026-07-29-auditoria-tranche-a-p0.md (Task 5)
  *
  * Cobertura: garante que um usuário autenticado em restaurante A NÃO

@@ -79,4 +79,4 @@
 - [ ] `git push -u origin fix/payment-pix-real-gateway`
 - [ ] Abrir PR via `gh pr create` (ou via REST se gh sem auth)
 - [ ] Body do PR referencia este change (`/.openspec/changes/2026-08-01-pix-gateway-real/`)
-      e o achado P0-07 da auditoria (`PLANO_AUDITORIA_2026-07-29.md §2.1`)
+      e o achado P0-07 da auditoria (`docs/auditorias/PLANO_AUDITORIA_2026-07-29.md §2.1`)

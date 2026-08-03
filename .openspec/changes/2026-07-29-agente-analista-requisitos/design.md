@@ -20,7 +20,7 @@
 │  ┌────────────────────────────────────────────────────────┐  │
 │  │ 1. Ler docs (PO-SKILLS, PO-AGENT-PLAYBOOK, AGENTS.md)   │  │
 │  │ 2. git log origin/master -20 + gh pr list --state open  │  │
-│  │ 3. Cruzar com PLANO_AUDITORIA_2026-07-29.md (P0/P1/P2)  │  │
+│  │ 3. Cruzar com docs/auditorias/PLANO_AUDITORIA_2026-07-29.md (P0/P1/P2)  │  │
 │  │ 4. Identificar 1 item de alto impacto ainda aberto       │  │
 │  │ 5. Criar branch + implementar/criar spec                │  │
 │  │ 6. git rebase master                                     │  │
@@ -55,14 +55,14 @@
 
 **Regras de negócio:**
 
-- **MUST** ler `PLANO_AUDITORIA_2026-07-29.md` antes de sugerir — não
+- **MUST** ler `docs/auditorias/PLANO_AUDITORIA_2026-07-29.md` antes de sugerir — não
   duplicar P0/P1/P2 já filed no PR #57.
 - **MUST** classificar cada item por **categoria primária** (vide
   `PO-SKILLS.md §7`).
 - **MUST** priorizar via **RICE/MoSCoW/Kano/WSJF/ICE** (justificar 1 linha).
 - **MUST** linkar `RF-XXX-NN` ou `RNF-X-NN` se mudar comportamento.
 - **MUST** usar Conventional Commits (`tipo(escopo): descrição`).
-- **MUST NOT** propor Stripe (PIX-only, vide `COMPANY.md`).
+- **MUST NOT** propor Stripe (PIX-only, vide `docs/COMPANY.md`).
 - **MUST NOT** quebrar cobertura mínima de 80%.
 - **MUST NOT** abrir PR de futilidade.
 - **SHOULD** sugerir métrica de sucesso pós-merge.
@@ -191,7 +191,7 @@ hermes cronjob create \
 - `docs/PO-SKILLS.md` — referência completa
 - `docs/PO-AGENT-PLAYBOOK.md` — playbook operacional
 - `~/.hermes/skills/analista-requisitos/SKILL.md` — skill
-- `PLANO_AUDITORIA_2026-07-29.md` — auditoria P0/P1/P2 filed
+- `docs/auditorias/PLANO_AUDITORIA_2026-07-29.md` — auditoria P0/P1/P2 filed
 - `.openspec/AGENTS.md` — convenções SDD
 - `AGENTS.md` — convenções monorepo
-- `COMPANY.md` — OKRs 2026
+- `docs/COMPANY.md` — OKRs 2026

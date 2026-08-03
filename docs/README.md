@@ -2,17 +2,21 @@
 
 > Sistema de cardápio digital para restaurantes com suporte offline e tempo real.
 
+Para o índice completo com descrições detalhadas de cada documento, consulte
+**[docs/INDICE.md](./INDICE.md)**.
+
 ---
 
 ## 📍 Navegação Rápida
 
-### Primeros Passos
+### Primeiros Passos
 
 | Documento                         | Descrição                                            |
 | --------------------------------- | ---------------------------------------------------- |
 | [README do Projeto](../README.md) | Visão geral, stack e Quick Start                     |
 | [AGENTS.md](../AGENTS.md)         | Regras de desenvolvimento (pt-BR, mobile-first, DDD) |
 | [codemap.md](../codemap.md)       | Mapa completo do repositório                         |
+| [INDICE.md](./INDICE.md)          | Índice completo desta documentação                   |
 
 ### Guias de Configuração
 
@@ -23,7 +27,7 @@
 ### Guias Técnicos
 
 | Documento                                                   | Descrição                                               | Quando Consultar                                     |
-| ----------------------------------------------------------- | ------------------------------------------------------- | ---------------------------------------------------- | ------------------------------- |
+| ----------------------------------------------------------- | ------------------------------------------------------- | ---------------------------------------------------- |
 | [ARCHITECTURE.md](guides/ARCHITECTURE.md)                   | Arquitetura DDD em 4 camadas                            | Entender estrutura domain/application/infrastructure |
 | [OFFLINE.md](guides/OFFLINE.md)                             | Service Worker, Dexie, BackgroundSync, BroadcastChannel | Implementar/modificar funcionalidade offline         |
 | [REALTIME.md](guides/REALTIME.md)                           | Socket.io para updates realtime com polling fallback    | Implementar atualizações em tempo real de pedidos    |
@@ -35,9 +39,18 @@
 | [CI_CD.md](guides/CI_CD.md)                                 | GitHub Actions, docker-compose, deploy VPS              | Configurar/modificar pipeline de CI/CD               |
 | [DDD_MIGRACAO_API.md](guides/DDD_MIGRACAO_API.md)           | Plano de migração DDD do apps/api                       | Migrar API para arquitetura DDD                      |
 | [ESLINT_BEST_PRACTICES.md](guides/ESLINT_BEST_PRACTICES.md) | Regras ESLint, complexity threshold                     | Manter qualidade de código                           |
-|                                                             | [SOFT_DELETE.md](guides/SOFT_DELETE.md)                 | Soft delete pattern (deletedAt, archived)            | Implementar exclusão reversível |
+| [SOFT_DELETE.md](guides/SOFT_DELETE.md)                     | Soft delete pattern (deletedAt, archived)               | Implementar exclusão reversível                      |
 | [PUBLIC_NAVIGATION.md](guides/PUBLIC_NAVIGATION.md)         | Navegação pública vs protegida, middleware              | Implementar rotas públicas e auth                    |
-| [FEATURE_FLAGS.md](guides/FEATURE_FLAGS.md)                 | Feature flags runtime DB-backed, precedência, RBAC      | Operar painel admin ou consumir flag no front/back  |
+| [FEATURE_FLAGS.md](guides/FEATURE_FLAGS.md)                 | Feature flags runtime DB-backed, precedência, RBAC      | Operar painel admin ou consumir flag no front/back   |
+
+### Deploy & Observabilidade
+
+| Documento                                                        | Descrição                                                |
+| ---------------------------------------------------------------- | -------------------------------------------------------- |
+| [CI-CD.md](CI-CD.md)                                             | Workflows GitHub Actions (lint, type-check, E2E, deploy) |
+| [DATA-TESTID.md](DATA-TESTID.md)                                 | Convenção `data-testid` para Playwright + script         |
+| [GRAFANA-CLOUD.md](GRAFANA-CLOUD.md)                             | Grafana Cloud + k6 Cloud                                 |
+| [grafana-dashboard-pedi-ai.json](grafana-dashboard-pedi-ai.json) | Dashboard Grafana pré-configurado (importar)             |
 
 ### Fluxos Detalhados
 
@@ -47,19 +60,28 @@
 | [FLUXOS-CONSUMIDOR.md](FLUXOS-CONSUMIDOR.md) | Fluxos do cliente (cardápio, carrinho, checkout) |
 | [fluxos.html](fluxos.html)                   | Visualização HTML dos fluxos da aplicação        |
 
+### Auditorias
+
+| Documento                                                                                                          | Descrição                                   |
+| ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------- |
+| [auditorias/AUDITORIA-GERAL-LINHA-BASE-2026-07-29.md](auditorias/AUDITORIA-GERAL-LINHA-BASE-2026-07-29.md)         | Linha-base de auditoria completa (P0/P1/P2) |
+| [auditorias/AUDITORIA-2026-07-29-FASES-1-4-RESULTADOS.md](auditorias/AUDITORIA-2026-07-29-FASES-1-4-RESULTADOS.md) | Resultados das fases 1-4                    |
+| [auditorias/DEVSECOPS-AUDIT-2026-06-25.md](auditorias/DEVSECOPS-AUDIT-2026-06-25.md)                               | Auditoria DevSecOps                         |
+
+### Requisitos & Runbooks
+
+| Documento                                                      | Descrição                                  |
+| -------------------------------------------------------------- | ------------------------------------------ |
+| [requirements/RNF.md](requirements/RNF.md)                     | Requisitos não-funcionais                  |
+| [requirements/RTM.md](requirements/RTM.md)                     | Requirements Traceability Matrix           |
+| [runbooks/api-down.md](runbooks/api-down.md)                   | Procedimento quando a API está fora do ar  |
+| [runbooks/high-p95.md](runbooks/high-p95.md)                   | Procedimento quando latência p95 sobe      |
+| [runbooks/pix-failure-spike.md](runbooks/pix-failure-spike.md) | Procedimento em caso de pico de falhas PIX |
+
 ### Specs (OpenSpec)
 
-| Domínio | Localização | Descrição |
-| ------- | ----------- | --------- |
-
-_(Em construção — specs de domínio serão adicionadas progressivamente)_
-
-### Testes
-
-| Documento  | Localização                       | Descrição                   |
-| ---------- | --------------------------------- | --------------------------- |
-| E2E README | `../apps/web/tests/e2e/README.md` | Visão geral dos testes E2E  |
-| FLUXOS     | `../apps/web/tests/e2e/FLUXOS.md` | Detalhamento dos fluxos E2E |
+As specs por domínio vivem em `.openspec/specs/<bounded-context>/` e são geradas
+pelos planos de feature. Ver `.openspec/AGENTS.md` para o workflow oficial.
 
 ---
 
@@ -68,27 +90,42 @@ _(Em construção — specs de domínio serão adicionadas progressivamente)_
 ```
 docs/
 ├── README.md                      # Este arquivo - hub de navegação
-├── INDICE.md                      # Índice completo com todas as referências
+├── INDICE.md                      # Índice completo com descrições detalhadas
 ├── FLUXOS-ADMIM.md               # Fluxos do painel admin
 ├── FLUXOS-CONSUMIDOR.md          # Fluxos do cliente
 ├── fluxos.html                    # Visualização HTML dos fluxos
+├── CI-CD.md                       # Workflows GitHub Actions
+├── DATA-TESTID.md                 # Convenção data-testid
+├── DEPLOY.md                      # ⚠️ Legado (Vercel + Fly.io) — ver CI-CD.md
+├── GRAFANA-CLOUD.md               # Grafana Cloud + k6 Cloud
+├── grafana-dashboard-pedi-ai.json # Dashboard Grafana (importar)
+├── PROJECT_CONTEXT.md             # Contexto amplo do projeto
+├── COMPANY.md                     # Informações da empresa
+├── PO-SKILLS.md                   # Skills do agente PO
+├── PO-AGENT-PLAYBOOK.md           # Playbook operacional do agente PO
 ├── setup/                         # Guias de configuração
 │   └── MAILPIT_SETUP.md
-└── guides/                        # Guias técnicos
-    ├── ARCHITECTURE.md
-    ├── CI_CD.md
-    ├── DDD_MIGRACAO_API.md
-    ├── ESLINT_BEST_PRACTICES.md
-    ├── LIGHTHOUSE.md
-    ├── MOBILE_PWA.md
-    ├── OFFLINE.md
-    ├── PAYMENTS.md
-    ├── PUBLIC_NAVIGATION.md
-    ├── QR_CODE.md
-    ├── REALTIME.md
-    ├── ROLES.md
-    └── SOFT_DELETE.md
-    └── FEATURE_FLAGS.md
+├── guides/                        # Guias técnicos
+│   ├── ARCHITECTURE.md
+│   ├── CI_CD.md
+│   ├── DDD_MIGRACAO_API.md
+│   ├── ESLINT_BEST_PRACTICES.md
+│   ├── FEATURE_FLAGS.md
+│   ├── LIGHTHOUSE.md
+│   ├── MOBILE_PWA.md
+│   ├── OFFLINE.md
+│   ├── PAYMENTS.md
+│   ├── PUBLIC_NAVIGATION.md
+│   ├── QR_CODE.md
+│   ├── REALTIME.md
+│   ├── ROLES.md
+│   └── SOFT_DELETE.md
+├── auditorias/                    # Auditorias e migrações históricas
+├── plans/                         # Planos em curso
+├── qa/                            # Planos de QA & testes
+├── requirements/                  # RF, RNF, RTM
+├── runbooks/                      # Runbooks operacionais
+└── superpowers/                   # Specs/planos gerados pelos agentes Claude
 ```
 
 ---

@@ -54,7 +54,7 @@ tiver evidência.
 
 Antes de sugerir qualquer coisa:
 
-1. Ler `pedi-ai/AGENTS.md`, `pedi-ai/PROJECT_CONTEXT.md`, `pedi-ai/codemap.md`
+1. Ler `pedi-ai/AGENTS.md`, `pedi-ai/docs/PROJECT_CONTEXT.md`, `pedi-ai/codemap.md`
    e `.openspec/AGENTS.md`.
 2. Identificar o **último commit** em `master` desde a última análise.
 3. Ler **CHANGELOG** (se existir) ou últimos 20 commits:
@@ -233,7 +233,7 @@ Antes de abrir o PR, **auto-revisar**:
 > **NSM do `pedi-ai`:** "Pedidos concluídos com sucesso via PIX por
 > restaurante ativo por semana."
 
-**OKRs trimestrais** (vide `COMPANY.md`):
+**OKRs trimestrais** (vide `docs/COMPANY.md`):
 
 | Trimestre | Objetivo          | Meta                               |
 | --------- | ----------------- | ---------------------------------- |
@@ -385,7 +385,7 @@ Score = Impact × Confidence × Ease
 
 - **Documento completo:** `docs/PO-SKILLS.md`
 - **Regras do projeto:** `AGENTS.md`
-- **Contexto:** `PROJECT_CONTEXT.md`, `COMPANY.md`
+- **Contexto:** `docs/PROJECT_CONTEXT.md`, `docs/COMPANY.md`
 - **Mapa:** `codemap.md`
 - **Spec-Driven Development:** `.openspec/AGENTS.md`
 - **RTM:** `docs/requirements/RTM.md` (gerada por `pnpm rtm`)

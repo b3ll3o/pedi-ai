@@ -38,6 +38,7 @@ Ser a principal plataforma de cardapio digital para restaurantes no Brasil, com 
 ## Produto
 
 ### Cardapio Digital
+
 - QR Code por mesa
 - Cardapio interativo com fotos
 - Sistema de pedidos
@@ -45,6 +46,7 @@ Ser a principal plataforma de cardapio digital para restaurantes no Brasil, com 
 - Funciona 100% offline
 
 ### Diferenciais
+
 - PWA instalavel
 - Sincronizacao automatica quando online
 - Atualizacao de cardapio em tempo real

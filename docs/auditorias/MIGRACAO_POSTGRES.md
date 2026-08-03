@@ -9,6 +9,7 @@
 ## Resumo da Migração
 
 Migração do Supabase (Auth, Database, Realtime) para:
+
 - **Backend**: NestJS + Fastify + Prisma ORM + PostgreSQL
 - **Auth**: JWT com bcrypt (PostgresAuthAdapter)
 - **Realtime**: WebSockets via NestJS Gateway + Socket.io
@@ -43,11 +44,11 @@ Migração do Supabase (Auth, Database, Realtime) para:
 
 ### Stack de Banco (ATUAL)
 
-| Componente | Tecnologia |
-|------------|------------|
-| API Routes (`apps/web/src/app/api/**`) | PostgreSQL via `postgres.js` |
-| API NestJS (`apps/api/`) | Prisma + PostgreSQL |
-| Auth | JWT com bcrypt via `PostgresAuthAdapter` |
+| Componente                             | Tecnologia                               |
+| -------------------------------------- | ---------------------------------------- |
+| API Routes (`apps/web/src/app/api/**`) | PostgreSQL via `postgres.js`             |
+| API NestJS (`apps/api/`)               | Prisma + PostgreSQL                      |
+| Auth                                   | JWT com bcrypt via `PostgresAuthAdapter` |
 
 ### Estrutura do Monorepo
 

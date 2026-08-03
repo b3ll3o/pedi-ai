@@ -8,7 +8,7 @@
 
 ## 1. Contexto
 
-O `pedi-ai` está em fase de **validação e lançamento** (vide `COMPANY.md`).
+O `pedi-ai` está em fase de **validação e lançamento** (vide `docs/COMPANY.md`).
 A auditoria técnica de 2026-07-29 (PR #57) consolidou 52 achados (12 P0, 24 P1,
 16 P2) e entregou a estabilização P0 parcial. O backlog restante é grande
 demais para ser curado manualmente — mesmo um PO dedicado à tempo integral
@@ -66,7 +66,7 @@ repositório respeitando todos os princípios acima.
 | Risco                                    | Probabilidade | Impacto | Mitigação                                                                                                  |
 | ---------------------------------------- | ------------- | ------- | ---------------------------------------------------------------------------------------------------------- |
 | PRs de baixa qualidade / ruído           | Média         | Média   | Agente **declina** quando não há item de alto impacto (vide prompt §"Quando não encontrar nada relevante") |
-| Duplicação com achados já filed (PR #57) | Alta          | Média   | Agente **lê PLANO_AUDITORIA_2026-07-29.md** antes de sugerir                                               |
+| Duplicação com achados já filed (PR #57) | Alta          | Média   | Agente **lê docs/auditorias/PLANO_AUDITORIA_2026-07-29.md** antes de sugerir                               |
 | Sobrecarga de PRs no time                | Média         | Alta    | Agente abre **1 PR/dia** (limite natural do cron)                                                          |
 | Sugestão viola DDD ou convenções         | Baixa         | Alta    | Skill carrega `AGENTS.md` + `PO-SKILLS.md` antes de agir                                                   |
 | Fork de ideias entre PRs do agente       | Baixa         | Média   | Agente verifica `.openspec/changes/` para wip antes de criar                                               |
@@ -88,7 +88,7 @@ repositório respeitando todos os princípios acima.
 - **Skill:** `~/.hermes/skills/analista-requisitos/SKILL.md` (permanente)
 - **Playbook:** `docs/PO-AGENT-PLAYBOOK.md` (operacional)
 - **Habilidades:** `docs/PO-SKILLS.md` (referência completa)
-- **Auditoria existente:** `PLANO_AUDITORIA_2026-07-29.md` (PR #57)
+- **Auditoria existente:** `docs/auditorias/PLANO_AUDITORIA_2026-07-29.md` (PR #57)
 - **OpenSpec:** `.openspec/AGENTS.md`
 - **AGENTS.md:** monorepo conventions
 - **Cron job:** `cronjob b026cb0403b8` (action='list' para inspeção)

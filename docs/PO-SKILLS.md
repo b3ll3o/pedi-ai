@@ -69,7 +69,7 @@ O `analista-requisitos` é um **PO técnico automatizado**. Ele combina:
 | **SHOULD:** Sugerir a métrica **antes** da feature ("Se isso aumentar X em Y%, vale a pena").                                                               |
 | **SHOULD:** Sugerir **remoção** de código morto com a mesma ênfase que novas features.                                                                      |
 | **SHOULD:** Mapear cada US a pelo menos 1 RF-XXX-NN (RTM completa).                                                                                         |
-| **SHOULD NOT:** Recomendar Stripe (o projeto é PIX-only, vide `COMPANY.md`).                                                                                |
+| **SHOULD NOT:** Recomendar Stripe (o projeto é PIX-only, vide `docs/COMPANY.md`).                                                                           |
 | **MAY:** Sugerir ferramentas/dependências **somente** se houver evidência concreta de problema não resolvível no stack atual.                               |
 
 ---
@@ -100,7 +100,7 @@ e _Empowered_, aplicados ao `pedi-ai`:
 
 | #   | Responsabilidade             | Como o agente materializa no `pedi-ai`                                                                                          |
 | --- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **Estratégia de produto**    | Propõe objetivos trimestrais (Q1-Q4 definidos em `COMPANY.md`) e os conecta aos RF-XXX-NN                                       |
+| 1   | **Estratégia de produto**    | Propõe objetivos trimestrais (Q1-Q4 definidos em `docs/COMPANY.md`) e os conecta aos RF-XXX-NN                                  |
 | 2   | **Priorização**              | Aplica RICE/MoSCoW/Kano nas US, justificando cada score                                                                         |
 | 3   | **Gestão do backlog**        | Mantém `docs/requirements/BACKLOG.md` (a criar, vide OpenSpec §8) com status planned/doing/done                                 |
 | 4   | **Gestão de stakeholders**   | Identifica personas (Dono do restaurante, Gerente, Garçom, Cozinheiro, Cliente final, Admin de rede) e mapeia quem se beneficia |
@@ -135,10 +135,10 @@ em **PRs de visão/estratégia** (ex: criar nova métrica), age como PM.
 | **North Star Metric (NSM)**       | Para o `pedi-ai`: **pedidos concluídos com sucesso via PIX por restaurante ativo por semana** (combina adoção + monetização + qualidade). Norte absoluto do time.              |
 | **AARRR (Pirate Metrics)**        | Aquisição → Ativação → Retenção → Receita → Referência. Ver §6.                                                                                                                |
 | **HEART (Google)**                | Happiness · Engagement · Adoption · Retention · Task success. Aplicar a cada frente (cliente, admin, cozinha).                                                                 |
-| **OKR**                           | Objetivos trimestrais (vide `COMPANY.md` §Metas 2026) + 3-5 Key Results mensuráveis por objetivo.                                                                              |
+| **OKR**                           | Objetivos trimestrais (vide `docs/COMPANY.md` §Metas 2026) + 3-5 Key Results mensuráveis por objetivo.                                                                         |
 | **JTBD (Jobs-to-be-Done)**        | "Quando [situação], eu quero [motivação], para [resultado]". Ex: "Quando o cliente chega na mesa, quero ver o cardápio sem instalar app, para pedir em menos de 2 min."        |
 | **Hook Model (Nir Eyal)**         | Trigger → Action → Variable Reward → Investment. Aplicar à retenção do admin (notificações push de novos pedidos = trigger externo; recompensa = ticket médio do restaurante). |
-| **Product-Led Growth (PLG)**      | Self-serve signup, free tier (Plano Básico do `COMPANY.md`), viral loop (cliente final recomenda a outros restaurantes via QR code?).                                          |
+| **Product-Led Growth (PLG)**      | Self-serve signup, free tier (Plano Básico do `docs/COMPANY.md`), viral loop (cliente final recomenda a outros restaurantes via QR code?).                                     |
 | **Discovery contínua (Cagan)**    | Cada sprint roda discovery + delivery em paralelo.                                                                                                                             |
 | **Lean Inception (Paulo Caroli)** | Para cada nova iniciativa, alinhar: Visão · É · Não é · Objetivos · Personas · Features · Não-Funcionalidades · Stakeholders · Riscos · Métricas.                              |
 
@@ -210,7 +210,7 @@ template de `AGENTS.md §1`:
 
 - **Now / Next / Later** (OpenSpec §8).
 - **Release notes** em `docs/RELEASES.md` (a criar) por versão.
-- **Semantic Versioning** (vide `version: 1.5.0` em `PROJECT_CONTEXT.md`).
+- **Semantic Versioning** (vide `version: 1.5.0` em `docs/PROJECT_CONTEXT.md`).
 - **Feature flags** como **portão** de rollout (vide Fowler Feature Toggles):
   - **Release toggle** — esconde em produção.
   - **Experiment toggle** — A/B.
@@ -343,18 +343,18 @@ PRs pequenos ou ajustes de copy.
 
 ### 6.4 Métricas SaaS clássicas
 
-| Métrica                         | Fórmula                                        | Meta inicial sugerida                |
-| ------------------------------- | ---------------------------------------------- | ------------------------------------ |
-| **MRR**                         | Σ assinaturas mensais ativas                   | R$50k em Q2/2026 (vide `COMPANY.md`) |
-| **ARR**                         | MRR × 12                                       | R$600k em Q4/2026                    |
-| **ARPU**                        | Receita total / nº de restaurantes ativos      | R$150/mês                            |
-| **Churn mensal**                | Cancelamentos no mês / ativos no início        | <5%                                  |
-| **Net Revenue Retention (NRR)** | (Receita inicial + expansão - churn) / inicial | >100%                                |
-| **LTV**                         | ARPU / churn rate                              | R$3.000 (R$150 / 5%)                 |
-| **CAC**                         | Marketing & vendas / novos clientes            | <R$1.000                             |
-| **LTV/CAC**                     | LTV / CAC                                      | >3                                   |
-| **CAC payback**                 | CAC / (ARPU × margem)                          | <12 meses                            |
-| **Burn rate / runway**          | Caixa / despesa mensal                         | >12 meses                            |
+| Métrica                         | Fórmula                                        | Meta inicial sugerida                     |
+| ------------------------------- | ---------------------------------------------- | ----------------------------------------- |
+| **MRR**                         | Σ assinaturas mensais ativas                   | R$50k em Q2/2026 (vide `docs/COMPANY.md`) |
+| **ARR**                         | MRR × 12                                       | R$600k em Q4/2026                         |
+| **ARPU**                        | Receita total / nº de restaurantes ativos      | R$150/mês                                 |
+| **Churn mensal**                | Cancelamentos no mês / ativos no início        | <5%                                       |
+| **Net Revenue Retention (NRR)** | (Receita inicial + expansão - churn) / inicial | >100%                                     |
+| **LTV**                         | ARPU / churn rate                              | R$3.000 (R$150 / 5%)                      |
+| **CAC**                         | Marketing & vendas / novos clientes            | <R$1.000                                  |
+| **LTV/CAC**                     | LTV / CAC                                      | >3                                        |
+| **CAC payback**                 | CAC / (ARPU × margem)                          | <12 meses                                 |
+| **Burn rate / runway**          | Caixa / despesa mensal                         | >12 meses                                 |
 
 ### 6.5 Métricas operacionais (SRE)
 
@@ -463,7 +463,7 @@ secundária.
 | **Health checks**     | `/health`, `/ready`, deep checks para filas                              |
 | **Alertas**           | Sentry error spike, PIX failure rate, P95 latency                        |
 | **Dashboards**        | OpenObserve/Grafana (vide `docker-compose.yml` perfil observability)     |
-| **Backups**           | PostgreSQL dump diário (vide `COMPANY.md`)                               |
+| **Backups**           | PostgreSQL dump diário (vide `docs/COMPANY.md`)                          |
 | **Disaster recovery** | RTO/RPO documentados                                                     |
 
 ### 7.6 Dívida técnica (DEBT)
@@ -501,7 +501,7 @@ secundária.
 | **Retenção**                    | Pedidos: 24 meses (vide `RNF-LGPD-01`), depois anonimizar |
 | **Direitos do titular**         | Endpoint para exportar/apagar dados do cliente            |
 | **Encarregado (DPO)**           | Contato público (e-mail)                                  |
-| **Transferência internacional** | AWS sa-east-1 (vide `COMPANY.md`) — manter no Brasil      |
+| **Transferência internacional** | AWS sa-east-1 (vide `docs/COMPANY.md`) — manter no Brasil |
 | **Logs**                        | PII em logs? Mascaramento (CPF, cartão, e-mail)           |
 | **Política de privacidade**     | URL pública, atualizada, em pt-BR                         |
 | **Termos de uso**               | Para restaurante e para cliente final                     |

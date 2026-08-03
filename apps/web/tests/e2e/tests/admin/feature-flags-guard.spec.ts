@@ -1,6 +1,6 @@
 /**
  * E2E — FeatureFlagsAdminGuard aplicado via @UseGuards (P0-03)
- * @see PLANO_AUDITORIA_2026-07-29.md §P0-03
+ * @see docs/auditorias/PLANO_AUDITORIA_2026-07-29.md §P0-03
  * @see docs/superpowers/plans/2026-07-29-auditoria-tranche-a-p0.md (Task 4)
  *
  * Cobertura: garante que `FeatureFlagAdminGuard` aplicado no
