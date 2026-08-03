@@ -22,10 +22,17 @@ import { PrismaService } from '../../../src/common/prisma.service';
 describe('PaymentsService — cobertura de branches (handleWebhook + getPaymentStatus*)', () => {
   let paymentsService: PaymentsService;
   let mockPrisma: ReturnType<typeof createMockPrisma>;
+  let mockPixGateway: { createPixCharge: ReturnType<typeof vi.fn> };
 
   /**
    * Mock enxuto baseado na forma que `handleWebhook` e os métodos de status
    * consomem o `PrismaService`. Cada teste customiza o que precisa.
+   *
+   * P0-08 (2026-08-03): o `withEncryptedTransaction` foi introduzido como
+   * wrapper de `$transaction` para LGPD (criptografia PII in-transaction).
+   * Os testes reproduzem o comportamento esperado: chamar o callback com
+   * um `tx` que expõe webhookEvent/paymentIntent/order, repassando as
+   * `options` (incluindo `isolationLevel`).
    */
   const createMockPrisma = () => ({
     order: {
@@ -43,7 +50,7 @@ describe('PaymentsService — cobertura de branches (handleWebhook + getPaymentS
       findUnique: vi.fn(),
       create: vi.fn(),
     },
-    $transaction: vi.fn(async (arg: unknown) => {
+    withEncryptedTransaction: vi.fn(async (arg: unknown, _options?: unknown) => {
       if (typeof arg === 'function') {
         const tx = {
           webhookEvent: { create: vi.fn(), findUnique: vi.fn() },
@@ -60,12 +67,39 @@ describe('PaymentsService — cobertura de branches (handleWebhook + getPaymentS
       for (const op of ops) results.push(await op);
       return results;
     }),
+    // `createPixPaymentInternal` ainda usa `$transaction` direto (não
+    // toca em PII), então o mock também precisa expor esse método.
+    $transaction: vi.fn(async (arg: unknown) => {
+      if (typeof arg === 'function') {
+        const tx = {
+          paymentIntent: {
+            create: vi.fn(),
+            update: vi.fn(),
+          },
+        };
+        return await (arg as (t: typeof tx) => Promise<unknown>)(tx);
+      }
+      const ops = arg as Promise<unknown>[];
+      const results: unknown[] = [];
+      for (const op of ops) results.push(await op);
+      return results;
+    }),
   });
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockPrisma = createMockPrisma();
-    paymentsService = new PaymentsService(mockPrisma as unknown as PrismaService);
+    mockPixGateway = {
+      createPixCharge: vi.fn().mockResolvedValue({
+        qrCode: 'pix-qr-stub',
+        qrCodeBase64: null,
+        externalId: 'mp-id-stub',
+      }),
+    };
+    paymentsService = new PaymentsService(
+      mockPrisma as unknown as PrismaService,
+      mockPixGateway as unknown as { createPixCharge: ReturnType<typeof vi.fn> }
+    );
   });
 
   // ─────────────────────────────────────────────────────────────────
@@ -90,7 +124,7 @@ describe('PaymentsService — cobertura de branches (handleWebhook + getPaymentS
         },
         order: { update: vi.fn(), updateMany: vi.fn() },
       };
-      mockPrisma.$transaction.mockImplementation(async (arg: unknown) => {
+      mockPrisma.withEncryptedTransaction.mockImplementation(async (arg: unknown) => {
         if (typeof arg === 'function') {
           return (arg as (t: typeof tx) => Promise<unknown>)(tx);
         }
@@ -141,7 +175,7 @@ describe('PaymentsService — cobertura de branches (handleWebhook + getPaymentS
           updateMany: vi.fn(),
         },
       };
-      mockPrisma.$transaction.mockImplementation(async (arg: unknown) => {
+      mockPrisma.withEncryptedTransaction.mockImplementation(async (arg: unknown) => {
         if (typeof arg === 'function') {
           return (arg as (t: typeof tx) => Promise<unknown>)(tx);
         }
@@ -196,7 +230,7 @@ describe('PaymentsService — cobertura de branches (handleWebhook + getPaymentS
           updateMany: vi.fn().mockResolvedValue({ count: 0 }), // conflito!
         },
       };
-      mockPrisma.$transaction.mockImplementation(async (arg: unknown) => {
+      mockPrisma.withEncryptedTransaction.mockImplementation(async (arg: unknown) => {
         if (typeof arg === 'function') {
           return (arg as (t: typeof tx) => Promise<unknown>)(tx);
         }
@@ -233,7 +267,7 @@ describe('PaymentsService — cobertura de branches (handleWebhook + getPaymentS
     it('loga e relança erro do transaction (não-recuperável)', async () => {
       // Erro genérico do $transaction (não P2002, não 40001). Deve ser
       // logado e relançado — o caller decide se retentará.
-      mockPrisma.$transaction.mockRejectedValueOnce(
+      mockPrisma.withEncryptedTransaction.mockRejectedValueOnce(
         new Error('Connection terminated unexpectedly')
       );
 
@@ -249,7 +283,7 @@ describe('PaymentsService — cobertura de branches (handleWebhook + getPaymentS
     it('loga e relança erro de Prisma conhecido (não-P2002)', async () => {
       // Erro Prisma diferente de P2002 não tem tratamento especial — deve
       // cair no catch genérico e ser relançado.
-      mockPrisma.$transaction.mockRejectedValueOnce(
+      mockPrisma.withEncryptedTransaction.mockRejectedValueOnce(
         new Prisma.PrismaClientKnownRequestError('Foreign key constraint failed', {
           code: 'P2003',
           clientVersion: 'test',
@@ -512,7 +546,7 @@ describe('PaymentsService — cobertura de branches (handleWebhook + getPaymentS
         })
       ).rejects.toThrow(ForbiddenException);
       // Não deve criar intent em caso de restaurante divergente.
-      expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+      expect(mockPrisma.withEncryptedTransaction).not.toHaveBeenCalled();
     });
   });
 
@@ -672,7 +706,7 @@ describe('PaymentsService — cobertura de branches (handleWebhook + getPaymentS
           updateMany: vi.fn().mockResolvedValue({ count: 0 }),
         },
       };
-      mockPrisma.$transaction.mockImplementation(async (arg: unknown) => {
+      mockPrisma.withEncryptedTransaction.mockImplementation(async (arg: unknown) => {
         if (typeof arg === 'function') {
           return (arg as (t: typeof tx) => Promise<unknown>)(tx);
         }
