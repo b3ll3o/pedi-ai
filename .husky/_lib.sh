@@ -24,7 +24,7 @@ need() {
     log_err "$1 não está instalado"
     case "$1" in
       gitleaks) log_err "  brew install gitleaks  (macOS)" ;;
-      secretlint) log_err "  pnpm add -D secretlint @secretlint/preset-recommend" ;;
+      secretlint) log_err "  pnpm add -D secretlint @secretlint/secretlint-rule-preset-recommend" ;;
     esac
     exit 1
   }
