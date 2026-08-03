@@ -129,15 +129,22 @@ pnpm --filter @pedi-ai/web -- exec vitest run --coverage --changed HEAD~1 \
 
 ```sh
 #!/usr/bin/env sh
+# post-merge:     $1 = refs/heads/<branch>,  $2 = novo sha
+# post-checkout:  $1 = sha anterior,        $2 = novo sha,  $3 = 1 se troca de branch
+# O nome do hook está em $0; usamos para normalizar os args.
 . "$(dirname -- "$0")/_lib.sh"
 
-# post-merge:  $1 = refs/heads/<branch>,  $2 = sha
-# post-checkout:  $1 = previous HEAD,  $2 = new HEAD,  $3 = 1 se troca de branch
-prev="${1:-HEAD@{1}"
-curr="${2:-HEAD}"
+case "$(basename "$0")" in
+  post-merge)    prev="$1"; curr="$2" ;;
+  post-checkout) prev="$1"; curr="$2" ;;
+  *)             prev=""; curr="" ;;
+esac
+
+# Sem args (ex: clone local) — não faz nada
+[ -z "$prev" ] || [ -z "$curr" ] && exit 0
 
 changed_files=$(git diff --name-only "$prev" "$curr" 2>/dev/null)
-echo "$changed_files" | grep -qE '^(package\.json|pnpm-lock\.yaml|\.nvmrc|\.npmrc|commitlint\.config\.[mc]?js|\.commitlintrc\.js|scripts/check-dev-env\.sh)$' && {
+echo "$changed_files" | grep -qE '^(package\.json|pnpm-lock\.yaml|\.nvmrc|\.npmrc|commitlint\.config\.[mc]?js|\.commitlintrc\.js|scripts/check-dev-env\.sh|\.husky/_lib\.sh|\.husky/.*)$' && {
   log_warn "Configuração de ambiente mudou. Rode: pnpm install && pnpm rebuild"
   exit 0
 }
@@ -276,6 +283,11 @@ Adicionar ao `package.json`:
 ```
 
 ## Critérios de aceitação
+
+### Dependências novas (devDependencies)
+
+- `secretlint` + `@secretlint/preset-recommend` — adicionados ao `package.json` raiz (defesa em profundidade; warning, não bloqueio se ausente no PATH).
+- `gitleaks` — **não** adicionado como devDep; é uma ferramenta de sistema. Documentar no `HUSKY.md` o comando de instalação por SO.
 
 **Funcional**
 
