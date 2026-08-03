@@ -109,8 +109,14 @@ async function injectAuthCookies(
  * falharam (nenhuma linha criada/alterada/deletada no tenant B).
  *
  * Requer `DATABASE_URL` — em CI ela é exportada via `$GITHUB_ENV`
- * (ver `.github/workflows/e2e.yml`). Local: `.env.e2e` precisa ter
- * a URL real do Postgres de dev (a placeholder causa erro claro).
+ * (ver `.github/workflows/e2e.yml`). Local: cada dev precisa preencher
+ * `DATABASE_URL` no seu `.env.e2e` com a URL real do Postgres de dev.
+ *
+ * O `.env.e2e` versionado traz um placeholder e NÃO pode receber a URL
+ * real: o `pre-commit` bloqueia qualquer `*.env.*` e a regra
+ * `pedi-ai-database-password` do gitleaks bloqueia connection strings
+ * com senha em qualquer arquivo. Por isso a URL real fica só na cópia
+ * local de cada dev — e o erro abaixo aponta a fonte da verdade.
  */
 let _sql: ReturnType<typeof postgres> | null = null;
 function getSql(): ReturnType<typeof postgres> {
@@ -119,8 +125,9 @@ function getSql(): ReturnType<typeof postgres> {
   if (!url || url.includes('user:password@')) {
     throw new Error(
       `DATABASE_URL ausente ou com placeholder (${url ?? 'undefined'}). ` +
-        `Defina em \`apps/web/tests/e2e/.env.e2e\` com a URL real do Postgres ` +
-        `de dev (ex.: postgresql://pedi_ai:pedi_ai@localhost:5432/pedi_ai).`
+        `Copie o valor de \`apps/api/.env\` (mesmo Postgres de dev) para ` +
+        `\`apps/web/tests/e2e/.env.e2e\`. Não versione essa alteração: ` +
+        `o pre-commit bloqueia arquivos \`.env.*\`.`
     );
   }
   _sql = postgres(url, { max: 5 });
@@ -167,9 +174,12 @@ test.describe('Multi-Tenant Isolation @security @multitenant @bola @critical', (
       // positivas (não-vazio + IDs do tenant B ausentes + sentinela).
       expect(response.status()).toBe(200);
       const body = await response.json();
-      const orders: Array<{ id: string; restaurantId?: string; restaurant_id?: string; total?: number }> = Array.isArray(body)
-        ? body
-        : (body.data ?? body.orders ?? []);
+      const orders: Array<{
+        id: string;
+        restaurantId?: string;
+        restaurant_id?: string;
+        total?: number;
+      }> = Array.isArray(body) ? body : (body.data ?? body.orders ?? []);
 
       // Positivo: lista não-vazia (seed cria ≥ 2 pedidos no tenant A).
       expect(orders.length).toBeGreaterThan(0);
@@ -190,7 +200,8 @@ test.describe('Multi-Tenant Isolation @security @multitenant @bola @critical', (
         (acc, o) => acc + (typeof o.total === 'number' ? o.total : 0),
         0
       );
-      // sentinela é 9999.99; total do tenant A é ~58.98. Margem ampla.
+      // sentinela é 9999.99; total do tenant A é 64.88 (50.59 + 14.29).
+      // Margem ampla.
       expect(totalRespondido).toBeLessThan(seedData.restaurantB.orderTotal);
     }
   );
@@ -208,50 +219,14 @@ test.describe('Multi-Tenant Isolation @security @multitenant @bola @critical', (
         `${E2E_API_URL}/orders/${seedData.restaurantB.orderId}`
       );
       expect([403, 404]).toContain(response.status());
-
-      if (response.status() === 200) {
-        // Se 200 vazou, garantir que os dados NÃO são do tenant B.
-        const order = await response.json();
-        expect(order.restaurantId ?? order.restaurant_id).toBe(seedData.restaurant.id);
-      }
     }
   );
 
-  test(
-    'categoria REAL do Restaurante B NÃO deve aparecer em /categories',
-    { tag: ['@security', '@bola'] },
-    async ({ page, seedData }) => {
-      await injectAuthCookies(page, authCookies);
-
-      // GET /categories é `@Public()` e exige `restaurantId` na query
-      // (`apps/api/src/categories/categories.controller.ts`). Sem o
-      // query param, o service chama `findByRestaurant(undefined)` e
-      // estoura 500 — o teste ficaria verde por motivos errados
-      // (CRITICAL #1 do code review). Fix: passar o `restaurantId` do
-      // tenant A (escopo do JWT) e ainda assim garantir que nenhuma
-      // categoria do tenant B vaza na resposta.
-      const response = await page.request.get(
-        `${E2E_API_URL}/categories?restaurantId=${seedData.restaurant.id}`
-      );
-      expect(response.status()).toBe(200);
-      const body = await response.json();
-      const cats: Array<{ id: string; restaurantId?: string; restaurant_id?: string }> = Array.isArray(body)
-        ? body
-        : (body.data ?? []);
-
-      // Positivo: categorias do tenant A estão lá.
-      const myCatIds = new Set(seedData.categories.map((c) => c.id));
-      expect(cats.some((c) => myCatIds.has(c.id))).toBe(true);
-
-      // Negativo: categoria do tenant B NÃO está lá.
-      expect(cats.some((c) => c.id === seedData.restaurantB.categoryId)).toBe(false);
-
-      // Positivo: todas as categorias visíveis são do tenant A.
-      for (const cat of cats) {
-        expect(cat.restaurantId ?? cat.restaurant_id).toBe(seedData.restaurant.id);
-      }
-    }
-  );
+  // Teste de isolamento em `GET /categories` removido: a rota é
+  // `@Public()` (sem JWT, não há tenant para escopar) e o service
+  // filtra por `restaurantId` da query no próprio DB — qualquer
+  // asserção "categoria do tenant B ausente" seria infalsificável.
+  // O isolamento autenticado já é coberto pelos testes de `/orders`.
 
   // ─── CRIAÇÃO / MUTAÇÃO CROSS-TENANT ─────────────────────────
 
@@ -281,12 +256,12 @@ test.describe('Multi-Tenant Isolation @security @multitenant @bola @critical', (
 
       // 500 = schema drift (Issue #1 do code review): a antiga
       // lista de status permitidos `[400, 403, 500]` mascarava bugs
-      // reais. Agora explodimos alto para que CI surface o problema
+      // reais. Agora explodimos alto para que o CI sinalize o problema
       // em vez de deixar passar como "rejeitado".
       if (status === 500) {
         const body = await response.text().catch(() => '');
         throw new Error(
-          `POST /products retornou 500 — schema drift suspected: ${body.slice(0, 300)}`
+          `POST /products retornou 500 — suspeita de divergência de schema: ${body.slice(0, 300)}`
         );
       }
 
@@ -373,7 +348,7 @@ test.describe('Multi-Tenant Isolation @security @multitenant @bola @critical', (
       if (status === 500) {
         const body = await response.text().catch(() => '');
         throw new Error(
-          `DELETE /products retornou 500 — schema drift suspected: ${body.slice(0, 300)}`
+          `DELETE /products retornou 500 — suspeita de divergência de schema: ${body.slice(0, 300)}`
         );
       }
       expect([403, 404]).toContain(status);
@@ -401,7 +376,7 @@ test.describe('Multi-Tenant Isolation @security @multitenant @bola @critical', (
       // CRITICAL #2 do code review: o teste antigo aceitava 200 OU 403
       // e silenciosamente pulava as asserções em 403. Como o admin é
       // `dono` (role permitida pela rota), 403 nunca deve acontecer —
-      // se acontecer, é bug a ser surfaced, não um caminho válido.
+      // se acontecer, é bug a ser exposto, não um caminho válido.
       // Apertamos para 200 e exigimos body não-vazio do tenant A.
       expect(response.status()).toBe(200);
 
@@ -417,7 +392,8 @@ test.describe('Multi-Tenant Isolation @security @multitenant @bola @critical', (
       expect(typeof body.orders).toBe('number');
       expect(typeof body.revenue).toBe('number');
 
-      // Positivo: revenue do tenant A é > 0 (seed cria 2 pedidos pagos).
+      // Positivo: revenue do tenant A é > 0 (o seed cria 1 pedido pago
+      // + 1 pendente; `orders` conta os 2, `revenue` soma só o pago).
       expect(body.revenue).toBeGreaterThan(0);
       expect(body.orders).toBeGreaterThan(0);
 
@@ -442,14 +418,18 @@ test.describe('Multi-Tenant Isolation @security @multitenant @bola @critical', (
 
   // ─── AUTH BOUNDARY (NestJS direto, sem login) ────────────────
 
-  test('sem token, NÃO deve acessar nada', { tag: ['@security', '@auth'] }, async ({ request: apiRequest }) => {
-    // Batemos direto em NestJS `/auth/me` (rota protegida por JwtAuthGuard)
-    // pra testar o auth boundary real. O proxy do Next.js (`/api/auth/profile`)
-    // depende de `NEXT_PUBLIC_API_URL` que em dev local aponta pra
-    // porta 3009 (não ativa), gerando timeout — não é um teste válido.
-    const response = await apiRequest.get(`${E2E_API_URL}/auth/me`);
-    expect(response.status()).toBe(401);
-  });
+  test(
+    'sem token, NÃO deve acessar nada',
+    { tag: ['@security', '@auth'] },
+    async ({ request: apiRequest }) => {
+      // Batemos direto em NestJS `/auth/me` (rota protegida por JwtAuthGuard)
+      // pra testar o auth boundary real. O proxy do Next.js (`/api/auth/profile`)
+      // depende de `NEXT_PUBLIC_API_URL` que em dev local aponta pra
+      // porta 3009 (não ativa), gerando timeout — não é um teste válido.
+      const response = await apiRequest.get(`${E2E_API_URL}/auth/me`);
+      expect(response.status()).toBe(401);
+    }
+  );
 
   test(
     'token inválido deve ser rejeitado',
