@@ -270,7 +270,7 @@ export class PaymentsService {
         span.setAttribute('webhook_provider', provider);
         if (data.restaurantId) span.setAttribute('restaurant_id', data.restaurantId);
         try {
-          const result = await this.handleWebhookInternal(data);
+          const result = await this.handleWebhookInternal({ ...data, provider });
           span.setAttribute('result', String(result.status));
           paymentsCounter.add(1, { method: 'pix', status: data.status });
           return result;
@@ -292,6 +292,7 @@ export class PaymentsService {
     restaurantId?: string;
     provider: string;
   }) {
+    const { provider } = data;
     // Transação interativa em Serializable: o INSERT do WebhookEvent é a
     // operação de "claim" — duas entregas simultâneas do mesmo eventId
     // não podem coexistir. A segunda colide com P2002 e sai como duplicate.
