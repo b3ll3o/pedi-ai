@@ -39,8 +39,13 @@ export class QRCodeCryptoService {
 
     const a = Buffer.from(payload.assinatura, 'hex');
     const b = Buffer.from(assinaturaEsperada, 'hex');
-    // Se algum dos lados não for hex válido, Buffer.from retorna Buffer vazio
-    // ou com bytes inválidos — timingSafeEqual falhará de forma segura.
+    // Auditoria (cobertura tests/tables): hex inválido no payload gera Buffer
+    // menor que o esperado (32 bytes). timingSafeEqual exige buffers de mesmo
+    // byte length — sem esta checagem explícita, joga RangeError. Rejeitamos
+    // como assinatura inválida em vez de propagar exception.
+    if (a.length !== b.length || a.length === 0) {
+      return false;
+    }
     return crypto.timingSafeEqual(a, b);
   }
 
