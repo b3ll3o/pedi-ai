@@ -271,4 +271,94 @@ test.describe('Feature Flags — Painel Admin (RF-ADM-FF-10)', () => {
       expect(Date.now() - waitBefore).toBeLessThan(40_000);
     }
   );
+
+  /**
+   * Issue #79 — telemetry E2E.
+   *
+   * Valida que o caminho `/evaluate → /metrics` está vivo:
+   *   1. GET /evaluate responde 200 e devolve mapa de flags.
+   *   2. GET /metrics responde 200 com `text/plain; version=0.0.4` (Prometheus).
+   *   3. Algum contador OTel (ex.: http_server_requests_total) incrementa
+   *      após a request — evidência de que o pipeline `/metrics` está saudável.
+   *
+   * Observação: a integração canônica `feature_flag_evaluations_total`
+   * exposta via OTel ainda não está conectada ao MeterProvider global
+   * (vide design.md §6.1 / F5). Hoje a contagem é mantida em memória pela
+   * classe `FeatureFlagMetrics` e validada por teste unitário em
+   * `apps/api/src/.../telemetry/telemetry.spec.ts`. Quando o exporter for
+   * conectado, este teste deve ser estendido para fazer scrape da métrica
+   * específica (`feature_flag_evaluations_total{flag_key, scope, hit}`).
+   */
+  test(
+    'telemetria: /evaluate e /metrics respondem — pipeline Prometheus saudável',
+    { tag: ['@RF-ADM-FF-08', '@observability', '@issue-79'] },
+    async ({ page, seedData }) => {
+      // Autentica para garantir contexto (algumas métricas podem depender de usuário).
+      const loginResp = await page.request.post('/api/v1/auth/login', {
+        data: { email: seedData.admin.email, password: seedData.admin.password },
+      });
+      expect(loginResp.status()).toBeLessThan(400);
+
+      // 1) Scrape inicial — baseline dos contadores OTel.
+      const before = await page.request.get('/metrics');
+      expect(before.ok()).toBeTruthy();
+      expect(before.headers()['content-type']).toMatch(/text\/plain/);
+      const beforeBody = await before.text();
+
+      // Extrai um contador OTel estável para comparação (http_server_requests_total).
+      const matchHttp =
+        /http_server_requests_total\{[^}]*\}\s+(\d+)/.exec(beforeBody) ??
+        /pedi_orders_created_total\{[^}]*\}\s+(\d+)/.exec(beforeBody);
+      const beforeCount = matchHttp ? Number(matchHttp[1]) : 0;
+
+      // 2) Dispara avaliação — deve incrementar contador HTTP server-side.
+      const evalResp = await evaluateFeatureFlags(page, ['offline_enabled']);
+      expect(evalResp).toHaveProperty('offline_enabled');
+
+      // 3) Scrape final — contador HTTP deve ter crescido (>= 1 increment por
+      //    request) E a métrica canônica `feature_flag_evaluations_total` deve
+      //    ter sido emitida quando a integração OTel estiver conectada.
+      const after = await page.request.get('/metrics');
+      expect(after.ok()).toBeTruthy();
+      const afterBody = await after.text();
+
+      // 3a) Contador HTTP subiu — evidência de que /metrics está vivo.
+      const matchHttpAfter =
+        /http_server_requests_total\{[^}]*\}\s+(\d+)/.exec(afterBody) ??
+        /pedi_orders_created_total\{[^}]*\}\s+(\d+)/.exec(afterBody);
+      const afterCount = matchHttpAfter ? Number(matchHttpAfter[1]) : 0;
+      expect(afterCount).toBeGreaterThan(beforeCount);
+
+      // 3b) Verifica presença do HELP Prometheus (formato válido) — sem isso
+      //     o collector do backend não consegue parsear nada.
+      expect(afterBody).toMatch(/# HELP \w+/);
+      expect(afterBody).toMatch(/# TYPE \w+ counter/);
+    }
+  );
+
+  /**
+   * Issue #79 — stub para invalidação de cache entre clientes (cross-client).
+   *
+   * Aguarda decisão de produto sobre política de propagação:
+   *   - Consistência eventual via TTL (atual: polling 30s no front).
+   *   - Invalidação imediata via pub/sub (alternativa em avaliação).
+   *
+   * Quando decidido, este teste deve ser ativado (`test.skip` → `test`)
+   * e implementar:
+   *   - Cliente A lê uma flag (snapshot capturado).
+   *   - Admin altera a flag (toggle/override) via API autenticada.
+   *   - Cliente B (sessão independente, sem cache local) lê a mesma flag.
+   *   - Validar que a mudança refletiu em ≤30s (TTL) ou imediatamente (pub/sub).
+   *
+   * Tracking: https://github.com/b3ll3o/pedi-ai/issues/79
+   */
+  test.skip(
+    'cross-client: override aplicado propaga entre clientes A e B em ≤30s',
+    { tag: ['@RF-ADM-FF-08', '@issue-79-stub'] },
+    async () => {
+      // Stub — aguardando decisão de produto (consistência eventual vs.
+      // invalidação imediata via pub/sub). Quando ativado, implementar
+      // o cenário acima usando dois contextos Playwright distintos.
+    }
+  );
 });
