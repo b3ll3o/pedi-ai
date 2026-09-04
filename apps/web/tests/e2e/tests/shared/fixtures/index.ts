@@ -44,6 +44,22 @@ export interface Fixtures {
  */
 export interface SeedData {
   restaurant: { id: string; name: string };
+  /**
+   * Tenant "vizinho" usado pelos testes BOLA
+   * (`tests/security/multitenant.spec.ts`). Contém dados REAIS — os IDs
+   * abaixo nunca podem aparecer em respostas autenticadas como tenant A,
+   * e mutações cross-tenant sobre eles devem ser rejeitadas.
+   */
+  restaurantB: {
+    id: string;
+    name: string;
+    categoryId: string;
+    productId: string;
+    productName: string;
+    tableId: string;
+    orderId: string;
+    orderTotal: number;
+  };
   customer: { email: string; password: string; id: string };
   admin: { email: string; password: string; id: string };
   waiter: { email: string; password: string; id: string };
@@ -51,6 +67,8 @@ export interface SeedData {
   table: { id: string; code: string };
   categories: Array<{ id: string; name: string }>;
   products: Array<{ id: string; name: string; price: number }>;
+  /** Pedidos do tenant A (asserções positivas de listagem). */
+  orders: Array<{ id: string; status: string; total: number }>;
 }
 
 /**
@@ -73,8 +91,36 @@ async function loadSeedData(): Promise<SeedData> {
 
   const raw = JSON.parse(fs.readFileSync(SEED_RESULT_PATH, 'utf-8'));
 
+  // Guard contra `.seed-result.json` antigo (gerado antes da auditoria
+  // P0-01 / BOLA — sem `restaurantB.productId`, `restaurantB.orderTotal`
+  // e `orders`). Sem esses campos, os testes de isolação multi-tenant
+  // viram unfalsifiable (CRITICAL #1 do bug scan). Falha alto com
+  // mensagem acionável em vez de quebrar com `undefined.productId`.
+  if (
+    !raw.restaurantB?.productId ||
+    !raw.restaurantB?.orderId ||
+    !Array.isArray(raw.orders) ||
+    raw.orders.length === 0
+  ) {
+    throw new Error(
+      `Seed result em ${SEED_RESULT_PATH} está DESATUALIZADO (faltam ` +
+        `restaurantB.productId, restaurantB.orderId ou orders). ` +
+        `Rode \`pnpm test:e2e:seed\` para regenerar.`
+    );
+  }
+
   return {
     restaurant: raw.restaurant,
+    restaurantB: {
+      id: raw.restaurantB.id,
+      name: raw.restaurantB.name,
+      categoryId: raw.restaurantB.categoryId,
+      productId: raw.restaurantB.productId,
+      productName: raw.restaurantB.productName,
+      tableId: raw.restaurantB.tableId,
+      orderId: raw.restaurantB.orderId,
+      orderTotal: raw.restaurantB.orderTotal,
+    },
     customer: {
       id: raw.users.customer.id,
       email: raw.users.customer.email,
@@ -104,6 +150,11 @@ async function loadSeedData(): Promise<SeedData> {
       id: p.id,
       name: p.name,
       price: p.price,
+    })),
+    orders: raw.orders.map((o: { id: string; status: string; total: number }) => ({
+      id: o.id,
+      status: o.status,
+      total: o.total,
     })),
   };
 }
