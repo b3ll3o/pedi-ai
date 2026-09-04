@@ -1608,6 +1608,11 @@
   }
 
   .footerBottom p {
-    color: #78716c;
+    /* Issue #81 — WCAG 1.4.3 Contrast (Minimum, Level AA).
+     * O override local `.page { --color-text-muted: #a8a29e }` (acima)
+     * já garante ratio ~7.1:1 sobre #1c1917 (passa texto normal).
+     * Usamos o token semântico em vez de literal para evitar reincidência:
+     * qualquer ajuste futuro de paleta em dark mode propaga aqui. */
+    color: var(--color-text-muted);
   }
 }
