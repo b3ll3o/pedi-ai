@@ -98,13 +98,18 @@ class ApiClientClass {
    *
    * `Headers.getSetCookie()` existe no runtime do Next (undici) mas não em
    * todos os ambientes de teste — daí o fallback para `get('set-cookie')`.
+   *
+   * Tolerante a `response.headers === undefined` (mocks em testes unitários,
+   * respostas de rede truncadas, edge cases de polyfill): nesse caso não há
+   * cookies a capturar e seguimos em frente sem lançar.
    */
   private captureSetCookies(response: Response): void {
-    const headers = response.headers as Headers & { getSetCookie?: () => string[] };
+    const headers = response.headers as (Headers & { getSetCookie?: () => string[] }) | undefined;
+    if (!headers) return;
     const values =
       typeof headers.getSetCookie === 'function'
         ? headers.getSetCookie()
-        : ([response.headers.get('set-cookie')].filter(Boolean) as string[]);
+        : ([headers.get('set-cookie')].filter(Boolean) as string[]);
     if (values.length > 0) {
       this.collectedSetCookies.push(...values);
     }
