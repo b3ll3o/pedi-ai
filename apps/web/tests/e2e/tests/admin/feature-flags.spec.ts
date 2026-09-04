@@ -271,4 +271,93 @@ test.describe('Feature Flags — Painel Admin (RF-ADM-FF-10)', () => {
       expect(Date.now() - waitBefore).toBeLessThan(40_000);
     }
   );
+
+  /**
+   * Issue #79 — telemetry E2E.
+   *
+   * Valida que o caminho `/evaluate → /metrics` está vivo:
+   *   1. GET /evaluate responde 200 e devolve mapa de flags.
+   *   2. GET /metrics responde 200 com `text/plain` (exposição Prometheus).
+   *   3. O corpo tem linhas `# HELP` e `# TYPE` — prova de que o exporter
+   *      Prometheus está registrado e produzindo formato parseável.
+   *
+   * IMPORTANTE — por que NÃO há assertion de "contador incrementou":
+   *   - `/metrics` é exposto pelo NestJS (porta 3001), não pelo Next.js
+   *     (porta 3000, `baseURL` do Playwright). Por isso usamos URL absoluta
+   *     via `NEXT_PUBLIC_API_URL`.
+   *   - A métrica canônica `feature_flag_evaluations_total{flag_key, scope, hit}`
+   *     é mantida **em memória** pela classe `FeatureFlagMetrics` e ainda não
+   *     está conectada ao MeterProvider global do OTel (vide design.md §6.1 / F5).
+   *     Logo, ela é invisível para o scrape de `/metrics`.
+   *   - `http_server_requests_total` está declarado em
+   *     `apps/api/src/observability/metrics.ts` mas não recebe `.add()` em
+   *     produção; `pedi_orders_created_total` só sobe na criação de pedido.
+   *     Qualquer assertion de incremento aqui falharia de forma determinística.
+   *   - A garantia de que o contador realmente incrementa fica no teste
+   *     unitário `apps/api/src/infrastructure/admin/feature-flags/telemetry/telemetry.spec.ts`.
+   *
+   * Quando o exporter OTel for conectado ao MeterProvider, este teste deve ser
+   * estendido para fazer scrape da métrica específica
+   * (`feature_flag_evaluations_total{flag_key, scope, hit}`) — e só então uma
+   * assertion de incremento passa a fazer sentido.
+   */
+  test(
+    'telemetria: /evaluate e /metrics respondem — pipeline Prometheus saudável',
+    { tag: ['@RF-ADM-FF-08', '@observability', '@issue-79'] },
+    async ({ page, seedData }) => {
+      // `/metrics` vive na API NestJS (3001), não no Next.js (3000 = baseURL).
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+
+      // Autentica para garantir contexto (algumas métricas podem depender de usuário).
+      const loginResp = await page.request.post('/api/v1/auth/login', {
+        data: { email: seedData.admin.email, password: seedData.admin.password },
+      });
+      expect(loginResp.status()).toBeLessThan(400);
+
+      // 1) Scrape inicial — pipeline Prometheus deve responder.
+      const before = await page.request.get(`${apiUrl}/metrics`);
+      expect(before.ok()).toBeTruthy();
+      expect(before.headers()['content-type']).toMatch(/text\/plain/);
+
+      // 2) Dispara avaliação de flag — exercita o caminho instrumentado.
+      const evalResp = await evaluateFeatureFlags(page, ['offline_enabled']);
+      expect(evalResp).toHaveProperty('offline_enabled');
+
+      // 3) Scrape final — segue respondendo em formato Prometheus válido.
+      const after = await page.request.get(`${apiUrl}/metrics`);
+      expect(after.ok()).toBeTruthy();
+      expect(after.headers()['content-type']).toMatch(/text\/plain/);
+      const afterBody = await after.text();
+
+      // 3a) Presença de HELP/TYPE — sem isso o collector não parseia nada.
+      expect(afterBody).toMatch(/# HELP \w+/);
+      expect(afterBody).toMatch(/# TYPE \w+/);
+    }
+  );
+
+  /**
+   * Issue #79 — stub para invalidação de cache entre clientes (cross-client).
+   *
+   * Aguarda decisão de produto sobre política de propagação:
+   *   - Consistência eventual via TTL (atual: polling 30s no front).
+   *   - Invalidação imediata via pub/sub (alternativa em avaliação).
+   *
+   * Quando decidido, este teste deve ser ativado (`test.skip` → `test`)
+   * e implementar:
+   *   - Cliente A lê uma flag (snapshot capturado).
+   *   - Admin altera a flag (toggle/override) via API autenticada.
+   *   - Cliente B (sessão independente, sem cache local) lê a mesma flag.
+   *   - Validar que a mudança refletiu em ≤30s (TTL) ou imediatamente (pub/sub).
+   *
+   * Tracking: https://github.com/b3ll3o/pedi-ai/issues/79
+   */
+  test.skip(
+    'cross-client: override aplicado propaga entre clientes A e B em ≤30s',
+    { tag: ['@RF-ADM-FF-08', '@issue-79-stub'] },
+    async () => {
+      // Stub — aguardando decisão de produto (consistência eventual vs.
+      // invalidação imediata via pub/sub). Quando ativado, implementar
+      // o cenário acima usando dois contextos Playwright distintos.
+    }
+  );
 });
